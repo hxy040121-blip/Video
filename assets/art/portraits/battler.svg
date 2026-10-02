@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+<defs>
+<clipPath id="battler-frame"><rect width="600" height="800"/></clipPath>
+<clipPath id="battler-eyeL"><path d="M278 334.6 C274.6 317.6 262.6 308.3 249 307.4 C234.5 306.6 224.3 313.4 219.1 324.4 C220.8 339.7 231.1 349.1 247.3 349.9 C262.6 350.8 272.9 345.7 278 334.6 Z"/></clipPath>
+<clipPath id="battler-eyeR"><path d="M320 334 C324 314 338 303 354 302 C371 301 383 309 389 322 C387 340 375 351 356 352 C338 353 326 347 320 334 Z"/></clipPath>
+<path id="battler-hf" d="M214 412 Q196.9 438.8 166 446 Q191.9 418 196 380 Q163.3 390 132 376 Q166 362 184 330 Q153.1 322.8 136 296 Q163.7 292 178 268 Q151.5 253.3 144 224 Q172.3 230.8 196 214 Q177.5 193.4 182 166 Q204 181.8 230 174 Q219 146.6 232 120 Q244.8 144.6 272 150 Q272.1 121 294 102 Q296.9 128.5 320 142 Q326.5 113.7 352 100 Q349.8 127.4 370 146 Q385.6 121.9 414 118 Q402 142 414 166 Q436 150.2 462 158 Q440.9 177.4 442 206 Q469.8 198.1 494 214 Q466.5 224.5 456 252 Q486 255.6 504 280 Q475.6 283.9 460 308 Q492.1 321.2 508 352 Q479.4 339 450 350 Q477.5 375.2 484 412 Q456.8 387 420 384 L410 344 L408 304 Q389.1 288.5 388 264 Q372.2 290.1 378 320 Q357.6 292.3 356 258 Q338.2 291.9 342 330 Q323.3 296.4 324 258 Q302.3 301.4 302 350 Q286.1 307.4 290 262 Q266.9 288.7 264 324 Q247.2 295.2 250 262 Q228.9 282.6 228 312 Q214.3 298.4 220 280 Q204.3 298.5 210 322 L214 412 Z"/>
+<clipPath id="battler-hf-c"><use href="#battler-hf"/></clipPath>
+<path id="battler-hb" d="M214 380 Q208.7 427.2 188 470 Q211.1 461.1 224 440 Q233 468.7 226 498 Q245.1 478.7 250 452 Q306 448 362 444 Q380.4 469.1 384 500 Q398.7 478.2 398 452 Q422.5 464.2 436 488 Q441 458.2 430 430 Q453 430.6 470 446 Q465.5 410.3 446 380 C420 330 240 330 214 380 Z"/>
+<clipPath id="battler-hb-c"><use href="#battler-hb"/></clipPath>
+<path id="battler-torso" d="M252 446 C254 482 252 510 246 532 C200 542 136 552 96 566 C58 580 42 616 38 670 L30 820 L578 820 L570 670 C566 616 550 580 512 566 C472 552 408 542 362 532 C356 504 356 472 360 436 Z"/>
+<clipPath id="battler-torso-c"><use href="#battler-torso"/></clipPath>
+<path id="battler-shirt" d="M246 520 C230 540 214 556 200 570 L240 720 L368 720 L408 570 C394 556 378 540 362 520 C344 530 324 536 304 536 C284 536 264 530 246 520 Z"/>
+<clipPath id="battler-shirt-c"><use href="#battler-shirt"/></clipPath>
+<path id="battler-vest" d="M196 600 L248 600 L304 704 L360 600 L412 600 L420 820 L188 820 Z"/>
+<clipPath id="battler-vest-c"><use href="#battler-vest"/></clipPath>
+<path id="battler-colL" d="M248 512 C244 534 236 556 224 574 L266 592 L300 548 C280 540 262 528 248 512 Z"/>
+<clipPath id="battler-colL-c"><use href="#battler-colL"/></clipPath>
+<path id="battler-colR" d="M360 512 C364 534 372 556 384 574 L342 592 L308 548 C328 540 346 528 360 512 Z"/>
+<clipPath id="battler-colR-c"><use href="#battler-colR"/></clipPath>
+<path id="battler-knot" d="M292 548 C296 542 312 542 316 548 L312 568 C306 571 302 571 296 568 Z"/>
+<clipPath id="battler-knot-c"><use href="#battler-knot"/></clipPath>
+<path id="battler-tie" d="M296 566 C301 569 307 569 312 566 L318 690 L304 708 L290 690 Z"/>
+<clipPath id="battler-tie-c"><use href="#battler-tie"/></clipPath>
+<path id="battler-jkL" d="M236 538 C190 546 132 554 94 568 C56 582 42 616 38 670 L30 820 L258 820 C258 770 262 730 270 720 C262 660 252 600 244 552 Z"/>
+<clipPath id="battler-jkL-c"><use href="#battler-jkL"/></clipPath>
+<path id="battler-jkR" d="M372 538 C418 546 476 554 514 568 C552 582 566 616 570 670 L578 820 L350 820 C350 770 346 730 338 720 C346 660 356 600 364 552 Z"/>
+<clipPath id="battler-jkR-c"><use href="#battler-jkR"/></clipPath>
+<path id="battler-lapL" d="M244 548 C254 604 262 664 270 720 C246 690 214 650 190 622 L176 616 L186 598 L170 584 C196 568 222 556 244 548 Z"/>
+<clipPath id="battler-lapL-c"><use href="#battler-lapL"/></clipPath>
+<path id="battler-lapR" d="M364 548 C354 604 346 664 338 720 C362 690 394 650 418 622 L432 616 L422 598 L438 584 C412 568 386 556 364 548 Z"/>
+<clipPath id="battler-lapR-c"><use href="#battler-lapR"/></clipPath>
+<path id="battler-face" d="M302 172 C360 172 404 212 408 270 C411 300 411 326 408 346 C405 376 400 400 391 420 C370 452 326 480 298 492 C290 495 282 494 276 489 C254 470 228 446 216 416 C206 392 200 368 200 344 C197 306 197 288 201 272 C212 210 250 172 302 172 Z"/>
+<clipPath id="battler-face-c"><use href="#battler-face"/></clipPath>
+</defs>
+<g clip-path="url(#battler-frame)"><g class="p-hair-back">
+<use href="#battler-hb" fill="#C7352B"/>
+<g clip-path="url(#battler-hb-c)"><path d="M0 0H600V820H0Z" fill="#4a1a2a" opacity="0.3"/><path d="M226 440 Q218 420 214 404 M398 452 Q404 430 420 414" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+<use href="#battler-hb" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+</g></g>
+<g clip-path="url(#battler-frame)"><g class="p-body">
+<use href="#battler-torso" fill="#F2D4BE"/>
+<g clip-path="url(#battler-torso-c)"><path d="M236 430 L384 404 L384 468 C366 482 348 494 326 504 C300 512 270 512 236 504 Z" fill="#4a1a2a" opacity="0.3"/><path d="M384 466 C368 476 354 486 344 500 C338 520 330 544 318 572 C344 564 372 548 404 534 L404 466 Z" fill="#4a1a2a" opacity="0.22"/></g>
+<use href="#battler-torso" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<use href="#battler-shirt" fill="#B4232C"/>
+<g clip-path="url(#battler-shirt-c)"><path d="M362 520 C346 540 334 556 324 576 L340 720 L420 720 L420 520 Z" fill="#4a1a2a" opacity="0.32"/><path d="M304 536 C324 536 344 530 362 520 L370 532 C350 546 326 552 304 552 Z" fill="#4a1a2a" opacity="0.3"/></g>
+<use href="#battler-shirt" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<use href="#battler-vest" fill="#1d1a1c"/>
+<g clip-path="url(#battler-vest-c)"><path d="M196 600 L248 600 L292 682 L270 700 L240 640 L200 640 Z" fill="#3d383b"/><path d="M304 704 L304 820" fill="none" stroke="#4a4446" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="304" cy="730" r="4.5" fill="#3d383b" stroke="#0b0809" stroke-width="2"/><circle cx="304" cy="770" r="4.5" fill="#3d383b" stroke="#0b0809" stroke-width="2"/><circle cx="304" cy="810" r="4.5" fill="#3d383b" stroke="#0b0809" stroke-width="2"/></g>
+<use href="#battler-vest" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<use href="#battler-tie" fill="#1d1a1c"/>
+<g clip-path="url(#battler-tie-c)"><path d="M296 566 L304 568 L300 690 L290 690 Z" fill="#3d383b"/></g>
+<use href="#battler-tie" fill="none" stroke="#0b0809" stroke-width="4" stroke-linejoin="round"/>
+<use href="#battler-knot" fill="#1d1a1c"/>
+<g clip-path="url(#battler-knot-c)"><path d="M294 548 C298 545 306 545 310 547 L300 566 L296 566 Z" fill="#3d383b"/></g>
+<use href="#battler-knot" fill="none" stroke="#0b0809" stroke-width="4" stroke-linejoin="round"/>
+<use href="#battler-colL" fill="#B4232C"/>
+<g clip-path="url(#battler-colL-c)"><path d="M248 512 C262 528 280 540 300 548 L294 558 C274 548 256 534 248 512 Z" fill="#4a1a2a" opacity="0.25"/></g>
+<use href="#battler-colL" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+<use href="#battler-colR" fill="#B4232C"/>
+<g clip-path="url(#battler-colR-c)"><path d="M360 512 C364 536 372 556 384 574 L366 582 C356 560 352 536 360 512 Z" fill="#4a1a2a" opacity="0.32"/></g>
+<use href="#battler-colR" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+<use href="#battler-jkL" fill="#EAE2CF"/>
+<g clip-path="url(#battler-jkL-c)"><path d="M30 820 L38 670 C42 630 56 600 84 584 C74 650 72 740 76 820 Z" fill="#4a1a2a" opacity="0.2"/><path d="M244 552 C252 610 262 670 270 720 L270 820 L240 820 C240 760 236 700 228 650 Z" fill="#4a1a2a" opacity="0.22"/><path d="M150 640 C160 700 162 760 160 820 M200 700 C206 740 208 780 206 820" fill="none" stroke="#0b0809" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+<use href="#battler-jkL" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<use href="#battler-jkR" fill="#EAE2CF"/>
+<g clip-path="url(#battler-jkR-c)"><path d="M470 566 C530 590 550 640 552 700 L556 820 L600 820 L600 566 Z" fill="#4a1a2a" opacity="0.24"/><path d="M364 552 C356 610 346 670 338 720 L338 820 L372 820 C372 760 378 700 390 650 Z" fill="#4a1a2a" opacity="0.2"/><path d="M458 640 C448 700 446 760 448 820 M410 700 C404 740 402 780 404 820" fill="none" stroke="#0b0809" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+<use href="#battler-jkR" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<use href="#battler-lapL" fill="#EAE2CF"/>
+<g clip-path="url(#battler-lapL-c)"><path d="M244 548 C254 604 262 664 270 720 L260 720 C252 660 242 604 234 552 Z" fill="#4a1a2a" opacity="0.18"/></g>
+<use href="#battler-lapL" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+<use href="#battler-lapR" fill="#EAE2CF"/>
+<g clip-path="url(#battler-lapR-c)"><path d="M364 548 C354 604 346 664 338 720 C362 690 394 650 418 622 L432 616 L422 598 L438 584 L450 600 L450 720 Z" fill="#4a1a2a" opacity="0.22"/></g>
+<use href="#battler-lapR" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+<g><path d="M222 666 C232 640 248 618 274 602 C270 614 268 622 264 628 L276 627 C270 637 265 643 259 647 L269 650 C261 657 252 661 244 663 L249 669 C240 673 230 673 222 666 Z" fill="#C9A227" stroke="#0b0809" stroke-width="2.6" stroke-linejoin="round"/><path d="M224 666 C218 668 210 664 208 658 C206 652 212 648 218 650 L206 650 L214 644 C222 644 228 652 228 660 Z" fill="#C9A227" stroke="#0b0809" stroke-width="2.2" stroke-linejoin="round"/><path d="M236 650 C246 636 256 624 268 612 M244 656 C252 648 260 642 266 636" fill="none" stroke="#0b0809" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/><circle cx="215" cy="652" r="1.6" fill="#0b0809"/></g>
+</g></g>
+<g class="p-head">
+<path d="M402 328 C408 312 428 310 434 326 C440 344 432 368 420 382 C414 390 404 390 400 384 Z" fill="#F2D4BE" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+<path d="M412 334 C421 330 427 341 424 353 C422 363 416 369 410 369 M414 349 C418 349 420 353 418 357" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<use href="#battler-face" fill="#F2D4BE"/>
+<g clip-path="url(#battler-face-c)"><path d="M414 318 L394 278 L384 334 L362 272 L348 344 L330 272 L308 364 L296 276 L270 338 L256 276 L234 326 L226 294 L216 336 L196 330 L196 160 L420 160 L420 316 Z" fill="#4a1a2a" opacity="0.25"/><path d="M396 300 C406 340 404 392 384 426 C362 456 330 476 294 494 L420 494 L420 300 Z" fill="#4a1a2a" opacity="0.25"/><path d="M288 364 L300 392 L291 397 Z" fill="#4a1a2a" opacity="0.25"/><path d="M262 470 C272 480 286 482 300 474 L300 500 L262 500 Z" fill="#4a1a2a" opacity="0.25"/></g>
+<use href="#battler-face" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<g class="p-eye">
+<path class="p-sclera" d="M278 334.6 C274.6 317.6 262.6 308.3 249 307.4 C234.5 306.6 224.3 313.4 219.1 324.4 C220.8 339.7 231.1 349.1 247.3 349.9 C262.6 350.8 272.9 345.7 278 334.6 Z" fill="#fbf7f4"/>
+<g clip-path="url(#battler-eyeL)"><g class="p-iris">
+<ellipse cx="252" cy="333" rx="12.5" ry="17" fill="#3E73C2"/>
+<path d="M239.5 329.9 A12.5 17 0 0 1 264.5 329.9 C258.3 324.5 245.8 324.5 239.5 329.9 Z" fill="#1c3c72" opacity=".6"/>
+<path d="M243.3 339 C247 348.3 257 348.3 260.8 339 C255.8 343.2 248.3 343.2 243.3 339 Z" fill="#b3c8ea" opacity="0.85"/>
+<ellipse cx="252" cy="334" rx="3.8" ry="6.5" fill="#141018"/>
+<ellipse cx="252" cy="333" rx="12.5" ry="17" fill="none" stroke="#1c3c72" stroke-width="2.5"/>
+<ellipse cx="247.5" cy="326.5" rx="3.4" ry="4.1" fill="#fff"/>
+<circle cx="257.3" cy="339.5" r="2.4" fill="#fff"/>
+</g><path d="M191 283 H311 V321 C275 311 227 311 191 327 Z" fill="#3a2030" opacity="0.16"/></g>
+<path d="M284 337.2 C281.4 313.4 265.2 301.5 248.1 300.6 C232.8 299.8 220 307.4 214 319.3 L208.1 325.3 L217.4 327 C224.3 314.2 234.5 308.3 248.1 309.1 C261.8 310 272 319.3 278 338.9 Z" fill="#0b0809"/>
+<path d="M273.7 345.7 C263.5 350.8 250.7 352.5 238.8 350.8 C229.4 349.1 223.4 344 220 337.2" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M269.5 300.6 C257.5 293.8 240.5 293 223.4 298.9" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+</g>
+<g class="p-eye">
+<path class="p-sclera" d="M320 334 C324 314 338 303 354 302 C371 301 383 309 389 322 C387 340 375 351 356 352 C338 353 326 347 320 334 Z" fill="#fbf7f4"/>
+<g clip-path="url(#battler-eyeR)"><g class="p-iris">
+<ellipse cx="356" cy="330" rx="14" ry="18" fill="#3E73C2"/>
+<path d="M342 326.8 A14 18 0 0 1 370 326.8 C363 321 349 321 342 326.8 Z" fill="#1c3c72" opacity=".6"/>
+<path d="M346.2 336.3 C350.4 346.2 361.6 346.2 365.8 336.3 C360.2 340.8 351.8 340.8 346.2 336.3 Z" fill="#b3c8ea" opacity="0.85"/>
+<ellipse cx="356" cy="331" rx="4.2" ry="6.8" fill="#141018"/>
+<ellipse cx="356" cy="330" rx="14" ry="18" fill="none" stroke="#1c3c72" stroke-width="2.5"/>
+<ellipse cx="351" cy="323.2" rx="3.8" ry="4.4" fill="#fff"/>
+<circle cx="361.9" cy="336.8" r="2.4" fill="#fff"/>
+</g><path d="M295 280 H415 V318 C379 308 331 308 295 324 Z" fill="#3a2030" opacity="0.16"/></g>
+<path d="M313 337 C316 309 335 295 355 294 C373 293 388 302 395 316 L402 323 L391 325 C383 310 371 303 355 304 C339 305 327 316 320 339 Z" fill="#0b0809"/>
+<path d="M325 347 C337 353 352 355 366 353 C377 351 384 345 388 337" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M330 294 C344 286 364 285 384 292" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+</g>
+<path d="M228 286 C242 286 258 290 274 300 L271 307 C256 299 240 296 226 295 Z M326 302 C342 290 364 282 392 280 L392 289 C366 290 346 297 330 309 Z" fill="#6b1d18"/>
+<path d="M282 300 L290 308 M296 302 L300 296" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+<path d="M340 362 C350 366 362 366 372 362 M236 362 C244 365 254 365 262 362" fill="none" stroke="#0b0809" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+<path d="M288 362 C286 373 283 384 281 393 C285 396 290 397 294 396" fill="none" stroke="#0b0809" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M250 420 C272 434 308 432 336 410 C334 426 322 442 302 447 C280 450 260 440 250 420 Z" fill="#fff"/>
+<path d="M256 430 C278 440 310 437 332 422" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+<path d="M270 431 L270 443 M285 434 L285 447 M300 434 L300 447 M314 431 L314 444 M326 424 L326 436" fill="none" stroke="#0b0809" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<path d="M250 420 C272 434 308 432 336 410 C334 426 322 442 302 447 C280 450 260 440 250 420 Z" fill="none" stroke="#0b0809" stroke-width="2.6" stroke-linejoin="round"/>
+<path d="M243 415 L251 421 M335 410 L343 401 M346 398 C352 410 352 424 346 436" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M282 455 C288 457 296 457 302 454" fill="none"/><path d="M282 456 C288 458 296 458 302 455" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+<g><path d="M392 300 C386 312 382 322 384 330 C386 338 396 340 400 332 C403 324 398 312 392 300 Z" fill="#dff0fb" stroke="#0b0809" stroke-width="2.2" stroke-linejoin="round"/><path d="M388 326 C388 320 390 316 392 314 L393 322 Z" fill="#fff"/></g>
+<g class="p-hair-front">
+<use href="#battler-hf" fill="#C7352B"/>
+<g clip-path="url(#battler-hf-c)"><path d="M372 100 L396 156 L432 180 L442 206 L456 252 L460 308 L450 350 L440 372 L420 384 L410 344 L408 304 L388 264 L378 320 L356 258 L372 214 L362 152 Z" fill="#4a1a2a" opacity="0.3"/><path d="M210 322 L220 280 L232 316 L226 384 L214 412 L190 370 L184 330 Z" fill="#4a1a2a" opacity="0.3"/><g class="p-accent"><path d="M160 256 C176 198 222 158 282 142 C320 134 356 136 384 148 L378 160 L364 158 L356 182 L348 160 L328 164 L320 192 L310 166 L290 172 L280 202 L272 178 L252 190 L244 220 L238 198 L218 212 L210 244 L202 222 L184 246 L176 272 Z" fill="#E0592A"/></g></g>
+<use href="#battler-hf" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<g clip-path="url(#battler-hf-c)"><path d="M388 264 Q370 228 352 204 M356 258 Q344 222 332 200 M324 258 Q316 224 314 196 M290 262 Q284 228 272 204 M250 262 Q244 232 236 214 M220 280 Q210 256 204 240 M442 206 Q414 194 392 194 M456 252 Q432 238 410 236 M460 308 Q440 290 418 284 M178 268 Q202 262 222 268 M196 214 Q214 214 232 222 M184 330 Q200 320 214 318 M320 142 Q318 162 322 180 M272 150 Q276 168 286 180 M370 146 Q364 164 366 180" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+</g>
+</g>
+</svg>

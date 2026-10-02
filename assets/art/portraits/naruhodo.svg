@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+  <defs>
+    <clipPath id="naruhodo-frame"><rect width="600" height="800"/></clipPath>
+    <path id="naruhodo-torso" d="M248 446 C250 482 248 510 242 532 C196 544 130 552 92 572 C50 596 34 680 30 820 L576 820 C572 680 556 596 514 572 C476 552 410 544 366 532 C360 504 360 472 364 436 Z"/>
+    <clipPath id="naruhodo-torso-c"><use href="#naruhodo-torso"/></clipPath>
+    <path id="naruhodo-shirt" d="M236 532 C196 544 130 554 92 574 C50 598 34 680 30 820 L576 820 C572 680 556 598 514 574 C476 554 412 544 372 532 C358 562 336 586 304 598 C272 586 250 562 236 532 Z"/>
+    <clipPath id="naruhodo-shirt-c"><use href="#naruhodo-shirt"/></clipPath>
+    <path id="naruhodo-colL" d="M248 492 C248 520 262 556 300 590 C274 598 242 600 214 594 C228 562 236 530 236 502 Z"/>
+    <clipPath id="naruhodo-colL-c"><use href="#naruhodo-colL"/></clipPath>
+    <path id="naruhodo-colR" d="M362 492 C362 520 348 556 310 590 C336 598 368 600 396 594 C382 562 374 530 374 502 Z"/>
+    <clipPath id="naruhodo-colR-c"><use href="#naruhodo-colR"/></clipPath>
+    <path id="naruhodo-knot" d="M288 580 C296 574 314 574 322 580 C324 594 318 604 305 608 C292 604 286 594 288 580 Z"/>
+    <clipPath id="naruhodo-knot-c"><use href="#naruhodo-knot"/></clipPath>
+    <path id="naruhodo-blade" d="M292 604 C298 602 312 602 318 604 C326 670 334 740 336 820 L274 820 C276 740 284 670 292 604 Z"/>
+    <clipPath id="naruhodo-blade-c"><use href="#naruhodo-blade"/></clipPath>
+    <path id="naruhodo-jacket" d="M218 536 C176 546 124 558 92 576 C50 600 34 680 30 820 L282 820 C272 740 252 660 232 594 Z M392 536 C434 546 486 558 514 576 C556 600 572 680 576 820 L328 820 C338 740 358 660 378 594 Z"/>
+    <clipPath id="naruhodo-jacket-c"><use href="#naruhodo-jacket"/></clipPath>
+    <path id="naruhodo-lapL" d="M220 538 C236 610 260 700 282 780 C262 744 228 704 184 676 L166 616 L190 610 L180 572 C190 556 204 544 220 538 Z"/>
+    <clipPath id="naruhodo-lapL-c"><use href="#naruhodo-lapL"/></clipPath>
+    <path id="naruhodo-lapR" d="M390 538 C374 610 350 700 328 780 C348 744 382 704 426 676 L444 616 L420 610 L430 572 C420 556 406 544 390 538 Z"/>
+    <clipPath id="naruhodo-lapR-c"><use href="#naruhodo-lapR"/></clipPath>
+    <path id="naruhodo-face" d="M302 172 C360 172 404 212 408 270 C411 300 411 326 408 346 C405 378 401 402 393 422 C374 452 330 480 300 492 C292 495 282 494 276 490 C254 472 230 450 218 420 C207 394 200 368 200 344 C197 306 197 288 201 272 C212 210 250 172 302 172 Z"/>
+    <clipPath id="naruhodo-face-c"><use href="#naruhodo-face"/></clipPath>
+    <path id="naruhodo-hf" d="M214 300 Q180.1 304 146 302 Q167.7 285.3 182 262 Q144.5 244.6 110 222 Q143.2 218.9 174 206 Q152.4 174.5 136 140 Q169.6 154.8 206 160 Q210.1 118.2 222 78 Q239.2 106.2 264 128 Q288 94.8 318 67 Q325.4 95.6 342 120 Q384.4 87.8 432 64 Q417.2 99.7 412 138 Q475.8 119.1 542 112 Q497.9 144.6 462 186 Q523.7 198.3 582 222 Q527.3 232.3 476 254 Q524.9 287.4 566 330 Q516.2 312.2 464 304 Q485.7 346.5 500 392 Q469.4 360.5 436 332 C424 300 414 276 404 262 C384 232 346 222 304 224 C262 226 230 240 216 262 C210 274 212 288 214 300 Z"/>
+    <clipPath id="naruhodo-hf-c"><use href="#naruhodo-hf"/></clipPath>
+    <clipPath id="naruhodo-eyeR"><path d="M318 332 C322 314 338 302 355 301 C372 300 385 310 390 324 C388 342 375 353 356 354 C337 355 322 346 318 332 Z"/></clipPath>
+    <clipPath id="naruhodo-eyeL"><path d="M279.7 332.9 C276.3 317.6 262.7 307.3 248.3 306.5 C233.8 305.6 222.8 314.2 218.5 326.1 C220.2 341.4 231.3 350.8 247.4 351.6 C263.6 352.5 276.3 344.8 279.7 332.9 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#naruhodo-frame)">
+    <g class="p-hair-back"></g>
+  </g>
+  <g clip-path="url(#naruhodo-frame)">
+    <g class="p-body">
+      <use href="#naruhodo-torso" fill="#F2D8C2"/>
+      <g clip-path="url(#naruhodo-torso-c)">
+        <path d="M236 430 L384 404 L384 468 C366 482 348 494 326 504 C300 512 270 512 236 504 Z" fill="#4a1a2a" opacity="0.3"/>
+        <path d="M386 466 C370 476 356 486 346 500 C340 520 332 544 320 572 C346 564 374 548 406 534 L406 466 Z" fill="#4a1a2a" opacity="0.22"/>
+      </g>
+      <use href="#naruhodo-torso" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+
+      <use href="#naruhodo-shirt" fill="#FFFFFF"/>
+      <g clip-path="url(#naruhodo-shirt-c)">
+        <path d="M372 532 C358 562 336 586 304 598 L304 640 C344 626 376 590 392 552 Z" fill="#4a1a2a" opacity="0.16"/>
+      </g>
+      <use href="#naruhodo-shirt" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#naruhodo-blade" fill="#E8738F"/>
+      <g clip-path="url(#naruhodo-blade-c)">
+        <path d="M310 604 C318 670 326 740 328 820 L350 820 L350 604 Z" fill="#4a1a2a" opacity="0.35"/>
+      </g>
+      <use href="#naruhodo-blade" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+      <use href="#naruhodo-colL" fill="#FFFFFF"/>
+      <g clip-path="url(#naruhodo-colL-c)">
+        <path d="M248 492 C250 524 264 556 300 590 L300 600 L246 600 Z" fill="#4a1a2a" opacity="0.14"/>
+      </g>
+      <use href="#naruhodo-colL" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+      <use href="#naruhodo-colR" fill="#FFFFFF"/>
+      <g clip-path="url(#naruhodo-colR-c)">
+        <path d="M362 492 C362 520 348 556 310 590 L400 590 L400 492 Z" fill="#4a1a2a" opacity="0.18"/>
+      </g>
+      <use href="#naruhodo-colR" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+      <use href="#naruhodo-knot" fill="#E8738F"/>
+      <g clip-path="url(#naruhodo-knot-c)">
+        <path d="M308 576 C320 586 320 600 305 610 L330 610 L330 576 Z" fill="#4a1a2a" opacity="0.35"/>
+      </g>
+      <use href="#naruhodo-knot" fill="none" stroke="#0b0809" stroke-width="4" stroke-linejoin="round"/>
+      <use href="#naruhodo-jacket" fill="#2350B0"/>
+      <g clip-path="url(#naruhodo-jacket-c)">
+        <path d="M450 572 C506 600 540 690 548 820 L600 820 L600 572 Z" fill="#4a1a2a" opacity="0.35"/>
+        <path d="M52 700 C70 640 100 600 140 580 C112 620 92 680 86 760 Z" fill="#ffffff" opacity="0.12"/>
+      </g>
+      <use href="#naruhodo-jacket" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#naruhodo-lapL" fill="#2350B0"/>
+      <g clip-path="url(#naruhodo-lapL-c)">
+        <path d="M184 676 C228 704 262 744 282 780 L290 800 L170 800 Z" fill="#4a1a2a" opacity="0.22"/>
+      </g>
+      <use href="#naruhodo-lapL" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+      <use href="#naruhodo-lapR" fill="#2350B0"/>
+      <g clip-path="url(#naruhodo-lapR-c)">
+        <path d="M390 538 C374 610 350 700 328 780 L450 780 L450 538 Z" fill="#4a1a2a" opacity="0.35"/>
+      </g>
+      <use href="#naruhodo-lapR" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+        <path d="M140 640 C152 690 156 740 152 800 M478 650 C498 700 508 750 510 800" fill="none" stroke="#0b0809" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <g class="p-accent">
+        <path d="M433.0 660.0 Q438.0 666.5 430.1 668.8 Q430.3 677.0 422.6 674.3 Q418.0 681.0 413.4 674.3 Q405.7 677.0 405.9 668.8 Q398.0 666.5 403.0 660.0 Q398.0 653.5 405.9 651.2 Q405.7 643.0 413.4 645.7 Q418.0 639.0 422.6 645.7 Q430.3 643.0 430.1 651.2 Q438.0 653.5 433.0 660.0 Z" fill="#F2C230" stroke="#0b0809" stroke-width="3.5" stroke-linejoin="round"/>
+      </g>
+      <circle cx="418" cy="660" r="8" fill="none" stroke="#8a6a10" stroke-width="2" opacity=".8"/>
+      <path d="M412 658 L424 658 M418 654 L418 665" fill="none" stroke="#8a6a10" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>
+      <path d="M408 651 C412 647 417 646 421 647" fill="none" stroke="#fff6cf" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+  <g class="p-head">
+    <path d="M402 328 C408 312 428 310 434 326 C440 344 432 368 420 382 C414 390 404 390 400 384 Z" fill="#F2D8C2" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M412 334 C421 330 427 341 424 353 C422 363 416 369 410 369 M414 349 C418 349 420 353 418 357" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round"/>
+      <use href="#naruhodo-face" fill="#F2D8C2"/>
+      <g clip-path="url(#naruhodo-face-c)">
+        <path d="M432 300 C420 296 412 276 404 262 C384 232 346 222 304 224 C262 226 230 240 216 262 C210 274 212 288 214 300 L196 300 L196 150 L440 150 Z" fill="#4a1a2a" opacity="0"/>
+        <path d="M406 276 C398 256 380 240 360 236 C374 246 384 262 390 282 Z" fill="#4a1a2a" opacity="0.2"/>
+        <path d="M396 300 C406 340 404 392 384 426 C362 456 330 476 294 494 L420 494 L420 300 Z" fill="#4a1a2a" opacity="0.25"/>
+        <path d="M288 364 L300 392 L291 397 Z" fill="#4a1a2a" opacity="0.25"/>
+      </g>
+      <use href="#naruhodo-face" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+
+    <g class="p-eye">
+      <path class="p-sclera" d="M279.7 332.9 C276.3 317.6 262.7 307.3 248.3 306.5 C233.8 305.6 222.8 314.2 218.5 326.1 C220.2 341.4 231.3 350.8 247.4 351.6 C263.6 352.5 276.3 344.8 279.7 332.9 Z" fill="#f7f3ee"/>
+      <g clip-path="url(#naruhodo-eyeL)">
+        <g class="p-iris">
+          <ellipse cx="250" cy="331" rx="11.5" ry="15" fill="#34405E"/>
+          <path d="M238.5 328.3 A11.5 15 0 0 1 261.5 328.3 C255.8 323.5 244.3 323.5 238.5 328.3 Z" fill="#1a202f" opacity=".6"/>
+          <path d="M241.9 336.3 C245.4 344.5 254.6 344.5 258.1 336.3 C253.4 340 246.6 340 241.9 336.3 Z" fill="#a5b1cf" opacity=".85"/>
+          <ellipse cx="250" cy="332" rx="4.8" ry="7.5" fill="#141018"/>
+          <ellipse cx="250" cy="331" rx="11.5" ry="15" fill="none" stroke="#1a202f" stroke-width="2.5"/>
+          <ellipse cx="245.9" cy="325.3" rx="3.4" ry="4.1" fill="#fff"/>
+          <circle cx="254.8" cy="336.7" r="2.4" fill="#fff"/>
+        </g>
+        <path d="M191 281 H311 V319 C275 309 227 309 191 325 Z" fill="#3a2030" opacity="0.14"/>
+      </g>
+      <path d="M284.8 334.6 C282.3 312.4 266.1 299.7 247.4 298.8 C232.1 298 220.2 305.6 214.3 317.6 L207.4 322.7 L217.7 324.4 C222.8 313.3 232.9 306.5 247.4 306.9 C261.9 307.3 272.9 315.9 278 336.3 Z" fill="#0b0809"/>
+      <path d="M273.8 346.5 C263.6 352.5 250.8 354.2 238.9 352.5 C229.6 350.8 223.6 345.7 220.2 338.9" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M269.5 299.7 C255.9 292.9 238.9 292 223.6 298" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
+    </g>
+    <g class="p-eye">
+      <path class="p-sclera" d="M318 332 C322 314 338 302 355 301 C372 300 385 310 390 324 C388 342 375 353 356 354 C337 355 322 346 318 332 Z" fill="#f7f3ee"/>
+      <g clip-path="url(#naruhodo-eyeR)">
+        <g class="p-iris">
+          <ellipse cx="352" cy="328" rx="13" ry="16" fill="#34405E"/>
+          <path d="M339 325.1 A13 16 0 0 1 365 325.1 C358.5 320 345.5 320 339 325.1 Z" fill="#1a202f" opacity=".6"/>
+          <path d="M342.9 333.6 C346.8 342.4 357.2 342.4 361.1 333.6 C355.9 337.6 348.1 337.6 342.9 333.6 Z" fill="#a5b1cf" opacity=".85"/>
+          <ellipse cx="352" cy="329" rx="5.5" ry="8" fill="#141018"/>
+          <ellipse cx="352" cy="328" rx="13" ry="16" fill="none" stroke="#1a202f" stroke-width="2.5"/>
+          <ellipse cx="347.3" cy="321.9" rx="3.9" ry="4.3" fill="#fff"/>
+          <circle cx="357.5" cy="334.1" r="2.4" fill="#fff"/>
+        </g>
+        <path d="M295 278 H415 V316 C379 306 331 306 295 322 Z" fill="#3a2030" opacity="0.14"/>
+      </g>
+      <path d="M312 334 C315 308 334 293 356 292 C374 291 388 300 395 314 L403 320 L391 322 C385 309 373 301 356 301.5 C339 302 326 312 320 336 Z" fill="#0b0809"/>
+      <path d="M325 348 C337 355 352 357 366 355 C377 353 384 347 388 339" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M330 293 C346 285 366 284 384 291" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
+    </g>
+    <path d="M220 294 L232 286 L240 290 L252 280 L260 282 L274 274 L274 283 L262 290 L252 288 L242 298 L232 294 L222 302 Z M324 282 L338 274 L348 280 L362 272 L372 278 L392 274 L390 284 L372 288 L362 282 L350 290 L338 284 L326 292 Z" fill="#1d1c24"/>
+    <path d="M288 362 C286 373 283 384 281 393 C285 396 290 397 294 396" fill="none" stroke="#0b0809" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M262 436 C276 444 298 446 316 436 C322 432 326 426 328 420 C324 438 308 452 288 452 C276 452 266 446 262 436 Z" fill="#ffffff"/>
+    <path d="M268 442 C284 447 304 446 320 434" fill="none" stroke="#0b0809" stroke-width="1.8" stroke-linecap="round" opacity=".55"/>
+    <path d="M282 440 L281 450 M298 440 L298 450 M312 436 L313 445" fill="none" stroke="#0b0809" stroke-width="1.6" stroke-linecap="round" opacity=".4"/>
+    <path d="M262 436 C276 444 298 446 316 436 C322 432 326 426 328 420 M262 436 C266 446 276 452 288 452 C308 452 324 438 328 420" fill="none" stroke="#0b0809" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M258 432 L264 438 M326 417 L331 422" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+    <path d="M397 268 C405 280 410 290 410 298 C410 306 404 310 398 308 C392 306 390 298 392 290 C393 284 395 276 397 268 Z" fill="#dff1fb" stroke="#0b0809" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M398 284 C397 290 397 296 399 300" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    <g class="p-hair-front">
+      <use href="#naruhodo-hf" fill="#22232d"/>
+      <g clip-path="url(#naruhodo-hf-c)">
+        <path d="M342 120 L432 64 L412 138 L542 112 L462 186 L582 222 L476 254 L566 330 L464 304 L500 392 L436 332 C424 300 414 276 404 262 C392 246 378 236 360 230 C380 200 384 160 342 120 Z" fill="#000" opacity="0.42"/>
+        <path d="M214 300 L146 302 L182 262 L110 222 L174 206 L136 140 L206 160 C204 200 206 240 216 262 C210 274 212 288 214 300 Z" fill="#000" opacity="0.25"/>
+        <path d="M214 214 C236 176 276 156 326 150 L316 162 L302 182 L296 166 L280 174 L272 198 L264 182 L248 192 L240 216 L234 200 L224 212 Z" fill="#50516a"/>
+        <path d="M232 246 C214 222 190 206 160 192 M224 264 C206 254 186 248 160 248 M262 232 C254 196 244 156 232 112 M300 226 C306 182 314 136 320 96 M344 224 C368 186 394 140 422 92 M380 234 C424 210 470 180 520 136 M400 252 C446 244 500 236 552 230 M412 274 C454 286 496 304 536 324" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <use href="#naruhodo-hf" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>

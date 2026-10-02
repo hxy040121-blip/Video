@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+<defs>
+<clipPath id="gilgamesh-frame">
+<rect width="600" height="800"/>
+</clipPath>
+<path id="gilgamesh-torso" d="M252 446 C254 482 252 510 246 532 C204 544 146 552 104 570 C62 594 44 680 38 820 L568 820 C562 680 544 594 502 570 C460 552 404 544 362 532 C356 504 356 472 360 436 Z"/>
+<clipPath id="gilgamesh-torso-c">
+<use href="#gilgamesh-torso"/>
+</clipPath>
+<path id="gilgamesh-top" d="M222 538 C178 550 136 560 104 574 C62 598 44 680 38 820 L568 820 C562 680 544 598 502 574 C470 560 428 550 386 538 C370 584 340 618 304 634 C268 618 238 584 222 538 Z"/>
+<clipPath id="gilgamesh-top-c">
+<use href="#gilgamesh-top"/>
+</clipPath>
+<path id="gilgamesh-jacL" d="M238 526 C200 540 150 552 104 572 C64 594 46 680 38 820 L252 820 C248 760 244 700 236 650 C228 610 222 572 238 526 Z"/>
+<clipPath id="gilgamesh-jacL-c">
+<use href="#gilgamesh-jacL"/>
+</clipPath>
+<path id="gilgamesh-jacR" d="M370 526 C408 540 458 552 504 572 C544 594 562 680 568 820 L356 820 C360 760 364 700 372 650 C380 610 386 572 370 526 Z"/>
+<clipPath id="gilgamesh-jacR-c">
+<use href="#gilgamesh-jacR"/>
+</clipPath>
+<path id="gilgamesh-furL" d="M254 492 Q247.4 502.1 236 498 Q228.8 509 216 506 Q208.8 517 196 514 Q189.4 525.7 176 524 Q171.2 536.2 158 536 Q156.6 548.9 144 552 Q149.3 562.6 140 570 Q151 577.2 148 590 Q161.3 597 162 612 Q176.2 619.8 178 636 Q192.2 643.8 194 660 Q208.2 667.8 210 684 Q224.2 691.8 226 708 Q221.9 696.6 232 690 Q222.6 678.1 228 664 Q218.6 651.1 224 636 Q215.5 621.5 222 606 Q214.5 591 222 576 Q217.7 561.3 228 550 Q226.1 535.1 238 526 Q237.6 512.1 250 506 Z"/>
+<clipPath id="gilgamesh-furL-c">
+<use href="#gilgamesh-furL"/>
+</clipPath>
+<path id="gilgamesh-furR" d="M350 492 Q360.5 495.3 358 506 Q370.4 512.1 370 526 Q381.9 535.1 380 550 Q390.3 561.3 386 576 Q393.5 591 386 606 Q392.5 621.5 384 636 Q389.4 651.1 380 664 Q385.4 678.1 376 690 Q386.1 696.6 382 708 Q383.8 691.8 398 684 Q399.8 667.8 414 660 Q415.8 643.8 430 636 Q431.8 619.8 446 612 Q446.7 597 460 590 Q457 577.2 468 570 Q458.7 562.6 464 552 Q451.4 548.9 450 536 Q436.8 536.2 432 524 Q418.6 525.7 412 514 Q399.2 517 392 506 Q379.2 509 372 498 Z"/>
+<clipPath id="gilgamesh-furR-c">
+<use href="#gilgamesh-furR"/>
+</clipPath>
+<path id="gilgamesh-face" d="M302 172 C360 172 404 212 408 270 C411 300 411 326 408 346 C405 378 398 402 386 422 C366 452 326 478 298 491 C291 494 283 493 277 488 C254 468 228 444 216 414 C206 390 200 366 200 344 C197 306 197 288 201 272 C212 210 250 172 302 172 Z"/>
+<clipPath id="gilgamesh-face-c">
+<use href="#gilgamesh-face"/>
+</clipPath>
+<path id="gilgamesh-hf" d="M204 412 Q205.9 391.8 196 374 Q178.7 369.5 170 354 Q186.1 339.4 190 318 Q172.1 310.6 162 294 Q180.3 283.6 188 264 Q173.6 247.6 170 226 Q191.1 223.3 206 208 Q203.1 189 212 172 Q228 178 244 172 Q251.6 151.6 270 140 Q280 154.9 298 156 Q312.3 129.6 340 118 Q335.5 141.2 352 158 Q370.7 126.8 404 112 Q391 143.6 402 176 Q425.7 153.9 458 152 Q432.2 177.8 428 214 Q452.9 219.5 468 240 Q445.9 247.8 434 268 Q451.9 282.5 460 304 Q446.8 296.1 432 300 Q444.6 316.9 446 338 Q437.1 317.1 420 302Q411.1 316.8 412 334 Q403 302.6 404 270 Q391.5 283.6 390 302 Q380.1 283.2 380 262 Q367.3 282.2 366 306 Q353.2 282.5 350 256 Q335.2 285.3 334 318 Q321.2 290.4 320 260 Q300.8 300.9 297 346 Q285.5 305.8 288 264 Q272.4 287.7 270 316 Q257.2 289.5 256 260 Q241.4 281.9 238 308 Q227.2 290.5 226 270 Q213.2 294.4 212 322 Q219.9 340.2 218 360 Q207.1 385 204 412 Z"/>
+<clipPath id="gilgamesh-hf-c">
+<use href="#gilgamesh-hf"/>
+</clipPath>
+<path id="gilgamesh-hb" d="M392 214 C430 240 452 290 456 340 C460 370 452 400 444 420 L430 404 L424 430 L410 410 L404 432 L398 400 L404 340 Z"/>
+<clipPath id="gilgamesh-hb-c">
+<use href="#gilgamesh-hb"/>
+</clipPath>
+<clipPath id="gilgamesh-eyeL">
+<path d="M276.3 338.9 C269.5 331.2 257.6 326.9 244 326.1 C232.1 325.2 222.8 322.7 216 318.4 C218.5 331.2 228.7 342.3 244 345.7 C257.6 348.2 268.7 345.7 276.3 338.9 Z"/>
+</clipPath>
+<clipPath id="gilgamesh-eyeR">
+<path d="M322 339 C330 330 344 325 360 324 C374 323 385 320 393 315 C390 330 378 343 360 347 C344 350 331 347 322 339 Z"/>
+</clipPath>
+</defs>
+<g clip-path="url(#gilgamesh-frame)">
+<g class="p-hair-back" transform="rotate(-3 300 330)">
+<use href="#gilgamesh-hb" fill="#EBC537"/>
+<g clip-path="url(#gilgamesh-hb-c)">
+<path d="M380 200 H470 V440 H380 Z" fill="#4a1a2a" opacity="0.3"/>
+</g>
+<use href="#gilgamesh-hb" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+</g>
+</g>
+<g clip-path="url(#gilgamesh-frame)">
+<g class="p-body">
+<use href="#gilgamesh-torso" fill="#F4E3D3"/>
+<g clip-path="url(#gilgamesh-torso-c)">
+<path d="M236 430 L384 404 L384 468 C366 482 348 494 326 504 C300 512 270 512 236 504 Z" fill="#4a1a2a" opacity="0.3"/>
+<path d="M384 466 C368 476 354 486 344 500 C338 520 330 544 318 572 C344 564 372 548 404 534 L404 466 Z" fill="#4a1a2a" opacity="0.22"/>
+</g>
+<use href="#gilgamesh-torso" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<path d="M266 588 C250 580 232 576 216 572 M342 588 C358 580 376 576 392 572" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<use href="#gilgamesh-top" fill="#2a2730"/>
+<g clip-path="url(#gilgamesh-top-c)">
+<path d="M386 538 C370 584 340 618 304 634 L304 652 C346 636 380 600 398 552 Z M440 600 C480 640 500 720 506 820 L600 820 L600 600 Z" fill="#000" opacity="0.25"/>
+<path d="M222 538 C238 584 268 618 304 634 L304 642 C266 628 234 594 216 552 Z" fill="#4a4550"/>
+</g>
+<use href="#gilgamesh-top" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<use href="#gilgamesh-jacL" fill="#1d1a1c"/>
+<g clip-path="url(#gilgamesh-jacL-c)">
+<path d="M226 534 C190 546 146 558 110 576 C84 590 66 620 58 660 C86 620 132 596 200 578 C212 566 218 550 226 534 Z" fill="#3d383b"/>
+<path d="M60 700 C56 740 54 780 52 820 L66 820 C68 780 70 740 74 700 Z M226 640 C232 690 236 750 238 820 L246 820 C244 750 240 690 232 640 Z" fill="#3d383b"/>
+<path d="M96 598 C82 614 72 636 66 662 L74 660 C80 638 90 618 104 604 Z M130 584 C150 576 172 570 192 566 L190 572 C170 576 150 582 132 590 Z" fill="#5a5560"/>
+</g>
+<use href="#gilgamesh-jacL" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<path d="M100 640 C92 690 90 750 92 800 M160 640 C170 700 176 760 178 820" fill="none" stroke="#4a4446" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<use href="#gilgamesh-jacR" fill="#1d1a1c"/>
+<g clip-path="url(#gilgamesh-jacR-c)">
+<path d="M392 610 C410 650 420 720 422 820 L436 820 C434 720 424 650 404 600 Z" fill="#3d383b" opacity="0.8"/>
+<path d="M516 600 C536 640 548 700 554 780 L560 780 C556 700 544 640 524 598 Z" fill="#3d383b"/>
+</g>
+<use href="#gilgamesh-jacR" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<path d="M480 630 C500 680 510 740 512 800 M430 650 C446 700 452 760 452 820" fill="none" stroke="#4a4446" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<use href="#gilgamesh-furL" fill="#F3F0E8"/>
+<g clip-path="url(#gilgamesh-furL-c)">
+<path d="M246 520 C232 560 226 610 230 700 L262 700 L262 520 Z" fill="#4a1a2a" opacity="0.16"/>
+<path d="M140 570 C160 600 190 650 226 708 L120 708 L120 570 Z" fill="#4a1a2a" opacity="0.14"/>
+</g>
+<use href="#gilgamesh-furL" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<g clip-path="url(#gilgamesh-furL-c)">
+<path d="M180 540 l-6 8 M160 560 l-4 10 M200 528 l-5 8 M176 580 l-3 9 M196 610 l-2 9 M208 560 l-3 9 M150 580 l-2 9 M214 640 l-1 9 M190 640 l-2 8 M206 676 l-1 8 M226 520 l-4 8" fill="none" stroke="#0b0809" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+</g>
+<use href="#gilgamesh-furR" fill="#F3F0E8"/>
+<g clip-path="url(#gilgamesh-furR-c)">
+<path d="M358 500 C380 540 392 600 380 708 L480 708 L480 500 Z" fill="#4a1a2a" opacity="0.17"/>
+</g>
+<use href="#gilgamesh-furR" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<g clip-path="url(#gilgamesh-furR-c)">
+<path d="M420 540 l6 8 M440 560 l4 10 M400 528 l5 8 M424 580 l3 9 M404 610 l2 9 M392 560 l3 9 M454 580 l2 9 M392 640 l1 9 M414 640 l2 8 M398 676 l1 8 M378 520 l4 8" fill="none" stroke="#0b0809" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+</g>
+</g>
+</g>
+<g class="p-head" transform="rotate(-3 300 330)">
+<path d="M402 328 C408 312 428 310 434 326 C440 344 432 368 420 382 C414 390 404 390 400 384 Z" fill="#F4E3D3" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+<path d="M412 334 C421 330 427 341 424 353 C422 363 416 369 410 369 M414 349 C418 349 420 353 418 357" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<use href="#gilgamesh-face" fill="#F4E3D3"/>
+<g clip-path="url(#gilgamesh-face-c)">
+<path d="M427 150 L427 316 L419 348 L411 284 L397 316 L387 276 L373 320 L357 270 L341 332 L327 274 L304 360 L295 278 L277 330 L263 274 L245 322 L233 284 L219 336 L219 150 Z" fill="#4a1a2a" opacity="0.25"/>
+<path d="M396 300 C406 340 404 392 384 426 C362 456 330 476 294 494 L420 494 L420 300 Z" fill="#4a1a2a" opacity="0.25"/>
+<path d="M288 364 L300 392 L291 397 Z" fill="#4a1a2a" opacity="0.25"/>
+</g>
+<use href="#gilgamesh-face" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<g class="p-eye">
+<path class="p-sclera" d="M276.3 338.9 C269.5 331.2 257.6 326.9 244 326.1 C232.1 325.2 222.8 322.7 216 318.4 C218.5 331.2 228.7 342.3 244 345.7 C257.6 348.2 268.7 345.7 276.3 338.9 Z" fill="#fbf7f4"/>
+<g clip-path="url(#gilgamesh-eyeL)">
+<g class="p-iris">
+<ellipse cx="251" cy="336" rx="13.5" ry="18" fill="#C3141F"/>
+<path d="M237.5 332.8 A13.5 18 0 0 1 264.5 332.8 C257.8 327 244.3 327 237.5 332.8 Z" fill="#5e0a10" opacity="0.6"/>
+<path d="M241.6 342.3 C245.6 352.2 256.4 352.2 260.5 342.3 C255.1 346.8 247 346.8 241.6 342.3 Z" fill="#ff7a5c" opacity="0.85"/>
+<path class="p-accent" fill-rule="evenodd" fill="#D4AF37" d="M242.1 337.0 A8.9 11.6 0 1 0 259.9 337.0 A8.9 11.6 0 1 0 242.1 337.0 Z M243.8 337.0 A7.3 9.9 0 1 1 258.3 337.0 A7.3 9.9 0 1 1 243.8 337.0 Z"/>
+<path d="M251 324.84 C254.2 332.4 254.2 341.4 251 347.88 C247.8 341.4 247.8 332.4 251 324.84 Z" fill="#1a0508"/>
+<ellipse cx="251" cy="336" rx="13.5" ry="18" fill="none" stroke="#5e0a10" stroke-width="2.5"/>
+<ellipse cx="246.1" cy="329.2" rx="2.9" ry="3.5" fill="#fff"/>
+<circle cx="256.7" cy="342.8" r="1.8" fill="#fff"/>
+</g>
+<path d="M191 286 H311 V324 C275 314 227 314 191 330 Z" fill="#3a2030" opacity="0.3"/>
+</g>
+<path d="M282.3 341.4 C276.3 329.5 261 321 244 320.1 C230.4 319.3 219.4 315 204.9 307.3 L210.9 317.6 C217.7 322.7 228.7 326.9 244 328.2 C257.6 329.1 267.8 333.7 275.5 342.3 Z" fill="#0b0809"/>
+<path d="M264.4 345.7 C254.2 348.2 240.6 347.4 231.3 343.1 C224.5 339.7 219.4 333.7 216.8 327.8" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M262.7 315 C249.1 311.6 233.8 309.9 218.5 307.3" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+</g>
+<g class="p-eye">
+<path class="p-sclera" d="M322 339 C330 330 344 325 360 324 C374 323 385 320 393 315 C390 330 378 343 360 347 C344 350 331 347 322 339 Z" fill="#fbf7f4"/>
+<g clip-path="url(#gilgamesh-eyeR)">
+<g class="p-iris">
+<ellipse cx="355" cy="336" rx="15" ry="19" fill="#C3141F"/>
+<path d="M340 332.6 A15 19 0 0 1 370 332.6 C362.5 326.5 347.5 326.5 340 332.6 Z" fill="#5e0a10" opacity="0.6"/>
+<path d="M344.5 342.7 C349 353.1 361 353.1 365.5 342.7 C359.5 347.4 350.5 347.4 344.5 342.7 Z" fill="#ff7a5c" opacity="0.85"/>
+<path class="p-accent" fill-rule="evenodd" fill="#D4AF37" d="M345.1 337.0 A9.8 12.3 0 1 0 364.9 337.0 A9.8 12.3 0 1 0 345.1 337.0 Z M346.9 337.0 A8.2 10.6 0 1 1 363.1 337.0 A8.2 10.6 0 1 1 346.9 337.0 Z"/>
+<path d="M355 324.22 C358.2 332.2 358.2 341.7 355 348.54 C351.8 341.7 351.8 332.2 355 324.22 Z" fill="#1a0508"/>
+<ellipse cx="355" cy="336" rx="15" ry="19" fill="none" stroke="#5e0a10" stroke-width="2.5"/>
+<ellipse cx="349.6" cy="328.8" rx="3.2" ry="3.7" fill="#fff"/>
+<circle cx="361.3" cy="343.2" r="1.8" fill="#fff"/>
+</g>
+<path d="M295 286 H415 V324 C379 314 331 314 295 330 Z" fill="#3a2030" opacity="0.3"/>
+</g>
+<path d="M315 342 C322 328 340 318 360 317 C376 316 389 311 406 302 L399 314 C391 320 378 325 360 326.5 C344 327.5 332 333 323 343 Z" fill="#0b0809"/>
+<path d="M336 347 C348 350 364 349 375 344 C383 340 389 333 392 326" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M338 311 C354 307 372 305 390 302" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+</g>
+<path d="M226 297 C240 293 256 292 272 294 L271 298 C256 297 241 298 227 302 Z" fill="#9c7a24"/>
+<path d="M328 291 C344 283 368 279 392 283 L390 288 C368 285 346 288 330 296 Z" fill="#9c7a24"/>
+<path d="M288 362 C286 373 283 384 281 393 C285 396 290 397 294 396" fill="none" stroke="#0b0809" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M268 439 C280 439 292 438 302 436 C308 435 313 431 317 425" fill="none" stroke="#0b0809" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M316 422 C318 425 319 428 318 432" fill="none" stroke="#0b0809" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+<path d="M280 449 C286 450 292 450 298 448" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+<g class="p-hair-front">
+<use href="#gilgamesh-hf" fill="#EBC537"/>
+<g clip-path="url(#gilgamesh-hf-c)">
+<path d="M340 118 L352 158 L402 176 L428 214 L434 268 L432 300 L446 338 L420 302 L404 270 L380 262 L366 306 L392 300 L420 330 L500 330 L500 100 Z" fill="#4a1a2a" opacity="0.3"/>
+<path d="M226 270 L212 322 L218 360 L204 412 L196 400 L206 360 L200 324 L214 280 Z" fill="#4a1a2a" opacity="0.3"/>
+<path d="M180 250 C202 204 246 172 302 164 L298 176 L288 200 L280 178 L262 186 L254 212 L248 190 L230 202 L222 228 L216 208 L198 226 L192 252 Z" fill="#FAEDB5"/>
+</g>
+<use href="#gilgamesh-hf" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+<g clip-path="url(#gilgamesh-hf-c)">
+<path d="M404 270 C396 238 380 214 356 196 M380 262 C376 236 366 216 350 202 M350 256 C348 228 340 208 326 192 M320 260 C322 230 330 204 344 184 M288 264 C290 236 300 214 316 198 M256 260 C262 232 276 210 294 196 M226 270 C230 246 242 226 258 212 M188 320 C196 298 206 282 220 272 M186 264 C198 246 212 234 228 228" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+</g>
+</svg>

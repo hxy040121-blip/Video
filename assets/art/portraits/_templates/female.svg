@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+  <!-- female base template (see ../_STYLE.md). Bald on purpose: hair goes in p-hair-back / p-hair-front. -->
+  <defs>
+    <clipPath id="tf-frame"><rect width="600" height="800"/></clipPath>
+    <clipPath id="tf-eyeL"><path d="M282 336.1 C278.5 321.1 266.4 309.3 250.9 307.7 C235.3 306 223.2 314.4 218 326.1 C219.7 339.5 230.1 349.5 247.4 351.2 C264.7 352 276.8 346.1 282 336.1 Z"/></clipPath>
+    <clipPath id="tf-eyeR"><path d="M318 336 C322 318 336 304 354 302 C372 300 386 310 392 324 C390 340 378 352 358 354 C338 355 324 348 318 336 Z"/></clipPath>
+    <path id="tf-face" d="M302 178 C358 178 400 216 404 272 C407 300 406 326 403 346 C398 376 388 400 372 420 C350 448 320 464 296 470 C288 472 280 471 274 467 C252 452 230 432 218 408 C208 386 203 364 202 344 C200 306 200 290 204 274 C214 214 250 178 302 178 Z"/>
+    <clipPath id="tf-face-c"><use href="#tf-face"/></clipPath>
+    <path id="tf-torso" d="M262 440 C264 480 262 514 258 538 C222 558 164 572 124 590 C88 608 70 668 64 820 L542 820 C536 668 518 608 482 592 C442 572 386 558 352 538 C346 508 346 470 350 432 Z"/>
+    <clipPath id="tf-torso-c"><use href="#tf-torso"/></clipPath>
+    <path id="tf-top" d="M226 556 C192 570 150 582 124 592 C88 610 70 668 64 820 L542 820 C536 668 518 610 482 592 C456 582 414 570 382 556 C368 590 340 610 304 612 C268 610 240 590 226 556 Z"/>
+    <clipPath id="tf-top-c"><use href="#tf-top"/></clipPath>
+  </defs>
+  <g clip-path="url(#tf-frame)"><g class="p-hair-back"></g></g>
+  <g clip-path="url(#tf-frame)"><g class="p-body">
+    <use href="#tf-torso" fill="#F7E0D2"/>
+    <g clip-path="url(#tf-torso-c)">
+      <path d="M250 430 L366 416 L366 470 C340 488 300 496 250 490 Z" fill="#4a1a2a" opacity=".3"/>
+      <path d="M356 470 C346 498 336 530 324 562 C344 558 364 550 384 542 L384 470 Z" fill="#4a1a2a" opacity=".22"/>
+    </g>
+    <use href="#tf-torso" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M276 588 C258 582 240 578 222 578 M334 588 C352 582 370 578 388 578" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round"/>
+    <use href="#tf-top" fill="#5b5f6b" class="p-accent"/>
+    <g clip-path="url(#tf-top-c)">
+      <path d="M440 580 C490 610 520 690 530 820 L600 820 L600 580 Z" fill="#4a1a2a" opacity=".35"/>
+      <path d="M226 556 C240 590 268 610 304 612 C340 610 368 590 382 556 L388 570 C372 606 342 628 304 630 C266 628 236 606 220 570 Z" fill="#4a1a2a" opacity=".3"/>
+    </g>
+    <use href="#tf-top" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M232 566 C248 596 274 616 304 618 C334 616 360 596 376 566" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round"/>
+  </g></g>
+  <g class="p-head">
+    <path d="M398 332 C404 318 422 316 428 330 C433 346 426 366 416 378 C411 385 402 385 398 380 Z" fill="#F7E0D2" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M407 338 C415 335 420 344 418 354 C416 362 411 367 406 367 M409 351 C412 351 414 354 412 357" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round"/>
+    <use href="#tf-face" fill="#F7E0D2"/>
+    <g clip-path="url(#tf-face-c)">
+      <path d="M392 300 C402 344 396 388 374 420 C352 448 324 464 292 474 L420 474 L420 300 Z" fill="#4a1a2a" opacity=".25"/>
+      <path d="M287 368 L297 389 L289 393 Z" fill="#4a1a2a" opacity=".25"/>
+    </g>
+    <use href="#tf-face" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    
+    <g class="p-eye">
+      <path class="p-sclera" d="M282 336.1 C278.5 321.1 266.4 309.3 250.9 307.7 C235.3 306 223.2 314.4 218 326.1 C219.7 339.5 230.1 349.5 247.4 351.2 C264.7 352 276.8 346.1 282 336.1 Z" fill="#fbf7f4"/>
+      <g clip-path="url(#tf-eyeL)">
+        <g class="p-iris">
+          <ellipse cx="251" cy="332" rx="15" ry="19" fill="#8a6a9a"/>
+          <path d="M236 328.58 A15 19 0 0 1 266 328.58 C258.5 322.5 243.5 322.5 236 328.58 Z" fill="#4a2e5e" opacity=".6"/>
+          <path d="M240.5 338.65 C245 349.1 257 349.1 261.5 338.65 C255.5 343.4 246.5 343.4 240.5 338.65 Z" fill="#e2d0ee" opacity=".85"/>
+          <ellipse cx="251" cy="333" rx="6.3" ry="9.5" fill="#141018"/>
+          <ellipse cx="251" cy="332" rx="15" ry="19" fill="none" stroke="#4a2e5e" stroke-width="2.5"/>
+          <ellipse cx="245.6" cy="324.8" rx="4.5" ry="5.1" fill="#fff"/>
+          <circle cx="257.3" cy="339.2" r="2.4" fill="#fff"/>
+        </g>
+        <path d="M191 282 H311 V320 C275 310 227 310 191 326 Z" fill="#3a2030" opacity=".16"/>
+      </g>
+      <path d="M288.1 338.6 C285.5 316 268.2 299.3 248.3 297.6 C233.6 296.8 222.3 301.8 214.5 309.3 L209.4 301 L210.2 312.7 L203.3 311 L211.9 322.7 C212.8 326.9 213.7 331.1 214.5 334.4 C221.5 319.4 233.6 309.3 248.3 309.3 C264.7 310.2 276.8 321.1 282 340.3 Z" fill="#0b0809"/>
+      <path d="M275.1 347.8 C264.7 352.8 252.6 354.5 240.5 352.8 C230.1 351.2 223.2 344.5 219.7 337.8" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M271.6 301 C259.5 294.3 240.5 292.6 224.9 297.6" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+    </g>
+    
+    <g class="p-eye">
+      <path class="p-sclera" d="M318 336 C322 318 336 304 354 302 C372 300 386 310 392 324 C390 340 378 352 358 354 C338 355 324 348 318 336 Z" fill="#fbf7f4"/>
+      <g clip-path="url(#tf-eyeR)">
+        <g class="p-iris">
+          <ellipse cx="355" cy="330" rx="17" ry="21" fill="#8a6a9a"/>
+          <path d="M338 326.22 A17 21 0 0 1 372 326.22 C363.5 319.5 346.5 319.5 338 326.22 Z" fill="#4a2e5e" opacity=".6"/>
+          <path d="M343.1 337.35 C348.2 348.9 361.8 348.9 366.9 337.35 C360.1 342.6 349.9 342.6 343.1 337.35 Z" fill="#e2d0ee" opacity=".85"/>
+          <ellipse cx="355" cy="331" rx="7.1" ry="10.5" fill="#141018"/>
+          <ellipse cx="355" cy="330" rx="17" ry="21" fill="none" stroke="#4a2e5e" stroke-width="2.5"/>
+          <ellipse cx="348.9" cy="322.0" rx="5.1" ry="5.7" fill="#fff"/>
+          <circle cx="362.1" cy="338.0" r="2.4" fill="#fff"/>
+        </g>
+        <path d="M295 280 H415 V318 C379 308 331 308 295 324 Z" fill="#3a2030" opacity=".16"/>
+      </g>
+      <path d="M311 339 C314 312 334 292 357 290 C374 289 387 295 396 304 L402 294 L401 308 L409 306 L399 320 C398 325 397 330 396 334 C388 316 374 304 357 304 C338 305 324 318 318 341 Z" fill="#0b0809"/>
+      <path d="M326 350 C338 356 352 358 366 356 C378 354 386 346 390 338" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M330 294 C344 286 366 284 384 290" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+    </g>
+    <path d="M224 298 C238 290 256 288 272 292 L271 296 C256 293 240 294 226 302 Z M330 282 C344 272 364 270 386 278 L384 282 C364 275 346 277 332 286 Z" fill="#3a2a26"/>
+    <path d="M288 374 C286 381 284 387 283 391 C287 393 291 394 294 393" fill="none" stroke="#0b0809" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M276 427 C284 428 294 428 304 425" fill="none" stroke="#0b0809" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M282 437 C288 439 294 439 299 437" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+    <g class="p-hair-front"></g>
+  </g>
+</svg>

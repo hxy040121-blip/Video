@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+  <defs>
+    <clipPath id="sherlock-frame"><rect width="600" height="800"/></clipPath>
+    <path id="sherlock-hb" d="M196 300 C190 340 196 372 206 392 L392 392 C420 380 440 350 444 300 Z"/>
+    <clipPath id="sherlock-hb-c"><use href="#sherlock-hb"/></clipPath>
+    <path id="sherlock-torso" d="M256 446 C258 482 256 508 250 528 C210 542 162 554 126 574 C88 598 68 680 62 820 L544 820 C538 680 518 598 480 574 C444 554 398 542 358 528 C352 504 352 472 356 436 Z"/>
+    <clipPath id="sherlock-torso-c"><use href="#sherlock-torso"/></clipPath>
+    <path id="sherlock-vest" d="M232 548 C200 560 160 572 130 586 C92 610 72 680 66 820 L540 820 C534 680 514 610 476 586 C446 572 406 560 376 548 C364 600 340 650 304 690 C268 650 244 600 232 548 Z"/>
+    <clipPath id="sherlock-vest-c"><use href="#sherlock-vest"/></clipPath>
+    <path id="sherlock-cravat" d="M276 532 C292 526 316 526 332 532 C350 562 346 600 330 628 C320 640 288 640 278 628 C262 600 258 562 276 532 Z"/>
+    <clipPath id="sherlock-cravat-c"><use href="#sherlock-cravat"/></clipPath>
+    <path id="sherlock-knot" d="M288 524 C298 518 314 518 322 524 C326 538 320 550 305 554 C292 550 284 538 288 524 Z"/>
+    <clipPath id="sherlock-knot-c"><use href="#sherlock-knot"/></clipPath>
+    <path id="sherlock-collar" d="M246 470 C264 492 284 504 300 512 L304 548 C286 546 262 540 242 530 Z M362 462 C350 484 330 500 310 512 L306 548 C326 546 350 540 368 528 Z"/>
+    <clipPath id="sherlock-collar-c"><use href="#sherlock-collar"/></clipPath>
+    <path id="sherlock-coat" d="M226 546 C192 556 152 568 126 580 C88 604 68 680 62 820 L262 820 C256 760 246 700 238 640 Z M382 546 C416 556 456 568 482 580 C520 604 540 680 546 820 L346 820 C352 760 362 700 370 640 Z"/>
+    <clipPath id="sherlock-coat-c"><use href="#sherlock-coat"/></clipPath>
+    <path id="sherlock-lapL" d="M228 544 C232 610 246 700 262 800 C246 760 224 724 190 690 L176 632 L196 624 L188 590 C196 570 210 552 228 544 Z"/>
+    <clipPath id="sherlock-lapL-c"><use href="#sherlock-lapL"/></clipPath>
+    <path id="sherlock-lapR" d="M380 544 C376 610 362 700 346 800 C362 760 384 724 418 690 L432 632 L412 624 L420 590 C412 570 398 552 380 544 Z"/>
+    <clipPath id="sherlock-lapR-c"><use href="#sherlock-lapR"/></clipPath>
+    <path id="sherlock-face" d="M302 172 C360 172 404 212 408 270 C411 300 410 326 406 348 C402 374 396 396 388 414 C372 444 340 470 312 488 C304 494 298 498 290 499 C282 500 274 498 270 494 C252 474 230 448 218 418 C208 394 202 370 201 346 C197 306 197 288 201 272 C212 210 250 172 302 172 Z"/>
+    <clipPath id="sherlock-face-c"><use href="#sherlock-face"/></clipPath>
+    <path id="sherlock-hf" d="M206 336 C192 300 188 262 192 228 C198 178 236 136 292 124 C350 112 410 134 440 180 C458 208 462 248 456 286 C452 310 446 330 440 346 L432 320 C424 314 418 314 416 318 L412 348 C412 300 408 286 402 274 C394 252 380 236 356 226 C340 220 324 220 314 222 C310 226 307 230 304 234 C300 228 296 224 290 222 C270 222 252 232 238 246 C226 258 218 274 214 292 C212 306 210 320 206 336 Z"/>
+    <clipPath id="sherlock-hf-c"><use href="#sherlock-hf"/></clipPath>
+    <path id="sherlock-stem" d="M300 436 C330 444 360 452 392 462 L389 472 C358 463 328 455 298 447 Z"/>
+    <clipPath id="sherlock-stem-c"><use href="#sherlock-stem"/></clipPath>
+    <path id="sherlock-bowl" d="M384 432 C394 428 412 428 420 432 C422 448 418 468 410 476 C402 480 392 478 388 470 C384 458 382 444 384 432 Z"/>
+    <clipPath id="sherlock-bowl-c"><use href="#sherlock-bowl"/></clipPath>
+    <clipPath id="sherlock-eyeR"><path d="M320 338 C330 330 344 322 360 318 C374 315 386 318 392 326 C388 340 376 348 358 350 C340 351 327 346 320 338 Z"/></clipPath>
+    <clipPath id="sherlock-eyeL"><path d="M278 338.8 C269.5 334.5 257.6 330.3 244 328.2 C232.1 326.6 221.9 328.2 216.8 332.4 C220.2 339.8 230.4 346.5 245.7 348.2 C261 349.1 272.1 344.8 278 338.8 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#sherlock-frame)">
+    <g class="p-hair-back">
+      <use href="#sherlock-hb" fill="#2b2725"/>
+      <g clip-path="url(#sherlock-hb-c)">
+        <path d="M0 0H600V820H0Z" fill="#000" opacity="0.45"/>
+      </g>
+      <use href="#sherlock-hb" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <g clip-path="url(#sherlock-frame)">
+    <g class="p-body">
+      <use href="#sherlock-torso" fill="#EBD9C7"/>
+      <g clip-path="url(#sherlock-torso-c)">
+        <path d="M236 430 L384 404 L384 468 C366 482 348 494 326 504 C300 512 270 512 236 504 Z" fill="#4a1a2a" opacity="0.3"/>
+      </g>
+      <use href="#sherlock-torso" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#sherlock-vest" fill="#4A3B2E"/>
+      <g clip-path="url(#sherlock-vest-c)">
+        <path d="M376 548 C364 600 340 650 304 690 L304 720 C350 680 380 620 396 556 Z" fill="#4a1a2a" opacity="0.35"/>
+        <path d="M440 580 C490 610 520 690 530 820 L600 820 L600 580 Z" fill="#4a1a2a" opacity="0.35"/>
+      </g>
+      <use href="#sherlock-vest" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M304 700 L304 820" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+      <circle cx="304" cy="726" r="4.5" fill="#c9a24a" stroke="#0b0809" stroke-width="2"/>
+      <circle cx="304" cy="770" r="4.5" fill="#c9a24a" stroke="#0b0809" stroke-width="2"/>
+      <use href="#sherlock-cravat" fill="#2F6B5A" class="p-accent"/>
+      <g clip-path="url(#sherlock-cravat-c)">
+        <path d="M306 528 C324 560 328 604 318 640 L350 640 L350 528 Z" fill="#4a1a2a" opacity="0.35"/>
+      </g>
+      <use href="#sherlock-cravat" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+        <path d="M292 560 C296 590 300 610 304 630 M316 560 C314 586 312 606 310 626" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+      <circle cx="304" cy="586" r="4" fill="#e8e2d0" stroke="#0b0809" stroke-width="2"/>
+      <use href="#sherlock-knot" fill="#2F6B5A"/>
+      <g clip-path="url(#sherlock-knot-c)">
+        <path d="M308 518 C322 528 322 544 305 556 L330 556 L330 518 Z" fill="#4a1a2a" opacity="0.35"/>
+      </g>
+      <use href="#sherlock-knot" fill="none" stroke="#0b0809" stroke-width="4" stroke-linejoin="round"/>
+      <use href="#sherlock-collar" fill="#F2EEE3"/>
+      <g clip-path="url(#sherlock-collar-c)">
+        <path d="M310 512 L306 548 C326 546 350 540 368 528 L366 500 Z" fill="#4a1a2a" opacity="0.18"/>
+        <path d="M246 470 C264 492 284 504 300 512 L300 520 C278 512 258 500 244 486 Z" fill="#4a1a2a" opacity="0.12"/>
+      </g>
+      <use href="#sherlock-collar" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+      <use href="#sherlock-coat" fill="#2B2C31"/>
+      <g clip-path="url(#sherlock-coat-c)">
+        <path d="M80 700 C96 650 120 616 150 598 C128 636 114 690 108 760 Z" fill="#43444b"/>
+        <path d="M470 590 C512 620 532 700 538 820 L600 820 L600 590 Z" fill="#000" opacity="0.25"/>
+      </g>
+      <use href="#sherlock-coat" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#sherlock-lapL" fill="#2B2C31"/>
+      <g clip-path="url(#sherlock-lapL-c)">
+        <path d="M188 590 C200 570 212 556 228 548 C230 600 238 660 250 720 C232 680 214 640 200 600 Z" fill="#43444b"/>
+      </g>
+      <use href="#sherlock-lapL" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+      <use href="#sherlock-lapR" fill="#2B2C31"/>
+      <use href="#sherlock-lapR" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+        <path d="M150 660 C160 710 164 760 162 810 M486 740 C496 770 500 790 500 810" fill="none" stroke="#55565e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <g transform="rotate(-24 516 692)">
+        <path d="M504 738 L528 738 L532 842 L500 842 Z" fill="#5a3b26" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+        <path d="M510 748 L513 842" fill="none" stroke="#8a5d3c" stroke-width="3" stroke-linecap="round"/>
+        <path d="M500 730 L532 730 L530 746 L502 746 Z" fill="#c9a24a" stroke="#0b0809" stroke-width="4" stroke-linejoin="round"/>
+      </g>
+      <circle cx="516" cy="692" r="47" fill="#c9a24a" stroke="#0b0809" stroke-width="5"/>
+      <circle cx="516" cy="692" r="37" fill="#9fc0c8" stroke="#8a6a20" stroke-width="2.5"/>
+      <path d="M482 718 C504 710 526 708 546 712" fill="none" stroke="#6f8f98" stroke-width="5" stroke-linecap="round"/>
+      <path d="M490 680 C492 666 504 656 518 654" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      <path d="M536 702 C542 696 546 688 546 680" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+      <path d="M493 708 C500 720 512 726 526 726" fill="none" stroke="#e6c76a" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+    </g>
+  </g>
+  <g class="p-head">
+    <path d="M402 328 C408 312 428 310 434 326 C440 344 432 368 420 382 C414 390 404 390 400 384 Z" fill="#EBD9C7" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M412 334 C421 330 427 341 424 353 C422 363 416 369 410 369 M414 349 C418 349 420 353 418 357" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round"/>
+      <use href="#sherlock-face" fill="#EBD9C7"/>
+      <g clip-path="url(#sherlock-face-c)">
+        <path d="M396 300 C404 336 402 372 392 398 C380 404 368 412 362 426 C352 450 330 470 300 500 L420 500 L420 300 Z" fill="#4a1a2a" opacity="0.25"/>
+        <path d="M214 372 C222 396 236 418 254 432 C244 414 238 396 236 376 Z" fill="#4a1a2a" opacity="0.14"/>
+        <path d="M292 340 C298 358 302 378 300 394 L296 402 L288 400 C294 390 298 378 296 364 Z" fill="#4a1a2a" opacity="0.3"/>
+        <path d="M412 348 L416 318 C418 314 424 314 432 320 L440 346 L452 360 L452 200 L200 200 L200 340 L214 342 C218 318 222 300 228 288 C240 262 262 246 290 236 L304 246 L318 236 C350 240 380 258 398 290 Z" fill="#4a1a2a" opacity="0.25"/>
+        <path d="M318 316 C334 302 372 298 396 308 C372 304 342 308 322 324 Z M214 314 C230 304 258 304 278 314 C258 310 236 312 218 322 Z" fill="#4a1a2a" opacity="0.24"/>
+        <path d="M322 352 C336 362 366 364 388 346 C382 362 366 372 350 372 C336 372 326 364 322 352 Z M222 350 C232 360 256 362 272 348 C268 362 256 370 244 370 C232 370 224 362 222 350 Z" fill="#4b3a5a" opacity="0.15"/>
+      </g>
+      <use href="#sherlock-face" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+
+    <g class="p-eye">
+      <path class="p-sclera" d="M278 338.8 C269.5 334.5 257.6 330.3 244 328.2 C232.1 326.6 221.9 328.2 216.8 332.4 C220.2 339.8 230.4 346.5 245.7 348.2 C261 349.1 272.1 344.8 278 338.8 Z" fill="#f7f3ee"/>
+      <g clip-path="url(#sherlock-eyeL)">
+        <g class="p-iris">
+          <ellipse cx="251" cy="335" rx="13.5" ry="18" fill="#8E979E"/>
+          <path d="M237.5 331.8 A13.5 18 0 0 1 264.5 331.8 C257.8 326 244.3 326 237.5 331.8 Z" fill="#3a4044" opacity=".6"/>
+          <path d="M241.6 341.3 C245.6 351.2 256.4 351.2 260.4 341.3 C255.1 345.8 246.9 345.8 241.6 341.3 Z" fill="#d4d7da" opacity=".85"/>
+          <ellipse cx="251" cy="336" rx="4.2" ry="6.2" fill="#141018"/>
+          <ellipse cx="251" cy="335" rx="13.5" ry="18" fill="none" stroke="#3a4044" stroke-width="2.5"/>
+          <ellipse cx="246.1" cy="328.2" rx="4" ry="4.9" fill="#fff"/>
+          <circle cx="256.7" cy="341.8" r="2.4" fill="#fff"/>
+        </g>
+        <path d="M191 285 H311 V331 C275 321 227 321 191 337 Z" fill="#3a2030" opacity="0.3"/>
+      </g>
+      <path d="M283.9 339.8 C274.6 330.8 261 324.1 244 321.8 C228.7 319.5 215.9 323 210.9 328.6 L204.1 331.4 L215.9 334.2 C221.9 328.6 232.1 326.3 244 327.7 C257.6 329.7 269.5 334.2 277.1 341.4 Z" fill="#0b0809"/>
+      <path d="M272.1 344 C261.9 348.2 250.8 349.1 238.9 347.4 C230.4 345.7 224.4 342.3 221.1 337.2" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M268 311 C256 305 240 304 226 309" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
+    </g>
+    <g class="p-eye">
+      <path class="p-sclera" d="M320 338 C330 330 344 322 360 318 C374 315 386 318 392 326 C388 340 376 348 358 350 C340 351 327 346 320 338 Z" fill="#f7f3ee"/>
+      <g clip-path="url(#sherlock-eyeR)">
+        <g class="p-iris">
+          <ellipse cx="355" cy="331" rx="15" ry="19" fill="#8E979E"/>
+          <path d="M340 327.6 A15 19 0 0 1 370 327.6 C362.5 321.5 347.5 321.5 340 327.6 Z" fill="#3a4044" opacity=".6"/>
+          <path d="M344.5 337.6 C349 348.1 361 348.1 365.5 337.6 C359.5 342.4 350.5 342.4 344.5 337.6 Z" fill="#d4d7da" opacity=".85"/>
+          <ellipse cx="355" cy="332" rx="4.6" ry="6.6" fill="#141018"/>
+          <ellipse cx="355" cy="331" rx="15" ry="19" fill="none" stroke="#3a4044" stroke-width="2.5"/>
+          <ellipse cx="349.6" cy="323.8" rx="4.5" ry="5.1" fill="#fff"/>
+          <circle cx="361.3" cy="338.2" r="2.4" fill="#fff"/>
+        </g>
+        <path d="M295 281 H415 V324 C379 314 331 314 295 330 Z" fill="#3a2030" opacity="0.26"/>
+      </g>
+      <path d="M313 340 C324 324 340 312 360 308 C378 304 393 310 399 320 L407 325 L393 330 C386 320 374 316 360 318.5 C344 322 330 330 321 342 Z" fill="#0b0809"/>
+      <path d="M327 345 C339 350 352 351 366 349 C376 347 383 343 387 337" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M336 304 C350 297 370 295 388 301" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
+    </g>
+    <path d="M218 296 C236 294 258 298 278 308 L275 314 C256 305 238 302 220 303 Z M326 306 C344 296 368 290 396 290 L395 297 C370 298 348 303 330 313 Z" fill="#2a2422"/>
+    <path d="M291 334 C294 350 297 364 296 376 C294 388 286 396 276 400 C280 405 290 406 298 401" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M276 438 C286 439 296 439 304 437" fill="none" stroke="#0b0809" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M272 434 C274 436 275 437 276 438" fill="none" stroke="#0b0809" stroke-width="1.8" stroke-linecap="round" opacity=".6"/>
+    <path d="M282 449 C288 450 294 450 300 448" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+    <path d="M276 476 C282 480 292 480 298 476" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" opacity=".45"/>
+    <path d="M306 404 C314 414 318 424 318 434 M262 404 C258 414 258 424 262 432" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+    <path d="M300 298 C301 304 301 310 299 316" fill="none" stroke="#0b0809" stroke-width="1.8" stroke-linecap="round" opacity=".5"/>
+      <use href="#sherlock-stem" fill="#1d1a1c"/>
+      <g clip-path="url(#sherlock-stem-c)">
+        <path d="M300 436 C330 444 360 452 392 462 L392 456 C360 446 330 438 300 430 Z" fill="#4a4446"/>
+      </g>
+      <use href="#sherlock-stem" fill="none" stroke="#0b0809" stroke-width="4" stroke-linejoin="round"/>
+      <use href="#sherlock-bowl" fill="#1d1a1c"/>
+      <g clip-path="url(#sherlock-bowl-c)">
+        <path d="M384 432 C388 450 390 466 396 476 L384 476 Z" fill="#4a4446"/>
+        <path d="M386 432 C396 437 410 437 420 432 C410 428 394 428 386 432 Z" fill="#000" opacity="0.6"/>
+      </g>
+      <use href="#sherlock-bowl" fill="none" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+
+    <g class="p-hair-front">
+      <use href="#sherlock-hf" fill="#2b2725"/>
+      <g clip-path="url(#sherlock-hf-c)">
+        <path d="M356 226 C384 240 404 270 412 300 L412 348 L416 318 C418 314 424 314 432 320 L440 346 L470 346 L470 120 L400 120 C430 160 440 200 420 240 C404 232 382 226 356 226 Z" fill="#000" opacity="0.42"/>
+        <path d="M204 236 C214 186 252 146 312 136 C350 130 392 140 420 160 C390 154 352 152 316 160 C276 168 240 196 220 236 L216 220 L210 240 Z" fill="#5f5955"/>
+        <path d="M304 234 C330 196 376 176 428 176 M330 222 C362 202 404 194 444 204 M276 226 C296 188 334 166 384 158 M248 240 C262 204 290 178 330 164 M360 228 C392 222 424 226 450 240 M226 262 C228 230 244 204 268 184" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <use href="#sherlock-hf" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+  <defs>
+    <clipPath id="muzan-frame"><rect width="600" height="800"/></clipPath>
+    <path id="muzan-hf" d="M166,412Q185.7 399.4 184 376 Q162.8 358.8 168 332 Q157 307.9 172 286 Q165.4 259.7 184 240 Q185.3 212.4 210 200 Q219 174.2 246 170 Q263.1 149 290 152 Q313.5 138 338 150 Q362.9 142.3 382 160 Q407.6 162.5 418 186 Q442.7 198.5 446 226 Q466.3 245.9 462 274 Q476 298 466 324 Q472.7 350.4 456 372 Q475.7 386 478 410 Q456 424 432 418 C424 402 426 380 430 352 C420 340 414 334 410 324 C410 304 408 284 402 264 C392 238 368 220 338 214 C334 232 326 248 318 262 C310 276 306 290 312 304 C298 296 292 282 296 266 C300 250 308 234 310 216 C286 216 262 224 242 240 C224 256 212 280 208 306 C206 330 204 352 204 372 Q194 396 166 412 Z"/>
+    <clipPath id="muzan-hf-c"><use href="#muzan-hf"/></clipPath>
+    <path id="muzan-hb" d="M190 300 C190 220 244 160 304 156 C374 152 440 206 452 300 C458 360 452 404 446 428 C464 434 482 446 488 464 C490 476 478 480 470 472 C462 464 452 460 444 462 Q434 476 416 470 Q402 480 384 470 Q370 476 356 468 L256 468 Q246 476 234 470 Q220 478 206 468 C198 478 184 482 178 472 C174 458 186 446 198 438 C188 400 186 350 190 300 Z"/>
+    <clipPath id="muzan-hb-c"><use href="#muzan-hb"/></clipPath>
+    <path id="muzan-torso" d="M254 446 C256 482 254 510 250 532 C208 546 150 558 112 580 C70 606 50 680 44 820 L562 820 C556 680 536 606 494 580 C456 558 400 546 358 532 C352 504 352 472 356 436 Z"/>
+    <clipPath id="muzan-torso-c"><use href="#muzan-torso"/></clipPath>
+    <path id="muzan-jacket" d="M214 546 C176 554 136 566 108 580 C66 606 46 680 40 820 L566 820 C560 680 540 606 498 580 C470 566 432 554 394 546 C380 584 346 606 304 608 C262 606 228 584 214 546 Z"/>
+    <clipPath id="muzan-jacket-c"><use href="#muzan-jacket"/></clipPath>
+    <path id="muzan-shirt" d="M248 520 L360 520 L366 720 L242 720 Z"/>
+    <clipPath id="muzan-shirt-c"><use href="#muzan-shirt"/></clipPath>
+    <path id="muzan-vest" d="M240 548 L278 548 C288 586 298 620 304 650 C310 620 320 586 330 548 L368 548 L392 820 L216 820 Z"/>
+    <clipPath id="muzan-vest-c"><use href="#muzan-vest"/></clipPath>
+    <path id="muzan-col" d="M252 486 C276 500 332 500 356 484 L360 536 C338 550 270 550 248 536 Z"/>
+    <clipPath id="muzan-col-c"><use href="#muzan-col"/></clipPath>
+    <path id="muzan-knot" d="M294 540 C300 535 308 535 314 540 L310 560 C306 564 302 564 298 560 Z"/>
+    <clipPath id="muzan-knot-c"><use href="#muzan-knot"/></clipPath>
+    <path id="muzan-tie" d="M298 558 C302 562 306 562 310 558 C314 590 318 620 320 660 L288 660 C290 620 294 590 298 558 Z"/>
+    <clipPath id="muzan-tie-c"><use href="#muzan-tie"/></clipPath>
+    <path id="muzan-capeL" d="M248 522 C210 534 158 550 114 574 C68 600 38 664 22 760 C20 790 20 808 20 820 L210 820 C212 744 220 668 232 610 C238 578 244 548 248 522 Z"/>
+    <clipPath id="muzan-capeL-c"><use href="#muzan-capeL"/></clipPath>
+    <path id="muzan-capeR" d="M360 522 C398 534 450 550 494 574 C540 600 570 664 586 760 C588 790 588 808 588 820 L398 820 C396 744 388 668 376 610 C370 578 364 548 360 522 Z"/>
+    <clipPath id="muzan-capeR-c"><use href="#muzan-capeR"/></clipPath>
+    <path id="muzan-ccL" d="M250 514 C246 552 240 594 230 634 C206 618 180 596 160 572 C186 548 216 528 250 514 Z"/>
+    <clipPath id="muzan-ccL-c"><use href="#muzan-ccL"/></clipPath>
+    <path id="muzan-ccR" d="M358 514 C362 552 368 594 378 634 C402 618 428 596 448 572 C422 548 392 528 358 514 Z"/>
+    <clipPath id="muzan-ccR-c"><use href="#muzan-ccR"/></clipPath>
+    <path id="muzan-face" d="M302 172 C360 172 402 212 406 270 C409 300 409 326 406 346 C403 378 396 404 386 424 C366 458 326 486 298 498 C290 501 282 500 276 495 C256 476 232 452 220 422 C210 396 204 370 202 344 C199 306 199 288 203 272 C214 210 250 172 302 172 Z"/>
+    <clipPath id="muzan-face-c"><use href="#muzan-face"/></clipPath>
+    <clipPath id="muzan-eyeL"><path d="M278 336.3 C271.2 324.4 259.3 317.6 245.7 316.8 C233.8 315.9 223.6 316.8 214.3 320.2 C217.7 333.8 228.7 343.1 244 344.8 C259.3 345.7 271.2 342.3 278 336.3 Z"/></clipPath>
+    <clipPath id="muzan-eyeR"><path d="M320 336 C328 322 342 314 358 313 C372 312 384 313 395 317 C391 333 378 344 360 346 C342 347 328 343 320 336 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#muzan-frame)">
+    <g class="p-hair-back">
+      <use href="#muzan-hb" fill="#231e28"/>
+      <g clip-path="url(#muzan-hb-c)"><path d="M0 0H600V820H0Z" fill="#000" opacity="0.45"/></g>
+      <use href="#muzan-hb" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <g clip-path="url(#muzan-frame)">
+    <g class="p-body">
+      
+      <use href="#muzan-torso" fill="#e9e4ea"/>
+      <g clip-path="url(#muzan-torso-c)"><path d="M236 430 L384 404 L384 470 C366 482 348 494 326 504 C300 512 270 512 236 504 Z" fill="#4a1a2a" opacity="0.3"/><path d="M384 466 C368 476 354 486 344 500 C338 520 330 544 318 572 C344 564 372 548 404 534 L404 466 Z" fill="#4a1a2a" opacity="0.22"/></g>
+      <use href="#muzan-torso" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#muzan-jacket" fill="#1d1a1c"/>
+      <g clip-path="url(#muzan-jacket-c)"><path d="M120 600 C96 620 80 660 72 720 L84 720 C92 670 106 636 134 612 Z" fill="#3d383b"/></g>
+      <use href="#muzan-jacket" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#muzan-shirt" fill="#f2f0ea"/>
+      <g clip-path="url(#muzan-shirt-c)"><path d="M330 520 L360 520 L366 720 L320 720 Z" fill="#4a1a2a" opacity="0.16"/></g>
+      <use href="#muzan-shirt" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#muzan-tie" fill="#5a1a28"/>
+      <g clip-path="url(#muzan-tie-c)"><path d="M306 560 C310 590 314 620 316 660 L330 660 L330 560 Z" fill="#4a1a2a" opacity="0.35"/></g>
+      <use href="#muzan-tie" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#muzan-knot" fill="#5a1a28"/>
+      <g clip-path="url(#muzan-knot-c)"><path d="M306 538 L316 538 L312 566 L306 566 Z" fill="#4a1a2a" opacity="0.35"/></g>
+      <use href="#muzan-knot" fill="none" stroke="#0b0809" stroke-width="4" stroke-linejoin="round"/>
+      <use href="#muzan-vest" fill="#26212b"/>
+      <g clip-path="url(#muzan-vest-c)"><path d="M240 548 L278 548 C282 566 286 582 290 598 L262 600 Z" fill="#3a3440"/><path d="M330 548 L368 548 L392 820 L330 820 Z" fill="#000" opacity="0.3"/></g>
+      <use href="#muzan-vest" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <circle cx="304" cy="676" r="4.2" fill="#3a3440" stroke="#0b0809" stroke-width="2.2"/><circle cx="304" cy="716" r="4.2" fill="#3a3440" stroke="#0b0809" stroke-width="2.2"/><circle cx="304" cy="756" r="4.2" fill="#3a3440" stroke="#0b0809" stroke-width="2.2"/>
+      <path d="M304 660 L304 820" fill="none" stroke="#5a5357" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <use href="#muzan-col" fill="#f2f0ea"/>
+      <g clip-path="url(#muzan-col-c)"><path d="M326 498 C340 496 350 492 356 484 L360 536 C350 542 338 546 326 548 Z" fill="#4a1a2a" opacity="0.18"/><path d="M300 500 L292 520 M308 500 L316 520" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <use href="#muzan-col" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#muzan-capeL" fill="#2e2a33"/>
+      <g clip-path="url(#muzan-capeL-c)"><path d="M108 590 C78 614 56 668 44 740 L58 742 C70 680 88 630 124 600 Z" fill="#48424f"/><g class="p-accent"><path d="M232 610 C220 668 212 744 210 820 L198 820 C200 744 208 668 221 608 Z" fill="#C2304F"/></g><path d="M232 640 L226 650 C196 640 176 624 160 604 L150 616 C170 640 200 660 226 668 Z" fill="#000" opacity="0.4"/></g>
+      <use href="#muzan-capeL" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#muzan-capeR" fill="#2e2a33"/>
+      <g clip-path="url(#muzan-capeR-c)"><path d="M380 560 C440 574 506 612 540 680 C560 720 576 770 588 820 L600 820 L600 540 Z" fill="#000" opacity="0.38"/><g class="p-accent"><path d="M376 610 C388 668 396 744 398 820 L410 820 C408 744 400 668 387 608 Z" fill="#C2304F"/></g></g>
+      <use href="#muzan-capeR" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M150 640 C134 690 124 750 120 820 M110 700 C100 740 94 780 92 820" fill="none" stroke="#5a5357" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M470 650 C486 700 494 760 496 820 M520 700 C532 740 538 780 540 820" fill="none" stroke="#5a5357" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <use href="#muzan-ccL" fill="#2e2a33"/>
+      <g clip-path="url(#muzan-ccL-c)"><path d="M246 528 C222 542 200 556 180 572 L188 580 C208 564 228 550 248 538 Z" fill="#48424f"/></g>
+      <use href="#muzan-ccL" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#muzan-ccR" fill="#2e2a33"/>
+      <g clip-path="url(#muzan-ccR-c)"><path d="M358 514 C362 552 368 594 378 634 L460 580 L380 520 Z" fill="#000" opacity="0.38"/></g>
+      <use href="#muzan-ccR" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <g class="p-head">
+    
+    <path d="M402 328 C408 312 428 310 434 326 C440 344 432 368 420 382 C414 390 404 390 400 384 Z" fill="#e9e4ea" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M412 334 C421 330 427 341 424 353 C422 363 416 369 410 369 M414 349 C418 349 420 353 418 357" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <use href="#muzan-face" fill="#e9e4ea"/>
+      <g clip-path="url(#muzan-face-c)"><path d="M410 330 L400 296 L396 262 L380 236 L344 226 L326 268 L318 312 L300 296 L300 270 L308 228 L282 230 L250 246 L228 270 L216 310 L210 352 L196 360 L190 160 L420 160 Z" fill="#4a1a2a" opacity="0.25"/><path d="M394 300 C404 342 400 392 380 428 C358 460 328 482 292 500 L420 500 L420 300 Z" fill="#4a1a2a" opacity="0.25"/><path d="M288 366 L300 394 L291 399 Z" fill="#4a1a2a" opacity="0.25"/><path d="M326 352 C342 362 372 362 390 340 C386 356 370 368 352 368 C338 368 330 362 326 352 Z" fill="#5a6688" opacity="0.22"/><path d="M272.9 349.9 C259.3 358.4 233.8 358.4 218.5 339.7 C221.9 353.3 235.5 363.5 250.8 363.5 C262.7 363.5 269.5 358.4 272.9 349.9 Z" fill="#5a6688" opacity="0.2"/></g>
+      <use href="#muzan-face" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    <g class="p-eye">
+      <path class="p-sclera" d="M278 336.3 C271.2 324.4 259.3 317.6 245.7 316.8 C233.8 315.9 223.6 316.8 214.3 320.2 C217.7 333.8 228.7 343.1 244 344.8 C259.3 345.7 271.2 342.3 278 336.3 Z" fill="#f7f3ee"/>
+      <g clip-path="url(#muzan-eyeL)">
+        <g class="p-iris"><ellipse cx="252" cy="332" rx="13.5" ry="18" fill="#d6476b"/><path d="M238.5 328.8 A13.5 18 0 0 1 265.5 328.8 C258.8 323 245.3 323 238.5 328.8 Z" fill="#7a1d36" opacity=".6"/><path d="M242.6 338.3 C246.6 348.2 257.4 348.2 261.5 338.3 C256.1 342.8 248 342.8 242.6 338.3 Z" fill="#f2b4c4" opacity="0.85"/><ellipse cx="252" cy="333" rx="5.7" ry="9" fill="#141018"/><ellipse cx="252" cy="332" rx="13.5" ry="18" fill="none" stroke="#7a1d36" stroke-width="2.5"/><ellipse cx="247.1" cy="325.2" rx="3" ry="3.6" fill="#fff"/><circle cx="257.7" cy="338.8" r="2.4" fill="#fff"/></g>
+        <path d="M192 290 H312 V328 C276 318 228 318 192 334 Z" fill="#3a2030" opacity="0.24"/>
+      </g>
+      <path d="M284.8 338 C279.7 321 263.6 310 245.7 309.1 C231.3 308.3 218.5 310 208.3 314.2 L200.7 310 L206.6 319.3 C208.3 321 210 322.7 211.7 323.6 C221.1 319.3 232.1 317.6 245.7 317.6 C259.3 318.5 270.4 325.3 278 339.7 Z" fill="#0b0809"/>
+      <path d="M269.5 343.1 C259.3 347.4 247.4 347.4 237.2 344.8 C227 341.4 220.2 335.5 216 327.8" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M266.1 307.4 C254.2 302.3 237.2 301.5 220.2 304.9" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+    </g>
+    <g class="p-eye">
+      <path class="p-sclera" d="M320 336 C328 322 342 314 358 313 C372 312 384 313 395 317 C391 333 378 344 360 346 C342 347 328 343 320 336 Z" fill="#f7f3ee"/>
+      <g clip-path="url(#muzan-eyeR)">
+        <g class="p-iris"><ellipse cx="356" cy="330" rx="15" ry="19" fill="#d6476b"/><path d="M341 326.6 A15 19 0 0 1 371 326.6 C363.5 320.5 348.5 320.5 341 326.6 Z" fill="#7a1d36" opacity=".6"/><path d="M345.5 336.7 C350 347.1 362 347.1 366.5 336.7 C360.5 341.4 351.5 341.4 345.5 336.7 Z" fill="#f2b4c4" opacity="0.85"/><ellipse cx="356" cy="331" rx="6.3" ry="9.5" fill="#141018"/><ellipse cx="356" cy="330" rx="15" ry="19" fill="none" stroke="#7a1d36" stroke-width="2.5"/><ellipse cx="350.6" cy="322.8" rx="3.4" ry="3.8" fill="#fff"/><circle cx="362.3" cy="337.2" r="2.4" fill="#fff"/></g>
+        <path d="M296 288 H416 V326 C380 316 332 316 296 332 Z" fill="#3a2030" opacity="0.24"/>
+      </g>
+      <path d="M312 338 C318 318 337 305 358 304 C375 303 390 305 402 310 L411 305 L404 316 C402 318 400 320 398 321 C387 316 374 314 358 314 C342 315 329 323 320 340 Z" fill="#0b0809"/>
+      <path d="M330 344 C342 349 356 349 368 346 C380 342 388 335 393 326" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M334 302 C348 296 368 295 388 299" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+    </g>
+    <path d="M226 295 C240 292 256 292 271 295 L270 299 C256 297 241 297 228 299 Z M330 298 C346 292 368 288 394 288 L393 292 C368 292 348 297 332 303 Z" fill="#1f1a22"/>
+    <path d="M288 364 C286 375 283 386 281 395 C285 398 290 399 294 398" fill="none" stroke="#0b0809" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M272 445 C282 446 294 445 305 441 L309 437" fill="none" stroke="#0b0809" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M282 455 C287 456 292 456 297 455" fill="none" stroke="#0b0809" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+    <g class="p-hair-front">
+      <use href="#muzan-hf" fill="#231e28"/>
+      <g clip-path="url(#muzan-hf-c)"><path d="M338 152 C386 162 434 204 456 266 L468 330 L458 372 L478 410 L480 440 L560 440 L560 140 Z M402 264 C410 300 410 330 432 352 L440 420 L470 420 L470 260 Z" fill="#000" opacity="0.42"/><path d="M208 306 C206 340 204 370 204 380 L170 410 L150 420 L150 300 Z" fill="#000" opacity="0.42"/><path d="M180 262 C196 216 234 182 280 166 C304 160 328 158 348 160 L338 174 L322 192 L318 176 L298 180 L284 206 L276 186 L256 196 L240 224 L236 204 L214 222 L200 252 L196 234 Z" fill="#4d4559"/></g>
+      <use href="#muzan-hf" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <g clip-path="url(#muzan-hf-c)"><path d="M232 238 C246 214 268 200 296 192 M206 296 C214 268 232 248 256 236 M260 230 C280 210 306 200 336 198 M344 214 C368 204 394 210 412 226 M318 262 C330 240 350 228 376 228 M188 352 C194 324 210 306 232 296 M430 352 C434 320 428 290 414 268 M440 300 C442 276 434 256 420 240" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M300 182 C318 178 336 180 352 186" fill="none" stroke="#6c6378" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/></g>
+      <use href="#muzan-hf" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>

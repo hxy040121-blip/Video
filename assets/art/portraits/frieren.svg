@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+  <defs>
+    <clipPath id="frieren-frame"><rect width="600" height="800"/></clipPath>
+    <path id="frieren-hf" d="M222 494 C210 470 202 430 200 388 C196 340 190 296 196 258 C206 204 250 160 304 154 C362 150 408 186 422 240 C428 272 426 306 420 336 C416 380 410 440 396 494 C390 470 390 430 394 390 C398 352 404 300 402 266Q405 283.6 398 300 Q396.5 281.6 384 268 Q379.6 290.1 366 308 Q365.6 286.6 352 270 Q347.6 293 334 312 Q333.7 287.9 320 268 Q319.9 293.6 312 318 Q313.4 275.7 299 236 Q285.6 275.9 288 318 Q279.1 294.8 278 270 Q263.5 287.4 262 310 Q250.3 291.7 248 270 Q232.8 283.7 230 304 Q218.3 287.8 216 268 Q210.1 278.3 212 290 Q206.1 278.7 208 266 C210 300 210 344 214 388 C218 430 228 466 222 494 Z"/>
+    <clipPath id="frieren-hf-c"><use href="#frieren-hf"/></clipPath>
+    <path id="frieren-tl" d="M226 222 C196 214 162 234 142 278 C124 322 116 392 116 462 C116 532 112 600 106 660 L178 660 C180 600 180 532 178 462 C176 400 176 336 190 288 C198 262 210 244 230 236 Z"/>
+    <clipPath id="frieren-tl-c"><use href="#frieren-tl"/></clipPath>
+    <path id="frieren-tr" d="M382 218 C412 210 448 228 468 272 C488 318 496 388 496 458 C496 528 500 596 506 660 L434 660 C432 596 432 528 434 458 C436 396 434 334 420 288 C412 262 400 244 380 234 Z"/>
+    <clipPath id="frieren-tr-c"><use href="#frieren-tr"/></clipPath>
+    <path id="frieren-hb" d="M200 270 C204 210 250 164 304 160 C366 156 412 196 424 262 C430 300 428 340 420 380 L196 380 Z"/>
+    <clipPath id="frieren-hb-c"><use href="#frieren-hb"/></clipPath>
+    <path id="frieren-torso" d="M262 440 C264 480 262 514 258 538 C222 558 164 572 124 590 C88 608 70 668 64 820 L542 820 C536 668 518 608 482 592 C442 572 386 558 352 538 C346 508 346 470 350 432 Z"/>
+    <clipPath id="frieren-torso-c"><use href="#frieren-torso"/></clipPath>
+    <path id="frieren-jacket" d="M226 556 C192 570 150 582 124 592 C88 610 70 668 64 820 L542 820 C536 668 518 610 482 592 C456 582 414 570 382 556 C368 590 340 610 304 612 C268 610 240 590 226 556 Z"/>
+    <clipPath id="frieren-jacket-c"><use href="#frieren-jacket"/></clipPath>
+    <path id="frieren-stripe" d="M264 560 L344 560 L330 640 L304 712 L278 640 Z"/>
+    <clipPath id="frieren-stripe-c"><use href="#frieren-stripe"/></clipPath>
+    <path id="frieren-col" d="M254 494 C278 508 330 508 354 494 L362 548 C340 566 268 566 246 548 Z"/>
+    <clipPath id="frieren-col-c"><use href="#frieren-col"/></clipPath>
+    <path id="frieren-cape" d="M248 544 C214 558 162 574 124 594 C90 612 74 650 76 692 C112 706 172 710 224 694 C256 684 282 642 304 572 C326 642 352 684 384 694 C436 710 496 706 532 692 C534 650 518 612 484 594 C446 574 394 558 360 544 Z"/>
+    <clipPath id="frieren-cape-c"><use href="#frieren-cape"/></clipPath>
+    <path id="frieren-face" d="M302 178 C358 178 400 216 404 272 C407 300 406 326 403 346 C398 376 388 400 372 420 C350 448 320 464 296 470 C288 472 280 471 274 467 C252 452 230 432 218 408 C208 386 203 364 202 344 C200 306 200 290 204 274 C214 214 250 178 302 178 Z"/>
+    <clipPath id="frieren-face-c"><use href="#frieren-face"/></clipPath>
+    <clipPath id="frieren-eyeL"><path d="M282 338.6 C276.9 329.2 265 325 249.7 324.1 C236.1 323.3 225.9 326.7 219.1 332.6 C220.8 342.8 231 350.5 248 352.2 C265 353 276.9 347.9 282 338.6 Z"/></clipPath>
+    <clipPath id="frieren-eyeR"><path d="M318 339 C324 328 338 323 356 322 C372 321 384 325 392 332 C390 344 378 353 358 355 C338 356 324 350 318 339 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#frieren-frame)">
+    <g class="p-hair-back">
+      <use href="#frieren-hb" fill="#ECEEF1"/>
+      <g clip-path="url(#frieren-hb-c)"><path d="M0 0H600V820H0Z" fill="#4a1a2a" opacity="0.3"/></g>
+      <use href="#frieren-hb" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </g>
+  <g clip-path="url(#frieren-frame)">
+    <g class="p-body">
+      
+      <use href="#frieren-tl" fill="#ECEEF1"/>
+      <g clip-path="url(#frieren-tl-c)"><path d="M184 300 C172 380 168 460 166 540 C164 600 166 640 168 660 L200 660 L232 240 Z" fill="#4a1a2a" opacity="0.3"/><path d="M150 262 C164 240 184 228 206 226 L198 236 L186 252 L184 240 L170 256 L162 276 Z" fill="#ffffff"/><path d="M196 238 C164 280 146 360 142 440 C140 520 136 590 132 650 M210 240 C186 290 168 360 160 440" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <use href="#frieren-tl" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#frieren-tr" fill="#ECEEF1"/>
+      <g clip-path="url(#frieren-tr-c)"><path d="M418 280 C436 360 446 440 452 520 C456 590 460 640 462 660 L530 660 L530 260 Z" fill="#4a1a2a" opacity="0.3"/><path d="M404 232 C440 270 462 350 466 430 C470 510 474 580 480 650 M392 240 C424 290 440 370 444 450" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <use href="#frieren-tr" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#frieren-torso" fill="#F8EFE7"/>
+      <g clip-path="url(#frieren-torso-c)"><path d="M250 430 L366 416 L366 470 C340 488 300 496 250 490 Z" fill="#4a1a2a" opacity="0.3"/><path d="M356 470 C346 498 336 530 324 562 C344 558 364 550 384 542 L384 470 Z" fill="#4a1a2a" opacity="0.22"/></g>
+      <use href="#frieren-torso" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#frieren-jacket" fill="#F5F4F0"/>
+      <g clip-path="url(#frieren-jacket-c)"><path d="M440 580 C490 610 520 690 530 820 L600 820 L600 580 Z" fill="#4a1a2a" opacity="0.16"/><path d="M232 700 C262 730 286 760 296 820 M376 700 C346 730 322 760 312 820" fill="none" stroke="#C8A24A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><path d="M226 704 C256 734 280 764 290 820 M238 696 C268 726 292 756 302 820 M382 704 C352 734 328 764 318 820 M370 696 C340 726 316 756 306 820" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <use href="#frieren-jacket" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#frieren-stripe" fill="#f2f1ee"/>
+      <g clip-path="url(#frieren-stripe-c)"><path d="M262 556 L269 556 L269 720 L262 720 Z M276 556 L283 556 L283 720 L276 720 Z M290 556 L297 556 L297 720 L290 720 Z M304 556 L311 556 L311 720 L304 720 Z M318 556 L325 556 L325 720 L318 720 Z M332 556 L339 556 L339 720 L332 720 Z M346 556 L353 556 L353 720 L346 720 Z " fill="#1d1a1c"/></g>
+      <use href="#frieren-stripe" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#frieren-cape" fill="#F5F4F0"/>
+      <g clip-path="url(#frieren-cape-c)"><path d="M76 692 C112 706 172 710 224 694 C256 684 282 642 304 572 C326 642 352 684 384 694 C436 710 496 706 532 692" fill="none" stroke="#0b0809" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><path d="M76 692 C112 706 172 710 224 694 C256 684 282 642 304 572 C326 642 352 684 384 694 C436 710 496 706 532 692" fill="none" stroke="#C8A24A" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><path d="M360 544 C394 558 446 574 484 594 C518 612 534 650 532 692 L600 700 L600 540 Z" fill="#4a1a2a" opacity="0.16"/><path d="M304 572 C326 642 352 684 384 694 L392 676 C366 666 340 630 318 560 Z" fill="#4a1a2a" opacity="0.14"/><path d="M150 610 C140 640 136 664 136 690 M458 610 C468 640 472 664 472 690" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <use href="#frieren-cape" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <use href="#frieren-col" fill="#F5F4F0"/>
+      <g clip-path="url(#frieren-col-c)"><path d="M254 494 C278 508 330 508 354 494" fill="none" stroke="#C8A24A" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><path d="M330 504 C342 502 352 498 356 494 L362 548 C352 556 340 560 330 562 Z" fill="#4a1a2a" opacity="0.16"/></g>
+      <use href="#frieren-col" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M256 504 C280 516 328 516 352 504" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="304" cy="560" r="14" fill="#C8A24A" stroke="#0b0809" stroke-width="4"/>
+      <path d="M304 548 C311 552 314 558 313 563 C311 570 306 574 304 576 C302 574 297 570 295 563 C294 558 297 552 304 548 Z" fill="#B0232D" stroke="#0b0809" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M301 555 C303 553 305 553 306 555 L303 560 Z" fill="#fff" opacity=".9"/>
+      <g>
+        <path d="M178 589 L193 606 L178 623 L163 606 Z" fill="#C8A24A" stroke="#0b0809" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M178 589 L193 606 L178 608 Z" fill="#8a6a22" opacity=".45"/>
+        <circle cx="178" cy="606" r="6.5" fill="#B0232D" stroke="#0b0809" stroke-width="2.4"/>
+        <circle cx="176" cy="603.8" r="1.8" fill="#fff"/>
+      </g>
+      <g>
+        <path d="M430 589 L445 606 L430 623 L415 606 Z" fill="#C8A24A" stroke="#0b0809" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M430 589 L445 606 L430 608 Z" fill="#8a6a22" opacity=".45"/>
+        <circle cx="430" cy="606" r="6.5" fill="#B0232D" stroke="#0b0809" stroke-width="2.4"/>
+        <circle cx="428" cy="603.8" r="1.8" fill="#fff"/>
+      </g>
+    </g>
+  </g>
+  <g class="p-head">
+    
+    <path d="M206 332 C190 320 168 306 138 290 C132 288 130 292 134 297 C148 322 166 346 180 362 C186 370 192 376 198 378 C204 380 208 378 208 374 Z" fill="#F8EFE7" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M200 340 C186 330 166 318 148 306 C160 326 174 346 188 358 C194 364 200 368 204 368 Z" fill="#4a1a2a" opacity=".25"/>
+    <path d="M196 342 C182 334 166 324 152 314" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M398 330 C420 318 452 304 490 286 C496 284 498 288 494 294 C476 322 456 348 438 366 C430 376 424 384 416 386 C408 388 402 386 400 382 Z" fill="#F8EFE7" stroke="#0b0809" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="M404 350 C424 338 450 320 478 302 C462 326 444 348 428 362 C418 370 410 374 404 374 Z" fill="#4a1a2a" opacity=".25"/>
+    <path d="M408 340 C428 330 452 316 474 304 M410 356 C418 354 424 350 428 344" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <g>
+      <circle cx="192" cy="380" r="4.05" fill="none" stroke="#0b0809" stroke-width="4.5"/>
+      <circle cx="192" cy="380" r="4.05" fill="none" stroke="#C8A24A" stroke-width="2.3400000000000003"/>
+      <path d="M192 385.4 C199.2 394.4 200.1 401.6 197.4 406.1 C194.7 409.7 189.3 409.7 186.6 406.1 C183.9 401.6 184.8 394.4 192 385.4 Z" fill="#B0232D" stroke="#0b0809" stroke-width="2.8800000000000003" stroke-linejoin="round"/>
+      <path d="M189.3 396.2 C189.3 392.6 191.1 390.8 192 389.9" fill="none" stroke="#fff" stroke-width="1.62" stroke-linecap="round" opacity=".85"/>
+    </g>
+    <g>
+      <circle cx="420" cy="388" r="4.5" fill="none" stroke="#0b0809" stroke-width="5"/>
+      <circle cx="420" cy="388" r="4.5" fill="none" stroke="#C8A24A" stroke-width="2.6"/>
+      <path d="M420 394 C428 404 429 412 426 417 C423 421 417 421 414 417 C411 412 412 404 420 394 Z" fill="#B0232D" stroke="#0b0809" stroke-width="3.2" stroke-linejoin="round"/>
+      <path d="M417 406 C417 402 419 400 420 399" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".85"/>
+    </g>
+    <use href="#frieren-face" fill="#F8EFE7"/>
+      <g clip-path="url(#frieren-face-c)"><path d="M420 330 L408 280 L404 314 L390 282 L372 322 L358 284 L340 326 L326 282 L318 332 L305 250 L294 332 L284 284 L268 324 L254 284 L236 318 L222 282 L218 304 L214 280 L206 330 L196 160 L420 160 Z" fill="#4a1a2a" opacity="0.25"/><path d="M392 300 C402 344 396 388 374 420 C352 448 324 464 292 474 L420 474 L420 300 Z" fill="#4a1a2a" opacity="0.25"/><path d="M287 368 L297 389 L289 393 Z" fill="#4a1a2a" opacity="0.25"/><path d="M208 266 C212 310 212 350 218 390 C224 430 232 462 230 494 L180 494 L180 266 Z" fill="#4a1a2a" opacity="0.22"/><path d="M408 266 C410 310 404 350 400 390 C396 430 394 462 400 494 L440 494 L440 266 Z" fill="#4a1a2a" opacity="0.25"/></g>
+      <use href="#frieren-face" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    <g class="p-eye">
+      <path class="p-sclera" d="M282 338.6 C276.9 329.2 265 325 249.7 324.1 C236.1 323.3 225.9 326.7 219.1 332.6 C220.8 342.8 231 350.5 248 352.2 C265 353 276.9 347.9 282 338.6 Z" fill="#fbf7f4"/>
+      <g clip-path="url(#frieren-eyeL)">
+        <g class="p-iris"><ellipse cx="251" cy="333" rx="15" ry="19" fill="#4E9E78"/><path d="M236 329.6 A15 19 0 0 1 266 329.6 C258.5 323.5 243.5 323.5 236 329.6 Z" fill="#245a43" opacity=".6"/><path d="M240.5 339.7 C245 350.1 257 350.1 261.5 339.7 C255.5 344.4 246.5 344.4 240.5 339.7 Z" fill="#5DBB94" opacity="0.9"/><ellipse cx="251" cy="334" rx="6.3" ry="9.5" fill="#141018"/><ellipse cx="251" cy="333" rx="15" ry="19" fill="none" stroke="#245a43" stroke-width="2.5"/><ellipse cx="245.6" cy="325.8" rx="3.6" ry="4.1" fill="#fff"/><circle cx="257.3" cy="340.2" r="2.4" fill="#fff"/></g>
+        <path d="M191 293 H311 V331 C275 321 227 321 191 337 Z" fill="#3a2030" opacity="0.28"/>
+      </g>
+      <path d="M288 341.1 C284.6 326.7 268.4 315.6 249.7 314.8 C234.4 313.9 222.5 318.2 215.7 325 L209.8 322.4 L213.2 330.1 C214 332.6 214.9 335.2 215.7 337.7 C221.7 330.1 234.4 325 249.7 325 C265 325.8 276.1 330.9 282 342 Z" fill="#0b0809"/>
+      <path d="M275.2 348.8 C265 353.9 253.1 355.6 241.2 353.9 C231 352.2 224.2 345.4 220.8 339.4" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M271.8 312.2 C259.9 307.1 241.2 306.3 225.9 310.5" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+    </g>
+    <g class="p-eye">
+      <path class="p-sclera" d="M318 339 C324 328 338 323 356 322 C372 321 384 325 392 332 C390 344 378 353 358 355 C338 356 324 350 318 339 Z" fill="#fbf7f4"/>
+      <g clip-path="url(#frieren-eyeR)">
+        <g class="p-iris"><ellipse cx="355" cy="331" rx="17" ry="21" fill="#4E9E78"/><path d="M338 327.2 A17 21 0 0 1 372 327.2 C363.5 320.5 346.5 320.5 338 327.2 Z" fill="#245a43" opacity=".6"/><path class="p-accent" d="M343.1 338.4 C348.2 349.9 361.8 349.9 366.9 338.4 C360.1 343.6 349.9 343.6 343.1 338.4 Z" fill="#5DBB94" opacity="0.9"/><ellipse cx="355" cy="332" rx="7.1" ry="10.5" fill="#141018"/><ellipse cx="355" cy="331" rx="17" ry="21" fill="none" stroke="#245a43" stroke-width="2.5"/><ellipse cx="348.9" cy="323" rx="4.1" ry="4.5" fill="#fff"/><circle cx="362.1" cy="339" r="2.4" fill="#fff"/></g>
+        <path d="M295 291 H415 V329 C379 319 331 319 295 335 Z" fill="#3a2030" opacity="0.28"/>
+      </g>
+      <path d="M311 342 C315 325 334 312 356 311 C374 310 388 315 396 323 L403 320 L399 329 C398 332 397 335 396 338 C389 329 374 323 356 323 C338 324 325 330 318 343 Z" fill="#0b0809"/>
+      <path d="M326 351 C338 357 352 359 366 357 C378 355 386 347 390 340" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M330 308 C344 302 366 301 384 306" fill="none" stroke="#0b0809" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/><path d="M388 343 L395 348" fill="none" stroke="#0b0809" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <path d="M228 294 C242 290 256 289 270 291 L270 294 C256 292 242 293 229 297 Z M334 284 C348 279 366 278 384 282 L383 285 C366 282 349 283 335 288 Z" fill="#a9a1ad"/>
+    <path d="M288 374 C286 381 284 387 283 391 C287 393 291 394 294 393" fill="none" stroke="#0b0809" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M284 428 C289 429 295 429 300 428" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M287 437 C291 438 295 438 298 437" fill="none" stroke="#0b0809" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+    <g class="p-hair-front">
+      <use href="#frieren-hf" fill="#ECEEF1"/>
+      <g clip-path="url(#frieren-hf-c)"><path d="M300 152 C352 156 402 186 418 240 L412 262 L402 266 C404 300 400 346 394 390 C390 430 388 466 396 500 L460 500 L460 140 Z" fill="#4a1a2a" opacity="0.3"/><path d="M194 300 C196 360 204 430 220 494 L180 500 L180 300 Z M210 268 C210 314 210 350 214 390 C218 430 224 466 220 494 L234 494 C228 450 222 400 220 350 Z" fill="#4a1a2a" opacity="0.3"/><path d="M204 250 C216 206 252 176 300 166 C318 163 334 163 346 166 L338 176 L326 196 L318 178 L300 178 L290 204 L280 182 L262 190 L252 218 L246 194 L228 210 L218 238 L214 220 Z" fill="#ffffff"/></g>
+      <use href="#frieren-hf" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+      <g clip-path="url(#frieren-hf-c)"><path d="M299 236 C302 208 308 186 320 162 M288 318 C282 274 272 236 258 204 M262 310 C254 276 242 250 226 228 M312 318 C320 272 332 238 348 208 M334 312 C346 274 362 246 382 226 M366 308 C378 282 392 264 406 252 M230 304 C224 284 216 270 206 258 M200 330 C198 380 204 434 214 476 M418 320 C418 380 412 434 404 476" fill="none" stroke="#0b0809" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <use href="#frieren-hf" fill="none" stroke="#0b0809" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>

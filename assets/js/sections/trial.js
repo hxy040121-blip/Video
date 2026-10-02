@@ -1,1 +1,3190 @@
-/* trial */
+/* ==========================================================
+   庭审（trial）：可以玩的模拟庭审
+   入局 → 发牌 → 受命与行凶（不可见）→ 发现 → 调查 → 庭审 → 处刑 → 余波 → 下一案 … → 终局
+   规则全部在 TrialEngine（trial-engine.js）里；这里只负责画面、声音与交互。
+   ========================================================== */
+(function () {
+  'use strict'
+  const App = window.App
+  const TE = window.TrialEngine
+  if (!App || !TE) return
+  const U = App.util
+  const el = U.el
+  const svg = U.svg
+  const ABORT = { trialAbort: true }
+
+  /* ---------- 色调与音乐 ---------- */
+  const PAL = {
+    intro: { a: '#15100b', b: '#c29a5b', glow: 0.34 },
+    cine: { a: '#0b0607', b: '#7d1616', glow: 0.18 },
+    inv: { a: '#0a0c0f', b: '#8d98a6', glow: 0.22 },
+    court: { a: '#18080a', b: '#a3104a', glow: 0.42 },
+    exec: { a: '#2b0717', b: '#ff2e7e', glow: 0.8 },
+    after: { a: '#130e08', b: '#c29a5b', glow: 0.42 },
+    end: { a: '#110c07', b: '#e2c48c', glow: 0.55 },
+    dead: { a: '#040303', b: '#5b534d', glow: 0.06 },
+  }
+  const TRACK = { intro: 'gallery', deal: 'gallery', cine: 'silence', inv: 'investigation', court: 'trial', exec: 'trial', after: 'trial', end: 'wish', dead: 'silence' }
+
+  const VERB = {
+    knight: '揭发', executor: '表决', silencer: '封锁', puffer: '查询',
+    judge: '加票', hanged: '反弹', fortune: '查验', shifter: '复制', magician: '交换', cupid: '结缘',
+  }
+  const NUM = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
+
+  /* ---------- 状态 ---------- */
+  const S = {
+    sec: null, stage: null, E: {},
+    seats: Array(15).fill(null), me: null, G: null,
+    active: false, paused: false, token: 0, scene: 'intro', running: false,
+    spectate: false, deadShown: false, visible: false,
+    seat: [], geo: null,
+    cards: [], tests: {}, armed: null, targeting: null,
+    T: null, V: null, C: null,
+    coins: 0, skippers: new Set(), lastTime: -1,
+  }
+  let def
+
+  /* ==========================================================
+     小工具
+     ========================================================== */
+  const charOf = id => App.char(id) || { id, name: id, lines: {}, stats: {} }
+  const nameOf = id => charOf(id).name || id
+  const fill = (s, x) => String(s || '').replace(/\{X\}/g, nameOf(x))
+  const hhmm = m => U.clock(m).text
+  const dayText = m => '第' + U.cnNum(U.clock(m).day) + '日'
+  const seatOf = id => (S.G && S.G.people[id] ? S.G.people[id].seat : S.seats.indexOf(id) + 1)
+  const living = () => (S.G ? TE.livingIds(S.G) : [])
+  const isMe = id => id && id === S.me
+  const meAlive = () => S.G && S.me && TE.isLiving(S.G, S.me)
+
+  function guard(tok) { if (tok !== S.token) throw ABORT }
+  // 动画 Promise：重来/换座之后不再继续
+  function anim(make) {
+    const tok = S.token
+    return new Promise((resolve, reject) => make(() => (tok === S.token ? resolve() : reject(ABORT))))
+  }
+  // 斜切转场：中途的场景切换只在本局仍有效时执行
+  function slash(midway, opts) {
+    const tok = S.token
+    return App.slash(() => { if (tok === S.token && midway) midway() }, opts).then(() => guard(tok))
+  }
+  // 可跳过、可暂停的等待
+  function wait(ms, skippable = true) {
+    const tok = S.token
+    return new Promise((resolve, reject) => {
+      let left = ms, last = performance.now(), fin = false
+      const sk = () => done(true)
+      const off = App.tick(() => {
+        if (tok !== S.token) return done(false)
+        const now = performance.now()
+        if (!S.paused) left -= now - last
+        last = now
+        if (left <= 0) done(true)
+      })
+      function done(ok) {
+        if (fin) return
+        fin = true
+        off()
+        S.skippers.delete(sk)
+        ok ? resolve() : reject(ABORT)
+      }
+      if (skippable) S.skippers.add(sk)
+    })
+  }
+  function skipAll() { for (const f of Array.from(S.skippers)) f() }
+  // 等待玩家输入：setup(resolve) 安装处理器并返回清理函数
+  function ask(setup) {
+    const tok = S.token
+    return new Promise((resolve, reject) => {
+      let fin = false, cleanup = null
+      const off = App.tick(() => { if (tok !== S.token) end(false) })
+      function end(ok, v) {
+        if (fin) return
+        fin = true
+        off()
+        if (cleanup) try { cleanup() } catch (e) { /* */ }
+        ok ? resolve(v) : reject(ABORT)
+      }
+      cleanup = setup(v => end(true, v))
+    })
+  }
+  async function typeIn(node, text, speed = 24) {
+    const tok = S.token
+    node.textContent = ''
+    node.classList.add('trial-caret')
+    let skipped = false
+    const sk = () => { skipped = true }
+    S.skippers.add(sk)
+    const chars = Array.from(text || '')
+    try {
+      for (let i = 0; i < chars.length; i++) {
+        guard(tok)
+        if (skipped) break
+        node.textContent += chars[i]
+        if (i % 2 === 0 && chars[i].trim()) App.audio.sfx('type')
+        const ch = chars[i]
+        await wait(/[。！？…]/.test(ch) ? speed * 5 : /[，、；：]/.test(ch) ? speed * 2.4 : speed, false)
+      }
+    } finally { S.skippers.delete(sk) }
+    node.textContent = text || ''
+    node.classList.remove('trial-caret')
+  }
+  function face(id, opts = {}) {
+    const w = App.portrait(id, Object.assign({}, opts, { track: false }))
+    w._cancel = App.trackEyes(w, { eyeRange: opts.eyeRange || 7 })
+    return w
+  }
+  function clearFaces(box) {
+    if (!box) return
+    for (const p of box.querySelectorAll('.portrait')) if (p._cancel) p._cancel()
+    box.innerHTML = ''
+  }
+  function sigil(name, cls) {
+    const s = App.sigil(name || '', { className: cls || '' })
+    return s
+  }
+  function button(label, cls, act) {
+    return el('button.btn.trial-btn' + (cls ? '.' + cls : ''), { type: 'button', 'data-cursor': '', 'data-trial-act': act || label }, [el('span', { text: label })])
+  }
+  function bcText(when, map = {}) {
+    const W = window.WORLD
+    const f = W && W.broadcasts && W.broadcasts.fixed && W.broadcasts.fixed.find(x => x.when === when)
+    let t = f ? f.text : ''
+    for (const k in map) t = t.split('〈' + k + '〉').join(map[k])
+    return t
+  }
+  function bcPart(when, i, map) {
+    const t = bcText(when, map)
+    const parts = t.split('／')
+    return (parts[i] || parts[0] || '').trim()
+  }
+  function mood(name) {
+    const p = PAL[name] || PAL.court
+    const t = TRACK[name]
+    def.palette = p
+    if (t) def.track = t
+    if (App.state.section === 'trial' || S.active) {
+      if (App.bg) App.bg.setPalette(p, 1.2)
+      if (t) App.audio.track(t)
+    }
+  }
+  function setScene(name) {
+    if (S.scene !== name && typeof killPicks === 'function') killPicks()
+    if (S.scene !== name && S.E.me) S.E.me.classList.remove('is-open')
+    S.scene = name
+    if (S.stage) S.stage.setAttribute('data-scene', name)
+    if (S.E.core) S.E.core.classList.toggle('is-case', name === 'court')
+    updateMe()
+  }
+
+  /* ==========================================================
+     证物卡图标（24×24，currentColor）
+     ========================================================== */
+  const ICON = {
+    handprint: '<path d="M8 21c-2.5-2-4-5-4-8l1-3c.5-1 2-1 2.2.2L8 13V5c0-1.3 2-1.3 2 0v6V3.6c0-1.4 2-1.4 2 0V11V4.6c0-1.3 2-1.3 2 0V12V7c0-1.3 2-1.3 2 0v7c0 3-1 5.5-3 7z"/>',
+    woodprint: '<path d="M8.5 3c2.2 0 3 2.4 3 5s-1 4.5-3 4.5S5.5 10.6 5.5 8 6.3 3 8.5 3zM7 14.5h3.2l-.4 4c-.2 1.6-2.3 1.6-2.5 0z"/><path d="M15.5 6c2.2 0 3 2.4 3 5s-1 4.5-3 4.5-3-1.9-3-4.5.8-5 3-5zM14 17.5h3.2l-.4 2.5c-.2 1.4-2.3 1.4-2.5 0z" opacity=".55"/>',
+    spareclothes: '<path d="M12 3.5a1.6 1.6 0 1 1 1.6 1.6c-.8 0-1.6.6-1.6 1.4v.5M12 7l-9 6h18z"/><path d="M6 13l-1 7h14l-1-7"/>',
+    bloodshirt: '<path d="M8 3l-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3c-.5 1.6-2 2.5-4 2.5S8.5 4.6 8 3z"/><path d="M12 12.5c1 1.4 1.6 2.3 1.6 3a1.6 1.6 0 0 1-3.2 0c0-.7.6-1.6 1.6-3z"/>',
+    lipstick: '<path d="M7 3h10l-1 7a4 4 0 0 1-8 0zM12 14v6M8.5 20.5h7"/><path d="M9.5 7.5c1 .9 1.7 1 2.5.4.8.6 1.5.5 2.5-.4"/>',
+    defense: '<path d="M5 4l6 16M10 3l5 16M15 3l4 13"/>',
+    freezer: '<path d="M12 2.5v19M3.8 7.2l16.4 9.6M3.8 16.8l16.4-9.6M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/>',
+    coldpool: '<path d="M3 15c2-1.5 3-1.5 4.5 0s2.5 1.5 4.5 0 3-1.5 4.5 0 2.5 1.5 4.5 0M3 19c2-1.5 3-1.5 4.5 0s2.5 1.5 4.5 0 3-1.5 4.5 0 2.5 1.5 4.5 0"/><path d="M12 3v7.5"/><circle cx="12" cy="11.5" r="1.6"/>',
+    vessel: '<path d="M4 20L15 9l3-5 2 2-5 3L4 20zM13.5 10.5l1.8 1.8"/>',
+    furniture: '<path d="M7 3h10v8H7zM6 11h12v3H6zM7 14v7M17 14v7M3 21h18" /><path d="M3 21l2-3" opacity=".5"/>',
+    scrub: '<path d="M4 15h11l3-5H7zM6 15l-1.5 5M11 15l-.5 5M14 15l.5 5"/><path d="M18 3l.7 1.8L20.5 5.5 18.7 6.2 18 8l-.7-1.8L15.5 5.5l1.8-.7z"/>',
+    gloves: '<path d="M7 21v-6L4.5 11.5c-.8-1.2.8-2.4 1.8-1.3L8 12V4.5c0-1.3 2-1.3 2 0V10V3.6c0-1.4 2-1.4 2 0V10V4.6c0-1.3 2-1.3 2 0V11V7c0-1.3 2-1.3 2 0v8l-1 6z"/><path d="M7 18h9"/>',
+    pipe: '<path d="M3 9h7l6 6h2.5a2.5 2.5 0 0 0 0-5H16"/><path d="M16 10v-1.5a3 3 0 0 1 3-3"/><path d="M7 6c0-1 .8-1.5.8-2.5M10 6c0-1 .8-1.5.8-2.5" opacity=".6"/>',
+    body: '<circle cx="12" cy="4.5" r="2"/><path d="M12 7v7M12 9l-5 3M12 9l5-2M12 14l-4 6.5M12 14l4.5 6"/>',
+  }
+  function icon(key) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[key] || ICON.body) + '</svg>'
+  }
+
+  /* ==========================================================
+     搭建 DOM
+     ========================================================== */
+  function chairSVG() {
+    return '<svg class="trial-chair" viewBox="0 0 60 80" aria-hidden="true"><path class="trial-chair-back" d="M9 79V24C9 9 18 3 30 3s21 6 21 21v55"/><path class="trial-chair-inlay" d="M15 72V25c0-10 6-15 15-15s15 5 15 15v47"/><path class="trial-chair-arm" d="M2 58h13M45 58h13M4 58v21M56 58v21"/></svg>'
+  }
+  function domeSVG() {
+    let ribs = ''
+    for (let i = 0; i <= 24; i++) {
+      const a = Math.PI * (i / 24)
+      const x = 500 + Math.cos(Math.PI + a) * 980
+      const y = 40 + Math.sin(a) * 900
+      ribs += `<path d="M500 -60 Q ${500 + (x - 500) * 0.35} ${y * 0.28} ${x.toFixed(1)} ${y.toFixed(1)}"/>`
+    }
+    let arcs = ''
+    for (let i = 1; i <= 6; i++) arcs += `<ellipse cx="500" cy="-60" rx="${i * 150}" ry="${i * 92}"/>`
+    return `<svg class="trial-dome-svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMin slice" aria-hidden="true"><g class="trial-dome-ribs">${ribs}</g><g class="trial-dome-arcs">${arcs}</g></svg>`
+  }
+  function tableSVG() {
+    let rose = ''
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2, l = i % 4 === 0 ? 96 : i % 2 === 0 ? 62 : 40
+      rose += `<path d="M200 120 L ${(200 + Math.cos(a) * l * 1.6).toFixed(1)} ${(120 + Math.sin(a) * l * 0.62).toFixed(1)}"/>`
+    }
+    return `<svg class="trial-table-svg" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
+      <defs><radialGradient id="trialTableG" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#2a2420"/><stop offset=".6" stop-color="#15110f"/><stop offset="1" stop-color="#0a0809"/></radialGradient></defs>
+      <ellipse cx="200" cy="120" rx="198" ry="118" class="trial-table-rim"/>
+      <ellipse cx="200" cy="120" rx="190" ry="112" fill="url(#trialTableG)"/>
+      <ellipse cx="200" cy="120" rx="172" ry="100" class="trial-table-line"/>
+      <ellipse cx="200" cy="120" rx="120" ry="70" class="trial-table-line trial-table-line--thin"/>
+      <g class="trial-table-rose">${rose}</g>
+      <ellipse cx="200" cy="120" rx="10" ry="6" class="trial-table-hub"/>
+    </svg>`
+  }
+
+  function build(sec) {
+    sec.classList.add('trial-root')
+    const st = el('div.trial-stage', { 'data-scene': 'intro' })
+    const E = S.E
+    E.dome = el('div.trial-dome', { html: domeSVG() })
+    E.fx = el('div.trial-fx', null, [el('i.trial-fx-lines'), el('i.trial-fx-dots')])
+
+    // 圆桌
+    E.ring = el('div.trial-ring')
+    E.lines = svg('svg')
+    E.lines.setAttribute('class', 'trial-lines')
+    E.lines.setAttribute('aria-hidden', 'true')
+    E.table = el('div.trial-table', { html: tableSVG() })
+    E.ring.append(E.table, E.lines)
+    for (let k = 1; k <= 15; k++) {
+      const s = buildSeat(k)
+      S.seat[k] = s
+      E.ring.appendChild(s.root)
+    }
+    // 桌心
+    E.core = el('div.trial-core')
+    E.mood = el('p.trial-core-mood', { text: '十五把椅子，一个愿望' })
+    E.count = el('div.trial-core-count')
+    E.ui = el('div.trial-core-ui')
+    E.stamp = el('div.trial-stamp')
+    E.say = el('div.trial-say', null, [
+      el('div.trial-say-face'),
+      el('div.trial-say-body', null, [
+        el('div.trial-say-name', null, [el('b'), el('span')]),
+        el('p.trial-say-line'),
+      ]),
+    ])
+    E.reel = el('div.trial-reel', null, [el('div.trial-reel-strip'), el('i.trial-reel-frame')])
+    E.ask = el('div.trial-ask')
+    E.core.append(E.count, E.mood, E.ui, E.stamp, E.say, E.reel, E.ask)
+    E.ring.appendChild(E.core)
+
+    // 发牌用的大卡
+    E.idcard = el('div.trial-idcard', null, [
+      el('div.trial-idcard-inner', null, [
+        el('div.trial-idcard-back', { html: '<i></i><i></i><i></i>' }),
+        el('div.trial-idcard-face', null, [el('span.trial-idcard-no'), el('div.trial-idcard-sigil'), el('b.trial-idcard-name'), el('p.trial-idcard-text')]),
+      ]),
+    ])
+
+    // 案发前后的镜头
+    E.cine = el('div.trial-cine', null, [
+      el('div.trial-cine-dial', { html: dialSVG() }),
+      el('div.trial-cine-clock', null, [el('span.trial-cine-day'), el('span.trial-cine-time')]),
+      el('p.trial-cine-mood'),
+      el('div.trial-cine-found', null, [el('div.trial-cine-face'), el('div.trial-cine-who', null, [el('b'), el('p')]), el('div.trial-cine-go')]),
+    ])
+
+    // 调查
+    E.inv = el('div.trial-inv', null, [
+      el('div.trial-inv-timer', { html: '<svg viewBox="0 0 1000 1000" aria-hidden="true"><g class="trial-inv-ticks"></g><circle class="trial-inv-track" cx="500" cy="500" r="430"/><circle class="trial-inv-arc" cx="500" cy="500" r="430"/></svg>' }),
+      el('canvas.trial-inv-cv'),
+      el('div.trial-inv-spots'),
+      el('div.trial-inv-meta', null, [
+        el('span.trial-inv-floor'),
+        el('h3.trial-inv-room'),
+        el('div.trial-inv-victim', null, [el('div.trial-inv-vface'), el('b')]),
+      ]),
+      el('div.trial-inv-read', null, [el('b.trial-inv-left'), el('span.trial-inv-unit', { text: '分' }), el('span.trial-inv-court')]),
+      el('div.trial-inv-pop', null, [el('div.trial-inv-pop-ico'), el('div.trial-inv-pop-body', null, [el('b'), el('p'), el('p.trial-inv-pop-sub')])]),
+      el('div.trial-inv-go'),
+    ])
+
+    // 处刑
+    E.exec = el('div.trial-exec', null, [
+      el('i.trial-exec-dots'),
+      el('i.trial-exec-rays'),
+      el('div.trial-exec-word', { text: '处刑' }),
+      el('div.trial-exec-who'),
+      el('div.trial-exec-chain', { html: chainSVG() }),
+    ])
+
+    // 终局 / 死亡 / 无人受命
+    E.end = el('div.trial-end', null, [
+      el('div.trial-end-halo'),
+      el('div.trial-end-face'),
+      el('div.trial-end-text', null, [el('span.trial-end-tag'), el('b.trial-end-name'), el('p.trial-end-line')]),
+      el('div.trial-end-row'),
+      el('div.trial-end-actions'),
+    ])
+
+    // 前景控件
+    E.top = el('div.trial-top', null, [
+      el('div.trial-top-case', null, [el('b'), el('span')]),
+      el('div.trial-top-clock', null, [el('span.trial-top-day'), el('span.trial-top-time')]),
+      el('div.trial-top-coins', { html: '<i></i><span>0</span>' }),
+      el('button.trial-top-exit', { type: 'button', 'data-cursor': '', 'data-trial-act': '离席', text: '离席' }),
+    ])
+    E.bar = el('div.trial-bar', null, [el('div.trial-bar-track'), el('div.trial-bar-tip', null, [el('b'), el('p')])])
+    E.me = el('div.trial-me', null, [
+      el('button.trial-me-card', { type: 'button', 'data-cursor': '翻面', 'aria-label': '身份' }, [el('span.trial-me-sigil'), el('span.trial-me-name'), el('span.trial-me-no')]),
+      el('button.trial-me-act', { type: 'button', 'data-cursor': '', 'data-cursor-tone': 'blood', 'data-trial-act': 'ability' }),
+      el('div.trial-me-text', null, [el('b'), el('p')]),
+    ])
+    E.roster = el('div.trial-roster', null, [el('div.trial-roster-list'), el('button.trial-roster-x', { type: 'button', 'data-cursor': '', text: '取消' })])
+    E.cast = el('div.trial-cast', null, [el('div.trial-cast-band', null, [el('i.trial-cast-ico'), el('p.trial-cast-text')])])
+    E.banner = el('div.trial-banner', null, [el('div.trial-banner-band', null, [el('div.trial-banner-sigil'), el('div.trial-banner-text', null, [el('b'), el('span')])])])
+    E.notes = el('div.trial-notes')
+    E.veil = el('div.trial-veil', null, [el('div.trial-veil-box', null, [el('div.trial-veil-sigil', { html: '<i></i>' }), el('div.trial-veil-row')])])
+    E.desk = el('div.trial-desk', { html: '<i></i>' })
+    E.dealGo = el('div.trial-deal-go')
+
+    st.append(E.dome, E.fx, E.ring, E.idcard, E.dealGo, E.cine, E.inv, E.exec, E.end, E.desk, E.top, E.bar, E.me, E.roster, E.cast, E.banner, E.notes, E.veil)
+    sec.appendChild(st)
+    S.sec = sec
+    S.stage = st
+
+    // 事件
+    st.addEventListener('click', onStageClick)
+    E.top.querySelector('.trial-top-exit').addEventListener('click', e => { e.stopPropagation(); exitGame() })
+    E.me.querySelector('.trial-me-card').addEventListener('click', e => { e.stopPropagation(); toggleMeText() })
+    E.me.querySelector('.trial-me-act').addEventListener('click', e => { e.stopPropagation(); onAbility() })
+    E.roster.querySelector('.trial-roster-x').addEventListener('click', e => { e.stopPropagation(); cancelTargeting() })
+    st.addEventListener('contextmenu', e => { if (S.armed || S.targeting) { e.preventDefault(); disarm(); cancelTargeting() } })
+  }
+
+  function buildSeat(k) {
+    const root = el('div.trial-seat.is-empty', { 'data-seat': k })
+    const card = el('div.trial-seat-card', { html: chairSVG() })
+    const pt = el('div.trial-seat-pt')
+    card.append(pt, el('i.trial-seat-x'), el('i.trial-seat-lock'))
+    const no = el('div.trial-seat-no', { text: U.roman(k) })
+    const name = el('div.trial-seat-name')
+    const cnt = el('div.trial-seat-count', null, [el('span')])
+    const pips = el('div.trial-seat-pips')
+    const tag = el('div.trial-seat-tag', { text: '你' })
+    const mark = el('div.trial-seat-mark')
+    const coins = el('div.trial-seat-coins')
+    const hit = el('button.trial-seat-hit', { type: 'button', 'aria-label': U.roman(k) })
+    root.append(coins, card, cnt, no, name, pips, tag, mark, hit)
+    hit.addEventListener('click', e => { e.stopPropagation(); onSeatClick(k) })
+    hit.addEventListener('pointerenter', () => onSeatHover(k, true))
+    hit.addEventListener('pointerleave', () => onSeatHover(k, false))
+    return { k, root, card, pt, name, cnt, pips, tag, mark, coins, hit, id: null, count: 0 }
+  }
+  function dialSVG() {
+    let t = ''
+    for (let i = 0; i < 60; i++) {
+      const a = (i / 60) * Math.PI * 2, r1 = i % 5 === 0 ? 412 : 428, r2 = 446
+      t += `<line x1="${(500 + Math.cos(a) * r1).toFixed(1)}" y1="${(500 + Math.sin(a) * r1).toFixed(1)}" x2="${(500 + Math.cos(a) * r2).toFixed(1)}" y2="${(500 + Math.sin(a) * r2).toFixed(1)}" class="${i % 5 === 0 ? 'is-major' : ''}"/>`
+    }
+    let dots = ''
+    for (let i = 0; i < 15; i++) {
+      const a = -Math.PI / 2 + (i / 15) * Math.PI * 2
+      dots += `<circle cx="${(500 + Math.cos(a) * 360).toFixed(1)}" cy="${(500 + Math.sin(a) * 360).toFixed(1)}" r="5"/>`
+    }
+    return `<svg viewBox="0 0 1000 1000" aria-hidden="true"><g class="trial-dial-ticks">${t}</g><g class="trial-dial-dots">${dots}</g><circle cx="500" cy="500" r="470" class="trial-dial-rim"/><line class="trial-dial-hand trial-dial-hand--h" x1="500" y1="500" x2="500" y2="300"/><line class="trial-dial-hand trial-dial-hand--m" x1="500" y1="500" x2="500" y2="150"/></svg>`
+  }
+  function chainSVG() {
+    let links = ''
+    for (let i = 0; i < 26; i++) links += `<rect x="${i * 46}" y="${i % 2 ? 6 : 0}" width="56" height="${i % 2 ? 12 : 24}" rx="${i % 2 ? 6 : 12}"/>`
+    return `<svg viewBox="0 0 1200 24" preserveAspectRatio="none" aria-hidden="true">${links}</svg>`
+  }
+
+  /* ==========================================================
+     圆桌几何
+     ========================================================== */
+  function layout() {
+    if (!S.stage) return
+    const W = S.stage.clientWidth, H = S.stage.clientHeight
+    if (!W || !H) return
+    const mobile = W < 760
+    const hud = mobile ? 56 : 64
+    const top = hud + (mobile ? 48 : 52)
+    const bottom = mobile ? 122 : Math.max(128, Math.min(156, H * 0.165))
+    const areaH = Math.max(260, H - top - bottom)
+    const cx = W / 2
+    const cy = top + areaH / 2
+    const sw = mobile ? Math.max(40, Math.min(52, W * 0.125)) : Math.max(62, Math.min(92, Math.min(W * 0.06, areaH * 0.13)))
+    const sh = sw * 4 / 3
+    const rx = mobile ? W / 2 - sw * 0.62 - 6 : Math.min(W * 0.4, areaH * 0.98, 640)
+    const ry = mobile ? areaH / 2 - sh * 0.62 : areaH / 2 - sh * 0.58
+    const pos = []
+    // 沿椭圆等弧长分布：两侧的席位不再挤在一起
+    const N = 720, cum = [0]
+    let px = 0, py = -ry
+    for (let i = 1; i <= N; i++) {
+      const t = -Math.PI / 2 + (i / N) * Math.PI * 2
+      const qx = Math.cos(t) * rx, qy = Math.sin(t) * ry
+      cum.push(cum[i - 1] + Math.hypot(qx - px, qy - py))
+      px = qx; py = qy
+    }
+    const L = cum[N]
+    let j = 0
+    for (let k = 1; k <= 15; k++) {
+      const target = ((k - 1) / 15) * L
+      while (j < N && cum[j + 1] < target) j++
+      const f = cum[j + 1] > cum[j] ? (target - cum[j]) / (cum[j + 1] - cum[j]) : 0
+      const a = -Math.PI / 2 + ((j + f) / N) * Math.PI * 2
+      const x = cx + Math.cos(a) * rx, y = cy + Math.sin(a) * ry
+      const depth = (Math.sin(a) + 1) / 2
+      const sc = mobile ? 0.94 + depth * 0.1 : 0.84 + depth * 0.2
+      pos[k] = { x, y, a, depth, sc }
+      const s = S.seat[k]
+      s.root.style.left = x + 'px'
+      s.root.style.top = y + 'px'
+      s.root.style.setProperty('--sc', sc.toFixed(3))
+      s.root.style.zIndex = String(depth < 0.25 ? 10 + Math.round(depth * 16) : 20 + Math.round(depth * 20))
+      s.root.classList.toggle('is-far', depth < 0.25)
+      s.root.classList.toggle('is-low', Math.sin(a) > 0.2)
+      s.root.classList.toggle('is-west', Math.cos(a) < -0.3)
+      s.root.classList.toggle('is-east', Math.cos(a) > 0.3)
+    }
+    S.stage.style.setProperty('--sw', sw.toFixed(1) + 'px')
+    const tw = 2 * (rx - sw * (mobile ? 0.45 : 0.32)), th = 2 * (ry - sh * (mobile ? 0.2 : 0.1))
+    Object.assign(S.E.table.style, { left: cx - tw / 2 + 'px', top: cy - th / 2 + 'px', width: tw + 'px', height: th + 'px' })
+    const cw = mobile ? Math.min(W - 24, tw * 1.02) : Math.min(tw * 0.78, 720), chh = mobile ? Math.min(areaH * 0.56, th * 0.8) : th * 0.8
+    Object.assign(S.E.core.style, { left: cx - cw / 2 + 'px', top: cy - chh / 2 + 'px', width: cw + 'px', height: chh + 'px' })
+    S.E.lines.setAttribute('viewBox', `0 0 ${W} ${H}`)
+    S.E.lines.setAttribute('width', W)
+    S.E.lines.setAttribute('height', H)
+    S.geo = { W, H, cx, cy, rx, ry, sw, sh, pos, mobile, top, bottom }
+    if (S.scene === 'inv') Inv.resize()
+    redrawLines()
+  }
+  function seatCenter(k) {
+    const p = S.geo && S.geo.pos[k]
+    if (!p) return { x: 0, y: 0 }
+    return { x: p.x, y: p.y }
+  }
+
+  /* ==========================================================
+     席位
+     ========================================================== */
+  function fillSeats(ids) {
+    for (let k = 1; k <= 15; k++) {
+      const s = S.seat[k]
+      const id = ids[k - 1] || null
+      if (s.id === id && s.pt.firstChild) { s.root.classList.toggle('is-empty', !id); continue }
+      clearFaces(s.pt)
+      s.id = id
+      s.root.classList.toggle('is-empty', !id)
+      s.name.textContent = id ? nameOf(id) : ''
+      s.hit.setAttribute('aria-label', U.roman(k) + (id ? ' ' + nameOf(id) : ''))
+      if (id) s.pt.appendChild(face(id, { eyeRange: 6 }))
+    }
+  }
+  function resetSeatStates() {
+    for (let k = 1; k <= 15; k++) {
+      const s = S.seat[k]
+      s.root.classList.remove('is-dead', 'is-me', 'is-speaking', 'is-dim', 'is-voter', 'is-pending', 'is-banned', 'is-novote', 'is-out', 'is-target', 'is-picked', 'is-hope', 'is-lit', 'is-gone', 'is-shake')
+      setCount(k, 0, true)
+      s.pips.innerHTML = ''
+      s.mark.innerHTML = ''
+      s.coins.innerHTML = ''
+      s.hit.removeAttribute('data-cursor')
+    }
+    S.touchPick = 0
+    refreshCursor()
+  }
+  function syncSeats() {
+    if (!S.G) return
+    for (let k = 1; k <= 15; k++) {
+      const s = S.seat[k]
+      const id = s.id
+      if (!id) continue
+      const dead = !TE.isLiving(S.G, id)
+      s.root.classList.toggle('is-dead', dead)
+      s.root.classList.toggle('is-me', isMe(id))
+      const p = S.G.people[id]
+      s.root.classList.toggle('is-novote', !!(p && !dead && p.ident.noVote))
+      s.root.classList.toggle('is-out', !!(S.T && S.T.idiotOut.includes(id)))
+      const prt = s.pt.querySelector('.portrait')
+      if (prt) prt.classList.toggle('is-dead', dead)
+    }
+  }
+  function setCount(k, n, silent) {
+    const s = S.seat[k]
+    s.count = n
+    s.cnt.firstChild.textContent = String(n)
+    s.cnt.classList.toggle('is-on', n !== 0)
+    s.cnt.classList.toggle('is-neg', n < 0)
+    if (!silent && window.gsap) gsap.fromTo(s.cnt, { scale: 1.9 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' })
+  }
+  function bumpCount(id) {
+    const k = seatOf(id)
+    if (!k) return
+    setCount(k, S.seat[k].count + 1)
+  }
+  function seatClass(cls, ids, on = true) {
+    for (let k = 1; k <= 15; k++) S.seat[k].root.classList.toggle(cls, on ? ids.includes(S.seat[k].id) : false)
+  }
+  function spotlight(id) {
+    for (let k = 1; k <= 15; k++) {
+      const s = S.seat[k]
+      s.root.classList.toggle('is-speaking', !!id && s.id === id)
+      s.root.classList.toggle('is-dim', !!id && s.id !== id)
+    }
+  }
+  function shakeSeat(id) {
+    const k = seatOf(id)
+    if (!k || !window.gsap) return
+    const c = S.seat[k].card
+    gsap.fromTo(c, { x: -6 }, { x: 0, duration: 0.5, ease: 'elastic.out(1.2, 0.25)' })
+  }
+  function seatMark(id, html, cls) {
+    const k = seatOf(id)
+    if (!k) return
+    const m = el('i.trial-mark' + (cls ? '.' + cls : ''), { html })
+    S.seat[k].mark.appendChild(m)
+    if (window.gsap) gsap.from(m, { scale: 0, rotate: -40, duration: 0.6, ease: 'back.out(2)' })
+    return m
+  }
+
+  /* ==========================================================
+     红线
+     ========================================================== */
+  const lineData = []
+  function linePath(a, b, bend = 0.22) {
+    const p = seatCenter(a), q = seatCenter(b)
+    const g = S.geo
+    if (a === b) {
+      const r = g ? g.sw * 0.55 : 30
+      const dx = (g.cx - p.x), dy = (g.cy - p.y), d = Math.hypot(dx, dy) || 1
+      const ux = dx / d, uy = dy / d
+      const ox = p.x + ux * r * 1.6, oy = p.y + uy * r * 1.6
+      return `M${p.x},${p.y} C${ox - uy * r},${oy + ux * r} ${ox + uy * r},${oy - ux * r} ${p.x},${p.y}`
+    }
+    const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2
+    const cx = mx + (g.cx - mx) * bend, cy = my + (g.cy - my) * bend
+    return `M${p.x.toFixed(1)},${p.y.toFixed(1)} Q${cx.toFixed(1)},${cy.toFixed(1)} ${q.x.toFixed(1)},${q.y.toFixed(1)}`
+  }
+  function drawLine(fromId, toId, opts = {}) {
+    const a = seatOf(fromId), b = seatOf(toId)
+    if (!a || !b) return null
+    const p = svg('path', { d: linePath(a, b, opts.bend), class: 'trial-line ' + (opts.cls || '') })
+    S.E.lines.appendChild(p)
+    let dot = null
+    if (a !== b) {
+      const q = seatCenter(b)
+      dot = svg('circle', { cx: q.x, cy: q.y, r: opts.dot || 5, class: 'trial-line-dot ' + (opts.cls || '') })
+      S.E.lines.appendChild(dot)
+    }
+    const rec = { a, b, p, dot, bend: opts.bend, kind: opts.kind || 'vote' }
+    lineData.push(rec)
+    const len = p.getTotalLength ? p.getTotalLength() : 600
+    if (window.gsap) {
+      gsap.fromTo(p, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: opts.dur || 0.42, ease: 'power3.out', onComplete: () => { p.style.strokeDasharray = 'none' } })
+      if (dot) gsap.fromTo(dot, { scale: 0, transformOrigin: 'center' }, { scale: 1, duration: 0.3, delay: (opts.dur || 0.42) * 0.8, ease: 'back.out(3)' })
+    }
+    return rec
+  }
+  function clearLines(kind, fade = true) {
+    for (let i = lineData.length - 1; i >= 0; i--) {
+      const r = lineData[i]
+      if (kind && r.kind !== kind) continue
+      lineData.splice(i, 1)
+      const nodes = [r.p, r.dot].filter(Boolean)
+      if (fade && window.gsap) gsap.to(nodes, { opacity: 0, duration: 0.4, onComplete: () => nodes.forEach(n => n.remove()) })
+      else nodes.forEach(n => n.remove())
+    }
+  }
+  function redrawLines() {
+    for (const r of lineData) {
+      r.p.setAttribute('d', linePath(r.a, r.b, r.bend))
+      if (r.dot) { const q = seatCenter(r.b); r.dot.setAttribute('cx', q.x); r.dot.setAttribute('cy', q.y) }
+    }
+  }
+
+  /* ==========================================================
+     顶栏、身份卡、证物栏、通知、广播
+     ========================================================== */
+  function updateTop() {
+    const E = S.E
+    if (!S.G) return
+    const m = S.G.minutes
+    E.top.querySelector('.trial-top-day').textContent = dayText(m)
+    E.top.querySelector('.trial-top-time').textContent = hhmm(m)
+    const n = S.G.caseNo
+    E.top.querySelector('.trial-top-case b').textContent = n ? '第' + U.cnNum(n) + '案' : '入局'
+    E.top.querySelector('.trial-top-case span').textContent = n ? 'CASE ' + U.roman(n) : ''
+    const mm = Math.floor(m)
+    if (S.active && mm !== S.lastTime) { S.lastTime = mm; App.bus.emit('time', mm) }
+  }
+  function setCoins(n, pop) {
+    S.coins = n
+    const sp = S.E.top.querySelector('.trial-top-coins span')
+    sp.textContent = String(n)
+    if (pop && window.gsap) gsap.fromTo(S.E.top.querySelector('.trial-top-coins'), { scale: 1.25 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' })
+  }
+
+  // 身份卡
+  function myIdent() { return S.G && S.me && S.G.people[S.me] ? S.G.people[S.me].ident : null }
+  function identData(name) {
+    const W = window.WORLD
+    const ids = (W && W.identities) || []
+    return ids.find(x => x.front === name) || ids.find(x => x.back === name) || { no: 0, front: name, frontText: '' }
+  }
+  function renderMe() {
+    const id = myIdent()
+    const E = S.E
+    const sg = E.me.querySelector('.trial-me-sigil')
+    sg.innerHTML = ''
+    if (!id) return
+    sg.appendChild(sigil(id.name))
+    E.me.querySelector('.trial-me-name').textContent = id.name
+    const d = identData(id.name)
+    E.me.querySelector('.trial-me-no').textContent = U.roman(d.no || id.no || 1)
+    E.me.querySelector('.trial-me-text b').textContent = id.name
+    E.me.querySelector('.trial-me-text p').textContent = d.front === id.name ? d.frontText : (d.backText || '')
+  }
+  function toggleMeText(force) {
+    const on = force == null ? !S.E.me.classList.contains('is-open') : force
+    S.E.me.classList.toggle('is-open', on)
+    App.audio.sfx(on ? 'flip' : 'card', { volume: 0.6 })
+  }
+  // 当前可用的能力
+  function myAbility() {
+    if (!S.G || !meAlive() || S.spectate) return null
+    const id = myIdent()
+    if (!id) return null
+    const T = S.T
+    if (S.scene === 'inv') {
+      for (const t of ['fortune', 'shifter', 'magician', 'cupid']) if (TE.canUse(S.G, null, S.me, t)) return t
+      return null
+    }
+    if (S.scene !== 'court' || !T || T.ended) return null
+    if (S.phase === 'debate') {
+      // 已经提出、等流程结算的请求不再重复提供
+      const queued = t => (T.queue || []).some(q => q.actor === S.me && q.type === t)
+      for (const t of ['knight', 'executor', 'silencer', 'puffer']) if (TE.canUse(S.G, T, S.me, t) && !queued(t)) return t
+    }
+    if (S.phase === 'vote' && S.V && !S.V.settled) {
+      for (const t of ['judge', 'hanged']) if (TE.canUse(S.G, T, S.me, t, S.V)) return t
+    }
+    return null
+  }
+  function updateMe() {
+    if (!S.E.me) return
+    // 能力结算中（选完人、正在揭示）先收起按钮；选人时保留，可再点一次取消
+    const a = abilityBusy && !(S.targeting && S.targeting.ability) ? null : myAbility()
+    const btn = S.E.me.querySelector('.trial-me-act')
+    const was = btn.classList.contains('is-on')
+    btn.classList.toggle('is-on', !!a)
+    btn.classList.toggle('is-armed', !!(S.targeting && S.targeting.ability))
+    btn.textContent = a ? VERB[a] : ''
+    btn.setAttribute('data-cursor', a ? VERB[a] : '')
+    btn.setAttribute('aria-label', a ? VERB[a] : '')
+    if (a && !was && window.gsap) gsap.fromTo(btn, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(2.4)', clearProps: 'transform,opacity' })
+    S.E.me.classList.toggle('is-dead', !!(S.G && S.me && !meAlive()))
+  }
+
+  // 证物栏
+  function clearBar() {
+    S.cards = []
+    S.tests = {}
+    S.armed = null
+    S.E.bar.querySelector('.trial-bar-track').innerHTML = ''
+    S.E.bar.classList.remove('is-tip')
+  }
+  function addCard(item, opts = {}) {
+    const track = S.E.bar.querySelector('.trial-bar-track')
+    const testable = !!item.predicate
+    const no = String(S.cards.length + 1).padStart(2, '0')
+    const b = el('button.trial-card' + (opts.by ? '.is-shared' : '') + (testable ? '' : '.is-info'), { type: 'button', 'data-cursor': testable ? '言弹' : '', 'aria-label': item.label })
+    b.innerHTML = `<span class="trial-card-no">${no}</span><span class="trial-card-ico">${icon(item.icon)}</span><span class="trial-card-label">${U.esc(item.label)}</span>` +
+      (opts.by ? `<span class="trial-card-by">${U.roman(seatOf(opts.by))}</span>` : '')
+    const rec = { item, el: b, no }
+    S.cards.push(rec)
+    track.appendChild(b)
+    b.addEventListener('click', e => { e.stopPropagation(); onCardClick(rec) })
+    b.addEventListener('pointerenter', () => showTip(rec))
+    b.addEventListener('pointerleave', () => { if (S.armed !== rec) hideTip() })
+    App.audio.sfx('card')
+    if (window.gsap) {
+      if (opts.from) {
+        const r = b.getBoundingClientRect()
+        const sr = S.stage.getBoundingClientRect()
+        const fx = opts.from.x - (r.left - sr.left) - r.width / 2, fy = opts.from.y - (r.top - sr.top) - r.height / 2
+        gsap.fromTo(b, { x: fx, y: fy, scale: 0.4, rotate: -14, opacity: 0 }, { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1, duration: 0.8, ease: 'expo.out' })
+      } else gsap.fromTo(b, { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'expo.out' })
+    }
+    track.scrollTo && track.scrollTo({ left: track.scrollWidth, behavior: 'smooth' })
+    return rec
+  }
+  function showTip(rec) {
+    const tip = S.E.bar.querySelector('.trial-bar-tip')
+    tip.querySelector('b').textContent = rec.item.label
+    tip.querySelector('p').textContent = rec.item.text || ''
+    S.E.bar.classList.add('is-tip')
+  }
+  function hideTip() { S.E.bar.classList.remove('is-tip') }
+  function onCardClick(rec) {
+    if (S.scene !== 'court' || !rec.item.predicate) { showTip(rec); App.audio.sfx('flip', { volume: 0.5 }); return }
+    if (S.armed === rec) return disarm()
+    disarm()
+    cancelTargeting()
+    S.armed = rec
+    rec.el.classList.add('is-armed')
+    S.stage.classList.add('is-armed')
+    showTip(rec)
+    App.audio.sfx('whoosh', { volume: 0.5 })
+    for (let k = 1; k <= 15; k++) {
+      const s = S.seat[k]
+      const ok = s.id && TE.isLiving(S.G, s.id) && !isMe(s.id)
+      s.hit.setAttribute('data-cursor', ok ? '言弹' : '')
+      s.root.classList.toggle('is-target', !!ok)
+    }
+    refreshCursor()
+  }
+  function disarm() {
+    if (!S.armed) return
+    S.armed.el.classList.remove('is-armed')
+    S.armed = null
+    S.stage.classList.remove('is-armed')
+    hideTip()
+    refreshTargets()
+  }
+  // 言弹：证物对一个人开火，看符合与否
+  function fire(rec, id) {
+    const k = seatOf(id)
+    const ok = TE.pred(rec.item.predicate)(charOf(id))
+    S.tests[id] = S.tests[id] || {}
+    S.tests[id][rec.item.id] = ok
+    const sr = S.stage.getBoundingClientRect()
+    const cr = rec.el.getBoundingClientRect()
+    const from = { x: cr.left - sr.left + cr.width / 2, y: cr.top - sr.top }
+    const to = seatCenter(k)
+    const streak = svg('line', { x1: from.x, y1: from.y, x2: to.x, y2: to.y, class: 'trial-bullet' })
+    S.E.lines.appendChild(streak)
+    const len = Math.hypot(to.x - from.x, to.y - from.y)
+    App.audio.sfx('vote')
+    if (window.gsap) {
+      gsap.fromTo(streak, { strokeDasharray: `60 ${len}`, strokeDashoffset: 0 }, {
+        strokeDashoffset: -len, duration: 0.32, ease: 'power2.in',
+        onComplete: () => {
+          streak.remove()
+          App.audio.sfx(ok ? 'stamp' : 'glitch', { volume: ok ? 0.55 : 0.4 })
+          renderPips(id)
+          shakeSeat(id)
+          const s = S.seat[k]
+          const burst = el('i.trial-hitmark' + (ok ? '.is-ok' : '.is-no'))
+          s.root.appendChild(burst)
+          gsap.fromTo(burst, { scale: 0.3, opacity: 1 }, { scale: 1.8, opacity: 0, duration: 0.7, ease: 'expo.out', onComplete: () => burst.remove() })
+        },
+      })
+    } else renderPips(id)
+  }
+  function renderPips(id) {
+    const k = seatOf(id)
+    if (!k) return
+    const box = S.seat[k].pips
+    box.innerHTML = ''
+    const t = S.tests[id] || {}
+    for (const rec of S.cards) {
+      if (!rec.item.predicate) continue
+      const v = t[rec.item.id]
+      box.appendChild(el('i.trial-pip' + (v === true ? '.is-ok' : v === false ? '.is-no' : '.is-none')))
+    }
+  }
+  function renderAllPips() { for (const id of Object.keys(S.tests)) renderPips(id) }
+
+  // 私人通知（屏幕边缘）
+  const NOTE_ICON = {
+    death: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 3v18M7 8h10"/></svg>',
+    known: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    lover: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>',
+    accomplice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="9" width="9" height="6" rx="3"/><rect x="12" y="9" width="9" height="6" rx="3"/></svg>',
+    swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg>',
+  }
+  function note(type, text, sub, extra) {
+    const n = el('div.trial-note.is-' + type, null, [
+      el('i.trial-note-ico', { html: NOTE_ICON[type] || NOTE_ICON.death }),
+      el('div.trial-note-body', null, [el('b', { text }), sub ? el('span', { text: sub }) : null]),
+      extra || null,
+    ])
+    S.E.notes.appendChild(n)
+    // 恋人、帮凶是持续的关系：折成一枚小标留在边上；其余通知看过即散
+    const keep = type === 'lover' || type === 'accomplice'
+    const all = Array.from(S.E.notes.children)
+    if (all.length > 5) all.slice(0, all.length - 5).forEach(x => x.remove())
+    App.audio.sfx(type === 'death' ? 'heartbeat' : 'chime', { volume: type === 'death' ? 0.9 : 0.35 })
+    if (window.gsap) {
+      gsap.fromTo(n, { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: 'expo.out' })
+      gsap.to(n, { delay: 5.5, opacity: 0.6, duration: 0.6, ease: 'power2.inOut', onStart: () => n.classList.add('is-folded') })
+      if (!keep) gsap.to(n, { delay: 14, x: 60, opacity: 0, duration: 0.8, ease: 'power2.in', onComplete: () => n.remove() })
+    } else if (!keep) setTimeout(() => n.remove(), 14000)
+    return n
+  }
+  async function flushNotices() {
+    if (!S.G) return
+    while (S.G.notices.length) {
+      const n = S.G.notices.shift()
+      if (n.type === 'death') note('death', '有人死亡', hhmm(n.at))
+      else if (n.type === 'known') note('known', '身份已被知悉', hhmm(n.at))
+      else if (n.type === 'lover') note('lover', nameOf(n.with), n.name, mini(n.with))
+      else if (n.type === 'accomplice') note('accomplice', '帮凶', nameOf(n.with), mini(n.with))
+      else if (n.type === 'swap') { note('swap', n.name, hhmm(n.at)); await flipMe() }
+      await wait(500)
+    }
+  }
+  function mini(id) {
+    const m = el('div.trial-note-face')
+    m.appendChild(face(id, { eyeRange: 3 }))
+    return m
+  }
+  async function flipMe() {
+    const c = S.E.me.querySelector('.trial-me-card')
+    App.audio.sfx('flip')
+    if (window.gsap) {
+      await anim(r => gsap.to(c, { rotateY: 90, duration: 0.25, ease: 'power2.in', onComplete: r }))
+      renderMe()
+      await anim(r => gsap.to(c, { rotateY: 0, duration: 0.35, ease: 'back.out(2)', onComplete: r }))
+    } else renderMe()
+    updateMe()
+  }
+
+  // 广播
+  async function broadcast(text, opts = {}) {
+    if (!text) return
+    const E = S.E
+    const box = E.cast
+    const p = box.querySelector('.trial-cast-text')
+    box.classList.add('is-on')
+    box.classList.toggle('is-alarm', !!opts.alarm)
+    App.audio.sfx(opts.sfx || 'chime', { volume: 0.7 })
+    if (window.gsap) gsap.fromTo(box.querySelector('.trial-cast-band'), { scaleY: 0 }, { scaleY: 1, duration: 0.35, ease: 'expo.out' })
+    await wait(250)
+    await typeIn(p, text, opts.speed || 34)
+    await wait(opts.hold == null ? 1600 : opts.hold)
+    box.classList.remove('is-on')
+    await wait(200, false)
+  }
+  // 公开能力的亮牌横幅
+  async function banner(identName, who, hold = 1500) {
+    const E = S.E
+    const b = E.banner
+    const sg = b.querySelector('.trial-banner-sigil')
+    sg.innerHTML = ''
+    sg.appendChild(sigil(identName))
+    b.querySelector('.trial-banner-text b').textContent = identName
+    b.querySelector('.trial-banner-text span').textContent = who ? nameOf(who) : ''
+    b.classList.add('is-on')
+    App.audio.sfx('stamp')
+    App.audio.sfx('flip', { volume: 0.6 })
+    if (window.gsap) {
+      gsap.fromTo(b.querySelector('.trial-banner-band'), { xPercent: -120, skewX: -18 }, { xPercent: 0, skewX: -12, duration: 0.5, ease: 'expo.out' })
+      App.glitch(b.querySelector('.trial-banner-text b'), 0.35)
+    }
+    App.shake(S.stage, 6, 0.3)
+    await wait(hold)
+    if (window.gsap) await anim(r => gsap.to(b.querySelector('.trial-banner-band'), { xPercent: 120, duration: 0.35, ease: 'expo.in', onComplete: r }))
+    b.classList.remove('is-on')
+  }
+  // 桌心大字
+  async function stamp(word, opts = {}) {
+    const s = S.E.stamp
+    s.textContent = word
+    s.className = 'trial-stamp is-on' + (opts.cls ? ' ' + opts.cls : '')
+    App.audio.sfx(opts.sfx || 'stamp')
+    if (window.gsap) gsap.fromTo(s, { scale: 2.4, opacity: 0, rotate: -10 }, { scale: 1, opacity: 1, rotate: -4, duration: 0.45, ease: 'expo.out' })
+    App.shake(S.stage, 5, 0.25)
+    await wait(opts.hold || 900)
+    if (window.gsap) gsap.to(s, { opacity: 0, scale: 0.9, duration: 0.3, onComplete: () => { s.className = 'trial-stamp' } })
+    else s.className = 'trial-stamp'
+  }
+
+  // 发言：桌心出现说话人的脸与台词
+  let sayFaceId = null
+  async function say(id, text, opts = {}) {
+    const E = S.E
+    const box = E.say
+    const fc = box.querySelector('.trial-say-face')
+    if (sayFaceId !== id) {
+      clearFaces(fc)
+      fc.appendChild(face(id, { eyeRange: 8 }))
+      sayFaceId = id
+    }
+    box.querySelector('.trial-say-name b').textContent = nameOf(id)
+    box.querySelector('.trial-say-name span').textContent = U.roman(seatOf(id))
+    box.className = 'trial-say is-on' + (opts.tone ? ' is-' + opts.tone : '') + (isMe(id) ? ' is-me' : '')
+    spotlight(id)
+    if (window.gsap) {
+      gsap.fromTo(fc, { x: opts.tone === 'defend' ? 40 : -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'expo.out' })
+      gsap.fromTo(box.querySelector('.trial-say-body'), { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'expo.out' })
+    }
+    App.audio.sfx('whoosh', { volume: 0.35 })
+    if (opts.tone === 'accuse') { App.shake(S.stage, 4, 0.25); S.stage.classList.add('is-hot'); setTimeout(() => S.stage.classList.remove('is-hot'), 700) }
+    await typeIn(box.querySelector('.trial-say-line'), text, S.spectate ? 16 : 22)
+    await wait(opts.hold == null ? (S.spectate ? 650 : 950) : opts.hold)
+  }
+  function hideSay() {
+    S.E.say.classList.remove('is-on')
+    spotlight(null)
+  }
+
+  // 选择按钮（桌心）
+  function choose(items, opts = {}) {
+    const box = opts.box || S.E.ask
+    return ask(done => {
+      box.innerHTML = ''
+      box.classList.add('is-on')
+      for (const it of items) {
+        const b = button(it.label, it.tone === 'blood' ? 'btn--blood' : '', it.act || it.label)
+        if (it.breath) b.classList.add('is-breath')
+        b.addEventListener('click', e => { e.stopPropagation(); App.audio.sfx('click'); done(it.value) })
+        box.appendChild(b)
+      }
+      if (window.gsap) gsap.fromTo(box.children, { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, stagger: 0.07, ease: 'expo.out' })
+      return () => { box.innerHTML = ''; box.classList.remove('is-on') }
+    })
+  }
+
+  /* ==========================================================
+     交互：点席位、能力、选人
+     ========================================================== */
+  function onStageClick(e) {
+    if (e.target.closest('button, a, .trial-roster, .trial-me, .trial-bar')) return
+    touchSelect(null)
+    // 身份卡的说明开着时，点别处先把它收起
+    if (S.E.me && S.E.me.classList.contains('is-open')) { toggleMeText(false); return }
+    if (S.armed) { disarm(); return }
+    skipAll()
+  }
+  // 触屏没有悬停：第一次点只选中（席位上方出现动作字），再点一次才确认；点别处取消
+  function touchSelect(k) {
+    if (S.touchPick && S.seat[S.touchPick]) S.seat[S.touchPick].root.classList.remove('is-picked')
+    S.touchPick = k || 0
+    if (k && S.seat[k]) { S.seat[k].root.classList.add('is-picked'); App.audio.sfx('hover') }
+  }
+  function onSeatHover(k, on) {
+    const s = S.seat[k]
+    if (S.scene === 'intro' && s.id) s.root.classList.toggle('is-lit', on)
+  }
+  function onSeatClick(k) {
+    const s = S.seat[k]
+    if (S.scene === 'intro') {
+      if (!s.id || !introReady()) return
+      pickMe(s.id)
+      return
+    }
+    if (!s.id) return
+    if (S.armed) {
+      if (TE.isLiving(S.G, s.id) && !isMe(s.id)) { fire(S.armed, s.id) }
+      return
+    }
+    if (S.targeting && S.targeting.seat) {
+      const t = S.targeting
+      if (!App.finePointer && t.filter && t.filter(s.id, k) && S.touchPick !== k) { touchSelect(k); return }
+      touchSelect(null)
+      t.seat(s.id, k)
+    }
+  }
+  // 选人模式：filter(id) 决定谁可选；返回 Promise<id>
+  // 选人可以嵌套（投票时临时发动能力）：结束后恢复上一层仍然有效的选人
+  const picks = new Set()
+  function pickSeat(filter, label, opts = {}) {
+    const prev = S.targeting
+    let kill = null
+    const p = ask(done => {
+      const t = {
+        alive: true,
+        ability: opts.ability || null,
+        seat: (id, k) => { if (filter(id, k)) { App.audio.sfx('drop'); done(id) } },
+        cancel: opts.cancelable ? () => done(null) : null,
+        filter, label,
+      }
+      kill = () => done(null)
+      picks.add(kill)
+      S.targeting = t
+      touchSelect(null)
+      refreshTargets()
+      updateMe()
+      return () => {
+        t.alive = false
+        picks.delete(kill)
+        if (S.targeting === t) S.targeting = prev && prev.alive ? prev : null
+        touchSelect(null)
+        refreshTargets()
+        updateMe()
+      }
+    })
+    p.kill = () => { if (kill) kill() }
+    return p
+  }
+  function killPicks() {
+    for (const k of Array.from(picks)) k()
+    S.targeting = null
+    hideRoster()
+    refreshTargets()
+  }
+  function refreshTargets() {
+    for (let k = 1; k <= 15; k++) {
+      const s = S.seat[k]
+      let ok = false, label = ''
+      if (S.armed) { ok = !!(s.id && S.G && TE.isLiving(S.G, s.id) && !isMe(s.id)); label = '言弹' }
+      else if (S.targeting && S.targeting.filter && s.id) { ok = !!S.targeting.filter(s.id, k); label = S.targeting.label }
+      else if (S.scene === 'intro' && s.id && introReady()) { ok = true; label = '入座' }
+      s.root.classList.toggle('is-target', ok)
+      if (ok) s.hit.setAttribute('data-cursor', label)
+      else s.hit.removeAttribute('data-cursor')
+    }
+    refreshCursor()
+  }
+  // 席位的光标字随阶段变化；鼠标不动时也要立刻换字（否则「指认」会一直挂到投票）
+  function refreshCursor() {
+    if (!App.finePointer || !App.cursor || !App.cursor.clear || S.cursorRaf) return
+    S.cursorRaf = requestAnimationFrame(() => {
+      S.cursorRaf = 0
+      if (!S.visible || !App.mouse || !App.mouse.active) return
+      const e = document.elementFromPoint(App.mouse.x, App.mouse.y)
+      if (!e || !S.sec || !S.sec.contains(e)) return
+      try { e.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })) } catch (err) {}
+      App.cursor.clear()
+    })
+  }
+  function cancelTargeting() {
+    if (S.targeting && S.targeting.cancel) S.targeting.cancel()
+    hideRoster()
+  }
+
+  // 调查期的名单（选人）
+  function roster(count, filter, verb) {
+    const box = S.E.roster
+    const list = box.querySelector('.trial-roster-list')
+    return ask(done => {
+      clearFaces(list)
+      const picked = []
+      for (const id of living()) {
+        if (!filter(id)) continue
+        const b = el('button.trial-roster-item', { type: 'button', 'data-cursor': verb, 'aria-label': nameOf(id) }, [
+          el('div.trial-roster-face'), el('b', { text: nameOf(id) }), el('span', { text: U.roman(seatOf(id)) }),
+        ])
+        b.querySelector('.trial-roster-face').appendChild(face(id, { eyeRange: 3 }))
+        if (isMe(id)) b.classList.add('is-me')
+        b.addEventListener('click', e => {
+          e.stopPropagation()
+          if (picked.includes(id)) { picked.splice(picked.indexOf(id), 1); b.classList.remove('is-picked'); return }
+          picked.push(id)
+          b.classList.add('is-picked')
+          App.audio.sfx('drop')
+          if (picked.length >= count) done(picked.slice())
+        })
+        list.appendChild(b)
+      }
+      box.classList.add('is-on')
+      const kill = () => done(null)
+      picks.add(kill)
+      S.targeting = { ability: true, alive: true, cancel: kill, kill }
+      updateMe()
+      if (window.gsap) gsap.fromTo(list.children, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.03, ease: 'expo.out' })
+      return () => { box.classList.remove('is-on'); picks.delete(kill); S.targeting = null; updateMe(); setTimeout(() => clearFaces(list), 400) }
+    })
+  }
+  function hideRoster() { S.E.roster.classList.remove('is-on') }
+
+  // 点身份卡旁的能力按钮
+  let abilityBusy = false
+  async function onAbility() {
+    // 正在选人时再点一下 = 取消
+    if (S.targeting && S.targeting.ability) { cancelTargeting(); return }
+    const a = myAbility()
+    if (!a || abilityBusy) return
+    disarm()
+    abilityBusy = true
+    App.audio.sfx('flip')
+    try {
+      const G = S.G, T = S.T
+      if (a === 'fortune' || a === 'shifter') {
+        const ids = await roster(1, id => id !== S.me, VERB[a])
+        if (!ids) return
+        if (a === 'fortune') {
+          const r = TE.fortune(G, S.me, ids[0])
+          if (r) await Inv.reveal(ids[0], r.name)
+        } else {
+          const r = TE.shapeshift(G, S.me, ids[0])
+          if (r) await flipMe()
+        }
+      } else if (a === 'magician' || a === 'cupid') {
+        const ids = await roster(2, () => true, VERB[a])
+        if (!ids) return
+        if (a === 'magician') {
+          const r = TE.magic(G, S.me, ids[0], ids[1])
+          if (r) { App.audio.sfx('whoosh'); if (ids.includes(S.me)) await flipMe() }
+        } else {
+          const r = TE.cupid(G, S.me, ids[0], ids[1])
+          if (r) { App.audio.sfx('chime'); await flushNotices() }
+        }
+      } else if (a === 'knight' || a === 'executor' || a === 'silencer') {
+        const id = await pickSeat(x => TE.isLiving(G, x) && x !== S.me, VERB[a], { ability: true, cancelable: true })
+        if (!id) return
+        TE.request(T, { type: a, actor: S.me, target: id })
+        if (S.debateResolve) S.debateResolve({ kind: 'ability' })
+        skipAll()
+      } else if (a === 'puffer') {
+        const p = G.people[S.me]
+        let seat = null
+        if (!p.puffSeat || !G.seats[p.puffSeat - 1] || !TE.isLiving(G, G.seats[p.puffSeat - 1])) {
+          const id = await pickSeat(x => TE.isLiving(G, x), '择席', { ability: true, cancelable: true })
+          if (!id) return
+          seat = seatOf(id)
+        }
+        TE.request(T, { type: 'puffer', actor: S.me, seat })
+        if (S.debateResolve) S.debateResolve({ kind: 'ability' })
+        skipAll()
+      } else if (a === 'judge') {
+        const V = S.V
+        const id = await pickSeat(x => V.targets.includes(x), VERB[a], { ability: true, cancelable: true })
+        if (!id) return
+        const j = TE.judge(G, T, V, S.me, id)
+        if (j) seatMark(id, '+1', 'is-judge')
+      } else if (a === 'hanged') {
+        const V = S.V
+        const from = V.ballots.filter(b => b.target === S.me && b.voter !== S.me).map(b => b.voter)
+        if (!from.length) { App.audio.sfx('wrong', { volume: 0.4 }); shakeSeat(S.me); return }
+        const id = await pickSeat(x => from.includes(x), VERB[a], { ability: true, cancelable: true })
+        if (!id) return
+        const r = TE.reflect(G, T, V, S.me, id)
+        if (r) {
+          drawLine(S.me, id, { cls: 'is-reflect', kind: 'vote', bend: -0.2 })
+          seatMark(S.me, '−1', 'is-judge')
+          seatMark(id, '+1', 'is-judge')
+          App.audio.sfx('glitch', { volume: 0.4 })
+        }
+      }
+    } catch (e) {
+      if (e !== ABORT) console.error(e)
+    } finally {
+      abilityBusy = false
+      updateMe()
+    }
+  }
+
+  /* ==========================================================
+     入局
+     ========================================================== */
+  function seatedCount() { return S.seats.filter(Boolean).length }
+  function introReady() { return seatedCount() >= 5 && !S.active }
+  function renderIntro() {
+    const E = S.E
+    fillSeats(S.seats)
+    resetSeatStates()
+    if (S.me && !S.seats.includes(S.me)) S.me = null
+    if (S.me) S.seat[seatOf(S.me)].root.classList.add('is-me')
+    E.count.innerHTML = `<b>${U.roman(Math.max(1, seatedCount())) || '—'}</b><i></i><span>XV</span>`
+    if (!seatedCount()) E.count.querySelector('b').textContent = '0'
+    E.mood.textContent = '十五把椅子，一个愿望'
+    const ui = E.ui
+    ui.innerHTML = ''
+    if (seatedCount() < 5) {
+      const g = el('div.trial-fillset', null, [el('span.trial-fill-label', { text: '随机补满' })])
+      const b15 = button('十五人', 'btn--blood', 'fill15')
+      const b8 = button('八人', '', 'fill8')
+      b15.addEventListener('click', e => { e.stopPropagation(); randomFill(15) })
+      b8.addEventListener('click', e => { e.stopPropagation(); randomFill(8) })
+      g.append(b15, b8)
+      ui.appendChild(g)
+    } else {
+      const rnd = button('随机', '', 'random')
+      rnd.addEventListener('click', e => { e.stopPropagation(); rouletteMe() })
+      const go = button('开始', 'btn--blood', 'start')
+      go.disabled = !S.me
+      go.addEventListener('click', e => { e.stopPropagation(); if (S.me) startGame() })
+      if (S.me) go.classList.add('is-breath')
+      ui.append(rnd, go)
+    }
+    refreshTargets()
+  }
+  function randomFill(n) {
+    const pool = U.shuffle(App.chars.map(c => c.id).filter(id => !S.seats.includes(id)))
+    const seats = S.seats.slice()
+    let need = n - seats.filter(Boolean).length
+    // 先填满空位（八人时隔席入座，圆桌更匀称）
+    const order = n >= 15 ? Array.from({ length: 15 }, (_, i) => i) : [0, 2, 4, 6, 8, 10, 12, 13, 1, 3, 5, 7, 9, 11, 14]
+    for (const i of order) {
+      if (need <= 0) break
+      if (!seats[i] && pool.length) { seats[i] = pool.shift(); need-- }
+    }
+    S.seats = seats
+    App.audio.sfx('card')
+    renderIntro()
+    layout()
+    if (window.gsap) {
+      const nodes = S.seat.filter(s => s && s.id).map(s => s.card)
+      gsap.fromTo(nodes, { y: -30, opacity: 0, rotate: -6 }, { y: 0, opacity: 1, rotate: 0, duration: 0.7, stagger: 0.04, ease: 'expo.out', onStart: () => App.audio.sfx('drop', { volume: 0.5 }) })
+    }
+  }
+  function pickMe(id) {
+    S.me = id
+    App.audio.sfx('drop')
+    for (let k = 1; k <= 15; k++) S.seat[k].root.classList.toggle('is-me', S.seat[k].id === id)
+    const k = seatOf(id)
+    if (window.gsap && k) gsap.fromTo(S.seat[k].card, { y: -14 }, { y: 0, duration: 0.6, ease: 'bounce.out' })
+    renderIntro()
+  }
+  let rouletteBusy = false
+  async function rouletteMe() {
+    if (rouletteBusy || !introReady()) return
+    rouletteBusy = true
+    const ids = S.seats.filter(Boolean)
+    const target = U.pick(ids)
+    const ks = ids.map(id => S.seats.indexOf(id) + 1)
+    let i = U.randInt(0, ks.length - 1)
+    const steps = ks.length * 2 + ks.indexOf(S.seats.indexOf(target) + 1) - i + ks.length
+    for (let n = 0; n < steps; n++) {
+      i = (i + 1) % ks.length
+      for (const k of ks) S.seat[k].root.classList.toggle('is-lit', k === ks[i])
+      App.audio.sfx('tick', { volume: 0.5 })
+      await new Promise(r => setTimeout(r, 40 + Math.pow(n / steps, 3) * 260))
+      if (S.active || !introReady()) { rouletteBusy = false; return }
+    }
+    for (const k of ks) S.seat[k].root.classList.remove('is-lit')
+    rouletteBusy = false
+    pickMe(S.seats[ks[i] - 1])
+  }
+
+  /* ==========================================================
+     游戏模式：滚动锁定 / 离席 / 续局
+     ========================================================== */
+  function lockScroll() {
+    const top = S.sec.getBoundingClientRect().top + window.scrollY
+    const L = App.scroll && App.scroll.lenis
+    if (L) {
+      L.scrollTo(top, { duration: 0.7, force: true, lock: true, onComplete: () => { if (S.active) App.scroll.stop() } })
+      setTimeout(() => { if (S.active) App.scroll.stop() }, 900)
+    } else {
+      window.scrollTo(0, top)
+      App.scroll && App.scroll.stop()
+    }
+  }
+  function enterGameMode() {
+    S.active = true
+    S.paused = false
+    S.stage.classList.add('is-playing')
+    S.E.veil.classList.remove('is-on')
+    lockScroll()
+  }
+  function exitGame() {
+    if (!S.active) return
+    S.active = false
+    S.paused = true
+    disarm()
+    S.stage.classList.remove('is-playing')
+    App.scroll && App.scroll.start()
+    showVeil()
+  }
+  function showVeil() {
+    const v = S.E.veil
+    const row = v.querySelector('.trial-veil-row')
+    row.innerHTML = ''
+    const a = button('续局', 'btn--blood', 'resume')
+    const b = button('重来', '', 'restart')
+    a.addEventListener('click', e => { e.stopPropagation(); resumeGame() })
+    b.addEventListener('click', e => { e.stopPropagation(); hardReset() })
+    row.append(a, b)
+    v.classList.add('is-on')
+    App.audio.sfx('door', { volume: 0.4 })
+  }
+  function resumeGame() {
+    enterGameMode()
+    S.paused = false
+    mood(sceneMood())
+  }
+  function sceneMood() {
+    return { intro: 'intro', deal: 'intro', cine: 'cine', inv: 'inv', court: 'court', exec: 'exec', after: 'after', end: S.endMood || 'end' }[S.scene] || 'court'
+  }
+  function hardReset() {
+    S.token++
+    S.skippers.clear()
+    S.active = false
+    S.paused = false
+    S.running = false
+    S.G = null
+    S.T = null
+    S.V = null
+    S.C = null
+    S.spectate = false
+    S.deadShown = false
+    S.phase = null
+    S.targeting = null
+    S.debateResolve = null
+    sayFaceId = null
+    if (S.stage) {
+      S.stage.classList.remove('is-playing', 'is-armed', 'is-hot', 'is-vote')
+      S.E.veil.classList.remove('is-on')
+      S.E.cast.classList.remove('is-on')
+      S.E.banner.classList.remove('is-on')
+      S.E.say.classList.remove('is-on')
+      S.E.reel.classList.remove('is-on')
+      S.E.ask.classList.remove('is-on')
+      S.E.ask.innerHTML = ''
+      S.E.notes.innerHTML = ''
+      S.E.idcard.classList.remove('is-on', 'is-flipped')
+      S.E.desk.classList.remove('is-on')
+      S.E.me.classList.remove('is-open', 'is-on', 'is-dead', 'is-window', 'is-choice')
+      hideRoster()
+      clearBar()
+      clearLines(null, false)
+      clearCoins()
+      Inv.stop()
+      clearFaces(S.E.say.querySelector('.trial-say-face'))
+      clearFaces(S.E.end.querySelector('.trial-end-face'))
+      if (window.gsap) gsap.set(S.E.end.querySelector('.trial-end-face'), { clearProps: 'transform,opacity' })
+      clearFaces(S.E.exec.querySelector('.trial-exec-who'))
+    }
+    App.scroll && App.scroll.start()
+    App.audio.setMood({ tension: 0 })
+    setCoins(0)
+    setScene('intro')
+    mood('intro')
+    renderIntro()
+    layout()
+  }
+
+  /* ==========================================================
+     主流程
+     ========================================================== */
+  async function startGame() {
+    if (S.running || !S.me) return
+    const ids = S.seats
+    S.G = TE.create({ seats: ids, player: S.me, seed: Math.floor(Math.random() * 2 ** 31) })
+    S.running = true
+    S.spectate = false
+    S.deadShown = false
+    setCoins(0)
+    enterGameMode()
+    const tok = ++S.token
+    try {
+      await dealScene()
+      let guardN = 0
+      while (guardN++ < 60) {
+        guard(tok)
+        const t0 = S.G.minutes
+        const c = TE.newCase(S.G)
+        if (c.type === 'final') { await finale(c.winner); break }
+        if (c.type === 'stall') { await stallScene(); break }
+        if (c.type === 'overdue') {
+          await overdueScene(c, t0)
+          if (await checkDeath()) break
+          const w = TE.winner(S.G)
+          if (w) { await finale(w === 'none' ? null : w); break }
+          continue
+        }
+        S.C = c
+        await caseScene(c, t0)
+        if (c.lastStanding !== undefined) { await finale(c.lastStanding); break }
+        await investigate(c)
+        const pay = await court(c)
+        if (pay === 'restart') return
+        await aftermath(c, pay)
+        const w = TE.winner(S.G)
+        if (w) { await finale(w === 'none' ? null : w); break }
+        await choose([{ label: '下一案', value: 1, tone: 'blood', breath: true }])
+        clearCoins()
+        clearBar()
+        resetSeatStates()
+        syncSeats()
+      }
+    } catch (e) {
+      if (e !== ABORT) console.error('[trial]', e)
+    } finally {
+      if (tok === S.token) S.running = false
+    }
+  }
+  // 玩家死后：旁观或重来；返回 true 表示应停止主流程
+  async function checkDeath() {
+    if (!S.G || S.deadShown || !S.me || TE.isLiving(S.G, S.me)) return false
+    S.deadShown = true
+    const v = await deadScene()
+    if (v === 'restart') { setTimeout(hardReset, 0); return true }
+    S.spectate = true
+    return false
+  }
+
+  /* ---------- 发牌 ---------- */
+  async function dealScene() {
+    setScene('deal')
+    mood('intro')
+    updateTop()
+    resetSeatStates()
+    fillSeats(S.G.seats)
+    syncSeats()
+    S.E.ui.innerHTML = ''
+    S.E.mood.textContent = ''
+    S.E.count.innerHTML = ''
+    const E = S.E
+    // 牌从桌心飞向每个席位
+    const g = S.geo
+    const flights = []
+    for (const id of S.G.order) {
+      const k = seatOf(id)
+      const c = el('i.trial-flycard')
+      S.stage.appendChild(c)
+      const p = seatCenter(k)
+      c.style.left = g.cx + 'px'
+      c.style.top = g.cy + 'px'
+      flights.push({ c, p })
+    }
+    if (window.gsap) {
+      await anim(r => {
+        const tl = gsap.timeline({ onComplete: r })
+        flights.forEach((f, i) => {
+          tl.to(f.c, { x: f.p.x - g.cx, y: f.p.y - g.cy, rotate: U.rand(-200, 200), duration: 0.5, ease: 'power3.out', onStart: () => { if (i % 2 === 0) App.audio.sfx('card', { volume: 0.6 }) } }, i * 0.07)
+          tl.to(f.c, { opacity: 0, scale: 0.4, duration: 0.25 }, i * 0.07 + 0.45)
+        })
+      })
+    }
+    flights.forEach(f => f.c.remove())
+    // 你的牌
+    const id = myIdent()
+    const d = identData(id.name)
+    const card = E.idcard
+    const fc = card.querySelector('.trial-idcard-face')
+    const sg = fc.querySelector('.trial-idcard-sigil')
+    sg.innerHTML = ''
+    sg.appendChild(sigil(id.name))
+    fc.querySelector('.trial-idcard-name').textContent = id.name
+    fc.querySelector('.trial-idcard-no').textContent = U.roman(d.no || 1)
+    fc.querySelector('.trial-idcard-text').textContent = d.frontText || ''
+    card.classList.add('is-on')
+    card.classList.remove('is-flipped')
+    const mk = seatOf(S.me)
+    const mp = seatCenter(mk)
+    if (window.gsap) {
+      gsap.fromTo(card, { x: mp.x - g.W / 2, y: mp.y - g.H / 2, scale: 0.2, rotate: -20, opacity: 0 }, { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1, duration: 0.9, ease: 'expo.out' })
+    }
+    App.audio.sfx('card')
+    await wait(900)
+    card.classList.add('is-flipped')
+    App.audio.sfx('flip')
+    App.bg && App.bg.pulse(0.35)
+    await wait(700)
+    await choose([{ label: '继续', value: 1, tone: 'blood', breath: true }], { box: E.dealGo })
+    // 卡缩进左下角
+    renderMe()
+    const target = E.me.querySelector('.trial-me-card').getBoundingClientRect()
+    const sr = S.stage.getBoundingClientRect()
+    if (window.gsap) {
+      await anim(r => gsap.to(card, {
+        x: target.left - sr.left + target.width / 2 - g.W / 2, y: target.top - sr.top + target.height / 2 - g.H / 2,
+        scale: 0.16, rotate: -8, opacity: 0, duration: 0.7, ease: 'expo.in', onComplete: r,
+      }))
+    }
+    card.classList.remove('is-on', 'is-flipped')
+    if (window.gsap) gsap.set(card, { clearProps: 'all' })
+    E.me.classList.add('is-on')
+    App.audio.sfx('drop')
+  }
+
+  /* ---------- 受命 → 行凶 → 发现 ---------- */
+  async function caseScene(c, t0) {
+    const E = S.E
+    await slash(() => {
+      setScene('cine')
+      mood('cine')
+      hideSay()
+      E.cine.classList.remove('is-found')
+      clearFaces(E.cine.querySelector('.trial-cine-face'))
+    })
+    const day = E.cine.querySelector('.trial-cine-day')
+    const time = E.cine.querySelector('.trial-cine-time')
+    const moodEl = E.cine.querySelector('.trial-cine-mood')
+    moodEl.textContent = c.no === 1 ? '钟在走，有人在动' : '又一个二十四小时'
+    if (window.gsap) gsap.fromTo(moodEl, { opacity: 0, letterSpacing: '1.2em' }, { opacity: 1, letterSpacing: '.6em', duration: 2.2, ease: 'power2.out' })
+    const hands = E.cine.querySelectorAll('.trial-dial-hand')
+    const dots = E.cine.querySelectorAll('.trial-dial-dots circle')
+    dots.forEach((d, i) => d.classList.toggle('is-off', !S.G.seats[i] || !TE.isLiving(S.G, S.G.seats[i]) && S.G.seats[i] !== c.victim))
+    const t1 = c.tDiscover || c.tMurder
+    const seer = S.G.people[S.me] && S.G.people[S.me].ident.name === '先知' && (meAlive())
+    const dur = 4200
+    const start = performance.now()
+    let lastMin = -1, fired = false, tickN = 0
+    const tok = S.token
+    await ask(done => {
+      const off = App.tick(() => {
+        if (tok !== S.token) return
+        if (S.paused) return
+        const k = Math.min(1, (performance.now() - start) / dur)
+        const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2
+        const m = t0 + (t1 - t0) * e
+        const mm = Math.floor(m)
+        if (mm !== lastMin) {
+          lastMin = mm
+          day.textContent = dayText(mm)
+          time.textContent = hhmm(mm)
+          const mins = mm % 60, hrs = (mm % 720) / 60
+          hands[1].setAttribute('transform', `rotate(${mins * 6} 500 500)`)
+          hands[0].setAttribute('transform', `rotate(${hrs * 30} 500 500)`)
+          if (++tickN % 9 === 0) App.audio.sfx('tick', { volume: 0.4 })
+          if (S.G) { const keep = S.G.minutes; S.G.minutes = mm; updateTop(); S.G.minutes = keep }
+        }
+        if (!fired && m >= c.tMurder) {
+          fired = true
+          dots.forEach((d, i) => { if (S.G.seats[i] === c.victim) d.classList.add('is-off') })
+          if (seer) { flushNotices() } else { S.G.notices = S.G.notices.filter(n => n.type !== 'death') }
+        }
+        if (k >= 1) { off(); done() }
+      })
+      return () => off()
+    })
+    await flushNotices()
+    if (c.lastStanding !== undefined) {
+      await wait(900)
+      return
+    }
+    // 发现：硬切
+    S.G.minutes = c.tDiscover
+    updateTop()
+    App.flash(App.color.blood, { opacity: 0.85, duration: 0.7 })
+    App.audio.sfx('discover')
+    App.shake(S.stage, 14, 0.5)
+    App.bg && App.bg.pulse(1)
+    mood('inv')
+    E.cine.classList.add('is-found')
+    const fc = E.cine.querySelector('.trial-cine-face')
+    fc.appendChild(face(c.discoverer, { eyeRange: 9 }))
+    E.cine.querySelector('.trial-cine-who b').textContent = nameOf(c.discoverer)
+    const line = E.cine.querySelector('.trial-cine-who p')
+    line.textContent = ''
+    if (window.gsap) gsap.fromTo(fc, { xPercent: -30, opacity: 0, skewX: -8 }, { xPercent: 0, opacity: 1, skewX: 0, duration: 0.6, ease: 'expo.out' })
+    await wait(500)
+    await typeIn(line, charOf(c.discoverer).lines.discover || '……', 26)
+    await wait(600)
+    if (c.bell) App.audio.sfx('bell')
+    const text = c.bell
+      ? bcText('同上，敲钟人生效', { 开庭时刻: hhmm(c.tCourt) })
+      : bcText('尸体被有效发现', { 开庭时刻: hhmm(c.tCourt) })
+    await broadcast(text, { alarm: true, hold: 1400 })
+    await choose([{ label: '调查', value: 1, tone: 'blood', breath: true }], { box: S.E.cine.querySelector('.trial-cine-go') })
+  }
+
+  /* ---------- 逾期 ---------- */
+  async function overdueScene(c, t0) {
+    const E = S.E
+    await slash(() => { setScene('cine'); mood('cine'); E.cine.classList.remove('is-found'); clearFaces(E.cine.querySelector('.trial-cine-face')) })
+    const time = E.cine.querySelector('.trial-cine-time')
+    const day = E.cine.querySelector('.trial-cine-day')
+    E.cine.querySelector('.trial-cine-mood').textContent = '二十四小时'
+    const steps = 40
+    for (let i = 0; i <= steps; i++) {
+      const m = t0 + (c.at - t0) * (i / steps)
+      time.textContent = hhmm(m)
+      day.textContent = dayText(m)
+      if (i % 4 === 0) App.audio.sfx('tick', { volume: 0.4 })
+      await wait(60, false)
+    }
+    S.G.minutes = c.at
+    updateTop()
+    await broadcast(bcText('受命者逾期', { 某某: nameOf(c.mandated) }), { alarm: true })
+    await execute(c.executed, { overdue: true })
+    await flushNotices()
+  }
+
+  /* ==========================================================
+     调查
+     ========================================================== */
+  const Inv = {
+    cv: null, ctx: null, plan: null, pctx: null, lcv: null, lctx: null,
+    W: 0, H: 0, dpr: 1, geo: null, c: null, objs: [], doors: [], body: null, spots: [],
+    light: { x: 0, y: 0, tx: 0, ty: 0, r: 120, tapAt: 0 }, off: null, dust: [], running: false, busy: false, t: 0,
+
+    setup(c) {
+      const E = S.E
+      this.c = c
+      this.cv = E.inv.querySelector('.trial-inv-cv')
+      this.ctx = this.cv.getContext('2d')
+      this.plan = document.createElement('canvas')
+      this.pctx = this.plan.getContext('2d')
+      this.lcv = document.createElement('canvas')
+      this.lctx = this.lcv.getContext('2d')
+      const r = U.seeded((c.no * 7919 + (S.G.seed % 100000)) >>> 0)
+      this.layoutRoom(c, r)
+      this.dust = Array.from({ length: 40 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random(), v: 0.2 + Math.random() * 0.6 }))
+      this.resize()
+      const box = E.inv.querySelector('.trial-inv-spots')
+      box.innerHTML = ''
+      for (const sp of this.spots) {
+        const label = sp.kind === 'body' ? '验尸' : sp.place === 'away' ? '追踪' : '细查'
+        const b = el('button.trial-spot' + (sp.kind === 'body' ? '.is-body' : ''), { type: 'button', 'data-cursor': '', 'aria-label': label })
+        b.addEventListener('click', e => { e.stopPropagation(); this.onSpot(sp) })
+        sp.btn = b
+        box.appendChild(b)
+      }
+      this.placeButtons()
+    },
+
+    /* --- 房间布局（米为单位，房间内局部坐标 u 向东、v 向北） --- */
+    layoutRoom(c, r) {
+      const R = c.plan || { x0: 0, x1: 8, y0: 0, y1: 8, doors: [], floor: c.roomInfo.floor, name: c.roomInfo.name }
+      this.R = R
+      const w = R.x1 - R.x0, h = R.y1 - R.y0
+      this.w = w; this.h = h
+      // 门
+      const doors = []
+      const rooms = (window.WORLD && window.WORLD.rooms) || []
+      ;(R.doors || []).forEach((d, i) => {
+        let wall = null, at = null
+        if (d.axis === 'y' && d.at != null) { wall = d.dir === '东' ? 'E' : 'W'; at = d.at - R.y0 }
+        else if (d.axis === 'x' && d.at != null) { wall = d.dir === '北' ? 'N' : 'S'; at = d.at - R.x0 }
+        else {
+          const o = rooms.find(x => x.floor === R.floor && x.name === d.to)
+          if (o) {
+            const ov = (a0, a1, b0, b1) => [Math.max(a0, b0), Math.min(a1, b1)]
+            let a, b
+            if (Math.abs(o.x0 - R.x1) < 0.7) { [a, b] = ov(R.y0, R.y1, o.y0, o.y1); if (b > a) { wall = 'E'; at = (a + b) / 2 - R.y0 } }
+            if (!wall && Math.abs(o.x1 - R.x0) < 0.7) { [a, b] = ov(R.y0, R.y1, o.y0, o.y1); if (b > a) { wall = 'W'; at = (a + b) / 2 - R.y0 } }
+            if (!wall && Math.abs(o.y0 - R.y1) < 0.7) { [a, b] = ov(R.x0, R.x1, o.x0, o.x1); if (b > a) { wall = 'N'; at = (a + b) / 2 - R.x0 } }
+            if (!wall && Math.abs(o.y1 - R.y0) < 0.7) { [a, b] = ov(R.x0, R.x1, o.x0, o.x1); if (b > a) { wall = 'S'; at = (a + b) / 2 - R.x0 } }
+          }
+          if (!wall) { wall = ['N', 'S', 'E', 'W'][i % 4]; at = (wall === 'N' || wall === 'S' ? w : h) * (0.3 + 0.4 * r()) }
+        }
+        const width = Math.min(d.width || (d.open ? 1.8 : 1), (wall === 'N' || wall === 'S' ? w : h) * 0.6)
+        const len = wall === 'N' || wall === 'S' ? w : h
+        at = U.clamp(at, width / 2 + 0.15, len - width / 2 - 0.15)
+        if (doors.some(x => x.wall === wall && Math.abs(x.at - at) < width)) return
+        doors.push({ wall, at, width, to: d.to, open: !!d.open })
+      })
+      if (!doors.length) doors.push({ wall: 'S', at: w / 2, width: 1, to: '', open: false })
+      this.doors = doors
+      // 门内侧的点
+      const doorIn = d => {
+        if (d.wall === 'N') return { u: d.at, v: h - 0.7 }
+        if (d.wall === 'S') return { u: d.at, v: 0.7 }
+        if (d.wall === 'E') return { u: w - 0.7, v: d.at }
+        return { u: 0.7, v: d.at }
+      }
+      this.doorIn = doorIn
+      // 陈设
+      const placed = []
+      const kindOf = name => {
+        if (/泳池/.test(name)) return { k: 'pool', a: w * 0.62, b: h * 0.58, center: true }
+        if (/浴池/.test(name)) return { k: 'bath', a: Math.min(1.8, w * 0.4), b: Math.min(2.6, h * 0.35) }
+        if (/球道/.test(name)) return { k: 'lanes', a: w * 0.78, b: Math.min(3, h * 0.4), center: true }
+        if (/毯/.test(name)) return { k: 'rug', a: Math.min(3.2, w * 0.5), b: Math.min(2.4, h * 0.42), rug: true }
+        if (/床/.test(name)) return { k: 'bed', a: 2.1, b: 2.3, post: /四柱/.test(name) }
+        if (/浴缸/.test(name)) return { k: 'tub', a: 1.8, b: 0.9, wall: true }
+        if (/钢琴/.test(name)) return { k: 'piano', a: 1.6, b: 1.5 }
+        if (/球台|台球桌/.test(name)) return { k: 'table', a: 2.7, b: 1.5 }
+        if (/圆桌|圆盘|圆雕/.test(name)) return { k: 'round', a: 1.4, b: 1.4 }
+        if (/长桌|长椅|长板|长镜/.test(name)) return { k: /镜/.test(name) ? 'mirror' : 'table', a: Math.min(3.4, w * 0.5), b: /镜/.test(name) ? 0.1 : 1, wall: /镜|椅/.test(name) }
+        if (/镜/.test(name)) return { k: 'mirror', a: 1.4, b: 0.1, wall: true }
+        if (/窗|天窗/.test(name)) return { k: 'window', a: 1.6, b: 0.12, wall: true }
+        if (/钟/.test(name)) return { k: 'clock', a: 0.6, b: 0.6, wall: true }
+        if (/灯/.test(name)) return { k: 'lamp', a: 0.5, b: 0.5 }
+        if (/柜|架|格|货架|书柜/.test(name)) return { k: 'cabinet', a: Math.min(2.4, Math.max(w, h) * 0.3), b: 0.55, wall: true }
+        if (/桌|台|几|案|岛|车/.test(name)) return { k: 'table', a: 1.5, b: 0.85 }
+        if (/沙发|榻/.test(name)) return { k: 'sofa', a: 2, b: 0.8 }
+        if (/椅|凳|垫/.test(name)) return { k: 'seat', a: 0.6, b: 0.6 }
+        if (/机|泵|罐|箱|器/.test(name)) return { k: 'machine', a: 0.9, b: 0.9, wall: true }
+        if (/像|雕|标本|骨架|霸王龙|化石|山子|礼器|仪|皇冠|玉琮|兽/.test(name)) return { k: 'exhibit', a: /霸王龙|骨架/.test(name) ? Math.min(4, w * 0.4) : 1.1, b: /霸王龙|骨架/.test(name) ? Math.min(1.8, h * 0.3) : 1.1 }
+        if (/门铃|插销|号码牌|方位牌|门$/.test(name)) return { k: 'fixture', a: 0.3, b: 0.3, door: true }
+        return { k: 'thing', a: 0.7, b: 0.6 }
+      }
+      const objs = (c.roomInfo.objects || []).map(name => Object.assign({ name }, kindOf(name)))
+      const prio = o => (o.center ? 0 : o.rug ? 1 : o.k === 'bed' || o.k === 'bath' ? 2 : o.wall ? 3 : 4)
+      objs.sort((a, b) => prio(a) - prio(b))
+      const inDoor = (cx, cy, rad) => doors.some(d => { const p = doorIn(d); return Math.hypot(p.u - cx, p.v - cy) < d.width / 2 + 0.9 + rad })
+      const overlaps = (o, rug) => placed.some(p => {
+        if (rug !== !!p.rug) return false
+        return Math.abs(p.u - o.u) < (p.a + o.a) / 2 + 0.3 && Math.abs(p.v - o.v) < (p.b + o.b) / 2 + 0.3
+      })
+      for (const o of objs) {
+        let ok = false
+        for (let tries = 0; tries < 80 && !ok; tries++) {
+          const sh = tries > 50 ? 0.7 : 1
+          let a = Math.min(o.a * sh, w - 0.6), b = Math.min(o.b * sh, h - 0.6)
+          let u, v, rot = false
+          if (o.center) { u = w / 2; v = h / 2 }
+          else if (o.door) { const d = doors[tries % doors.length]; const p = doorIn(d); u = p.u + (r() - 0.5) * 0.6; v = p.v + (r() - 0.5) * 0.6; a = b = 0.3 }
+          else if (o.wall) {
+            const wall = ['N', 'S', 'E', 'W'][Math.floor(r() * 4)]
+            if (wall === 'E' || wall === 'W') { const t = a; a = b; b = t; rot = true }
+            if (wall === 'N') { u = a / 2 + 0.1 + r() * (w - a - 0.2); v = h - b / 2 - 0.08 }
+            else if (wall === 'S') { u = a / 2 + 0.1 + r() * (w - a - 0.2); v = b / 2 + 0.08 }
+            else if (wall === 'E') { u = w - a / 2 - 0.08; v = b / 2 + 0.1 + r() * (h - b - 0.2) }
+            else { u = a / 2 + 0.08; v = b / 2 + 0.1 + r() * (h - b - 0.2) }
+          } else {
+            u = a / 2 + 0.4 + r() * Math.max(0, w - a - 0.8)
+            v = b / 2 + 0.4 + r() * Math.max(0, h - b - 0.8)
+            if (r() < 0.4 && a !== b && w > 3 && h > 3) { const t = a; a = b; b = t; rot = true }
+          }
+          const cand = Object.assign({}, o, { u, v, a, b, rot })
+          if (a <= 0 || b <= 0) continue
+          if (!o.center && !o.door && !o.rug && inDoor(u, v, Math.max(a, b) / 2 * 0.6)) continue
+          if (!o.center && !o.door && overlaps(cand, !!o.rug)) continue
+          placed.push(cand)
+          ok = true
+        }
+        if (!ok) placed.push(Object.assign({}, o, { u: w * (0.2 + 0.6 * r()), v: h * (0.2 + 0.6 * r()), a: 0.4, b: 0.4, ghost: true }))
+      }
+      this.objs = placed
+      // 尸体
+      const solid = placed.filter(p => !p.rug && !p.ghost && p.k !== 'pool' && p.k !== 'lanes')
+      const free = (u, v, rad) => u > rad && v > rad && u < w - rad && v < h - rad &&
+        !solid.some(p => Math.abs(p.u - u) < p.a / 2 + rad && Math.abs(p.v - v) < p.b / 2 + rad)
+      let body = null
+      const cause = c.cause.id
+      const pool = placed.find(p => p.k === 'pool' || p.k === 'bath')
+      for (let tries = 0; tries < 200 && !body; tries++) {
+        let u, v
+        if (cause === 'door' && tries < 120) { const d = doors[tries % doors.length]; const p = doorIn(d); u = p.u + (r() - 0.5) * 0.8; v = p.v + (r() - 0.5) * 0.8 }
+        else if (cause === 'drown' && pool && tries < 120) {
+          const side = Math.floor(r() * 4)
+          u = side < 2 ? pool.u + (r() - 0.5) * pool.a : pool.u + (side === 2 ? 1 : -1) * (pool.a / 2 + 0.7)
+          v = side >= 2 ? pool.v + (r() - 0.5) * pool.b : pool.v + (side === 0 ? 1 : -1) * (pool.b / 2 + 0.7)
+        } else { u = 0.9 + r() * (w - 1.8); v = 0.9 + r() * (h - 1.8) }
+        if (free(u, v, tries < 150 ? 0.55 : 0.3) || tries > 190) body = { u: U.clamp(u, 0.6, w - 0.6), v: U.clamp(v, 0.6, h - 0.6), rot: r() * Math.PI * 2 }
+      }
+      if (Math.min(w, h) < 2.2) body.rot = (w > h ? 0 : Math.PI / 2) + (r() - 0.5) * 0.4
+      this.body = body
+      // 热点
+      const spots = []
+      const taken = []
+      const far = (u, v, d = 0.9) => taken.every(t => Math.hypot(t.u - u, t.v - v) > d)
+      const put = (sp, u, v) => { sp.u = U.clamp(u, 0.35, w - 0.35); sp.v = U.clamp(v, 0.35, h - 0.35); taken.push({ u: sp.u, v: sp.v }); spots.push(sp) }
+      const bodySpot = c.spots.find(s => s.kind === 'body')
+      put(Object.assign(bodySpot, { place: 'body' }), body.u, body.v)
+      const awayDoors = doors.slice().sort(() => r() - 0.5)
+      let ai = 0
+      for (const s of c.spots.filter(x => x.kind === 'clue')) {
+        const k = s.clue
+        s.place = k.place
+        if (k.place === 'away') {
+          const d = doors.find(x => x.to && k.awayTo && x.to.includes(k.awayTo)) || awayDoors[ai++ % awayDoors.length]
+          s.door = d
+          const p = doorIn(d)
+          let u = p.u, v = p.v
+          for (let t = 0; t < 10 && !far(u, v, 0.5); t++) { u += (r() - 0.5) * 0.6; v += (r() - 0.5) * 0.6 }
+          put(s, u, v)
+        } else if (k.place === 'body') {
+          let u, v, n = 0
+          do { const a = body.rot + (n * 2.1) + r(); u = body.u + Math.cos(a) * (0.9 + n * 0.08); v = body.v + Math.sin(a) * (0.9 + n * 0.08) } while (!far(u, v, 0.75) && n++ < 30)
+          put(s, u, v)
+        } else {
+          let u, v, n = 0
+          do {
+            const p = solid.length && r() < 0.7 ? solid[Math.floor(r() * solid.length)] : null
+            if (p) { u = p.u + (r() - 0.5) * (p.a + 0.9); v = p.v + (r() - 0.5) * (p.b + 0.9) } else { u = 0.6 + r() * (w - 1.2); v = 0.6 + r() * (h - 1.2) }
+          } while (!far(u, v) && n++ < 40)
+          put(s, u, v)
+        }
+      }
+      for (const s of c.spots.filter(x => x.kind === 'decoy')) {
+        const p = placed.find(o => o.name === s.object)
+        let u = p ? p.u : w * r(), v = p ? p.v : h * r(), n = 0
+        while (!far(u, v, 0.8) && n++ < 30) { u += (r() - 0.5) * 0.8; v += (r() - 0.5) * 0.8 }
+        s.place = 'room'
+        put(s, u, v)
+      }
+      this.spots = spots
+    },
+
+    // 平面图在屏幕上的位置：可旋转 90° 以获得更大的比例
+    computeGeo() {
+      const W = this.W, H = this.H
+      const mobile = W < 760
+      // 圆环计时器：桌面端平面图收在圆环之内
+      const D = mobile ? Math.min(W * 0.98, (H - 90) * 0.98) : Math.min(W * 0.74, (H - 90) * 0.98)
+      const top = mobile ? 56 + (H - 56 - 190 - D) / 2 + 40 : 64 + (H - 64 - D) / 2
+      this.ring = { D, x: (W - D) / 2, y: top, cx: W / 2, cy: top + D / 2 }
+      if (!mobile) {
+        const rot = this.h > this.w * 1.05
+        const s = Math.min((D * 0.84) / Math.hypot(this.w, this.h), 84)
+        const pw = (rot ? this.h : this.w) * s, ph = (rot ? this.w : this.h) * s
+        this.geo = { s, rot, ox: this.ring.cx - pw / 2, oy: this.ring.cy - ph / 2, pw, ph, mobile }
+        return
+      }
+      const box = mobile
+        ? { x: 14, y: 128, w: W - 28, h: H - 128 - 200 }
+        : { x: Math.max(250, W * 0.2), y: 128, w: W - 2 * Math.max(250, W * 0.2), h: H - 128 - 150 }
+      const w = this.w, h = this.h
+      const sA = Math.min(box.w / w, box.h / h), sB = Math.min(box.w / h, box.h / w)
+      const rot = sB > sA * 1.18
+      const s = Math.min(rot ? sB : sA, mobile ? 52 : 80)
+      const pw = (rot ? h : w) * s, ph = (rot ? w : h) * s
+      const ox = box.x + (box.w - pw) / 2, oy = box.y + (box.h - ph) / 2
+      this.geo = { s, rot, ox, oy, pw, ph, mobile }
+    },
+    P(u, v) {
+      const g = this.geo
+      return g.rot ? [g.ox + v * g.s, g.oy + u * g.s] : [g.ox + u * g.s, g.oy + (this.h - v) * g.s]
+    },
+    setLocal(ctx) {
+      const g = this.geo, d = this.dpr
+      if (g.rot) ctx.setTransform(0, d * g.s, d * g.s, 0, d * g.ox, d * g.oy)
+      else ctx.setTransform(d * g.s, 0, 0, -d * g.s, d * g.ox, d * (g.oy + this.h * g.s))
+    },
+
+    resize() {
+      if (!this.cv || !S.stage) return
+      const W = S.stage.clientWidth, H = S.stage.clientHeight
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+      this.W = W; this.H = H; this.dpr = dpr
+      for (const c of [this.cv, this.plan]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr) }
+      this.cv.style.width = W + 'px'
+      this.cv.style.height = H + 'px'
+      this.computeGeo()
+      this.light.r = Math.max(this.geo.mobile ? 110 : 96, Math.min(W, H) * 0.15)
+      const L = Math.ceil(this.light.r * 2 * dpr) + 4
+      this.lcv.width = this.lcv.height = L
+      this.drawPlan()
+      this.placeButtons()
+      this.layoutTimer()
+    },
+    placeButtons() {
+      if (!this.geo) return
+      for (const sp of this.spots) {
+        if (!sp.btn) continue
+        const [x, y] = this.P(sp.u, sp.v)
+        sp.btn.style.left = x + 'px'
+        sp.btn.style.top = y + 'px'
+        sp.btn.classList.toggle('is-done', !!sp.done)
+      }
+    },
+    layoutTimer() {
+      const t = S.E.inv.querySelector('.trial-inv-timer')
+      const R = this.ring
+      Object.assign(t.style, { width: R.D + 'px', height: R.D + 'px', left: R.x + 'px', top: R.y + 'px' })
+    },
+
+    /* --- 画平面（只画一次，光照时从这里取） --- */
+    drawPlan() {
+      const ctx = this.pctx, w = this.w, h = this.h, g = this.geo, d = this.dpr
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, this.plan.width, this.plan.height)
+      const px = n => n / g.s // 像素 → 米
+      const bone = a => `rgba(235,227,214,${a})`
+      const brass = a => `rgba(194,154,91,${a})`
+      this.setLocal(ctx)
+      // 地面
+      ctx.fillStyle = '#16120f'
+      ctx.fillRect(0, 0, w, h)
+      const surf = this.c.roomInfo.floorSurface || ''
+      ctx.lineWidth = px(1)
+      ctx.strokeStyle = bone(0.07)
+      ctx.beginPath()
+      if (/木|柚|枫|橡/.test(surf)) {
+        const along = w >= h
+        const step = 0.2
+        for (let t = step; t < (along ? h : w); t += step) {
+          if (along) { ctx.moveTo(0, t); ctx.lineTo(w, t) } else { ctx.moveTo(t, 0); ctx.lineTo(t, h) }
+        }
+        ctx.stroke()
+        ctx.beginPath()
+        let seed = 1
+        const rr = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 }
+        for (let t = 0; t < (along ? h : w); t += step) {
+          for (let s = rr() * 1.6; s < (along ? w : h); s += 1.2 + rr() * 1.4) {
+            if (along) { ctx.moveTo(s, t); ctx.lineTo(s, t + step) } else { ctx.moveTo(t, s); ctx.lineTo(t + step, s) }
+          }
+        }
+        ctx.stroke()
+      } else if (/玉|石|翡翠|岩|晶/.test(surf)) {
+        const step = Math.max(0.8, Math.min(w, h) / 10)
+        for (let x = step; x < w; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, h) }
+        for (let y = step; y < h; y += step) { ctx.moveTo(0, y); ctx.lineTo(w, y) }
+        ctx.stroke()
+      } else {
+        for (let t = -h; t < w; t += 0.5) { ctx.moveTo(t, 0); ctx.lineTo(t + h, h) }
+        ctx.strokeStyle = bone(0.035)
+        ctx.stroke()
+      }
+      // 陈设
+      for (const o of this.objs) {
+        if (o.ghost) continue
+        const x0 = o.u - o.a / 2, y0 = o.v - o.b / 2
+        ctx.lineWidth = px(1.4)
+        ctx.strokeStyle = bone(0.55)
+        ctx.fillStyle = 'rgba(10,8,9,.55)'
+        switch (o.k) {
+          case 'rug':
+            ctx.fillStyle = 'rgba(125,22,22,.18)'
+            ctx.fillRect(x0, y0, o.a, o.b)
+            ctx.strokeStyle = brass(0.4)
+            ctx.strokeRect(x0 + 0.12, y0 + 0.12, o.a - 0.24, o.b - 0.24)
+            ctx.beginPath()
+            for (let t = x0; t < x0 + o.a; t += 0.12) { ctx.moveTo(t, y0); ctx.lineTo(t, y0 - 0.1); ctx.moveTo(t, y0 + o.b); ctx.lineTo(t, y0 + o.b + 0.1) }
+            ctx.stroke()
+            break
+          case 'pool': case 'bath': {
+            ctx.fillStyle = 'rgba(40,90,95,.28)'
+            ctx.fillRect(x0, y0, o.a, o.b)
+            ctx.strokeRect(x0, y0, o.a, o.b)
+            ctx.strokeRect(x0 + 0.25, y0 + 0.25, o.a - 0.5, o.b - 0.5)
+            ctx.beginPath()
+            ctx.strokeStyle = 'rgba(160,220,225,.16)'
+            for (let y = y0 + 0.6; y < y0 + o.b - 0.3; y += 0.55) {
+              for (let x = x0 + 0.4; x < x0 + o.a - 0.6; x += 0.9) { ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 0.22, y + 0.12, x + 0.45, y) }
+            }
+            ctx.stroke()
+            break
+          }
+          case 'lanes':
+            for (let i = 0; i < 2; i++) {
+              const yy = o.v - o.b / 2 + i * (o.b / 2) + 0.1
+              ctx.fillStyle = 'rgba(194,154,91,.08)'
+              ctx.fillRect(x0, yy, o.a, o.b / 2 - 0.2)
+              ctx.strokeRect(x0, yy, o.a, o.b / 2 - 0.2)
+              ctx.beginPath()
+              for (let k = 0; k < 4; k++) { const bx = x0 + o.a - 0.4 - k * 0.3; ctx.moveTo(bx, yy + 0.2); ctx.lineTo(bx, yy + o.b / 2 - 0.4) }
+              ctx.stroke()
+            }
+            break
+          case 'bed':
+            ctx.fillRect(x0, y0, o.a, o.b)
+            ctx.strokeRect(x0, y0, o.a, o.b)
+            ctx.strokeRect(x0 + 0.15, y0 + o.b - 0.65, o.a / 2 - 0.25, 0.45)
+            ctx.strokeRect(x0 + o.a / 2 + 0.1, y0 + o.b - 0.65, o.a / 2 - 0.25, 0.45)
+            ctx.beginPath(); ctx.moveTo(x0, y0 + o.b * 0.55); ctx.lineTo(x0 + o.a, y0 + o.b * 0.5); ctx.stroke()
+            if (o.post) { ctx.fillStyle = brass(0.6); for (const [a, b] of [[0, 0], [1, 0], [0, 1], [1, 1]]) ctx.fillRect(x0 + a * o.a - 0.08, y0 + b * o.b - 0.08, 0.16, 0.16) }
+            break
+          case 'round': case 'lamp': case 'clock':
+            ctx.beginPath(); ctx.ellipse(o.u, o.v, o.a / 2, o.b / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+            if (o.k === 'lamp') { ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; ctx.moveTo(o.u + Math.cos(a) * o.a * 0.6, o.v + Math.sin(a) * o.a * 0.6); ctx.lineTo(o.u + Math.cos(a) * o.a * 0.9, o.v + Math.sin(a) * o.a * 0.9) } ctx.strokeStyle = brass(0.5); ctx.stroke() }
+            if (o.k === 'clock') { ctx.beginPath(); ctx.moveTo(o.u, o.v); ctx.lineTo(o.u, o.v + o.b * 0.35); ctx.moveTo(o.u, o.v); ctx.lineTo(o.u + o.a * 0.25, o.v); ctx.stroke() }
+            break
+          case 'mirror': case 'window':
+            ctx.strokeStyle = o.k === 'mirror' ? 'rgba(200,215,230,.6)' : brass(0.55)
+            ctx.lineWidth = px(2.2)
+            ctx.strokeRect(x0, y0, o.a, o.b)
+            break
+          case 'exhibit':
+            ctx.fillRect(x0, y0, o.a, o.b)
+            ctx.strokeRect(x0, y0, o.a, o.b)
+            ctx.beginPath(); ctx.ellipse(o.u, o.v, o.a * 0.32, o.b * 0.32, 0.4, 0, Math.PI * 2); ctx.strokeStyle = brass(0.55); ctx.stroke()
+            break
+          case 'piano':
+            ctx.beginPath()
+            ctx.moveTo(x0, y0); ctx.lineTo(x0 + o.a, y0); ctx.lineTo(x0 + o.a, y0 + o.b * 0.4)
+            ctx.quadraticCurveTo(x0 + o.a * 0.55, y0 + o.b * 0.45, x0 + o.a * 0.4, y0 + o.b); ctx.lineTo(x0, y0 + o.b); ctx.closePath()
+            ctx.fill(); ctx.stroke()
+            break
+          case 'cabinet': case 'machine':
+            ctx.fillRect(x0, y0, o.a, o.b)
+            ctx.strokeRect(x0, y0, o.a, o.b)
+            ctx.beginPath()
+            if (o.k === 'cabinet') { const n = Math.max(2, Math.round(Math.max(o.a, o.b) / 0.6)); for (let i = 1; i < n; i++) { if (o.a > o.b) { ctx.moveTo(x0 + i * o.a / n, y0); ctx.lineTo(x0 + i * o.a / n, y0 + o.b) } else { ctx.moveTo(x0, y0 + i * o.b / n); ctx.lineTo(x0 + o.a, y0 + i * o.b / n) } } }
+            else ctx.ellipse(o.u, o.v, Math.min(o.a, o.b) * 0.32, Math.min(o.a, o.b) * 0.32, 0, 0, Math.PI * 2)
+            ctx.stroke()
+            break
+          case 'tub':
+            ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0, y0, o.a, o.b, 0.35) : ctx.rect(x0, y0, o.a, o.b); ctx.fill(); ctx.stroke()
+            break
+          case 'fixture':
+            ctx.fillStyle = brass(0.6); ctx.fillRect(o.u - 0.08, o.v - 0.08, 0.16, 0.16)
+            break
+          default:
+            ctx.fillRect(x0, y0, o.a, o.b)
+            ctx.strokeRect(x0, y0, o.a, o.b)
+            if (o.k === 'sofa') { ctx.beginPath(); ctx.moveTo(x0, y0 + o.b * 0.3); ctx.lineTo(x0 + o.a, y0 + o.b * 0.3); ctx.stroke() }
+        }
+      }
+      // 墙（留出门洞）
+      const T = 0.22
+      ctx.strokeStyle = 'rgba(200,190,175,.9)'
+      ctx.lineWidth = Math.max(T, px(4))
+      ctx.lineCap = 'butt'
+      const walls = { S: [[0, 0], [w, 0]], N: [[0, h], [w, h]], W: [[0, 0], [0, h]], E: [[w, 0], [w, h]] }
+      for (const k of ['S', 'N', 'W', 'E']) {
+        const [[ax, ay], [bx, by]] = walls[k]
+        const len = k === 'S' || k === 'N' ? w : h
+        const gaps = this.doors.filter(d => d.wall === k).map(d => [d.at - d.width / 2, d.at + d.width / 2]).sort((p, q) => p[0] - q[0])
+        let t = -T / 2
+        ctx.beginPath()
+        for (const [g0, g1] of gaps.concat([[len + T / 2, len + T / 2]])) {
+          const pa = k === 'S' || k === 'N' ? [ax + t, ay] : [ax, ay + t]
+          const pb = k === 'S' || k === 'N' ? [ax + g0, ay] : [ax, ay + g0]
+          ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1])
+          t = g1
+        }
+        ctx.stroke()
+        void bx; void by
+      }
+      // 门扇与开启弧线
+      ctx.lineWidth = px(1.4)
+      for (const dd of this.doors) {
+        const half = dd.width / 2
+        let hx, hy, lx, ly, a0
+        if (dd.wall === 'S') { hx = dd.at - half; hy = 0; lx = hx; ly = dd.width; a0 = 0 }
+        else if (dd.wall === 'N') { hx = dd.at - half; hy = h; lx = hx; ly = h - dd.width; a0 = 0 }
+        else if (dd.wall === 'W') { hx = 0; hy = dd.at - half; lx = dd.width; ly = hy; a0 = Math.PI / 2 }
+        else { hx = w; hy = dd.at - half; lx = w - dd.width; ly = hy; a0 = Math.PI / 2 }
+        ctx.strokeStyle = brass(dd.open ? 0.3 : 0.75)
+        if (!dd.open) {
+          ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(lx, ly); ctx.stroke()
+          ctx.setLineDash([px(3), px(3)])
+          ctx.beginPath()
+          const r = dd.width
+          const ang = dd.wall === 'S' ? [0, Math.PI / 2] : dd.wall === 'N' ? [-Math.PI / 2, 0] : dd.wall === 'W' ? [-Math.PI / 2, 0] : [Math.PI / 2, Math.PI]
+          ctx.arc(hx, hy, r, ang[0], ang[1])
+          ctx.stroke()
+          ctx.setLineDash([])
+        }
+        void a0
+      }
+      // 尸体：粉笔轮廓
+      this.drawBody(ctx, px)
+      // 离开现场的痕迹：脚印通向门
+      for (const sp of this.spots) {
+        if (sp.place !== 'away' || !sp.door) continue
+        const p = this.doorIn(sp.door)
+        const from = { u: this.body.u, v: this.body.v }
+        const n = Math.max(3, Math.floor(Math.hypot(p.u - from.u, p.v - from.v) / 0.45))
+        ctx.fillStyle = 'rgba(235,227,214,.22)'
+        for (let i = 1; i < n; i++) {
+          const t = i / n
+          const u = from.u + (p.u - from.u) * t, v = from.v + (p.v - from.v) * t
+          const ang = Math.atan2(p.v - from.v, p.u - from.u)
+          const side = i % 2 ? 0.09 : -0.09
+          ctx.save()
+          ctx.translate(u + Math.cos(ang + Math.PI / 2) * side, v + Math.sin(ang + Math.PI / 2) * side)
+          ctx.rotate(ang)
+          ctx.beginPath(); ctx.ellipse(0, 0, 0.12, 0.05, 0, 0, Math.PI * 2); ctx.fill()
+          ctx.restore()
+        }
+      }
+      // 文字（屏幕坐标，不随变换镜像）
+      ctx.setTransform(d, 0, 0, d, 0, 0)
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = '10px "Mono", "Sans SC", monospace'
+      for (const o of this.objs) {
+        if (o.ghost || o.k === 'fixture') continue
+        const [x, y] = this.P(o.u, o.v)
+        ctx.fillStyle = bone(0.42)
+        ctx.fillText(o.name, x, y + (o.k === 'rug' ? Math.min(o.b, 1) * g.s * 0.3 : 0))
+      }
+      ctx.font = '11px "Sans SC", sans-serif'
+      for (const dd of this.doors) {
+        if (!dd.to) continue
+        const p = this.doorIn(dd)
+        const out = { u: p.u, v: p.v }
+        if (dd.wall === 'N') out.v = h + 0.55
+        else if (dd.wall === 'S') out.v = -0.55
+        else if (dd.wall === 'E') out.u = w + 0.55
+        else out.u = -0.55
+        const [x, y] = this.P(out.u, out.v)
+        ctx.fillStyle = brass(0.7)
+        ctx.fillText(dd.to, x, y)
+      }
+      // 比例尺与罗盘
+      const [bx, by] = [g.ox, g.oy + g.ph + 22]
+      const m = this.w > 12 || this.h > 12 ? 5 : 2
+      ctx.strokeStyle = bone(0.5)
+      ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + m * g.s, by); ctx.moveTo(bx, by - 4); ctx.lineTo(bx, by + 4); ctx.moveTo(bx + m * g.s, by - 4); ctx.lineTo(bx + m * g.s, by + 4); ctx.stroke()
+      ctx.fillStyle = bone(0.55)
+      ctx.textAlign = 'left'
+      ctx.font = '10px "Mono", monospace'
+      ctx.fillText(m + ' m', bx + m * g.s + 8, by)
+      const nx = g.ox + g.pw + 26, ny = g.oy + 4
+      ctx.save()
+      ctx.translate(nx, ny + 16)
+      if (g.rot) ctx.rotate(Math.PI / 2)
+      ctx.strokeStyle = brass(0.8)
+      ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(5, 6); ctx.lineTo(0, 2); ctx.lineTo(-5, 6); ctx.closePath(); ctx.stroke()
+      ctx.restore()
+      ctx.fillStyle = brass(0.85)
+      ctx.textAlign = 'center'
+      ctx.font = '11px "Cinzel", serif'
+      ctx.fillText('N', g.rot ? nx + 26 : nx, g.rot ? ny + 16 : ny - 8)
+    },
+    drawBody(ctx, px) {
+      const b = this.body
+      if (!b || this.bodyGone) return
+      ctx.save()
+      ctx.translate(b.u, b.v)
+      ctx.rotate(b.rot)
+      const cause = this.c.cause.id
+      // 痕迹（不血腥：只有几处暗色点与水渍）
+      if (cause === 'stab' || cause === 'blunt' || cause === 'fall') {
+        ctx.fillStyle = 'rgba(125,22,22,.55)'
+        const pts = [[0.35, 0.25, 0.2], [0.6, -0.2, 0.12], [-0.2, 0.3, 0.09], [0.9, 0.35, 0.07]]
+        for (const [x, y, r] of pts) { ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.8, 0.4, 0, Math.PI * 2); ctx.fill() }
+      } else if (cause === 'drown') {
+        ctx.strokeStyle = 'rgba(160,220,225,.3)'; ctx.lineWidth = px(1)
+        for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.ellipse(0, 0, 0.6 + i * 0.25, 0.35 + i * 0.18, 0, 0, Math.PI * 2); ctx.stroke() }
+      } else if (cause === 'alcohol') {
+        ctx.fillStyle = 'rgba(194,154,91,.25)'
+        for (const [x, y] of [[0.95, 0.4], [1.05, 0.5], [0.9, 0.55]]) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 0.08, y + 0.05); ctx.lineTo(x + 0.02, y + 0.1); ctx.fill() }
+      }
+      // 粉笔线
+      ctx.strokeStyle = 'rgba(240,236,228,.92)'
+      ctx.lineWidth = px(2.2)
+      ctx.lineJoin = 'round'
+      ctx.lineCap = 'round'
+      ctx.setLineDash([px(7), px(2.5)])
+      ctx.beginPath()
+      ctx.arc(0.78, 0, 0.13, 0, Math.PI * 2)
+      ctx.moveTo(0.62, 0.09)
+      ctx.lineTo(0.55, 0.22); ctx.lineTo(0.3, 0.55); ctx.lineTo(0.22, 0.5); ctx.lineTo(0.38, 0.2)
+      ctx.lineTo(0.1, 0.17); ctx.lineTo(-0.15, 0.16); ctx.lineTo(-0.55, 0.32); ctx.lineTo(-0.85, 0.25); ctx.lineTo(-0.86, 0.15)
+      ctx.lineTo(-0.55, 0.15); ctx.lineTo(-0.2, 0.04); ctx.lineTo(-0.2, -0.04); ctx.lineTo(-0.6, -0.12); ctx.lineTo(-0.9, -0.06)
+      ctx.lineTo(-0.9, -0.17); ctx.lineTo(-0.55, -0.24); ctx.lineTo(-0.15, -0.17); ctx.lineTo(0.12, -0.18); ctx.lineTo(0.42, -0.3)
+      ctx.lineTo(0.6, -0.5); ctx.lineTo(0.66, -0.43); ctx.lineTo(0.52, -0.22); ctx.lineTo(0.62, -0.09)
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.restore()
+    },
+
+    /* --- 每帧：黑暗 + 手电 --- */
+    frame(t, dt) {
+      if (!this.running || !this.geo) return
+      const ctx = this.ctx, d = this.dpr, L = this.light
+      const k = Math.min(1, 0.22 * dt)
+      if (App.finePointer && !this.auto) {
+        const r = S.stage.getBoundingClientRect()
+        L.tx = App.mouse.sx - r.left
+        L.ty = App.mouse.sy - r.top
+      }
+      L.x += (L.tx - L.x) * k
+      L.y += (L.ty - L.y) * k
+      this.t += dt
+      const flick = 0.94 + 0.06 * Math.sin(this.t * 0.9) * Math.sin(this.t * 0.37 + 1)
+      let R = L.r * flick
+      if (!App.finePointer || this.auto) {
+        const age = (performance.now() - L.tapAt) / 1000
+        R *= age < 0.2 ? 0.4 + age * 3 : Math.max(0.55, 1 - Math.max(0, age - 3) * 0.08)
+      }
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, this.cv.width, this.cv.height)
+      // 极暗的环境光
+      ctx.globalAlpha = this.geo.mobile ? 0.11 : 0.06
+      ctx.drawImage(this.plan, 0, 0)
+      ctx.globalAlpha = 1
+      // 手电：只取光圈附近一块
+      const lc = this.lctx, Ls = this.lcv.width
+      const sx = Math.round((L.x - R) * d), sy = Math.round((L.y - R) * d)
+      lc.globalCompositeOperation = 'source-over'
+      lc.clearRect(0, 0, Ls, Ls)
+      lc.drawImage(this.plan, sx, sy, Ls, Ls, 0, 0, Ls, Ls)
+      lc.globalCompositeOperation = 'destination-in'
+      const grd = lc.createRadialGradient(R * d, R * d, 0, R * d, R * d, R * d)
+      grd.addColorStop(0, 'rgba(0,0,0,1)')
+      grd.addColorStop(0.55, 'rgba(0,0,0,.9)')
+      grd.addColorStop(1, 'rgba(0,0,0,0)')
+      lc.fillStyle = grd
+      lc.fillRect(0, 0, Ls, Ls)
+      ctx.drawImage(this.lcv, sx, sy)
+      // 暖色光晕与尘
+      ctx.globalCompositeOperation = 'lighter'
+      const glow = ctx.createRadialGradient(L.x * d, L.y * d, 0, L.x * d, L.y * d, R * d * 1.25)
+      glow.addColorStop(0, 'rgba(255,236,205,.09)')
+      glow.addColorStop(1, 'rgba(255,236,205,0)')
+      ctx.fillStyle = glow
+      ctx.fillRect((L.x - R * 1.3) * d, (L.y - R * 1.3) * d, R * 2.6 * d, R * 2.6 * d)
+      for (const p of this.dust) {
+        p.y -= 0.0006 * p.v * dt
+        p.x += Math.sin(this.t * 0.02 + p.z * 10) * 0.0004 * dt
+        if (p.y < 0) p.y += 1
+        const x = L.x + (p.x - 0.5) * R * 2, y = L.y + (p.y - 0.5) * R * 2
+        const dd = Math.hypot(x - L.x, y - L.y) / R
+        if (dd > 1) continue
+        ctx.fillStyle = `rgba(255,240,220,${(1 - dd) * 0.35 * p.z})`
+        ctx.fillRect(x * d, y * d, (1 + p.z) * d, (1 + p.z) * d)
+      }
+      ctx.globalCompositeOperation = 'source-over'
+      // 热点闪光 / 已查标记
+      let n = 0
+      for (const sp of this.spots) {
+        const [x, y] = this.P(sp.u, sp.v)
+        if (sp.done) {
+          if (sp.kind === 'clue') { n++; this.tent(ctx, x, y, n) }
+          else if (sp.kind === 'decoy') { ctx.strokeStyle = 'rgba(160,150,138,.5)'; ctx.lineWidth = d; ctx.beginPath(); ctx.arc(x * d, y * d, 5 * d, 0, Math.PI * 2); ctx.stroke() }
+          continue
+        }
+        const dist = Math.hypot(x - L.x, y - L.y) / R
+        const vis = U.clamp(1.15 - dist) + (this.geo.mobile ? 0.12 : 0)
+        if (vis <= 0.02) continue
+        const tw = 0.6 + 0.4 * Math.sin(this.t * 0.12 + sp.u * 3 + sp.v)
+        const s = (sp.kind === 'body' ? 9 : 6) * (0.8 + 0.4 * tw) * d
+        ctx.save()
+        ctx.translate(x * d, y * d)
+        ctx.rotate(this.t * 0.01)
+        ctx.fillStyle = sp.kind === 'body' ? `rgba(255,46,126,${0.85 * vis})` : `rgba(255,244,222,${0.9 * vis * tw})`
+        ctx.beginPath()
+        ctx.moveTo(0, -s); ctx.lineTo(s * 0.22, -s * 0.22); ctx.lineTo(s, 0); ctx.lineTo(s * 0.22, s * 0.22)
+        ctx.lineTo(0, s); ctx.lineTo(-s * 0.22, s * 0.22); ctx.lineTo(-s, 0); ctx.lineTo(-s * 0.22, -s * 0.22)
+        ctx.closePath(); ctx.fill()
+        ctx.restore()
+      }
+    },
+    tent(ctx, x, y, n) {
+      const d = this.dpr
+      ctx.save()
+      ctx.translate(x * d, y * d)
+      ctx.fillStyle = '#ff2e7e'
+      ctx.beginPath(); ctx.moveTo(-8 * d, 6 * d); ctx.lineTo(0, -9 * d); ctx.lineTo(8 * d, 6 * d); ctx.closePath(); ctx.fill()
+      ctx.fillStyle = '#0a0809'
+      ctx.font = `${9 * d}px "Cinzel", serif`
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillText(String(n), 0, 1.5 * d)
+      ctx.restore()
+    },
+
+    start() {
+      if (this.running) return
+      this.running = true
+      const r = S.stage.getBoundingClientRect()
+      this.light.x = this.light.tx = App.finePointer ? App.mouse.x - r.left : this.W / 2
+      this.light.y = this.light.ty = App.finePointer ? App.mouse.y - r.top : this.H / 2
+      this.light.tapAt = performance.now() - 5000
+      this.off = App.tick((t, dt) => this.frame(t, dt))
+      this.onTap = e => {
+        if (App.finePointer) return
+        const rr = S.stage.getBoundingClientRect()
+        const p = e.touches ? e.touches[0] : e
+        this.light.tx = p.clientX - rr.left
+        this.light.ty = p.clientY - rr.top
+        this.light.tapAt = performance.now()
+      }
+      this.cv.addEventListener('pointerdown', this.onTap)
+    },
+    stop() {
+      this.running = false
+      if (this.off) { this.off(); this.off = null }
+      if (this.cv && this.onTap) this.cv.removeEventListener('pointerdown', this.onTap)
+    },
+
+    /* --- 时间圆环 --- */
+    buildTicks(total) {
+      const g = S.E.inv.querySelector('.trial-inv-ticks')
+      let s = ''
+      const n = total
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + (i / n) * Math.PI * 2
+        const major = i % (total > 60 ? 10 : 5) === 0
+        const r1 = major ? 452 : 462, r2 = 478
+        s += `<line data-i="${i}" x1="${(500 + Math.cos(a) * r1).toFixed(1)}" y1="${(500 + Math.sin(a) * r1).toFixed(1)}" x2="${(500 + Math.cos(a) * r2).toFixed(1)}" y2="${(500 + Math.sin(a) * r2).toFixed(1)}" class="${major ? 'is-major' : ''}"/>`
+      }
+      g.innerHTML = s
+      this.ticks = Array.from(g.children)
+      this.total = total
+    },
+    updateTimer() {
+      const c = this.c
+      const left = Math.max(0, c.tCourt - S.G.minutes)
+      const E = S.E.inv
+      E.querySelector('.trial-inv-left').textContent = String(Math.ceil(left))
+      const frac = left / this.total
+      const arc = E.querySelector('.trial-inv-arc')
+      const C = 2 * Math.PI * 430
+      arc.style.strokeDasharray = `${C * frac} ${C}`
+      const used = this.total - Math.ceil(left)
+      if (this.ticks) this.ticks.forEach((t, i) => t.classList.toggle('is-used', i < used))
+      E.classList.toggle('is-low', left <= Math.min(15, this.total * 0.2))
+      updateTop()
+    },
+    async spendAnim(cost, from) {
+      const steps = Math.max(1, Math.round(cost))
+      const keep = S.G.minutes
+      for (let i = 1; i <= steps; i++) {
+        S.G.minutes = from + i
+        this.updateTimer()
+        if (i % 2 === 0) App.audio.sfx('tick', { volume: 0.35 })
+        await wait(28, false)
+      }
+      S.G.minutes = keep
+      this.updateTimer()
+    },
+
+    /* --- 点热点 --- */
+    async onSpot(sp) {
+      if (this.busy || sp.done || this.ended || S.paused) return
+      this.busy = true
+      if (!App.finePointer) {
+        // 触屏：点到哪里，手电就照到哪里
+        const [lx, ly] = this.P(sp.u, sp.v)
+        this.light.tx = lx; this.light.ty = ly; this.light.tapAt = performance.now()
+      }
+      try {
+        const before = S.G.minutes
+        const res = TE.inspect(S.G, this.c, sp.id)
+        if (!res) return
+        sp.btn.classList.add('is-done')
+        App.audio.sfx(sp.kind === 'body' ? 'heartbeat' : 'click')
+        await this.spendAnim(res.cost, before)
+        const [x, y] = this.P(sp.u, sp.v)
+        if (sp.kind === 'decoy') {
+          const w = el('div.trial-inv-word', { text: sp.word })
+          w.style.left = x + 'px'; w.style.top = y + 'px'
+          S.E.inv.appendChild(w)
+          App.audio.sfx('tick')
+          if (window.gsap) gsap.fromTo(w, { opacity: 0, y: 6 }, { opacity: 1, y: -18, duration: 0.6, ease: 'expo.out', onComplete: () => gsap.to(w, { opacity: 0, delay: 1.1, duration: 0.6, onComplete: () => w.remove() }) })
+          else setTimeout(() => w.remove(), 1500)
+        } else if (sp.kind === 'body') {
+          const cause = res.cause
+          const sub = res.window ? hhmm(res.window[0]) + '—' + hhmm(res.window[1]) : ''
+          await this.popup(x, y, 'body', cause.name, cause.sign + '。' + res.stage + '。', sub)
+          addCard({ id: 'body', label: cause.name, text: cause.sign + '。' + res.stage + '。' + (sub ? ' ' + sub : ''), predicate: cause.needs || null, icon: 'body' }, { from: { x, y } })
+        } else {
+          const k = res.clue
+          await this.popup(x, y, k.tpl, k.label, k.text, k.place === 'away' && k.awayTo ? k.awayTo : '')
+          addCard({ id: k.id, label: k.label, text: k.text, predicate: k.predicate, icon: k.tpl }, { from: { x, y } })
+        }
+      } catch (e) {
+        if (e !== ABORT) console.error(e)
+      } finally {
+        this.busy = false
+        this.placeButtons()
+      }
+    },
+    async popup(x, y, ico, title, text, sub) {
+      const box = S.E.inv.querySelector('.trial-inv-pop')
+      box.querySelector('.trial-inv-pop-ico').innerHTML = icon(ico)
+      box.querySelector('b').textContent = title
+      box.querySelector('.trial-inv-pop-sub').textContent = sub || ''
+      const W = this.W
+      const bw = Math.min(380, W - 32)
+      const left = this.geo.mobile ? (W - bw) / 2 : U.clamp(x + 30, 16, W - bw - 16)
+      const top = this.geo.mobile ? this.H - 330 : U.clamp(y - 70, 120, this.H - 300)
+      Object.assign(box.style, { left: left + 'px', top: top + 'px', width: bw + 'px' })
+      box.classList.add('is-on')
+      App.audio.sfx('card')
+      if (window.gsap) gsap.fromTo(box, { opacity: 0, y: 14, rotate: -2 }, { opacity: 1, y: 0, rotate: 0, duration: 0.45, ease: 'expo.out' })
+      await typeIn(box.querySelector('p'), text, 20)
+      await wait(Math.min(2600, 900 + text.length * 25))
+      if (window.gsap) await anim(r => gsap.to(box, { opacity: 0, y: 20, scale: 0.9, duration: 0.3, ease: 'power2.in', onComplete: r }))
+      box.classList.remove('is-on')
+      if (window.gsap) gsap.set(box, { clearProps: 'transform,opacity' })
+    },
+    // 占卜家：查验结果（被查验者会以一句台词表现他知道了）
+    async reveal(id, name) {
+      const box = S.E.inv.querySelector('.trial-inv-pop')
+      box.querySelector('.trial-inv-pop-ico').innerHTML = ''
+      box.querySelector('.trial-inv-pop-ico').appendChild(sigil(name))
+      box.querySelector('b').textContent = nameOf(id) + ' · ' + name
+      box.querySelector('.trial-inv-pop-sub').textContent = ''
+      const bw = Math.min(380, this.W - 32)
+      Object.assign(box.style, { left: (this.W - bw) / 2 + 'px', top: (this.H / 2 - 120) + 'px', width: bw + 'px' })
+      box.classList.add('is-on')
+      App.audio.sfx('flip')
+      if (window.gsap) gsap.fromTo(box, { opacity: 0, rotateY: 90 }, { opacity: 1, rotateY: 0, duration: 0.5, ease: 'back.out(1.6)' })
+      await typeIn(box.querySelector('p'), '「' + (charOf(id).lines.defend || '……') + '」', 22)
+      await wait(2200)
+      box.classList.remove('is-on')
+    },
+  }
+
+  async function investigate(c) {
+    const E = S.E
+    await slash(() => {
+      setScene('inv')
+      mood('inv')
+      E.inv.classList.remove('is-low', 'is-over')
+      E.inv.querySelector('.trial-inv-room').textContent = c.roomInfo.name
+      E.inv.querySelector('.trial-inv-floor').textContent = c.roomInfo.floor
+      const vf = E.inv.querySelector('.trial-inv-vface')
+      clearFaces(vf)
+      vf.appendChild(face(c.victim, { dead: true, eyeRange: 2 }))
+      E.inv.querySelector('.trial-inv-victim b').textContent = nameOf(c.victim)
+      E.inv.querySelector('.trial-inv-court').textContent = '开庭 ' + hhmm(c.tCourt)
+      Inv.bodyGone = false
+      Inv.ended = false
+      Inv.auto = !!(S.spectate || !meAlive())
+      Inv.setup(c)
+      Inv.buildTicks(c.investMinutes)
+      Inv.updateTimer()
+      Inv.start()
+      syncSeats()
+    })
+    if (window.gsap) {
+      gsap.fromTo(E.inv.querySelector('.trial-inv-room'), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1, ease: 'expo.out' })
+      gsap.fromTo(E.inv.querySelector('.trial-inv-timer svg'), { rotate: -90, scale: 0.85, opacity: 0 }, { rotate: 0, scale: 1, opacity: 1, duration: 1.4, ease: 'expo.out' })
+    }
+    // AI 的秘密能力在调查期发动；条文规定的私人通知送达玩家
+    TE.aiInvestigation(S.G, c)
+    await flushNotices()
+    updateMe()
+
+    const go = E.inv.querySelector('.trial-inv-go')
+    go.innerHTML = ''
+    const tok = S.token
+    if (S.spectate || !meAlive()) {
+      // 旁观：手电自己扫过现场
+      const spots = Inv.spots.slice()
+      for (const sp of spots) {
+        guard(tok)
+        const [x, y] = Inv.P(sp.u, sp.v)
+        Inv.light.tx = x; Inv.light.ty = y; Inv.light.tapAt = performance.now()
+        await wait(700)
+      }
+      S.G.minutes = c.tCourt
+      Inv.updateTimer()
+    } else {
+      await ask(done => {
+        const b = button('开庭', 'btn--blood', 'court')
+        b.addEventListener('click', e => { e.stopPropagation(); done('go') })
+        go.appendChild(b)
+        let acc = 0, last = performance.now()
+        let warned = false
+        const off = App.tick(() => {
+          const now = performance.now()
+          const dtm = now - last
+          last = now
+          if (S.paused || Inv.busy || abilityBusy) return
+          acc += dtm
+          if (acc >= 1400) {
+            acc -= 1400
+            const left = TE.spend(S.G, c, 1)
+            Inv.updateTimer()
+            if (left <= 15 && left > 0) App.audio.sfx(left <= 5 ? 'heartbeat' : 'tick', { volume: 0.5 })
+            if (left <= 15 && !warned) { warned = true; App.audio.setMood({ tension: 0.85 }) }
+            if (left <= 0) done('time')
+          }
+          if (S.G.minutes >= c.tCourt && !Inv.busy) done('time')
+        })
+        return () => { off(); go.innerHTML = '' }
+      })
+    }
+    // 届满：主持人移走尸体
+    Inv.ended = true
+    S.G.minutes = Math.max(S.G.minutes, c.tCourt)
+    Inv.updateTimer()
+    App.audio.sfx('chime')
+    E.inv.classList.add('is-over')
+    Inv.bodyGone = true
+    Inv.drawPlan()
+    await wait(900)
+  }
+
+  /* ==========================================================
+     庭审
+     ========================================================== */
+  async function court(c) {
+    const E = S.E
+    const G = S.G
+    await slash(() => {
+      Inv.stop()
+      setScene('court')
+      mood('court')
+      App.audio.setMood({ tension: 0.45 })
+      resetSeatStates()
+      syncSeats()
+      hideSay()
+      S.E.ui.innerHTML = ''
+      S.E.mood.textContent = nameOf(c.victim)
+      S.E.count.innerHTML = '<b>' + U.roman(c.no) + '</b>'
+    })
+    const opened = TE.courtOpen(G, c)
+    // 他人找到的证物，从他的席位飞进证物栏
+    for (const k of opened.shared) {
+      const p = seatCenter(seatOf(k.foundBy))
+      addCard({ id: k.id, label: k.label, text: k.text, predicate: k.predicate, icon: k.tpl }, { by: k.foundBy, from: p })
+      await wait(260)
+    }
+    if (opened.body) {
+      const p = seatCenter(seatOf(opened.body.by))
+      addCard({ id: 'body', label: c.cause.name, text: c.cause.sign + '。' + opened.body.stage + '。', predicate: c.cause.needs || null, icon: 'body' }, { by: opened.body.by, from: p })
+      await wait(260)
+    }
+    // 卡片顺序可能变了：重排试射记录
+    renderAllPips()
+    const T = TE.openTrial(G, c)
+    S.T = T
+    S.phase = 'debate'
+    updateTop()
+    const it = TE.trialFlow(G, T)
+    let input
+    let result = null
+    let n = 0
+    while (n++ < 3000) {
+      const step = it.next(input)
+      input = undefined
+      if (step.done) break
+      const ev = step.value
+      updateTop()
+      input = await renderEvent(ev, T, c)
+      if (input === 'restart') return 'restart'
+      if (ev.type === 'end') result = ev
+    }
+    hideSay()
+    clearLines(null)
+    disarm()
+    S.phase = null
+    updateMe()
+    const pay = TE.closeTrial(G, T)
+    S.T = null
+    S.V = null
+    void result
+    return pay
+  }
+
+  async function renderEvent(ev, T, c) {
+    const G = S.G
+    switch (ev.type) {
+      case 'open': {
+        await stamp('开庭', { hold: 1000 })
+        // 在座者依次亮起
+        for (const id of TE.livingIds(G)) {
+          const k = seatOf(id)
+          S.seat[k].root.classList.add('is-lit')
+          setTimeout(() => S.seat[k] && S.seat[k].root.classList.remove('is-lit'), 500)
+          await wait(45, false)
+        }
+        return
+      }
+      case 'turn':
+        S.phase = 'debate'
+        updateMe()
+        spotlight(ev.speaker)
+        return
+      case 'speech':
+        await say(ev.speaker, charOf(ev.speaker).lines.statement || '……')
+        return
+      case 'accuse': {
+        drawLine(ev.speaker, ev.target, { cls: 'is-accuse', kind: 'accuse', dur: 0.35 })
+        App.audio.sfx('slash', { volume: 0.5 })
+        shakeSeat(ev.target)
+        await say(ev.speaker, fill(charOf(ev.speaker).lines.accuse, ev.target) || '……', { tone: 'accuse' })
+        return
+      }
+      case 'defend':
+        await say(ev.speaker, charOf(ev.speaker).lines.defend || '……', { tone: 'defend' })
+        clearLines('accuse')
+        return
+      case 'silent':
+        await say(ev.speaker, '……', { hold: 500 })
+        return
+      case 'ask-debate': {
+        // 轮到你：指认一人，或沉默；也可以先发动能力
+        S.E.me.classList.remove('is-open')
+        spotlight(S.me)
+        const box = S.E.say
+        const fc = box.querySelector('.trial-say-face')
+        if (sayFaceId !== S.me) { clearFaces(fc); fc.appendChild(face(S.me, { eyeRange: 8 })); sayFaceId = S.me }
+        box.querySelector('.trial-say-name b').textContent = nameOf(S.me)
+        box.querySelector('.trial-say-name span').textContent = U.roman(seatOf(S.me))
+        box.querySelector('.trial-say-line').textContent = ''
+        box.className = 'trial-say is-on is-me is-turn'
+        App.audio.sfx('heartbeat', { volume: 0.5 })
+        updateMe()
+        const v = await ask(done => {
+          S.debateResolve = done
+          const pick = pickSeat(x => TE.isLiving(G, x) && x !== S.me, '指认')
+          pick.then(id => { if (id) done({ kind: 'accuse', target: id }) }).catch(() => {})
+          const b = button('沉默', '', 'silent')
+          b.addEventListener('click', e => { e.stopPropagation(); done({ kind: 'silent' }) })
+          S.E.ask.innerHTML = ''
+          S.E.ask.appendChild(b)
+          S.E.ask.classList.add('is-on')
+          return () => {
+            S.debateResolve = null
+            S.E.ask.innerHTML = ''
+            S.E.ask.classList.remove('is-on')
+            pick.kill()
+          }
+        })
+        return v
+      }
+      case 'knight': {
+        await banner('骑士', ev.actor)
+        drawLine(ev.actor, ev.target, { cls: 'is-accuse', kind: 'accuse' })
+        shakeSeat(ev.target)
+        if (ev.silenced) { await say(ev.actor, '……', { hold: 900 }); clearLines('accuse'); return }
+        if (ev.success) {
+          await broadcast(bcPart('骑士揭发', 0, { 某某: nameOf(ev.target) }), { sfx: 'correct' })
+          seatMark(ev.target, '!', 'is-known')
+        } else {
+          await broadcast(bcPart('骑士揭发', 1), { sfx: 'wrong' })
+        }
+        clearLines('accuse')
+        syncSeats()
+        return
+      }
+      case 'executor':
+        S.phase = 'special'
+        updateMe()
+        await banner('执行者', ev.actor)
+        drawLine(ev.actor, ev.target, { cls: 'is-accuse', kind: 'accuse' })
+        if (ev.silenced) { await say(ev.actor, '……', { hold: 900 }); clearLines('accuse'); S.phase = 'debate'; return }
+        await wait(400)
+        return
+      case 'secret': {
+        if (ev.actor !== S.me) return
+        if (ev.ability === 'silencer') seatMark(ev.target, '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>', 'is-lock')
+        if (ev.ability === 'puffer') {
+          const id = G.seats[ev.seat - 1]
+          const r = seatMark(id, ev.void ? '?' : ev.yes ? '有' : '没有', 'is-puffer' + (ev.yes ? '.is-yes' : ''))
+          App.audio.sfx(ev.yes ? 'heartbeat' : 'drop')
+          void r
+        }
+        await wait(500)
+        return
+      }
+      case 'debate-end':
+        killPicks()
+        hideSay()
+        clearLines(null)
+        S.phase = 'vote'
+        App.audio.setMood({ tension: 1 })
+        S.stage.classList.add('is-vote')
+        await broadcast(bcText('主持人只以【】喊停辩论') || '辩论结束，开始投票。')
+        return
+      case 'vote-begin': {
+        const V = ev.vote
+        S.V = V
+        S.phase = V.kind === 'special' ? 'special' : 'vote'
+        S.stage.classList.add('is-vote')
+        App.audio.setMood({ tension: 1 })
+        for (let k = 1; k <= 15; k++) setCount(k, 0, true)
+        clearLines('vote', false)
+        for (let k = 1; k <= 15; k++) S.seat[k].mark.querySelectorAll('.is-judge').forEach(m => m.remove())
+        seatClass('is-banned', V.banned || [])
+        seatClass('is-hope', V.hopeBan ? [V.hopeBan] : [])
+        syncSeats()
+        hideSay()
+        updateMe()
+        await stamp(V.kind === 'special' ? '表决' : V.round > 1 ? '重投' : '投票', { hold: 700 })
+        if (V.kind === 'special') {
+          const k = seatOf(V.target)
+          S.seat[k].root.classList.add('is-pending')
+        }
+        return
+      }
+      case 'ask-vote': {
+        const V = ev.vote
+        S.E.me.classList.remove('is-open')
+        spotlight(S.me)
+        S.seat[seatOf(S.me)].root.classList.add('is-voter')
+        if (ev.forced) {
+          drawLine(S.me, (G.people[S.me].lover), { cls: 'is-thread', kind: 'thread', bend: 0.05 })
+          await wait(1100)
+          clearLines('thread')
+          S.seat[seatOf(S.me)].root.classList.remove('is-voter')
+          return ev.forced
+        }
+        updateMe()
+        const v = await ask(done => {
+          const pick = pickSeat(x => V.targets.includes(x) || x === S.me, '投票')
+          pick.then(id => { if (id) done(id) }).catch(() => {})
+          const b = button('弃票', '', 'abstain')
+          b.addEventListener('click', e => { e.stopPropagation(); done(null) })
+          S.E.ask.innerHTML = ''
+          S.E.ask.appendChild(b)
+          S.E.ask.classList.add('is-on')
+          return () => {
+            S.E.ask.innerHTML = ''
+            S.E.ask.classList.remove('is-on')
+            pick.kill()
+          }
+        })
+        S.seat[seatOf(S.me)].root.classList.remove('is-voter')
+        return v
+      }
+      case 'ballot': {
+        const b = ev.ballot
+        const V = ev.vote
+        const vk = seatOf(b.voter)
+        spotlight(null)
+        S.seat[vk].root.classList.add('is-voter')
+        if (b.target) {
+          const counted = V.kind !== 'special' || b.target === V.target
+          drawLine(b.voter, b.target, { cls: (counted ? '' : 'is-void') + (b.forced ? ' is-thread' : ''), kind: 'vote', dur: S.spectate ? 0.25 : 0.32 })
+          App.audio.sfx('vote')
+          if (counted) bumpCount(b.target)
+          if (isMe(b.target)) updateMe()
+        }
+        await wait(S.spectate ? 300 : isMe(b.voter) ? 300 : 520)
+        S.seat[vk].root.classList.remove('is-voter')
+        return
+      }
+      case 'vote-window': {
+        updateMe()
+        if (!myAbility() && !abilityBusy) return
+        S.E.me.classList.add('is-window')
+        App.audio.sfx('heartbeat', { volume: 0.5 })
+        await wait(2600)
+        let n = 0
+        while (abilityBusy && n++ < 80) await wait(150, false)
+        S.E.me.classList.remove('is-window')
+        return
+      }
+      case 'settle': {
+        const r = ev.result
+        S.V = null
+        S.phase = 'settle'
+        killPicks()
+        updateMe()
+        App.glitch(S.E.core, 0.3)
+        await reel(r.outcome === 'unique' ? r.pending : null, ev.vote.targets)
+        clearLines('vote')
+        return
+      }
+      case 'special-result': {
+        const r = ev.result
+        S.V = null
+        const k = seatOf(ev.vote.target)
+        if (r.outcome === 'pass') {
+          App.audio.sfx('stamp')
+          await stamp(r.count + ' / ' + r.total, { hold: 900 })
+        } else {
+          App.audio.sfx('wrong', { volume: 0.5 })
+          await stamp(r.count + ' / ' + r.total, { hold: 900, cls: 'is-fail' })
+          S.seat[k].root.classList.remove('is-pending')
+          for (let i = 1; i <= 15; i++) setCount(i, 0, true)
+          clearLines(null)
+          S.stage.classList.remove('is-vote')
+          S.phase = 'debate'
+          App.audio.setMood({ tension: 0.5 })
+        }
+        return
+      }
+      case 'noresult': {
+        S.seat.forEach(s => s && s.root.classList.remove('is-pending'))
+        if (ev.ended) {
+          await broadcast(bcPart('未产生唯一结果', 1), { sfx: 'wrong' })
+          S.stage.classList.remove('is-vote')
+        } else {
+          await broadcast(bcPart('未产生唯一结果', 0))
+          seatClass('is-banned', ev.banned || [])
+        }
+        return
+      }
+      case 'pending': {
+        const k = seatOf(ev.pending)
+        S.seat.forEach(s => s && s.root.classList.remove('is-pending'))
+        S.seat[k].root.classList.add('is-pending')
+        App.audio.sfx('heartbeat')
+        App.bg && App.bg.pulse(0.5)
+        await wait(400)
+        return
+      }
+      case 'ask-idiot': {
+        await say(S.me, '……', { hold: 200 })
+        // 身份卡亮起：这个选择来自你手里的牌
+        S.E.me.classList.add('is-choice')
+        const v = await choose([{ label: '发动', value: true, tone: 'blood' }, { label: '放弃', value: false }])
+        S.E.me.classList.remove('is-choice')
+        return v
+      }
+      case 'idiot': {
+        await banner('白痴', ev.holder)
+        if (ev.effect === 'cancel') {
+          await broadcast(bcPart('白痴发动', 0, { 某某: nameOf(ev.holder) }))
+          S.seat[seatOf(ev.holder)].root.classList.remove('is-pending')
+          syncSeats()
+          for (let i = 1; i <= 15; i++) setCount(i, 0, true)
+        } else if (ev.effect === 'fail') {
+          await broadcast(bcPart('白痴发动', 1, { 某某: nameOf(ev.holder) }), { sfx: 'wrong' })
+          seatMark(ev.holder, '!', 'is-known')
+        } else await say(ev.holder, '……', { hold: 700 })
+        return
+      }
+      case 'ask-hope': {
+        await stampFace(ev.pending)
+        S.E.me.classList.add('is-choice')
+        const v = await choose([{ label: '撤销', value: true, tone: 'blood' }, { label: '放弃', value: false }])
+        S.E.me.classList.remove('is-choice')
+        return v
+      }
+      case 'hope': {
+        await banner('身怀希望之人', ev.holder)
+        if (ev.effect === 'cancel') {
+          S.seat[seatOf(ev.pending)].root.classList.remove('is-pending')
+          seatClass('is-hope', [ev.pending])
+          for (let i = 1; i <= 15; i++) setCount(i, 0, true)
+        } else await say(ev.holder, '……', { hold: 700 })
+        return
+      }
+      case 'last-words':
+        await say(ev.speaker, charOf(ev.speaker).lines.executed || '……', { tone: 'exec', hold: 1300 })
+        return
+      case 'verdict': {
+        hideSay()
+        const vic = nameOf(c.victim)
+        if (ev.correct) {
+          await broadcast(bcText('判定正确', { 某某: nameOf(ev.pending), 死者: vic }), { sfx: 'correct' })
+          const r = await execute(ev.executed, { correct: true })
+          if (r === 'restart') return 'restart'
+        } else {
+          const r = await execute(ev.executed, { correct: false })
+          if (r === 'restart') return 'restart'
+          await broadcast(bcText('误判', { 某某: nameOf(ev.pending), 死者: vic, '一／二': NUM[ev.misjudge] || '一' }), { sfx: 'wrong' })
+        }
+        S.seat.forEach(s => s && s.root.classList.remove('is-pending'))
+        for (let i = 1; i <= 15; i++) setCount(i, 0, true)
+        syncSeats()
+        return
+      }
+      case 'end':
+        S.stage.classList.remove('is-vote')
+        App.audio.setMood({ tension: 0.3 })
+        return
+      default:
+        return
+    }
+  }
+  async function stampFace(id) {
+    spotlight(id)
+    App.audio.sfx('heartbeat', { volume: 0.6 })
+    await wait(300)
+  }
+
+  // 投票结果：桌心的转盘
+  async function reel(pending, pool) {
+    const box = S.E.reel
+    const strip = box.querySelector('.trial-reel-strip')
+    clearFaces(strip)
+    const ids = (pool || []).filter(Boolean)
+    const seq = []
+    const loops = 3
+    for (let l = 0; l < loops; l++) for (const id of U.shuffle(ids)) seq.push(id)
+    seq.push(pending || null)
+    for (const id of seq) {
+      const cell = el('div.trial-reel-cell')
+      if (id) cell.appendChild(face(id, { eyeRange: 2 }))
+      else cell.classList.add('is-blank')
+      strip.appendChild(cell)
+    }
+    box.classList.add('is-on')
+    box.classList.toggle('is-none', !pending)
+    const cellH = strip.firstChild ? strip.firstChild.offsetHeight : 120
+    const dist = (seq.length - 1) * cellH
+    App.audio.sfx('whoosh')
+    if (window.gsap && !App.reduced) {
+      let lastI = -1
+      await anim(r => gsap.fromTo(strip, { y: 0 }, {
+        y: -dist, duration: S.spectate ? 1.4 : 2.2, ease: 'power4.out', onComplete: r,
+        onUpdate() {
+          const i = Math.round(-gsap.getProperty(strip, 'y') / cellH)
+          if (i !== lastI) { lastI = i; App.audio.sfx('tick', { volume: 0.3 }) }
+        },
+      }))
+    } else strip.style.transform = `translateY(${-dist}px)`
+    App.audio.sfx('stamp')
+    App.shake(S.stage, 6, 0.3)
+    await wait(S.spectate ? 700 : 1000)
+    box.classList.remove('is-on')
+    await wait(250, false)
+    clearFaces(strip)
+    if (window.gsap) gsap.set(strip, { y: 0 })
+  }
+
+  /* ==========================================================
+     处刑
+     ========================================================== */
+  async function execute(ids, opts = {}) {
+    const E = S.E
+    const who = E.exec.querySelector('.trial-exec-who')
+    const back = S.scene
+    await slash(() => {
+      setScene('exec')
+      mood('exec')
+      clearFaces(who)
+      ids.forEach((id, i) => {
+        const card = el('div.trial-exec-card' + (i ? '.is-second' : ''), null, [el('div.trial-exec-face'), el('b', { text: nameOf(id) }), svg('svg', { class: 'trial-exec-x', 'aria-hidden': 'true' })])
+        card.querySelector('.trial-exec-face').appendChild(face(id, { eyeRange: 10 }))
+        const x = card.querySelector('.trial-exec-x')
+        x.setAttribute('viewBox', '0 0 100 133')
+        x.innerHTML = '<path d="M10 14 L90 119"/><path d="M90 14 L10 119"/>'
+        who.appendChild(card)
+      })
+    }, { color: App.color.blood })
+    const cards = Array.from(who.children)
+    const word = E.exec.querySelector('.trial-exec-word')
+    const chain = E.exec.querySelector('.trial-exec-chain')
+    if (window.gsap) {
+      gsap.fromTo(cards, { y: 120, opacity: 0, scale: 0.8 }, { y: 0, opacity: 1, scale: 1, duration: 0.8, stagger: 0.15, ease: 'expo.out' })
+      gsap.fromTo(word, { scale: 3, opacity: 0, rotate: -18 }, { scale: 1, opacity: 1, rotate: -8, duration: 0.5, delay: 0.35, ease: 'expo.out' })
+      gsap.set(chain, { xPercent: -110, yPercent: -60, rotate: 28, opacity: 1 })
+    }
+    App.audio.sfx('heartbeat')
+    await wait(1300)
+    // 锁链的影子斜斜落下
+    App.audio.sfx('execute')
+    if (window.gsap) await anim(r => gsap.to(chain, { xPercent: 0, yPercent: 0, duration: 0.42, ease: 'expo.in', onComplete: r }))
+    App.flash('#ffffff', { opacity: 1, duration: 0.8 })
+    App.shake(S.stage, 18, 0.5)
+    App.bg && App.bg.pulse(1)
+    cards.forEach(cd => cd.classList.add('is-done'))
+    if (window.gsap) {
+      cards.forEach((cd, i) => {
+        const ps = cd.querySelectorAll('.trial-exec-x path')
+        gsap.fromTo(ps, { strokeDashoffset: 140 }, { strokeDashoffset: 0, duration: 0.35, stagger: 0.16, delay: 0.25 + i * 0.3, ease: 'power3.in', onStart: () => App.audio.sfx('stamp') })
+      })
+      gsap.to(chain, { opacity: 0, duration: 1.2, delay: 0.5 })
+    }
+    await wait(2300)
+    await flushNotices()
+    syncSeats()
+    // 处刑的是你
+    if (S.me && ids.includes(S.me) && !S.deadShown) {
+      S.deadShown = true
+      const v = await deadScene()
+      if (v === 'restart') { setTimeout(hardReset, 0); return 'restart' }
+      S.spectate = true
+    }
+    if (opts.overdue) return
+    if (back === 'court') await slash(() => { setScene('court'); mood('court'); syncSeats() })
+  }
+
+  /* ==========================================================
+     余波：金币落桌
+     ========================================================== */
+  async function aftermath(c, pay) {
+    const E = S.E
+    await slash(() => {
+      setScene('after')
+      mood('after')
+      hideSay()
+      resetSeatStates()
+      syncSeats()
+      clearLines(null, false)
+      S.E.count.innerHTML = ''
+      S.E.mood.textContent = ''
+      App.audio.setMood({ tension: 0.2 })
+    })
+    S.G.minutes += 20
+    updateTop()
+    await stamp(pay.solved ? '查明' : '未明', { hold: 900, cls: pay.solved ? '' : 'is-fail', sfx: pay.solved ? 'correct' : 'wrong' })
+    // 第一轮：每人五枚
+    const ids = Object.keys(pay.table)
+    await dropCoins(ids, 5)
+    if (pay.solved) {
+      await wait(500)
+      await dropCoins(ids, 5)
+    }
+    const gain = meAlive() && pay.table[S.me] ? pay.table[S.me] : 0
+    App.bus.emit('trial:coins', gain)
+    // 未查明：凶手的十枚出现在他套房的书桌上（不广播）——只有一个极暗的光点
+    if (!pay.solved && Object.keys(pay.desk).length) {
+      E.desk.classList.add('is-on')
+      setTimeout(() => E.desk.classList.remove('is-on'), 9000)
+    }
+    await wait(500)
+  }
+  async function dropCoins(ids, n) {
+    const g = S.geo
+    const tok = S.token
+    App.audio.sfx('coins')
+    const tasks = []
+    for (const id of ids) {
+      const k = seatOf(id)
+      if (!k) continue
+      const s = S.seat[k]
+      const p = g.pos[k]
+      // 落在席位前的桌面上（朝桌心方向）
+      const tx = p.x + (g.cx - p.x) * 0.24, ty = p.y + (g.cy - p.y) * 0.24
+      for (let i = 0; i < n; i++) {
+        const coin = el('i.trial-coin')
+        S.E.ring.appendChild(coin)
+        const stackY = -((Number(s.coins.dataset.n) || 0) % 12) * 2.2
+        coin.style.left = tx + 'px'
+        coin.style.top = ty + 'px'
+        if (window.gsap) {
+          tasks.push(anim(r => gsap.fromTo(coin, { y: -g.H * 0.6 - U.rand(0, 140), x: U.rand(-30, 30), rotateX: 0, opacity: 0 }, {
+            y: stackY, x: U.rand(-3, 3), rotateX: 720, opacity: 1, duration: U.rand(0.7, 1.1), delay: i * 0.06 + U.rand(0, 0.25), ease: 'bounce.out',
+            onComplete: () => {
+              if (tok === S.token) {
+                if (i % 3 === 0) App.audio.sfx('coin', { volume: 0.4 })
+                if (isMe(id)) setCoins(S.coins + 1, true)
+              }
+              r()
+            },
+          })))
+        } else if (isMe(id)) setCoins(S.coins + 1)
+        s.coins.dataset.n = String((Number(s.coins.dataset.n) || 0) + 1)
+      }
+    }
+    await Promise.all(tasks)
+    guard(tok)
+    for (const id of ids) {
+      const k = seatOf(id)
+      const p = S.G.people[id]
+      if (k && p) { const c = S.seat[k].coins; c.textContent = String(p.coinsTable); if (window.gsap) gsap.fromTo(c, { scale: 1.6 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' }) }
+    }
+    await wait(300)
+  }
+  function clearCoins() {
+    S.E.ring.querySelectorAll('.trial-coin').forEach(c => c.remove())
+    for (let k = 1; k <= 15; k++) if (S.seat[k]) delete S.seat[k].coins.dataset.n
+  }
+
+  /* ==========================================================
+     终局、死亡、无人受命
+     ========================================================== */
+  function endButtons(items) {
+    const box = S.E.end.querySelector('.trial-end-actions')
+    return ask(done => {
+      box.innerHTML = ''
+      for (const it of items) {
+        const b = button(it.label, it.tone === 'blood' ? 'btn--blood' : '', it.act || it.label)
+        b.addEventListener('click', e => { e.stopPropagation(); done(it.value) })
+        box.appendChild(b)
+      }
+      if (window.gsap) gsap.fromTo(box.children, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'expo.out' })
+      return () => { box.innerHTML = '' }
+    })
+  }
+  async function finale(winner) {
+    const E = S.E
+    clearCoins()
+    S.endMood = 'end'
+    await slash(() => {
+      setScene('end')
+      mood('end')
+      E.end.className = 'trial-end is-win'
+      const fc = E.end.querySelector('.trial-end-face')
+      clearFaces(fc)
+      E.end.querySelector('.trial-end-row').innerHTML = ''
+      if (winner) fc.appendChild(face(winner, { eyeRange: 9 }))
+      E.end.querySelector('.trial-end-tag').textContent = winner ? U.roman(seatOf(winner)) : ''
+      E.end.querySelector('.trial-end-name').textContent = winner ? nameOf(winner) : '—'
+      E.end.querySelector('.trial-end-line').textContent = ''
+    })
+    if (winner) {
+      App.state.winner = winner
+      App.bus.emit('trial:winner', winner)
+    }
+    App.audio.sfx('chimes5')
+    if (window.gsap) {
+      // 死亡场景留下的倒地姿态要清掉（同一个肖像框）
+      gsap.fromTo(E.end.querySelector('.trial-end-face'), { scale: 0.7, opacity: 0, x: 0, y: 40, rotate: 0 }, { scale: 1, opacity: 1, y: 0, duration: 1.6, ease: 'expo.out' })
+      gsap.fromTo(E.end.querySelector('.trial-end-halo'), { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 2.4, ease: 'expo.out' })
+    }
+    await wait(1200)
+    if (winner) await typeIn(E.end.querySelector('.trial-end-line'), charOf(winner).lines.wish || '……', 46)
+    S.running = false
+    const v = await endButtons([{ label: '终章', value: 'wish', tone: 'blood', act: 'wish' }, { label: '再来一局', value: 'again', act: 'again' }])
+    if (v === 'wish') {
+      hardReset()
+      setTimeout(() => App.scroll.to('#wish'), 80)
+    } else hardReset()
+  }
+  async function deadScene() {
+    const E = S.E
+    S.endMood = 'dead'
+    await slash(() => {
+      setScene('end')
+      mood('dead')
+      E.end.className = 'trial-end is-dead'
+      const fc = E.end.querySelector('.trial-end-face')
+      clearFaces(fc)
+      E.end.querySelector('.trial-end-row').innerHTML = ''
+      fc.appendChild(face(S.me, { dead: true, eyeRange: 2 }))
+      E.end.querySelector('.trial-end-tag').textContent = U.roman(seatOf(S.me))
+      E.end.querySelector('.trial-end-name').textContent = nameOf(S.me)
+      E.end.querySelector('.trial-end-line').textContent = ''
+    }, { color: '#050404' })
+    App.audio.sfx('dark')
+    App.bg && App.bg.setDark(0.6, 1.2)
+    if (window.gsap) {
+      // 肖像向右倒下，横躺在原来的「地面」上（不压住名字），整体回到正中
+      const fc = E.end.querySelector('.trial-end-face')
+      const w = fc.offsetWidth, h = fc.offsetHeight
+      gsap.set(fc, { rotate: 0, x: 0, y: 0, opacity: 1 })
+      gsap.timeline({ delay: 0.35 })
+        .to(fc, { rotate: -5, duration: 0.28, ease: 'power2.out' })
+        .to(fc, { rotate: 90, x: -h / 2, y: -w / 2, opacity: 0.9, duration: 1.1, ease: 'bounce.out', onStart: () => setTimeout(() => App.audio.sfx('drop'), 420) })
+    }
+    await wait(1400)
+    E.end.querySelector('.trial-end-line').textContent = '你的席位熄灭了'
+    if (window.gsap) gsap.fromTo(E.end.querySelector('.trial-end-line'), { opacity: 0 }, { opacity: 1, duration: 1.2 })
+    const v = await endButtons([{ label: '旁观', value: 'watch', tone: 'blood', act: 'watch' }, { label: '重来', value: 'restart', act: 'restart' }])
+    App.bg && App.bg.setDark(0, 0.8)
+    updateMe()
+    if (v === 'watch') {
+      S.endMood = 'end'
+      return 'watch'
+    }
+    return 'restart'
+  }
+  async function stallScene() {
+    const E = S.E
+    S.endMood = 'end'
+    await slash(() => {
+      setScene('end')
+      mood('end')
+      E.end.className = 'trial-end is-stall'
+      clearFaces(E.end.querySelector('.trial-end-face'))
+      const row = E.end.querySelector('.trial-end-row')
+      clearFaces(row)
+      for (const id of living()) { const m = el('div.trial-end-mini'); m.appendChild(face(id, { eyeRange: 4 })); row.appendChild(m) }
+      E.end.querySelector('.trial-end-tag').textContent = ''
+      E.end.querySelector('.trial-end-name').textContent = ''
+      E.end.querySelector('.trial-end-line').textContent = ''
+    })
+    App.audio.sfx('chime')
+    await typeIn(E.end.querySelector('.trial-end-line'), '无人受命，钟声照旧', 60)
+    S.running = false
+    const v = await endButtons([{ label: '终章', value: 'wish', tone: 'blood', act: 'wish' }, { label: '再来一局', value: 'again', act: 'again' }])
+    hardReset()
+    if (v === 'wish') setTimeout(() => App.scroll.to('#wish'), 80)
+  }
+
+  /* ==========================================================
+     光标：圆桌随鼠标轻微倾斜、穹顶视差
+     ========================================================== */
+  let tiltX = 0, tiltY = 0
+  function onTick() {
+    if (!S.visible || !S.stage) return
+    const m = App.mouse
+    const r = S.stage.getBoundingClientRect()
+    const nx = U.clamp((m.sx - r.left) / (r.width || 1)) - 0.5
+    const ny = U.clamp((m.sy - r.top) / (r.height || 1)) - 0.5
+    tiltX = U.lerp(tiltX, nx, 0.06)
+    tiltY = U.lerp(tiltY, ny, 0.06)
+    const E = S.E
+    if (!App.reduced) {
+      E.ring.style.transform = `perspective(1600px) rotateX(${(-tiltY * 4).toFixed(2)}deg) rotateY(${(tiltX * 5).toFixed(2)}deg)`
+      E.dome.style.transform = `translate3d(${(-tiltX * 30).toFixed(1)}px, ${(-tiltY * 18).toFixed(1)}px, 0)`
+      if (S.scene === 'exec') E.exec.style.setProperty('--tx', (tiltX * 2).toFixed(3))
+      if (S.scene === 'end') E.end.style.setProperty('--tx', tiltX.toFixed(3)), E.end.style.setProperty('--ty', tiltY.toFixed(3))
+      if (S.scene === 'cine') E.cine.style.setProperty('--tx', tiltX.toFixed(3)), E.cine.style.setProperty('--ty', tiltY.toFixed(3))
+    }
+    // 加速：光标越快，调查期的灰尘越乱（不影响规则）
+  }
+
+  /* ==========================================================
+     板块注册
+     ========================================================== */
+  function mount(sec) {
+    build(sec)
+    S.seats = (App.state.seats || []).slice(0, 15)
+    while (S.seats.length < 15) S.seats.push(null)
+    setScene('intro')
+    renderIntro()
+    requestAnimationFrame(layout)
+    window.addEventListener('resize', U.debounce(() => { layout() }, 120))
+    App.onVisible(sec, v => {
+      S.visible = v
+      if (S.scene === 'inv') { if (v) Inv.start(); else Inv.stop() }
+    })
+    App.tick(onTick)
+    App.bus.on('cast:change', () => {
+      const next = (App.state.seats || []).slice(0, 15)
+      while (next.length < 15) next.push(null)
+      S.seats = next
+      if (S.running || S.G) hardReset()
+      else { renderIntro(); layout() }
+    })
+    window.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return
+      if (S.armed || (S.targeting && S.targeting.ability)) { disarm(); cancelTargeting(); return }
+      if (S.active) exitGame()
+    })
+    // 字体就位后重排一次
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layout())
+  }
+
+  def = App.section('trial', {
+    palette: PAL.intro,
+    track: 'trial',
+    mount,
+    enter() {
+      S.visible = true
+      layout()
+    },
+    leave() {
+      S.visible = false
+      if (S.scene === 'inv') Inv.stop()
+    },
+  })
+  // 入局用小调圆舞曲；进入游戏后随场景切换
+  def.track = TRACK.intro
+})()
