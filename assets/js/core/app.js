@@ -209,7 +209,7 @@
 
   /* ---------- 音频占位（core/audio.js 会替换） ---------- */
   App.audio = App.audio || {
-    start() {}, track() {}, sfx() {}, setMood() {}, setMuted() {}, muted: false, level: () => 0,
+    start() {}, track() {}, sfx() {}, setMood() {}, setMuted() {}, hush() {}, muted: false, level: () => 0,
   }
 
   /* ---------- 唯一 id 重写（同一张 SVG 在页面上出现多次时避免冲突） ---------- */
@@ -243,7 +243,9 @@
   <g class="p-eye"><ellipse class="p-sclera" cx="350" cy="330" rx="22" ry="9" fill="#0d0b0b"/><g class="p-iris"><circle cx="350" cy="330" r="6" fill="${acc}"/></g></g></g></svg>`
   }
   App.portraitSVG = id => PORTRAITS[id] || placeholderSVG(App.char(id))
-  App.hasPortrait = id => !!PORTRAITS[id]
+  // 正式肖像是位图（官方原图经统一抠图、构图、暗金单色调色），见 assets/data/portrait-images.js
+  const PHOTOS = window.PORTRAIT_IMAGES || {}
+  App.hasPortrait = id => !!(PHOTOS[id] || PORTRAITS[id])
 
   App.portrait = (id, opts = {}) => {
     const c = App.char(id)
@@ -252,24 +254,31 @@
     if (opts.dead) wrap.classList.add('is-dead')
     if (opts.silhouette) wrap.classList.add('is-silhouette')
     if (opts.className) wrap.className += ' ' + opts.className
-    wrap.innerHTML = uniquify(App.portraitSVG(id))
-    const svg = wrap.querySelector('svg')
-    if (svg) {
-      svg.setAttribute('aria-hidden', 'true')
-      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet')
-      if (c && c.art && c.art.accent) wrap.style.setProperty('--accent', c.art.accent)
+    if (c && c.art && c.art.accent) wrap.style.setProperty('--accent', c.art.accent)
+    if (PHOTOS[id]) {
+      wrap.classList.add('is-photo')
+      wrap.appendChild(U.el('img', { src: PHOTOS[id], alt: '', decoding: 'async', draggable: 'false' }))
+    } else {
+      wrap.innerHTML = uniquify(App.portraitSVG(id))
+      const svg = wrap.querySelector('svg')
+      if (svg) {
+        svg.setAttribute('aria-hidden', 'true')
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+      }
     }
     if (opts.track !== false) App.trackEyes(wrap, opts)
     return wrap
   }
 
-  // 让一个包含 .p-iris 的元素的视线追随光标；返回取消函数
+  // 让肖像随光标而动；返回取消函数。
+  // 矢量占位：.p-iris 平移、偶尔眨眼。位图肖像：整幅画像向光标微微偏转（--pvx/--pvy，CSS 里换算成位移）。
   App.trackEyes = (wrap, opts = {}) => {
     const irises = Array.from(wrap.querySelectorAll('.p-iris'))
     const eyes = Array.from(wrap.querySelectorAll('.p-eye'))
-    if (!irises.length) return () => {}
+    const photo = wrap.classList.contains('is-photo')
+    if (!irises.length && !photo) return () => {}
     const w = {
-      wrap, irises, eyes, visible: false, ox: 0, oy: 0,
+      wrap, irises, eyes, photo, visible: false, ox: 0, oy: 0,
       range: opts.eyeRange || 7,
       nextBlink: performance.now() + U.rand(1500, 6000),
       fixed: null, // 可设为 {x,y} 让视线固定看某处（屏幕坐标）
@@ -300,6 +309,11 @@
       const gy = (dy / d) * w.range * 0.7 * k
       w.ox = U.lerp(w.ox, gx, 0.2)
       w.oy = U.lerp(w.oy, gy, 0.2)
+      if (w.photo) {
+        w.wrap.style.setProperty('--pvx', (w.ox / w.range).toFixed(3))
+        w.wrap.style.setProperty('--pvy', (w.oy / w.range).toFixed(3))
+        continue
+      }
       const tr = `translate(${w.ox.toFixed(2)}px, ${w.oy.toFixed(2)}px)`
       for (const i of w.irises) i.style.transform = tr
       if (now > w.nextBlink && !App.reduced) {

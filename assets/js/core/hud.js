@@ -32,6 +32,10 @@
     })
     hud.querySelector('.hud-mark').addEventListener('click', e => { e.preventDefault(); App.scroll.to(0) })
 
+    // 放映：随时打开宣传片
+    const film = hud.querySelector('.hud-film')
+    if (film) film.addEventListener('click', () => { if (App.screening) App.screening.open() })
+
     // 时钟
     let shown = ''
     let shownDay = 0

@@ -9,6 +9,7 @@
      App.audio.sfx(name, opts)         opts: { volume 0–2, pitch 频率倍数 0.25–4, pan -1–1, delay 秒 }
      App.audio.setMood({ tension })    0–1：调查/庭审的节奏密度、滤波亮度、颤音
      App.audio.setMuted(bool)          App.audio.muted 为布尔属性；初值读 App.store.get('muted')
+     App.audio.hush(bool)              放映宣传片时让出声音：淡出整站音乐与音效（不改动静音设置）
      App.audio.level()                 当前总输出电平 0–1（AnalyserNode）
    换成自己的音乐：在 assets/audio/tracks.js 的 TRACK_FILES 填文件名，即以 <audio loop> 经
    MediaElementSource 接入同一总线（若 file:// 下浏览器把它静音，会自动改为直接播放）。
@@ -2447,12 +2448,13 @@
     started: false,
     muted: !!store.get('muted', false),
     hidden: !!document.hidden,
+    hushed: false, // 播放宣传片时整站静音（不改动用户的静音设置）
     pending: null,
     mood: 0,
     st: 0,
     vt: 0,
   }
-  function outTarget() { return (S.muted ? 0 : 1) * (S.hidden ? 0 : 1) }
+  function outTarget() { return (S.muted ? 0 : 1) * (S.hidden || S.hushed ? 0 : 1) }
   function rampOut(g, v, dur) {
     const now = S.E.ctx.currentTime
     holdAt(g.gain, now)
@@ -2480,7 +2482,7 @@
       E.setMood(S.mood)
       E.tension = S.mood
       if (S.muted) E.mute.gain.value = 0
-      if (S.hidden) E.vis.gain.value = 0
+      if (S.hidden || S.hushed) E.vis.gain.value = 0
       E.run()
       syncSuspend()
       // 在遮幕的五声钟响之后，音乐才缓缓进来（还没有板块点名时，默认是洋馆的日常）
@@ -2495,7 +2497,7 @@
       try { S.E.track(name) } catch (e) { console.error('[audio] track', name, e) }
     },
     sfx(name, opts) {
-      if (!S.E || S.muted || S.hidden) return
+      if (!S.E || S.muted || S.hidden || S.hushed) return
       try { S.E.sfx(name, opts) } catch (e) { console.error('[audio] sfx', name, e) }
     },
     setMood(m) {
@@ -2513,9 +2515,20 @@
       rampOut(S.E.mute, b ? 0 : 1, b ? 0.25 : 0.6)
       syncSuspend()
     },
+    // 让出声音：放映宣传片时淡出整站音乐与音效，结束后淡回
+    hush(b) {
+      b = !!b
+      if (S.hushed === b) return
+      S.hushed = b
+      if (!S.E) return
+      if (!b && !S.muted && !S.hidden && S.E.ctx.state === 'suspended') quiet(S.E.ctx.resume())
+      rampOut(S.E.vis, S.hidden || S.hushed ? 0 : 1, b ? 0.6 : 2.2)
+      syncSuspend()
+    },
+    get hushed() { return S.hushed },
     get muted() { return S.muted },
     set muted(b) { api.setMuted(b) },
-    level() { return S.E && !S.muted && !S.hidden ? S.E.level() : 0 },
+    level() { return S.E && !S.muted && !S.hidden && !S.hushed ? S.E.level() : 0 },
     get current() { return S.E ? S.E.current : S.pending },
     get tension() { return S.E ? S.E.tension : S.mood },
     get ready() { return !!S.E },
@@ -2534,7 +2547,7 @@
     S.hidden = !!document.hidden
     if (!S.E) return
     if (S.hidden) rampOut(S.E.vis, 0, 0.3)
-    else {
+    else if (!S.hushed) {
       if (!S.muted && S.E.ctx.state === 'suspended') quiet(S.E.ctx.resume())
       rampOut(S.E.vis, 1, 0.8)
     }

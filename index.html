@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a0809">
-<title>十五席</title>
+<title>夙与愿</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230a0809'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23c29a5b' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23ff2e7e'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/vendor/lenis.css">
 <link rel="stylesheet" href="assets/css/base.css">
 <link rel="stylesheet" href="assets/css/prologue.css">
+<link rel="stylesheet" href="assets/css/screening.css">
 <link rel="stylesheet" href="assets/css/mansion.css">
 <link rel="stylesheet" href="assets/css/cast.css">
 <link rel="stylesheet" href="assets/css/table.css">
@@ -27,7 +28,7 @@
 <div id="flash" aria-hidden="true"></div>
 
 <!-- 遮幕 -->
-<div id="gate" role="dialog" aria-label="十五席">
+<div id="gate" role="dialog" aria-label="夙与愿">
   <div class="gate-lid gate-lid--top"></div>
   <div class="gate-lid gate-lid--bottom"></div>
   <div class="gate-core">
@@ -42,7 +43,7 @@
 
 <!-- 常驻 HUD -->
 <header id="hud">
-  <a class="hud-mark" href="#prologue" data-cursor="回到圆桌" aria-label="十五席">
+  <a class="hud-mark" href="#prologue" data-cursor="回到圆桌" aria-label="夙与愿">
     <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15"/><circle cx="20" cy="20" r="3.2"/></svg>
   </a>
   <div class="hud-clock" aria-live="off">
@@ -50,6 +51,9 @@
     <span class="hud-time">17:00</span>
   </div>
   <nav class="hud-nav" aria-label="板块"></nav>
+  <button class="hud-film" type="button" data-cursor="放映" aria-label="放映">
+    <svg viewBox="0 0 28 20" aria-hidden="true"><rect x="1" y="3" width="20" height="14" rx="1"/><path d="M21 8.5 L27 5 L27 15 L21 11.5"/><circle cx="7" cy="10" r="2.4"/><circle cx="15" cy="10" r="2.4"/></svg>
+  </button>
   <button class="hud-sound" type="button" data-cursor="声音" aria-label="声音">
     <i></i><i></i><i></i><i></i><i></i>
   </button>
@@ -64,6 +68,7 @@
 
 <main id="world">
   <section id="prologue" class="sec" data-title="醒来"></section>
+  <section id="screening" class="sec" data-title="放映"></section>
   <section id="mansion" class="sec" data-title="洋馆"></section>
   <section id="cast" class="sec" data-title="卡池"></section>
   <section id="table" class="sec" data-title="十五席"></section>
@@ -91,6 +96,7 @@
 <script src="assets/data/characters.js"></script>
 <script src="assets/data/lore.js"></script>
 <script src="assets/data/portraits.js"></script>
+<script src="assets/data/portrait-images.js"></script>
 <script src="assets/data/sigils.js"></script>
 <script src="assets/audio/tracks.js"></script>
 
@@ -105,6 +111,7 @@
 
 <!-- 板块 -->
 <script src="assets/js/sections/prologue.js"></script>
+<script src="assets/js/sections/screening.js"></script>
 <script src="assets/js/sections/mansion.js"></script>
 <script src="assets/js/sections/cast.js"></script>
 <script src="assets/js/sections/table.js"></script>
