@@ -86,10 +86,10 @@
      ===================================================================== */
   const DAMASK = (() => {
     const s = `<svg xmlns="http://www.w3.org/2000/svg" width="132" height="184" viewBox="0 0 132 184">
-<g fill="none" stroke="#5a2633" stroke-width="1.1" stroke-linecap="round">
-<path d="M66 18C80 38 100 46 100 70C100 90 80 98 66 118C52 98 32 90 32 70C32 46 52 38 66 18Z" fill="#2a0f17" fill-opacity=".55"/>
+<g fill="none" stroke="#4a1d29" stroke-width="1" stroke-linecap="round" stroke-opacity=".8">
+<path d="M66 18C80 38 100 46 100 70C100 90 80 98 66 118C52 98 32 90 32 70C32 46 52 38 66 18Z" fill="#230c13" fill-opacity=".5"/>
 <path d="M66 36C74 50 86 56 86 70C86 82 74 88 66 100C58 88 46 82 46 70C46 56 58 50 66 36Z"/>
-<path d="M66 52C70 60 76 64 76 70C76 76 70 80 66 86C62 80 56 76 56 70C56 64 62 60 66 52Z" fill="#3a1520" fill-opacity=".6"/>
+<path d="M66 52C70 60 76 64 76 70C76 76 70 80 66 86C62 80 56 76 56 70C56 64 62 60 66 52Z" fill="#2e111a" fill-opacity=".5"/>
 <path d="M66 118C66 134 56 142 44 148M66 118C66 134 76 142 88 148M66 118L66 160"/>
 <path d="M32 70C16 66 10 52 14 40C20 50 27 52 34 50M100 70C116 66 122 52 118 40C112 50 105 52 98 50"/>
 <path d="M44 148C36 152 30 150 28 144M88 148C96 152 102 150 104 144"/>
@@ -260,8 +260,7 @@
     const dim = el('div.dim')
     win.append(back, hotg, por, veil, dim)
     const border = sv('svg', { class: 'cast-border', 'aria-hidden': 'true' })
-    const no = el('span.no', { 'aria-hidden': 'true', text: U.roman(i + 1) })
-    swing.append(shadow, win, border, no)
+    swing.append(shadow, win, border)
     const name = el('span.name', { text: c.name })
     const epi = el('span.epi', { text: '·'.repeat(Math.max(3, Array.from(c.epithet || '').length)) })
     const seat = el('span.seatno', { 'aria-hidden': 'true' })
@@ -298,7 +297,7 @@
     const veil = el('div.veil')
     win.append(back, glass, por, veil)
     const border = sv('svg', { class: 'cast-border', 'aria-hidden': 'true' })
-    swing.append(shadow, win, border, el('span.no', { 'aria-hidden': 'true', text: '?' }))
+    swing.append(shadow, win, border)
     const epi = el('span.epi', { text: '·····' })
     const plate = el('div.plate', null, [el('i.rivet'), el('span.name', { text: '？？？' }), epi, el('i.rivet')])
     node.append(wire, swing, plate)
@@ -501,7 +500,7 @@
     // 火苗的抖动
     const fl = RM ? 1 : 1 + Math.sin(t * 11.3) * 0.025 + Math.sin(t * 23.7 + 1.3) * 0.018 + (Math.random() - 0.5) * 0.025
     S.flick = fl * (1 - S.dip * 0.55)
-    const R = (S.mob ? Math.max(260, vw * 0.85) : U.clamp(vw * 0.36, 300, 600)) * S.flick
+    const R = (S.mob ? Math.max(250, vw * 0.8) : U.clamp(vw * 0.31, 300, 560)) * S.flick
     dark.style.transform = `translate3d(${S.cx.toFixed(1)}px,${S.cy.toFixed(1)}px,0) scale(${(R / 520 * 3.2).toFixed(3)})`
     glow.style.transform = `translate3d(${S.cx.toFixed(1)}px,${S.cy.toFixed(1)}px,0) scale(${(R / 520).toFixed(3)})`
     glow.style.opacity = (0.75 + (fl - 1) * 4) * (1 - S.dip * 0.8)
@@ -571,7 +570,7 @@
         }
         let op
         if (it.void) op = (1 - smooth(0.05, 0.55, it.lit)) * (S.away ? 0.55 : 1)
-        else op = 0.42 + 0.58 * Math.max(S.flare, it.heat) - 0.18 * it.lit * (1 - it.heat)
+        else op = (0.55 + 0.45 * Math.max(S.flare, it.heat)) * (1 - 0.72 * it.lit * (1 - it.heat))
         op *= blink
         const sc = 1 + S.flare * 0.6 + it.heat * 0.35
         const ht = `translate3d(${ox.toFixed(2)}px,${oy.toFixed(2)}px,0) scale(${sc.toFixed(3)},${(sc * Math.max(0.05, blink)).toFixed(3)})`

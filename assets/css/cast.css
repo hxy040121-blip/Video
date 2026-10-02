@@ -73,13 +73,6 @@
 .cast.is-focus .cast-item:not(.is-hot) .cast-plate { opacity: .35; }
 .cast-border { position: absolute; overflow: visible; pointer-events: none; opacity: calc(.42 + var(--lit) * .58); }
 .cast-mould { opacity: .96; }
-.cast-no {
-  position: absolute; left: 50%; top: 100%; transform: translate(-50%, -50%);
-  margin-top: 0; font-family: var(--f-latin); font-size: 9px; letter-spacing: .2em; padding-left: .2em;
-  color: rgba(194,154,91,.75); background: #0a0706; border: 1px solid rgba(111,85,50,.8); line-height: 1; padding: 3px 5px 3px 7px;
-  opacity: calc(.3 + var(--lit) * .7); pointer-events: none; white-space: nowrap;
-}
-
 /* ---------- 名牌 ---------- */
 .cast-plate {
   position: absolute; transform: translateX(-50%); z-index: 2;
