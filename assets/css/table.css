@@ -184,6 +184,7 @@
 .table.is-mob .table-stage { min-height: 0; }
 .table.is-mob .table-head-l { top: 66px; left: 16px; right: 16px; gap: 14px; align-items: baseline; }
 .table.is-mob .table-title { writing-mode: horizontal-tb; font-size: 38px; letter-spacing: .02em; }
+.table.is-mob .table-title .tx-char:first-child { color: var(--bone); -webkit-text-stroke: 0; }
 .table.is-mob .table-sub { writing-mode: horizontal-tb; font-size: 11px; letter-spacing: .35em; margin: 0; }
 .table.is-mob .table-latin { display: none; }
 .table.is-mob .table-bignum { display: none; }

@@ -1,6 +1,6 @@
 /* ==========================================================
    受命（cycle）—— 一局游戏的循环
-   一段钉住的长滚动（约 9.7 屏），七个满屏镜头，硬切相接：
+   一段钉住的长滚动（约 7.85 屏），七个满屏镜头，硬切相接：
      受命 → 行凶 → 发现 → 调查 → 庭审 → 判定 → 余波 →（倒卷）受命
    光标：倒计时随光标速度加快；走廊随视线偏移、墨迹从光标处晕开并干涸成锈红；
          放大镜照出看不见的痕迹；最后一票与判定的两个结局随光标左右；
@@ -74,13 +74,13 @@
      镜头表（w = 占用的屏数）
      ========================================================= */
   const SHOTS = [
-    { key: 'mandate', name: '受命', w: 1.5, pal: { a: '#0c0607', b: '#7d1616', glow: 0.16 }, tension: 0.3, line: pline('mandate', '私人通知，只送达一人。') },
-    { key: 'murder', name: '行凶', w: 1.15, pal: { a: '#140507', b: '#a3104a', glow: 0.3 }, tension: 0.62, line: pline('murder', '不可回头的那一步。') },
-    { key: 'discover', name: '发现', w: 0.95, pal: { a: '#1e0611', b: '#ff2e7e', glow: 0.7 }, tension: 0.9, line: pline('discovery', '看见了，并确认他已死去。') },
-    { key: 'inv', name: '调查', w: 1.55, pal: { a: '#0a0c0f', b: '#8d98a6', glow: 0.26 }, tension: 0.5, line: pline('investigate', '一百二十分钟，线索无主。') },
-    { key: 'court', name: '庭审', w: 1.5, pal: { a: '#16100a', b: '#c29a5b', glow: 0.38 }, tension: 1, line: pline('debate', '自一号席起，各说一次。') },
-    { key: 'verdict', name: '判定', w: 1.4, pal: { a: '#1c0408', b: '#d10f45', glow: 0.55 }, tension: 1, line: '' },
-    { key: 'after', name: '余波', w: 1.65, pal: { a: '#130e08', b: '#c29a5b', glow: 0.42 }, tension: 0.16, line: pline('payout', '金币无声出现在圆桌上。') },
+    { key: 'mandate', name: '受命', w: 1.2, pal: { a: '#0c0607', b: '#7d1616', glow: 0.16 }, tension: 0.3, line: pline('mandate', '私人通知，只送达一人。') },
+    { key: 'murder', name: '行凶', w: 0.95, pal: { a: '#140507', b: '#a3104a', glow: 0.3 }, tension: 0.62, line: pline('murder', '不可回头的那一步。') },
+    { key: 'discover', name: '发现', w: 0.75, pal: { a: '#1e0611', b: '#ff2e7e', glow: 0.7 }, tension: 0.9, line: pline('discovery', '看见了，并确认他已死去。') },
+    { key: 'inv', name: '调查', w: 1.25, pal: { a: '#0a0c0f', b: '#8d98a6', glow: 0.26 }, tension: 0.5, line: pline('investigate', '一百二十分钟，线索无主。') },
+    { key: 'court', name: '庭审', w: 1.25, pal: { a: '#16100a', b: '#c29a5b', glow: 0.38 }, tension: 1, line: pline('debate', '自一号席起，各说一次。') },
+    { key: 'verdict', name: '判定', w: 1.15, pal: { a: '#1c0408', b: '#d10f45', glow: 0.55 }, tension: 1, line: '' },
+    { key: 'after', name: '余波', w: 1.3, pal: { a: '#130e08', b: '#c29a5b', glow: 0.42 }, tension: 0.16, line: pline('payout', '金币无声出现在圆桌上。') },
   ]
   let acc = 0
   for (const s of SHOTS) { s.a = acc; acc += s.w; s.b = acc }

@@ -234,7 +234,7 @@
   position: absolute; left: 36vw; top: 9vh; z-index: 3;
   writing-mode: vertical-rl; text-orientation: upright;
   font-family: var(--f-display); font-weight: 900;
-  font-size: min(15vh, 132px, calc(76vh / var(--n)));
+  font-size: min(17vh, 150px, calc(76vh / var(--n)));
   line-height: 1; letter-spacing: -.02em; color: var(--bone);
   text-shadow: 0 0 18px rgba(0,0,0,.35);
   margin: 0; white-space: nowrap;

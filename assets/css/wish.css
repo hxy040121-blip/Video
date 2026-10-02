@@ -35,8 +35,9 @@
 
 /* ---------- 最后那个人 ---------- */
 .wish-last { position: absolute; left: 0; top: 0; margin: 0; z-index: 3; pointer-events: none; will-change: transform; }
+.wish-face-anim { opacity: 0; }
 .wish-face-wrap {
-  position: relative; height: min(56vh, 540px); aspect-ratio: 3 / 4; opacity: 0;
+  position: relative; height: min(56vh, 540px); aspect-ratio: 3 / 4;
   transition: filter 1.8s var(--ease-out);
 }
 .wish-face, .wish-face .portrait { width: 100%; height: 100%; }
@@ -103,6 +104,16 @@
   border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle, rgba(235, 227, 214, .06), rgba(235, 227, 214, 0) 60%);
 }
+.wish-end-ring {
+  position: absolute; left: 50%; top: 50%; width: min(64vmin, 560px); aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(calc((var(--mx) - .5) * 18deg + var(--ring-rot, 0deg)));
+  pointer-events: none; opacity: .9;
+}
+.wish-end-ring svg { width: 100%; height: 100%; overflow: visible; }
+.wish-end-ring circle { fill: none; stroke: rgba(111, 85, 50, .35); stroke-width: .35; }
+.wish-end-ring .wish-end-ring-in { stroke: rgba(111, 85, 50, .18); stroke-dasharray: 1 3; }
+.wish-end-ring line { stroke: var(--rust); stroke-width: .9; opacity: .75; }
+.wish-end-ring line.is-last { stroke: var(--bone); stroke-width: 1.4; opacity: 1; filter: drop-shadow(0 0 3px rgba(235, 227, 214, .8)); }
 .wish-sleep {
   position: relative; padding: 20px 52px; padding-right: calc(52px - .6em);
   font-family: var(--f-display); font-weight: 900; font-size: 22px; letter-spacing: .6em;

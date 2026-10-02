@@ -46,11 +46,12 @@
     E.face = U.el('div.wish-face')
     E.eyes = U.el('div.wish-eyes', { 'aria-hidden': 'true' }, [U.el('i'), U.el('i')])
     E.faceWrap = U.el('div.wish-face-wrap', null, [E.face, E.eyes])
+    E.faceAnim = U.el('div.wish-face-anim', null, [E.faceWrap])
     E.no = U.el('b.wish-no')
     E.name = U.el('span.wish-name')
     E.line = U.el('p.wish-line')
     E.who = U.el('div.wish-who', null, [U.el('div.wish-who-head', null, [E.no, E.name]), E.line])
-    E.last = U.el('figure.wish-last', null, [E.faceWrap])
+    E.last = U.el('figure.wish-last', null, [E.faceAnim])
     E.rule = U.el('p.wish-rule', { text: RULE })
     E.sticky.append(E.stage, E.whis, E.last, E.who, E.count, E.rule)
     E.track.appendChild(E.sticky)
@@ -60,7 +61,15 @@
       U.el('span.wish-foot-mark', { 'aria-hidden': 'true', html: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15"/><circle cx="20" cy="20" r="3.2"/></svg>' }),
       U.el('span.wish-foot-name', { text: '十五席' }),
     ])
-    E.end = U.el('div.wish-end', null, [U.el('div.wish-end-glow', { 'aria-hidden': 'true' }), E.sleep, E.foot])
+    // 十五道刻度围成的环：十四道锈红，一道骨白（还亮着的那把椅子）
+    let ticks = ''
+    for (let i = 0; i < 15; i++) {
+      const a = i / 15 * Math.PI * 2
+      const x1 = 100 + Math.sin(a) * 86, y1 = 100 - Math.cos(a) * 86, x2 = 100 + Math.sin(a) * 94, y2 = 100 - Math.cos(a) * 94
+      ticks += '<line data-k="' + (i + 1) + '" x1="' + x1.toFixed(2) + '" y1="' + y1.toFixed(2) + '" x2="' + x2.toFixed(2) + '" y2="' + y2.toFixed(2) + '"/>'
+    }
+    E.ring = U.el('div.wish-end-ring', { 'aria-hidden': 'true', html: '<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="90"/><circle class="wish-end-ring-in" cx="100" cy="100" r="58"/>' + ticks + '</svg>' })
+    E.end = U.el('div.wish-end', null, [U.el('div.wish-end-glow', { 'aria-hidden': 'true' }), E.ring, E.sleep, E.foot])
 
     E.lidT = U.el('i.wish-lid.wish-lid--top')
     E.lidB = U.el('i.wish-lid.wish-lid--bottom')
@@ -77,6 +86,7 @@
     H.numScale = portrait ? 1.7 : (Math.min(H.W, H.H) < 700 ? 1.3 : 1)
     H.lensW = portrait ? 0.95 : 0.62
     H.lensH = portrait ? 0.38 : 0.62
+    H.ribA = portrait ? 0.55 : 1
     W.oy0 = portrait ? H.H * 0.04 : 0
     layoutWhispers()
   }
@@ -118,6 +128,8 @@
     W.outN = -1
     syncOut(true)
     buildWhispers()
+    for (const l of W.E.ring.querySelectorAll('line')) l.classList.toggle('is-last', +l.dataset.k === fk)
+    W.E.ring.style.setProperty('--ring-rot', (-(fk - 1) * 24) + 'deg')
     if (W.finaleOn) { stopFinale(true); startFinale() }
   }
 
@@ -160,6 +172,7 @@
   }
 
   function extinguish(s, mode) {
+    W.H.ripple(s.k, [150, 28, 28], true)
     // 灯先抽搐两下，再熄
     gsap.timeline()
       .to(s, { lamp: 0.2, duration: 0.05, ease: 'none' })
@@ -189,9 +202,11 @@
     if (!c) return
     W.cur = id
     W.H.setPerson(W.fk, id)
+    if (W.untrack) { W.untrack(); W.untrack = null }
     E.face.innerHTML = ''
-    const pt = App.portrait(id, { eyeRange: 9, className: 'wish-portrait' })
+    const pt = App.portrait(id, { track: false, className: 'wish-portrait' })
     E.face.appendChild(pt)
+    W.untrack = App.trackEyes(pt, { eyeRange: 9 })
     W.pt = pt
     E.faceWrap.classList.add('is-sil')
     const acc = c.art && c.art.accent ? c.art.accent : '#c29a5b'
@@ -200,7 +215,7 @@
     E.no.textContent = U.roman(W.fk)
     E.name.textContent = c.name
     E.line.textContent = ''
-    gsap.fromTo(E.faceWrap, { opacity: 0, y: 26, filter: 'blur(10px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.6, ease: 'expo.out' })
+    gsap.fromTo(E.faceAnim, { opacity: 0, y: 26, filter: 'blur(10px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.6, ease: 'expo.out', clearProps: 'filter' })
     gsap.fromTo(E.name, { opacity: 0, letterSpacing: '0.5em' }, { opacity: 1, letterSpacing: '0.06em', duration: 1.4, ease: 'expo.out', delay: 0.2 })
     gsap.fromTo(E.no, { opacity: 0 }, { opacity: 1, duration: 1, delay: 0.1 })
     if (reveal) later(1.5, () => manifest(id))
@@ -222,7 +237,7 @@
     E.faceWrap.classList.add('is-sil')
     gsap.to(E.line, { opacity: 0, filter: 'blur(8px)', letterSpacing: '0.4em', duration: 1.4, ease: 'power2.in' })
     gsap.to([E.name, E.no], { opacity: 0, duration: 1.2, delay: 0.5, ease: 'power2.in' })
-    gsap.to(E.faceWrap, { opacity: 0, y: 18, filter: 'blur(8px)', duration: 1.3, delay: 1.1, ease: 'power2.in', onComplete: then })
+    gsap.to(E.faceAnim, { opacity: 0, y: 18, filter: 'blur(8px)', duration: 1.3, delay: 1.1, ease: 'power2.in', onComplete: then })
   }
   function later(sec, fn) {
     W.rot.calls = W.rot.calls.filter(c => c.progress() < 1)
@@ -232,6 +247,8 @@
   }
   function rotate() {
     if (!W.finaleOn || W.winner) return
+    // 看不见的时候不换人，过一会儿再来
+    if (!W.vis) { later(2, rotate); return }
     sink(() => {
       if (!W.finaleOn) return
       W.rot.i = (W.rot.i + 1) % W.rot.list.length
@@ -269,8 +286,8 @@
     const E = W.E
     E.last.classList.remove('is-on')
     E.who.classList.remove('is-on')
-    gsap.killTweensOf([E.faceWrap, E.line, E.name, E.no, E.rule])
-    gsap.to([E.faceWrap, E.rule, E.name, E.no, E.line], { opacity: 0, duration: instant ? 0 : 0.5, ease: 'power2.out' })
+    gsap.killTweensOf([E.faceAnim, E.line, E.name, E.no, E.rule])
+    gsap.to([E.faceAnim, E.rule, E.name, E.no, E.line], { opacity: 0, duration: instant ? 0 : 0.5, ease: 'power2.out' })
     const s = W.H.seats[W.fk - 1]
     gsap.to(s, { gone: 0, duration: instant ? 0 : 0.8 })
     // 下次进入时，从同一个人重新开始
@@ -395,8 +412,17 @@
     const inside = m.x >= r.left && m.x <= r.right && m.y >= r.top && m.y <= r.bottom
     H.ptr.x = m.x - r.left; H.ptr.y = m.y - r.top
     H.ptr.on = W.ptrIn && inside && (App.finePointer || now < W.touchUntil)
-    H.home.x = Math.sin(H.time * 0.2) * 0.4
-    H.home.y = Math.cos(H.time * 0.15) * 0.3
+    if (App.finePointer) {
+      H.home.x = Math.sin(H.time * 0.2) * 0.4
+      H.home.y = Math.cos(H.time * 0.15) * 0.3
+      H.home.z = 5.6; H.homePow = 0.8; H.homeRange = 3.4
+    } else {
+      // 触屏：一点微光绕着圆桌游走
+      const a = -H.time * 0.17
+      H.home.x = Math.sin(a) * 3.6
+      H.home.y = Math.cos(a) * 3.0
+      H.home.z = 2.5; H.homePow = 1.3; H.homeRange = 2.6
+    }
     H.update(sec)
     H.render()
     updWhispers(H.time)
@@ -487,7 +513,7 @@
       H.eyeScale = 1
       layout()
       W.E.rule._chars = App.text.split(W.E.rule)
-      gsap.set([W.E.rule, W.E.faceWrap, W.E.name, W.E.no], { opacity: 0 })
+      gsap.set([W.E.rule, W.E.faceAnim, W.E.name, W.E.no], { opacity: 0 })
       const w0 = App.state.winner
       if (w0 && App.char(w0)) W.winner = w0
       setup()

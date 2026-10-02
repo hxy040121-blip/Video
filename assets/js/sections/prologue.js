@@ -244,7 +244,7 @@
       fit: 0.36,        // 正俯视时椅环半径占短边的比例
       numScale: 1,
       hoverK: -1, keyGone: -1, clock: 17 * 60,
-      eyeQ: [], tilt: 0, ls: null, eyeScale: 1,
+      eyeQ: [], tilt: 0, ls: null, eyeScale: 1, gust: 0, eyePulse: 1, ripples: [],
     }
     S.sx = S.sh.getContext('2d')
     S.sx2 = S.sh2.getContext('2d')
@@ -322,7 +322,8 @@
       const r = S.canvas.parentNode.getBoundingClientRect()
       const W = Math.max(2, Math.round(r.width)), H = Math.max(2, Math.round(r.height))
       let dpr = Math.min(window.devicePixelRatio || 1, 2)
-      if (W * H * dpr * dpr > 4.4e6) dpr = Math.sqrt(4.4e6 / (W * H))
+      const budget = App.isMobile() ? 2.2e6 : 4.4e6
+      if (W * H * dpr * dpr > budget) dpr = Math.sqrt(budget / (W * H))
       S.W = W; S.H = H; S.dpr = dpr
       for (const c of [S.canvas, S.ribCanvas]) {
         if (!c) continue
@@ -762,6 +763,27 @@
       ctx.clip()
       shadowPass(ctx, 0, polys, shadowAlpha(), 1.7)
       ctx.restore()
+    }
+
+    /* ---------- 席位脚下的涟漪（醒来 / 熄灭的一拍） ---------- */
+    S.ripple = (k, col, inward) => { S.ripples.push({ k, t: 0, col: col || [214, 172, 102], inward: !!inward }) }
+    function drawRipples(ctx, dt) {
+      if (!S.ripples.length) return
+      ctx.lineWidth = 1
+      for (let i = S.ripples.length - 1; i >= 0; i--) {
+        const r = S.ripples[i]
+        r.t += dt / 1.6
+        if (r.t >= 1) { S.ripples.splice(i, 1); continue }
+        const s = S.seats[r.k - 1]
+        const e = 1 - Math.pow(1 - r.t, 3)
+        const rad = r.inward ? mix(1.6, 0.35, e) : mix(0.35, 1.9, e)
+        const q = S.cam.poly(circle(s.x, s.y, 0.012, rad, 48))
+        if (!q) continue
+        ctx.globalAlpha = (1 - r.t) * (r.inward ? 0.5 : 0.65) * S.floorA * (1 - S.dark)
+        ctx.strokeStyle = rgb(r.col[0], r.col[1], r.col[2])
+        pathPts(ctx, q); ctx.stroke()
+      }
+      ctx.globalAlpha = 1
     }
 
     /* ---------- 圆桌 ---------- */
@@ -1363,7 +1385,7 @@
       if (A <= 0.01 || !S.eyeQ.length) return
       ctx.globalCompositeOperation = 'lighter'
       for (const e of S.eyeQ) {
-        const a = e.a * A
+        const a = e.a * A * S.eyePulse
         if (a <= 0.01) continue
         const acc = e.acc
         const spr = glowSprite(acc[0], acc[1], acc[2])
@@ -1417,6 +1439,7 @@
       if (!(dt > 0)) dt = 1 / 60
       if (dt > 0.1) dt = 0.1
       S.time += dt
+      S.lastDt = dt
       setView()
       const L = S.light
       let tx = S.home.x, ty = S.home.y, tz = S.home.z, tp = S.homePow
@@ -1430,7 +1453,11 @@
       L.x += (tx - L.x) * f1; L.y += (ty - L.y) * f1; L.z += (tz - L.z) * f2; L.power += (tp - L.power) * f2
       L.range += ((S.ptr.on ? S.lampRange : S.homeRange) - L.range) * f2
       const t = S.time
+      // 烛火：光标甩得越快，火苗抖得越厉害
+      const gust = Math.min(0.28, (App.mouse.speed || 0) * 0.006) * (S.ptr.on ? 1 : 0)
+      S.gust += (gust - S.gust) * (1 - Math.pow(0.9, dt * 60))
       L.flick = 0.955 + 0.03 * Math.sin(t * 7.1) * Math.sin(t * 2.3 + 1.7) + 0.015 * Math.sin(t * 23.7)
+        - S.gust * (0.5 + 0.5 * Math.sin(t * 31 + Math.sin(t * 13) * 2))
       const fh = 1 - Math.pow(0.84, dt * 60)
       for (const s of S.seats) {
         const dx = L.x - s.x, dy = L.y - s.y
@@ -1471,6 +1498,7 @@
         drawWalls(ctx)
         drawFloor(ctx)
         drawFloorShadows(ctx)
+        drawRipples(ctx, S.lastDt || 1 / 60)
         drawFurniture(ctx)
         // 远处的椅子 → 圆桌 → 近处的椅子
         const c = S.cam
@@ -1586,7 +1614,7 @@
     el: null, H: null, E: null, vis: false, started: false,
     p: 0, ps: 0, lit: 0, mob: false,
     ptrIn: false, touchUntil: 0, hoverK: -1, tagK: -1, tagUntil: 0, lineK: -1,
-    zoom: 1.4, keyNo: 1, keyLanded: false, keyShown: false, lastKeyP: 0, whooshed: false, cueOn: false, wakeDone: false, gateOpen: false,
+    zoom: 1.4, lv: 0, keyNo: 1, keyLanded: false, keyShown: false, lastKeyP: 0, whooshed: false, cueOn: false, wakeDone: false, gateOpen: false,
   }
 
   function build(el) {
@@ -1625,6 +1653,7 @@
     H.numScale = portrait ? 1.7 : (Math.min(W, Hh) < 700 ? 1.3 : 1)
     H.lensW = portrait ? 0.95 : 0.62
     H.lensH = portrait ? 0.38 : 0.62
+    H.ribA = portrait ? 0.55 : 1
     P.oy0 = portrait ? Hh * 0.04 : 0
     H.view.oy = P.oy0
   }
@@ -1641,6 +1670,7 @@
 
   function wakeSeat(s, i) {
     s.flash = 1
+    P.H.ripple(s.k, s.acc)
     gsap.to(s, { eyes: 1, duration: 0.32, ease: 'power4.out', overwrite: 'auto' })
     gsap.to(s, { awake: 1, duration: App.reduced ? 0.4 : 2.2, ease: 'power3.inOut', delay: App.reduced ? 0 : 0.5 })
     App.audio.sfx('tick', { volume: 0.55 + i * 0.1, pan: U.clamp(s.x / 3.2, -1, 1) * 0.8, pitch: 0.7 + s.k * 0.035 })
@@ -1754,7 +1784,7 @@
     const t = easeIO(sstep(0.04, 0.66, p))
     const tm = H.time
     v.elev = mix(Math.PI / 2, P.mob ? 0.74 : 0.6, t)
-    v.dist = mix(10.6 + P.zoom, P.mob ? 14.5 : 16.2, t)
+    v.dist = mix(10.6 + P.zoom, P.mob ? 12.6 : 16.2, t)
     // 极慢的呼吸：整间厅像在缓缓转动
     v.yaw = mix(Math.sin(tm * 0.05) * 0.05, -0.42, t)
     v.tz = mix(0.45, 0.55, t)
@@ -1766,7 +1796,11 @@
       if (n > P.lit && P.started) App.audio.sfx('tick', { volume: 0.32, pitch: 1.3 + n * 0.04, pan: U.clamp(H.seats[Math.max(0, n - 1)].x / 3, -1, 1) * 0.6 })
       P.lit = n
     }
-    for (const s of H.seats) s.lit += ((s.k <= n ? 1 : 0) - s.lit) * 0.14
+    for (const s of H.seats) {
+      const want = s.k <= n ? 1 : 0
+      if (want && s.lit < 0.02 && P.started) H.ripple(s.k, [214, 172, 102])
+      s.lit += (want - s.lit) * 0.14
+    }
     // 沉入黑暗，只剩眼睛；然后眼睛也闭上
     H.dark = sstep(0.64, 0.86, p)
     H.eyeA = 1 - sstep(0.88, 0.96, p)
@@ -1839,10 +1873,23 @@
     const touchOk = App.finePointer || now < P.touchUntil
     H.ptr.x = m.x - r.left; H.ptr.y = m.y - r.top
     H.ptr.on = P.ptrIn && inside && touchOk && P.started && H.dark < 0.95
-    // 无光标时：光回到穹顶中央，轻轻摇晃
-    H.home.x = Math.sin(H.time * 0.23) * 0.5
-    H.home.y = Math.cos(H.time * 0.17) * 0.35
+    if (App.finePointer || !P.started) {
+      // 光标离开画面：光回到穹顶中央，轻轻摇晃
+      H.home.x = Math.sin(H.time * 0.23) * 0.5
+      H.home.y = Math.cos(H.time * 0.17) * 0.35
+      H.home.z = 5.6; H.homePow = 1.5; H.homeRange = 4.2
+    } else {
+      // 触屏没有光标：像有人举着蜡烛，绕着圆桌慢慢走
+      const a = H.time * 0.21
+      H.home.x = Math.sin(a) * 3.7
+      H.home.y = Math.cos(a) * 3.1 + Math.sin(a * 2.3) * 0.4
+      H.home.z = 2.5; H.homePow = 2.1; H.homeRange = 3.3
+    }
     H.update(sec)
+    // 眼睛随音乐轻轻起伏
+    const lv = App.audio && App.audio.level ? App.audio.level() : 0
+    P.lv += ((lv || 0) - P.lv) * 0.08
+    H.eyePulse = 0.86 + 0.5 * Math.min(1, P.lv * 1.6)
     // 悬停
     if (App.finePointer) {
       const k = H.ptr.on && P.ps < 0.6 && !(App.overlay && App.overlay.isOpen) ? H.pick(H.ptr.x, H.ptr.y) : -1

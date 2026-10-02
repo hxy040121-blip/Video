@@ -112,7 +112,6 @@
     lastTouch: -1e9, stageTop: 0,
   }
   let sec, sticky, wall, fore, dark, glow, hudCount, hudBar, hudTicks, voidIt
-  App._castS = S // DEBUG-REMOVE
 
   /* =====================================================================
      布局
@@ -132,7 +131,7 @@
     u = Math.max(u, 120)
     S.u = u
     const colW = u * (S.mob ? 1.16 : 1.2)
-    S.introW = S.mob ? S.vw * 0.92 : Math.max(560, S.vw * 0.5)
+    S.introW = S.mob ? S.vw * 0.92 : Math.max(540, S.vw * 0.4)
     const rowH = 1.38 * u + plate + nail
     const y1 = top + nail + (1.38 * u) / 2
     const y2 = top + rowH + gap + nail + (1.38 * u) / 2
@@ -811,8 +810,11 @@
     return tl
   }
 
+  // 换页时释放旧肖像的视线追随（核心若提供 _untrack 就用它，否则至少断开可见性监听）
   function dropPortrait(wrap) {
-    const w = wrap && wrap._eyes
+    if (!wrap) return
+    if (typeof wrap._untrack === 'function') { try { wrap._untrack() } catch (e) { /* */ } return }
+    const w = wrap._eyes
     if (w) { try { w.unobserve() } catch (e) { /* */ } w.visible = false }
   }
 
