@@ -251,7 +251,7 @@
     const swing = el('div.swing')
     const shadow = el('div.shadow', { 'aria-hidden': 'true' }, el('i'))
     const win = el('div.win', {
-      role: 'button', tabindex: '0', 'aria-label': c.name, 'data-cursor': '档案',
+      role: 'button', tabindex: '0', 'aria-label': c.name, 'data-cursor': '',
     })
     const back = el('div.back')
     const hotg = el('div.hotglow')
@@ -620,7 +620,7 @@
   function radar(c, onAxis) {
     const st = c.stats || {}
     const R = 104
-    const svg = sv('svg', { viewBox: '-176 -150 352 312', class: 'cast-radar' })
+    const svg = sv('svg', { viewBox: '-182 -152 364 316', class: 'cast-radar' })
     const ang = k => -Math.PI / 2 + (k * 2 * Math.PI) / 7
     const pt = (k, r) => [Math.cos(ang(k)) * r, Math.sin(ang(k)) * r]
     const poly = r => AX.map((a, k) => pt(k, r).map(n => n.toFixed(1)).join(',')).join(' ')
@@ -699,7 +699,8 @@
     const acc = (c.art && c.art.accent) || App.color.blood
     const [r, g, b] = U.hexToRgb(acc)
     const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-    const page = el('article.dos-page' + (lum > 0.62 ? '.is-light' : ''), { 'aria-label': c.name })
+    const reddish = r > 140 && g < 90 && b < 110
+    const page = el('article.dos-page' + (lum > 0.62 ? '.is-light' : '') + (reddish ? '.is-red' : ''), { 'aria-label': c.name })
     page.style.setProperty('--accent', acc)
     page.style.setProperty('--accent-rgb', `${r},${g},${b}`)
 
@@ -712,7 +713,6 @@
     const nameLen = Array.from(c.name).length
     const name = el('h3.dos-name', { 'aria-label': c.name })
     name.style.setProperty('--n', String(Math.max(2, nameLen)))
-    if (/^[A-Za-z]+$/.test(c.name)) name.classList.add('is-latin')
     const nameChars = []
     for (const ch of Array.from(c.name)) {
       const s = el('span', { text: ch === '·' ? '・' : ch, 'aria-hidden': 'true' })
@@ -720,7 +720,7 @@
       nameChars.push(s)
     }
     const nameGhost = name.cloneNode(true)
-    nameGhost.className = 'cast-dos-name cast-dos-name--ghost' + (name.classList.contains('is-latin') ? ' is-latin' : '')
+    nameGhost.className = 'cast-dos-name cast-dos-name--ghost'
     nameGhost.setAttribute('aria-hidden', 'true')
 
     const height = c.heightCm ? c.heightCm + 'CM' : ''

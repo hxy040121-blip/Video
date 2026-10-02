@@ -190,7 +190,7 @@
   --accent: #ff2e7e; --accent-rgb: 255,46,126;
 }
 .cast-dos-block {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 47vw; z-index: 1;
+  position: absolute; left: 0; top: 0; bottom: 0; width: 42vw; z-index: 1;
   background: var(--accent);
   clip-path: polygon(0 0, 100% 0, 72% 100%, 0 100%);
   overflow: hidden;
@@ -211,11 +211,11 @@
 }
 .cast-dos-page.is-light .cast-dos-light { background: radial-gradient(ellipse 40% 34% at 44% 40%, rgba(255,255,255,.5), rgba(255,255,255,0) 70%), linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.35) 100%); }
 .cast-dos-stripe {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 49.5vw; z-index: 0;
+  position: absolute; left: 0; top: 0; bottom: 0; width: 44.4vw; z-index: 0;
   background: var(--blood);
   clip-path: polygon(0 0, 100% 0, 73.4% 100%, 0 100%);
 }
-.cast-dos-page.is-light .cast-dos-stripe { background: var(--ink-3); box-shadow: none; }
+.cast-dos-page.is-red .cast-dos-stripe { background: var(--bone); }
 .cast-dos-bignum {
   position: absolute; right: -1vw; bottom: -6vh; z-index: 0;
   font-family: var(--f-latin); font-weight: 700; font-size: 46vh; line-height: 1; letter-spacing: -.04em;
@@ -223,7 +223,7 @@
   pointer-events: none; user-select: none;
 }
 .cast-dos-fig {
-  position: absolute; left: 1vw; bottom: -4vh; z-index: 2; height: 104vh; aspect-ratio: 3 / 4;
+  position: absolute; left: -2vw; bottom: -4vh; z-index: 2; height: 104vh; aspect-ratio: 3 / 4;
   pointer-events: none;
 }
 .cast-dos-por { width: 100%; height: 100%; }
@@ -231,32 +231,32 @@
 .cast-dos-page.is-light .cast-dos-por > svg { filter: drop-shadow(-3px -2px 0 rgba(10,8,9,.9)) drop-shadow(0 30px 40px rgba(0,0,0,.45)); }
 
 .cast-dos-name {
-  position: absolute; left: 41vw; top: 9vh; z-index: 3;
+  position: absolute; left: 36vw; top: 9vh; z-index: 3;
   writing-mode: vertical-rl; text-orientation: upright;
   font-family: var(--f-display); font-weight: 900;
   font-size: min(15vh, 132px, calc(76vh / var(--n)));
   line-height: 1; letter-spacing: -.02em; color: var(--bone);
-  text-shadow: 0 0 1px #000, 6px 6px 0 rgba(10,8,9,.85);
+  text-shadow: 0 0 18px rgba(0,0,0,.35);
   margin: 0; white-space: nowrap;
 }
 .cast-dos-name span { display: inline-block; }
 .cast-dos-name.is-latin { text-orientation: mixed; letter-spacing: .02em; }
 .cast-dos-name--ghost {
-  z-index: 1; left: calc(41vw + 1.4vh); top: calc(9vh + 1.4vh);
-  color: transparent; -webkit-text-stroke: 1px rgba(var(--accent-rgb), .9); text-shadow: none;
+  z-index: 1; left: calc(36vw + 1.1vh); top: calc(9vh + 1.1vh);
+  color: transparent; -webkit-text-stroke: 1px rgba(var(--accent-rgb), .85); text-shadow: none;
 }
-.cast-dos-page.is-light .cast-dos-name--ghost { -webkit-text-stroke-color: rgba(235,227,214,.5); }
+.cast-dos-page.is-red .cast-dos-name--ghost { -webkit-text-stroke-color: rgba(255,46,126,.9); }
 
 .cast-dos-info {
-  position: absolute; left: 53vw; top: 11vh; width: 23vw; z-index: 3;
+  position: absolute; left: 47.5vw; top: 11vh; width: 22.5vw; z-index: 3;
   display: flex; flex-direction: column; gap: 3.2vh;
 }
 .cast-dos-head { display: flex; flex-direction: column; gap: 8px; }
 .cast-dos-epi { font-family: var(--f-display); font-weight: 900; font-size: clamp(22px, 2.3vw, 34px); line-height: 1.15; color: var(--brass); letter-spacing: .04em; }
 .cast-dos-work { font-family: var(--f-serif); font-size: 15px; color: var(--bone); letter-spacing: .1em; }
 .cast-dos-meta { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .12em; color: var(--bone-dim); line-height: 1.7; }
-.cast-dos-quote { position: relative; margin: 0; padding: 4px 0 0 30px; border: 0; }
-.cast-dos-qmark { position: absolute; left: -6px; top: -14px; font-family: var(--f-display); font-weight: 900; font-size: 56px; line-height: 1; color: var(--accent); }
+.cast-dos-quote { position: relative; margin: 1.6vh 0 0; padding: 0; border: 0; }
+.cast-dos-qmark { position: absolute; left: -.5em; top: -.62em; font-family: var(--f-display); font-weight: 900; font-size: 44px; line-height: 1; color: var(--accent); opacity: .9; }
 .cast-dos-page.is-light .cast-dos-qmark { color: var(--blood); }
 .cast-dos-zh { font-family: var(--f-serif); font-size: clamp(18px, 1.65vw, 25px); line-height: 1.55; color: var(--bone); min-height: 1.55em; }
 .cast-dos-orig { margin-top: 10px; font-family: var(--f-serif); font-size: 12.5px; line-height: 1.6; color: var(--bone-dim); letter-spacing: .04em; opacity: 0; }
@@ -265,7 +265,7 @@
 .cast-dos-v { font-family: var(--f-serif); font-size: 14.5px; line-height: 1.7; color: var(--bone); }
 .cast-dos-line--dream .cast-dos-v { color: #f3d9c4; }
 
-.cast-dos-stats { position: absolute; right: 4vw; top: 9vh; width: 19vw; min-width: 250px; z-index: 3; display: flex; flex-direction: column; gap: 10px; }
+.cast-dos-stats { position: absolute; right: 3.5vw; top: 8vh; width: 24vw; min-width: 280px; max-width: 440px; z-index: 3; display: flex; flex-direction: column; gap: 10px; }
 .cast-dos-sk { font-family: var(--f-latin); font-size: 10px; letter-spacing: .4em; color: rgba(194,154,91,.75); }
 .cast-radar { width: 100%; height: auto; overflow: visible; }
 .cast-radar-grid polygon { fill: none; stroke: rgba(111,85,50,.55); stroke-width: .7; }
@@ -276,8 +276,8 @@
 .cast-radar-kill { stroke: var(--blood); stroke-width: 2.2; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(255,46,126,.8)); }
 .cast-radar-dot { fill: var(--bone); }
 .cast-radar-dot.is-blood { fill: var(--blood); }
-.cast-radar-lab { font-family: var(--f-sans); font-size: 10.5px; letter-spacing: .14em; fill: var(--bone-dim); transition: fill .3s; }
-.cast-radar-val { font-family: var(--f-display); font-weight: 900; font-size: 15px; letter-spacing: .06em; fill: var(--brass); transition: fill .3s; }
+.cast-radar-lab { font-family: var(--f-sans); font-size: 12px; letter-spacing: .14em; fill: var(--bone-dim); transition: fill .3s; }
+.cast-radar-val { font-family: var(--f-display); font-weight: 900; font-size: 18px; letter-spacing: .06em; fill: var(--brass); transition: fill .3s; }
 .cast-radar-lab.is-blood, .cast-radar-val.is-blood { fill: var(--blood); }
 .cast-radar-lab.is-on { fill: var(--bone); }
 .cast-radar-val.is-on { fill: #ffe7b0; }
@@ -288,7 +288,7 @@
 .cast-dos-read {
   min-height: 64px; padding: 10px 12px; border-left: 2px solid var(--brass);
   background: linear-gradient(90deg, rgba(194,154,91,.08), transparent);
-  opacity: .25; transition: opacity .35s, border-color .35s;
+  opacity: 0; transition: opacity .35s, border-color .35s;
 }
 .cast-dos-read.is-on { opacity: 1; }
 .cast-dos-read.is-blood { border-left-color: var(--blood); background: linear-gradient(90deg, rgba(255,46,126,.1), transparent); }
@@ -327,10 +327,10 @@
 .cast-dos-seat-n:empty { display: none; }
 
 @media (max-width: 1100px) and (min-width: 761px) {
-  .cast-dos-info { left: 50vw; width: 26vw; }
-  .cast-dos-stats { width: 21vw; min-width: 210px; right: 2.5vw; }
-  .cast-dos-name { left: 38vw; }
-  .cast-dos-name--ghost { left: calc(38vw + 1.4vh); }
+  .cast-dos-info { left: 46vw; width: 25vw; }
+  .cast-dos-stats { width: 25vw; min-width: 220px; right: 2vw; }
+  .cast-dos-name { left: 34vw; }
+  .cast-dos-name--ghost { left: calc(34vw + 1.1vh); }
 }
 
 @media (max-width: 760px) {

@@ -198,12 +198,12 @@
      ===================================================================== */
   function createHall(opts) {
     const o = Object.assign({
-      lightCol: [255, 192, 128],   // 光（光标）的颜色
-      amb: 0.1,                    // 穹顶散下的环境光
-      ambCol: [150, 140, 150],
-      floorAlb: [0.78, 0.74, 0.66],// 月白翡翠
-      discAlb: [0.17, 0.16, 0.15], // 墨玉
-      jadeAlb: [0.58, 0.66, 0.6],  // 青白玉
+      lightCol: [255, 188, 120],   // 光（光标）的颜色
+      amb: 0.07,                   // 穹顶散下的环境光
+      ambCol: [140, 134, 150],
+      floorAlb: [0.66, 0.63, 0.57],// 月白翡翠
+      discAlb: [0.12, 0.115, 0.11],// 墨玉
+      jadeAlb: [0.2, 0.27, 0.23],  // 青白玉（抛光，像瞳孔一样暗，只在光下透出青色）
       num: [214, 172, 102],        // 编号：黄铜
       numDim: [111, 85, 50],
       numOut: [150, 28, 28],       // 熄灭：锈红
@@ -223,9 +223,9 @@
       ribCanvas: o.ribCanvas || null, rctx: o.ribCanvas ? o.ribCanvas.getContext('2d') : null,
       sh: document.createElement('canvas'), sh2: document.createElement('canvas'), lensC: document.createElement('canvas'),
       seats: [],
-      light: { x: 0, y: 0, z: 5.6, power: 0.9, range: 4.6, flick: 1 },
+      light: { x: 0, y: 0, z: 5.6, power: 1.1, range: 3, flick: 1 },
       home: { x: 0, y: 0, z: 5.6 },
-      lampZ: 2.35, lampPow: 1.45, homePow: 0.9,
+      lampZ: 2.4, lampPow: 2.3, homePow: 1.5, lampRange: 2.9, homeRange: 4.2,
       ptr: { x: 0, y: 0, on: false },
       view: { elev: Math.PI / 2, yaw: 0, dist: 10.6, tx: 0, ty: 0, tz: 0.45, fk: 1, ox: 0, oy: 0 },
       dark: 0,          // 全局沉入黑暗 0–1
@@ -244,7 +244,7 @@
       fit: 0.36,        // 正俯视时椅环半径占短边的比例
       numScale: 1,
       hoverK: -1, keyGone: -1, clock: 17 * 60,
-      eyeQ: [], tilt: 0, ls: null,
+      eyeQ: [], tilt: 0, ls: null, eyeScale: 1,
     }
     S.sx = S.sh.getContext('2d')
     S.sx2 = S.sh2.getContext('2d')
@@ -328,8 +328,8 @@
         c.width = Math.round(W * dpr); c.height = Math.round(H * dpr)
         c.style.width = W + 'px'; c.style.height = H + 'px'
       }
-      S.sh.width = S.sh2.width = Math.ceil(W / 3)
-      S.sh.height = S.sh2.height = Math.ceil(H / 3)
+      S.sh.width = S.sh2.width = Math.ceil(W / 2)
+      S.sh.height = S.sh2.height = Math.ceil(H / 2)
       S.cam.W = W; S.cam.H = H
     }
 
@@ -757,7 +757,7 @@
       ctx.save()
       pathPts(ctx, fl)
       ctx.clip()
-      shadowPass(ctx, 0, polys, shadowAlpha(), 2.2)
+      shadowPass(ctx, 0, polys, shadowAlpha(), 1.7)
       ctx.restore()
     }
 
@@ -794,7 +794,7 @@
       const dp = Math.max(0.08, Lt.z - G.tableH)
       pool(ctx, [Lt.x, Lt.y, G.tableH], [1, 0, 0], [0, 1, 0], dp, Lt.power * Lt.flick, Lt.range, o.lightCol, o.jadeAlb, 7, S.poolA * S.floorA)
       // 玉的通透：更宽更淡的一层
-      pool(ctx, [Lt.x * 0.85, Lt.y * 0.85, G.tableH], [1, 0, 0], [0, 1, 0], dp + 1.4, Lt.power * Lt.flick * 0.45, Lt.range * 1.5, o.lightCol, [0.3, 0.42, 0.36], 6, S.poolA * S.floorA)
+      pool(ctx, [Lt.x * 0.85, Lt.y * 0.85, G.tableH], [1, 0, 0], [0, 1, 0], dp + 1.4, Lt.power * Lt.flick * 0.45, Lt.range * 1.5, o.lightCol, [0.08, 0.15, 0.12], 6, S.poolA * S.floorA)
       // 席位小光池照到桌沿
       for (const s of S.seats) {
         const ex = seatExtra(s)
@@ -805,16 +805,16 @@
       ctx.lineCap = 'round'
       for (const v of JADE_VEINS) {
         const m = irr(v.pts[3][0], v.pts[3][1], G.tableH)
-        ctx.globalAlpha = S.floorA * v.a * (0.4 + Math.min(1.6, m * 1.4))
-        ctx.strokeStyle = rgb(200, 226, 210)
+        ctx.globalAlpha = S.floorA * v.a * 0.7 * (0.25 + Math.min(1.6, m * 1.3))
+        ctx.strokeStyle = rgb(190, 222, 205)
+        const q = []
+        for (const pt of v.pts) { const p = c.p(pt[0], pt[1], G.tableH + 0.001); if (p) q.push(p) }
+        if (q.length < 3) continue
+        ctx.lineWidth = Math.max(0.5, v.w * 0.7 * q[0][3])
         ctx.beginPath()
-        let ok = false
-        for (let i = 0; i < v.pts.length; i++) {
-          const p = c.p(v.pts[i][0], v.pts[i][1], G.tableH + 0.001)
-          if (!p) continue
-          ctx.lineWidth = Math.max(0.5, v.w * p[3])
-          if (!ok) { ctx.moveTo(p[0], p[1]); ok = true } else ctx.lineTo(p[0], p[1])
-        }
+        ctx.moveTo(q[0][0], q[0][1])
+        for (let i = 1; i < q.length - 1; i++) ctx.quadraticCurveTo(q[i][0], q[i][1], (q[i][0] + q[i + 1][0]) / 2, (q[i][1] + q[i + 1][1]) / 2)
+        ctx.lineTo(q[q.length - 1][0], q[q.length - 1][1])
         ctx.stroke()
       }
       // 内圈的细铜线（像虹膜的环）
@@ -846,7 +846,7 @@
         polys.push(hull(pts))
         personShadow(s.K, G.tableH, polys)
       }
-      shadowPass(ctx, G.tableH, polys, shadowAlpha() * 0.9, 1.6)
+      shadowPass(ctx, G.tableH, polys, shadowAlpha() * 0.9, 1.3)
       ctx.restore()
       // 桌沿：一圈细线
       ctx.globalAlpha = S.floorA * (0.25 + 0.4 * Math.min(1, irr(Lt.x, Lt.y, G.tableH)))
@@ -951,6 +951,9 @@
         chest: L2W(s, nu * 0.6, mix(-0.11, 0.1, fall), mix(0.82, 0.72, fall) - sink),
         pel: L2W(s, 0, -0.06, 0.58 - sink * 0.5),
         kneeL: L2W(s, -0.11, 0.34, 0.58), kneeR: L2W(s, 0.11, 0.34, 0.58),
+        hipL: L2W(s, -0.1, -0.02, 0.56), hipR: L2W(s, 0.1, -0.02, 0.56),
+        elbL: L2W(s, mix(-0.29, nu - 0.24, fall), mix(-0.06, nv + 0.12, fall), mix(0.76, 0.82, fall)), elbR: L2W(s, mix(0.29, nu + 0.24, fall), mix(-0.06, nv + 0.12, fall), mix(0.76, 0.82, fall)),
+        handL: L2W(s, mix(-0.3, -0.2, fall), mix(0.2, 0.5, fall), mix(0.74, G.tableH + 0.04, fall)), handR: L2W(s, mix(0.3, 0.2, fall), mix(0.2, 0.5, fall), mix(0.74, G.tableH + 0.04, fall)),
         footL: L2W(s, -0.12, 0.42, 0.05), footR: L2W(s, 0.12, 0.42, 0.05),
         head: L2W(s, hu, hv, hh),
       }
@@ -970,76 +973,93 @@
       const rr = r * p[3]
       for (const d of RING) out.push([p[0] + d[0] * rr, p[1] + d[1] * rr])
     }
+    function capsule(out, A, ra, B, rb) { sweep(out, A, ra); sweep(out, B, rb) }
     function drawPerson(ctx, s, ex) {
       const K = s.K
       if (!K) return
       const c = S.cam
       const e = irr(K.head[0], K.head[1], K.head[2]) + (ex ? ex.amt * 0.9 : 0)
       const sil = o.silhouette, lc = o.lightCol
-      const fill = rgb(sil[0] + lc[0] * e * 0.018, sil[1] + lc[1] * e * 0.016, sil[2] + lc[2] * e * 0.014)
+      const fill = rgb(sil[0] + lc[0] * e * 0.02, sil[1] + lc[1] * e * 0.018, sil[2] + lc[2] * e * 0.016)
+      const fillH = rgb(sil[0] + 7 + lc[0] * e * 0.03, sil[1] + 6 + lc[1] * e * 0.026, sil[2] + 6 + lc[2] * e * 0.022)
       const base = ctx.globalAlpha
       ctx.globalAlpha = base * K.A
-      // 身体
+      ctx.fillStyle = fill
+      // 腿（两条，从胯到膝）与搭在扶手上的前臂
+      const parts = []
+      for (const side of [0, 1]) {
+        const a = [], b = []
+        capsule(a, side ? K.hipR : K.hipL, 0.085, side ? K.kneeR : K.kneeL, 0.07)
+        if (S.tilt > 0.1) sweep(a, side ? K.footR : K.footL, 0.05)
+        capsule(b, side ? K.elbR : K.elbL, 0.05, side ? K.handR : K.handL, 0.045)
+        sweep(b, side ? K.shR : K.shL, 0.06)
+        parts.push(hull(a), hull(b))
+      }
+      for (const h of parts) if (h.length > 2) { pathPts(ctx, h); ctx.fill() }
+      for (const h of parts) if (h.length > 2) rimHull(ctx, h, e * 0.5, 0.9)
+      // 躯干
       const body = []
-      sweep(body, K.pel, 0.16); sweep(body, K.chest, 0.17); sweep(body, K.shL, 0.075); sweep(body, K.shR, 0.075)
-      sweep(body, K.kneeL, 0.07); sweep(body, K.kneeR, 0.07)
-      if (S.tilt > 0.1) { sweep(body, K.footL, 0.05); sweep(body, K.footR, 0.05) }
+      sweep(body, K.pel, 0.15); sweep(body, K.chest, 0.15); sweep(body, K.shL, 0.085); sweep(body, K.shR, 0.085)
       const bh = hull(body)
       if (bh.length > 2) {
-        pathPts(ctx, bh); ctx.fillStyle = fill; ctx.fill()
-        rimHull(ctx, bh, e * 0.75, 1.1)
+        pathPts(ctx, bh); ctx.fill()
+        rimHull(ctx, bh, e * 0.85, 1.1)
       }
-      // 长发：头后垂下的一片
       const hp = c.p(K.head[0], K.head[1], K.head[2])
       if (!hp) { ctx.globalAlpha = base; return }
+      const R = 0.106 * hp[3]
+      // 头与身体之间一圈暗影，让头在俯视里分得出来
+      ctx.globalAlpha = base * K.A * 0.55
+      ctx.fillStyle = '#000'
+      ctx.beginPath(); ctx.arc(hp[0], hp[1], R * 1.32, 0, TAU); ctx.fill()
+      ctx.globalAlpha = base * K.A
+      // 长发：头后垂下的一片
       if (s.long) {
         const hb = []
         sweep(hb, K.head, 0.1)
-        sweep(hb, [K.head[0] - K.fwd[0] * 0.07, K.head[1] - K.fwd[1] * 0.07, K.head[2] - 0.15], 0.085)
+        sweep(hb, [K.head[0] - K.fwd[0] * 0.08, K.head[1] - K.fwd[1] * 0.08, K.head[2] - 0.17], 0.09)
         const hh = hull(hb)
-        pathPts(ctx, hh); ctx.fillStyle = fill; ctx.fill()
-        rimHull(ctx, hh, e, 1.2)
+        pathPts(ctx, hh); ctx.fillStyle = fillH; ctx.fill()
+        rimHull(ctx, hh, e, 1.1)
       }
       // 头
-      const R = 0.104 * hp[3]
       const pts = []
-      const n = s.hair ? 16 : 14
+      const n = s.hair ? 18 : 16
       const rot = s.sway
       for (let i = 0; i < n; i++) {
         const a = i / n * TAU + rot
-        const rr = R * (s.hair ? (i % 2 ? 1.22 : 0.98) : 1)
+        const rr = R * (s.hair ? (i % 2 ? 1.24 : 0.97) : 1)
         pts.push([hp[0] + Math.cos(a) * rr, hp[1] + Math.sin(a) * rr])
       }
-      pathPts(ctx, pts); ctx.fillStyle = fill; ctx.fill()
+      pathPts(ctx, pts); ctx.fillStyle = fillH; ctx.fill()
       // 头部的轮廓光：朝向光源的一段弧
       if (S.ls && e > 0.02) {
         const ang = Math.atan2(S.ls[1] - hp[1], S.ls[0] - hp[0])
         const rc = o.rim
         ctx.strokeStyle = rgb(rc[0], rc[1], rc[2])
         ctx.lineCap = 'round'
-        ctx.lineWidth = Math.max(1, R * 0.16)
-        ctx.globalAlpha = base * K.A * Math.min(1, e * 1.1)
-        ctx.beginPath(); ctx.arc(hp[0], hp[1], R * (s.hair ? 1.04 : 0.98), ang - 1.0, ang + 1.0); ctx.stroke()
-        ctx.globalAlpha = base * K.A * Math.min(1, e * 0.4)
-        ctx.lineWidth = Math.max(2, R * 0.42)
-        ctx.beginPath(); ctx.arc(hp[0], hp[1], R * 0.9, ang - 0.7, ang + 0.7); ctx.stroke()
+        ctx.lineWidth = Math.max(1, R * 0.14)
+        ctx.globalAlpha = base * K.A * Math.min(1, e * 1.2)
+        ctx.beginPath(); ctx.arc(hp[0], hp[1], R * (s.hair ? 1.06 : 1), ang - 1.05, ang + 1.05); ctx.stroke()
       }
       ctx.globalAlpha = base
-      // 眼睛：放进最后一遍画（黑暗里也看得见）
+      queueEyes(s, K)
+    }
+    // 眼睛：放进最后一遍画（黑暗里也看得见）
+    function queueEyes(s, K) {
       const open = s.eyes * s.blink
-      if (open > 0.01 || s.flash > 0.01) {
-        const C = c.pos
-        const tc = norm3(C[0] - K.head[0], C[1] - K.head[1], C[2] - K.head[2])
-        const vis = sstep(-0.32, 0.18, K.fwd[0] * tc[0] + K.fwd[1] * tc[1] + K.fwd[2] * tc[2])
-        const a = c.p(K.eyeL[0], K.eyeL[1], K.eyeL[2]), b = c.p(K.eyeR[0], K.eyeR[1], K.eyeR[2])
-        if (a && b && vis > 0.01) {
-          const rr = Math.max(1.15, 0.021 * a[3])
-          const rot2 = Math.atan2(b[1] - a[1], b[0] - a[0])
-          const al = K.A * vis
-          S.eyeQ.push({ x: a[0], y: a[1], r: rr, rot: rot2, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover })
-          S.eyeQ.push({ x: b[0], y: b[1], r: rr, rot: rot2, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover })
-        }
-      }
+      if (open <= 0.01 && s.flash <= 0.01) return
+      const c = S.cam, C = c.pos
+      const tc = norm3(C[0] - K.head[0], C[1] - K.head[1], C[2] - K.head[2])
+      const vis = sstep(-0.32, 0.18, K.fwd[0] * tc[0] + K.fwd[1] * tc[1] + K.fwd[2] * tc[2])
+      if (vis <= 0.01) return
+      const a = c.p(K.eyeL[0], K.eyeL[1], K.eyeL[2]), b = c.p(K.eyeR[0], K.eyeR[1], K.eyeR[2])
+      if (!a || !b) return
+      const rr = Math.max(1.5, 0.026 * a[3]) * S.eyeScale
+      const rot = Math.atan2(b[1] - a[1], b[0] - a[0])
+      const al = K.A * vis
+      S.eyeQ.push({ x: a[0], y: a[1], r: rr, rot, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover })
+      S.eyeQ.push({ x: b[0], y: b[1], r: rr, rot, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover })
     }
 
     /* ---------- 椅背上的黄铜编号 ---------- */
@@ -1191,9 +1211,9 @@
               ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(q[0], q[1]); ctx.stroke()
               // 钻石肋线的冷光
               const m = Lt.power * Lt.flick * S.poolA / (1 + ((r.sx * k - Lt.x) ** 2 + (r.sy * k - Lt.y) ** 2 + (z - Lt.z) ** 2) / (Lt.range * Lt.range * 2.2))
-              ctx.globalAlpha = a * (0.1 + Math.min(0.5, m * 0.55))
-              ctx.strokeStyle = rgb(o.glint[0] * 0.55, o.glint[1] * 0.55, o.glint[2] * 0.6)
-              ctx.lineWidth = Math.max(0.6, w * 0.16)
+              ctx.globalAlpha = a * (0.05 + Math.min(0.4, m * 0.5))
+              ctx.strokeStyle = rgb(o.glint[0] * 0.5, o.glint[1] * 0.52, o.glint[2] * 0.6)
+              ctx.lineWidth = Math.max(0.6, w * 0.07)
               ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(q[0], q[1]); ctx.stroke()
             }
           }
@@ -1248,8 +1268,8 @@
         if (!q) continue
         const m = irr(d.x, d.y, d.z)
         const tw = Math.pow(Math.max(0, Math.sin(d.ph + Lt.x * 1.7 + Lt.y * 1.3 + S.time * 0.8)), 10)
-        const al = A * (0.05 + tw * Math.min(1, 0.25 + m * 0.9))
-        drawGlow(ctx, tw > 0.5 ? spr : warm, q[0], q[1], Math.min(34, 0.06 * q[3] * (1 + tw)), al)
+        const al = A * (0.018 + tw * Math.min(0.8, 0.15 + m * 0.8))
+        drawGlow(ctx, tw > 0.6 ? spr : warm, q[0], q[1], Math.min(30, 0.05 * q[3] * (1 + tw)), al)
       }
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
@@ -1295,7 +1315,7 @@
     }
     function drawMotes(ctx) {
       if (!S.motes.length) return
-      const c = S.cam, L = S.light, col = o.lightCol
+      const c = S.cam, L = S.light
       const spr = glowSprite(255, 230, 200, true)
       const bm = S.beam, bs = bm.k >= 0 ? S.seats[bm.k] : null
       ctx.globalCompositeOperation = 'lighter'
@@ -1317,7 +1337,6 @@
       }
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
-      void col
     }
 
     /* ---------- 眼睛（最后一遍，黑暗盖不住） ---------- */
@@ -1331,7 +1350,7 @@
         const acc = e.acc
         const spr = glowSprite(acc[0], acc[1], acc[2])
         const lift = 1 + e.hov * 0.6
-        drawGlow(ctx, spr, e.x, e.y, e.r * (7 + e.flash * 26) * lift, a * Math.max(e.open, e.flash) * (0.42 + e.flash * 0.7))
+        drawGlow(ctx, spr, e.x, e.y, e.r * (7 + e.flash * 24) * lift, a * Math.max(e.open, e.flash) * (0.6 + e.flash * 0.6))
         if (e.open > 0.02) {
           ctx.globalAlpha = Math.min(1, a * 1.1)
           ctx.fillStyle = rgb(mix(acc[0], 255, 0.62), mix(acc[1], 255, 0.62), mix(acc[2], 255, 0.62))
@@ -1391,6 +1410,7 @@
       }
       const f1 = 1 - Math.pow(0.8, dt * 60), f2 = 1 - Math.pow(0.94, dt * 60)
       L.x += (tx - L.x) * f1; L.y += (ty - L.y) * f1; L.z += (tz - L.z) * f2; L.power += (tp - L.power) * f2
+      L.range += ((S.ptr.on ? S.lampRange : S.homeRange) - L.range) * f2
       const t = S.time
       L.flick = 0.955 + 0.03 * Math.sin(t * 7.1) * Math.sin(t * 2.3 + 1.7) + 0.015 * Math.sin(t * 23.7)
       const fh = 1 - Math.pow(0.84, dt * 60)
@@ -1447,7 +1467,7 @@
         drawMotes(ctx)
       } else {
         // 只算眼睛
-        for (const s of S.seats) if (s.K) drawPersonEyesOnly(s)
+        for (const s of S.seats) if (s.K) queueEyes(s, s.K)
       }
       if (S.dark > 0.001) {
         ctx.globalAlpha = S.dark
@@ -1471,23 +1491,6 @@
         drawLens(ctx)
       }
     }
-    // 全黑时只需要眼睛的位置
-    function drawPersonEyesOnly(s) {
-      const tmp = { globalAlpha: 1 }
-      void tmp
-      const K = s.K, c = S.cam
-      const open = s.eyes * s.blink
-      if (open <= 0.01 && s.flash <= 0.01) return
-      const a = c.p(K.eyeL[0], K.eyeL[1], K.eyeL[2]), b = c.p(K.eyeR[0], K.eyeR[1], K.eyeR[2])
-      if (!a || !b) return
-      const C = c.pos
-      const tc = norm3(C[0] - K.head[0], C[1] - K.head[1], C[2] - K.head[2])
-      const vis = sstep(-0.32, 0.18, K.fwd[0] * tc[0] + K.fwd[1] * tc[1] + K.fwd[2] * tc[2])
-      const rr = Math.max(1.15, 0.021 * a[3]), rot = Math.atan2(b[1] - a[1], b[0] - a[0])
-      S.eyeQ.push({ x: a[0], y: a[1], r: rr, rot, open, a: K.A * vis, flash: s.flash, acc: s.acc, hov: s.hover })
-      S.eyeQ.push({ x: b[0], y: b[1], r: rr, rot, open, a: K.A * vis, flash: s.flash, acc: s.acc, hov: s.hover })
-    }
-
     /* ---------- 拾取与屏幕位置 ---------- */
     S.pick = (x, y) => {
       setView()
@@ -1565,7 +1568,7 @@
     el: null, H: null, E: null, vis: false, started: false,
     p: 0, ps: 0, lit: 0, mob: false,
     ptrIn: false, touchUntil: 0, hoverK: -1, tagK: -1, tagUntil: 0, lineK: -1,
-    keyNo: 1, keyLanded: false, keyY: 0, cueOn: false, wakeDone: false, lastNow: 0,
+    keyNo: 1, keyLanded: false, keyShown: false, lastKeyP: 0, whooshed: false, cueOn: false, wakeDone: false, gateOpen: false,
   }
 
   function build(el) {
@@ -1585,7 +1588,7 @@
     E.tagNo = U.el('b.prologue-tag-no')
     E.tagName = U.el('span.prologue-tag-name')
     E.tagLine = U.el('p.prologue-tag-line')
-    E.tag = U.el('div.prologue-tag', { 'aria-hidden': 'true' }, [U.el('div.prologue-tag-head', null, [E.tagNo, E.tagName]), E.tagLine])
+    E.tag = U.el('div.prologue-tag', { 'aria-hidden': 'true' }, [U.el('div.prologue-tag-in', null, [U.el('div.prologue-tag-head', null, [E.tagNo, E.tagName]), E.tagLine])])
     E.cue = U.el('div.prologue-cue', { 'aria-hidden': 'true' }, [U.el('i')])
     E.keyTag = U.el('span.prologue-key-no', { text: 'I' })
     E.key = U.el('div.prologue-key', { 'aria-hidden': 'true', html: KEY_SVG })
@@ -1800,7 +1803,7 @@
     const H = P.H, E = P.E
     const now = performance.now()
     // 遮幕打开之前，低频渲染即可
-    if (!P.started && (P.skip = (P.skip || 0) + 1) % 20) return
+    if (!P.started && !P.gateOpen && (P.skip = (P.skip || 0) + 1) % 20) return
     const sec = Math.min(0.1, (dt || 1) / 60)
     P.ps += (P.p - P.ps) * (1 - Math.pow(0.88, dt || 1))
     if (Math.abs(P.p - P.ps) < 0.0004) P.ps = P.p
@@ -1878,8 +1881,9 @@
       window.addEventListener('pointerdown', e => {
         P.ptrIn = true
         if (e.pointerType === 'touch') P.touchUntil = performance.now() + 2600
-        if (!P.started) P.skip = 0
+        P.gateOpen = true
       }, { passive: true })
+      window.addEventListener('keydown', () => { P.gateOpen = true })
       document.documentElement.addEventListener('mouseleave', () => { P.ptrIn = false })
       window.addEventListener('blur', () => { P.ptrIn = false })
       P.E.stage.addEventListener('click', onTap)

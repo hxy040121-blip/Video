@@ -1,1 +1,120 @@
-/* prologue */
+/* ==========================================================
+   醒来 · prologue
+   穹顶正上方俯视的圆桌（Canvas），竖排标题，大号时钟，席位名牌，落下的钥匙
+   ========================================================== */
+
+.prologue { position: relative; height: 380vh; }
+.prologue-sticky {
+  position: sticky; top: 0; height: 100vh; overflow: hidden;
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(20, 14, 11, .0), rgba(5, 4, 4, .55) 100%);
+}
+.prologue-stage { position: absolute; inset: 0; touch-action: pan-y; }
+.prologue-cv, .prologue-ribs { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.prologue-ribs { pointer-events: none; filter: blur(1.4px); }
+
+/* ---------- 标题：巨大竖排「十五席」 ---------- */
+.prologue-head {
+  position: absolute; right: calc(var(--gutter) + 2.4vw); top: 15vh;
+  display: flex; flex-direction: row-reverse; align-items: flex-start; gap: 18px;
+  pointer-events: none; will-change: transform, opacity;
+}
+.prologue-title {
+  writing-mode: vertical-rl; text-orientation: upright;
+  font-family: var(--f-display); font-weight: 900;
+  font-size: clamp(72px, 10.4vw, 172px); line-height: 1; letter-spacing: .04em;
+  color: var(--bone);
+  text-shadow: .03em .012em 0 rgba(255, 46, 126, .42), -.012em 0 0 rgba(120, 190, 255, .08);
+}
+.prologue-seal {
+  position: absolute; right: calc(clamp(72px, 10.4vw, 172px) * .5 - 5px); top: calc(100% + 22px);
+  width: 10px; height: 10px; background: var(--blood);
+  box-shadow: 0 0 18px rgba(255, 46, 126, .55);
+}
+.prologue-latin {
+  writing-mode: vertical-rl;
+  font-family: var(--f-latin); font-size: 11px; letter-spacing: .62em; text-transform: uppercase;
+  color: var(--brass); opacity: .8; padding-top: .4em;
+  border-right: 1px solid rgba(194, 154, 91, .35); padding-right: 12px; margin-top: .4em;
+}
+
+/* ---------- 大号时钟 ---------- */
+.prologue-clock {
+  position: absolute; left: var(--gutter); bottom: calc(var(--gutter) * .7 + 8px);
+  display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+}
+.prologue-day { font-family: var(--f-sans); font-size: 11px; letter-spacing: .5em; color: var(--bone-dim); padding-left: .2em; }
+.prologue-time {
+  font-family: var(--f-mono); font-size: clamp(54px, 7vw, 116px); line-height: .9; letter-spacing: -.03em;
+  color: var(--brass); font-variant-numeric: tabular-nums; min-width: 5ch;
+  text-shadow: 0 0 28px rgba(194, 154, 91, .22);
+}
+.prologue-clock-tick { display: block; height: 1px; width: 100%; background: var(--blood); transform-origin: left; transform: scaleX(0); }
+
+/* ---------- 席位名牌（悬停 / 点击） ---------- */
+.prologue-tag { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; opacity: 0; z-index: 3; }
+.prologue-tag-in { position: absolute; top: 0; left: 0; transform: translate(0, -50%); width: max-content; max-width: min(19em, 42vw); }
+.prologue-tag[data-side="r"] .prologue-tag-in { left: auto; right: 0; text-align: right; }
+.prologue-tag[data-side="c"] .prologue-tag-in { transform: translate(-50%, -50%); text-align: center; }
+.prologue-tag[data-side="c"][data-v="b"] .prologue-tag-in { transform: translate(-50%, 0); }
+.prologue-tag[data-side="c"][data-v="t"] .prologue-tag-in { transform: translate(-50%, -100%); }
+.prologue-tag-head { display: flex; align-items: baseline; gap: 10px; }
+.prologue-tag[data-side="r"] .prologue-tag-head { flex-direction: row-reverse; }
+.prologue-tag[data-side="c"] .prologue-tag-head { justify-content: center; }
+.prologue-tag-no { font-family: var(--f-latin); font-weight: 700; font-size: 12px; letter-spacing: .2em; color: var(--brass); }
+.prologue-tag-name {
+  font-family: var(--f-display); font-weight: 900; font-size: 22px; letter-spacing: .04em; line-height: 1.2;
+  color: var(--bone); text-shadow: 0 0 14px rgba(0, 0, 0, .9), 0 0 2px #000;
+}
+.prologue-tag-name::after {
+  content: ''; display: inline-block; width: 5px; height: 5px; margin-left: 8px; vertical-align: middle;
+  border-radius: 50%; background: var(--acc, var(--brass)); box-shadow: 0 0 10px var(--acc, var(--brass));
+}
+.prologue-tag-line {
+  margin-top: 6px; font-family: var(--f-serif); font-size: 14px; line-height: 1.65; letter-spacing: .04em;
+  color: var(--bone-dim); text-shadow: 0 0 10px #000, 0 0 2px #000;
+  opacity: 0; transition: opacity .4s var(--ease-out);
+}
+.prologue-tag-line.is-on { opacity: 1; }
+
+/* ---------- 下滑提示（纯图形） ---------- */
+.prologue-cue {
+  position: absolute; left: 50%; bottom: 26px; width: 1px; height: 64px; margin-left: -.5px;
+  background: linear-gradient(to bottom, rgba(194, 154, 91, 0), rgba(194, 154, 91, .55));
+  pointer-events: none; overflow: hidden;
+}
+.prologue-cue i {
+  position: absolute; left: -1.5px; top: 0; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--blood); box-shadow: 0 0 8px var(--blood);
+  animation: prologue-cue 2.4s var(--ease-in-out) infinite;
+}
+@keyframes prologue-cue { 0% { transform: translateY(-6px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(64px); opacity: 0; } }
+
+/* ---------- 落下的黄铜钥匙 ---------- */
+.prologue-key {
+  position: absolute; left: 0; top: 0; width: 150px; height: 57px;
+  pointer-events: none; opacity: 0; will-change: transform, opacity;
+  filter: drop-shadow(0 0 10px rgba(226, 178, 96, .45)) drop-shadow(0 6px 10px rgba(0, 0, 0, .8));
+}
+.prologue-key svg { width: 100%; height: 100%; overflow: visible; }
+.prologue-key-no {
+  position: absolute; left: 17.6%; top: 50%; transform: translate(-50%, -50%);
+  font-family: var(--f-latin); font-weight: 700; font-size: 10px; letter-spacing: 0; color: #2a1d0e;
+}
+
+@media (max-width: 760px) {
+  .prologue { height: 340vh; }
+  .prologue-head { right: 14px; top: calc(var(--hud-h) + 16px); gap: 10px; }
+  .prologue-title { font-size: 58px; }
+  .prologue-seal { right: 24px; top: calc(100% + 12px); width: 8px; height: 8px; }
+  .prologue-latin { font-size: 9px; padding-right: 8px; }
+  .prologue-clock { left: 16px; bottom: 22px; }
+  .prologue-time { font-size: 46px; }
+  .prologue-tag-name { font-size: 18px; }
+  .prologue-tag-line { font-size: 13px; }
+  .prologue-tag-in { max-width: 62vw; }
+  .prologue-ribs { filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prologue-cue i { animation: none; transform: translateY(30px); opacity: 1; }
+}
