@@ -194,12 +194,14 @@
     const pw = Math.max(w * 1.06, h * 0.78), ph = pw * 4 / 3
     it.pw = pw; it.ph = ph
     it.pl = (w - pw) / 2; it.pt = h * 0.46 - ph * 0.41
-    for (const n of [it.por, it.eyesBox]) {
-      if (!n) continue
-      n.style.width = pw + 'px'
-      n.style.left = it.pl + 'px'
-      n.style.top = it.pt + 'px'
-      n.style.height = ph + 'px'
+    it.por.style.width = pw + 'px'
+    it.por.style.height = ph + 'px'
+    it.por.style.left = it.pl + 'px'
+    it.por.style.top = it.pt + 'px'
+    if (it.eyesBox) {
+      it.eyesBox.style.width = pw + 'px'
+      it.eyesBox.style.height = ph + 'px'
+      it.eyesBox.style.transform = `translate3d(${(it.x + it.pl).toFixed(1)}px,${(it.y + it.pt).toFixed(1)}px,0)`
     }
     // 黄铜框
     const W = w + 2 * P, H = h + 2 * P
@@ -241,7 +243,7 @@
      ===================================================================== */
   function makeItem(i) {
     const c = CH[i]
-    const it = { i, k: i, c, lit: 0, h: 0, on: false, sway: null, decoded: false, gaze: { x: 0, y: 0 }, halo: [], halos: [] }
+    const it = { i, k: i, c, lit: 0, heat: 0, on: false, sway: null, decoded: false, gaze: { x: 0, y: 0 }, halo: [], halos: [] }
     const acc = (c.art && c.art.accent) || App.color.blood
     const node = el('div.item', { 'data-i': i })
     node.style.setProperty('--accent', acc)
@@ -284,8 +286,8 @@
   }
 
   function makeVoid() {
-    const it = { i: N, k: 'v', c: null, lit: 0, h: 0, void: true, gaze: { x: 0, y: 0 }, halo: [], halos: [] }
-    const node = el('div.item.cast-item--void')
+    const it = { i: N, k: 'v', c: null, lit: 0, heat: 0, void: true, gaze: { x: 0, y: 0 }, halo: [], halos: [] }
+    const node = el('div.item.item--void')
     const wire = sv('svg', { class: 'cast-wire', 'aria-hidden': 'true' })
     const swing = el('div.swing')
     const shadow = el('div.shadow', { 'aria-hidden': 'true' }, el('i'))
@@ -310,7 +312,7 @@
       if (!it.decoded) { it.decoded = true; App.text.scramble(epi, '下一幅是你', { duration: 1.1 }) }
       App.audio.sfx('dark', { volume: 0.8 })
       App.glitch(plate, 0.4)
-      gsap.fromTo(it.por, { opacity: 1 }, { opacity: 0, duration: 0.05, repeat: 5, yoyo: true, ease: 'steps(1)', onComplete: () => { gsap.set(it.por, { clearProps: 'opacity' }); busy = false } })
+      gsap.fromTo(win, { opacity: 1 }, { opacity: 0.15, duration: 0.05, repeat: 5, yoyo: true, ease: 'steps(1)', onComplete: () => { gsap.set(win, { clearProps: 'opacity' }); busy = false } })
     }
     win.addEventListener('pointerenter', () => { if (App.finePointer) poke() })
     win.addEventListener('click', poke)
@@ -354,6 +356,7 @@
       it.eyesBox = box
       fore.appendChild(box)
       if (it.c) box.style.setProperty('--accent', (it.c.art && it.c.art.accent) || App.color.blood)
+      else box.classList.add('is-void')
     }
 
     const hud = el('div.hud', { 'aria-hidden': 'true' })
@@ -361,8 +364,8 @@
     hudBar = el('div.bar', null, el('i'))
     hudTicks = el('div.ticks')
     for (let i = 0; i < N; i++) hudTicks.appendChild(el('i'))
-    hud.append(el('span.hudname', { text: 'EAST GALLERY' }), hudBar, hudTicks, hudCount)
     hudBar.appendChild(hudTicks)
+    hud.append(el('span.hudname', { text: 'EAST GALLERY' }), hudBar, hudCount)
 
     sticky.append(wall, dark, glow, fore, hud)
     sec.appendChild(sticky)
@@ -396,8 +399,6 @@
         box.appendChild(h)
         it.halos.push(h)
       }
-      // 离开时把眼睛的光盒放到肖像的位置（墙坐标）
-      box.style.transform = `translate(${it.x}px, ${it.y}px)`
     }
   }
 
@@ -410,12 +411,12 @@
     S.hot = it
     if (prev) {
       prev.node.classList.remove('is-hot')
-      gsap.to(prev, { h: 0, duration: 0.6, ease: 'power2.out' })
+      gsap.to(prev, { heat: 0, duration: 0.6, ease: 'power2.out' })
     }
     sec.classList.toggle('is-focus', !!it)
     if (!it) return
     it.node.classList.add('is-hot')
-    gsap.to(it, { h: 1, duration: 0.55, ease: 'power2.out' })
+    gsap.to(it, { heat: 1, duration: 0.55, ease: 'power2.out' })
     sway(it, App.mouse.vx)
     if (!it.decoded) {
       it.decoded = true
@@ -531,7 +532,7 @@
       const d = Math.hypot(dx, dy) || 1
       const lit = smooth(R * 1.05, R * 0.18, d) * U.clamp(S.flick, 0, 1.1)
       it.lit = approach(it.lit, lit, 0.3, dt)
-      const L = Math.max(it.lit, it.h)
+      const L = Math.max(it.lit, it.heat)
       if (Math.abs(L - (it.lw || 0)) > 0.006) { it.node.style.setProperty('--lit', L.toFixed(3)); it.lw = L }
       // 投影：背向烛光
       const k = U.clamp(d * 0.028, 3, 26)
@@ -546,8 +547,8 @@
         }
       }
       // 悬停：烛光点亮轮廓光与眼睛
-      if (it.h > 0.004 && it.svg) {
-        const h = it.h
+      if (it.heat > 0.004 && it.svg) {
+        const h = it.heat
         const ux = -dx / d, uy = -dy / d
         const rx = (ux * 2.6 * h).toFixed(2), ry = (uy * 2.2 * h).toFixed(2)
         it.svg.style.filter = `grayscale(${(0.85 * (1 - h)).toFixed(3)}) brightness(${(0.78 + 0.32 * h).toFixed(3)}) drop-shadow(${rx}px ${ry}px 0 rgba(236,198,128,${(0.95 * h).toFixed(3)})) drop-shadow(0 0 ${(10 * h).toFixed(1)}px rgba(194,154,91,${(0.4 * h).toFixed(3)}))`
@@ -570,12 +571,11 @@
         }
         let op
         if (it.void) op = (1 - smooth(0.05, 0.55, it.lit)) * (S.away ? 0.55 : 1)
-        else op = 0.42 + 0.58 * Math.max(S.flare, it.h) - 0.18 * it.lit * (1 - it.h)
+        else op = 0.42 + 0.58 * Math.max(S.flare, it.heat) - 0.18 * it.lit * (1 - it.heat)
         op *= blink
-        const sc = 1 + S.flare * 0.6 + it.h * 0.35
+        const sc = 1 + S.flare * 0.6 + it.heat * 0.35
         const ht = `translate3d(${ox.toFixed(2)}px,${oy.toFixed(2)}px,0) scale(${sc.toFixed(3)},${(sc * Math.max(0.05, blink)).toFixed(3)})`
         for (const hl of it.halos) { hl.style.transform = ht; hl.style.opacity = op.toFixed(3) }
-        it.eyesBox.style.transform = `translate3d(${it.x + it.pl}px,${it.y + it.pt}px,0)`
       }
       if (it.void) {
         // 空框：近了是空的，远了里面有人
@@ -967,7 +967,6 @@
         }, 180)
       })
     },
-    enter() { S.visible = true },
     leave() { if (S.hot) setHot(null) },
   })
 })()
