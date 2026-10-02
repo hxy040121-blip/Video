@@ -38,6 +38,7 @@
 .wish-face-anim { opacity: 0; }
 .wish-face-wrap {
   position: relative; height: min(56vh, 540px); aspect-ratio: 3 / 4;
+  filter: drop-shadow(0 -1px 0 rgba(240, 214, 160, .45)) drop-shadow(0 0 1px rgba(214, 178, 110, .35)) drop-shadow(0 -6px 14px rgba(240, 233, 220, .1));
   transition: filter 1.8s var(--ease-out);
 }
 .wish-face, .wish-face .portrait { width: 100%; height: 100%; }
