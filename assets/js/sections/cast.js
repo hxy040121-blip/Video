@@ -341,7 +341,8 @@
     glow = el('div.glow', { 'aria-hidden': 'true' })
 
     fore = el('div.fore', { 'aria-hidden': 'true' })
-    const title = el('h2.title.t-display', { text: '卡池' })
+    const title = el('h2.title', { text: '卡池' })
+    title.classList.add('t-display')
     const intro = el('div.intro', null, [
       title,
       el('div.hall', { text: '东肖像廊' }),
