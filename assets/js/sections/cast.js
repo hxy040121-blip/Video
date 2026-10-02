@@ -112,6 +112,7 @@
     lastTouch: -1e9, stageTop: 0,
   }
   let sec, sticky, wall, fore, dark, glow, hudCount, hudBar, hudTicks, voidIt
+  App._castS = S // DEBUG-REMOVE
 
   /* =====================================================================
      布局
@@ -199,6 +200,7 @@
     it.por.style.left = it.pl + 'px'
     it.por.style.top = it.pt + 'px'
     if (it.eyesBox) {
+      it.eyesBox.style.setProperty('--hs', Math.round(U.clamp(pw * 0.085, 11, 24)) + 'px')
       it.eyesBox.style.width = pw + 'px'
       it.eyesBox.style.height = ph + 'px'
       it.eyesBox.style.transform = `translate3d(${(it.x + it.pl).toFixed(1)}px,${(it.y + it.pt).toFixed(1)}px,0)`
@@ -255,7 +257,7 @@
     })
     const back = el('div.back')
     const hotg = el('div.hotglow')
-    const por = App.portrait(c.id, { className: 'cast-por' })
+    const por = App.portrait(c.id, { className: 'cast-por', eyeRange: 10 })
     const veil = el('div.veil')
     const dim = el('div.dim')
     win.append(back, hotg, por, veil, dim)
@@ -279,7 +281,13 @@
     }
     win.addEventListener('click', () => openFrom(it))
     win.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFrom(it) } })
-    win.addEventListener('focus', () => { if (!App.finePointer) return; setHot(it) })
+    win.addEventListener('focus', () => {
+      // 键盘移到画框：把长廊推到它面前
+      let kb = false
+      try { kb = win.matches(':focus-visible') } catch (e) { /* */ }
+      if (kb) { const sx = it.x + S.x; if (sx < 0 || sx + it.w > S.vw) bring(it) }
+      if (App.finePointer) setHot(it)
+    })
     win.addEventListener('blur', () => { if (S.hot === it) setHot(null) })
     return it
   }
@@ -293,7 +301,7 @@
     const win = el('div.win', { role: 'button', tabindex: '0', 'aria-label': '？', 'data-cursor': '', 'data-cursor-tone': 'blood' })
     const back = el('div.back')
     const glass = el('div.glass')
-    const por = App.portrait('__void', { className: 'cast-por' })
+    const por = App.portrait('__void', { className: 'cast-por', eyeRange: 10 })
     const veil = el('div.veil')
     win.append(back, glass, por, veil)
     const border = sv('svg', { class: 'cast-border', 'aria-hidden': 'true' })
@@ -369,6 +377,8 @@
 
     sticky.append(wall, dark, glow, fore, hud)
     sec.appendChild(sticky)
+    // 焦点落到画外的画框时浏览器会偷偷滚动 overflow:hidden 的容器——一律复位
+    sticky.addEventListener('scroll', () => { if (sticky.scrollLeft || sticky.scrollTop) { sticky.scrollLeft = 0; sticky.scrollTop = 0 } })
     S.built = true
   }
 
@@ -424,6 +434,12 @@
     }
   }
 
+  function bring(it) {
+    const p = U.clamp((it.x + it.w / 2 - S.vw / 2) / S.travel, 0, 1)
+    const y = sec.getBoundingClientRect().top + window.scrollY + p * S.travel * S.k
+    App.scroll.to(y, { duration: 0.9 })
+  }
+
   function sway(it, v) {
     if (RM) return
     const dir = (v || 0) >= 0 ? 1 : -1
@@ -443,6 +459,7 @@
   function lookAway(stagger) {
     if (S.away) return
     S.away = true
+    S.wake = false
     S.awaySince = performance.now()
     for (const it of S.items.concat([voidIt])) {
       if (!it.eyes) continue
@@ -456,7 +473,7 @@
     for (const it of S.items.concat([voidIt])) if (it.eyes) it.eyes.fixed = null
     S.flare = 1
     if (!RM) gsap.fromTo(S, { dip: big ? 1 : 0.7 }, { dip: 0, duration: big ? 1.3 : 0.9, ease: 'power2.out', overwrite: true })
-    App.audio.sfx('heartbeat', { volume: big ? 1 : 0.75 })
+    App.audio.sfx('heartbeat', { volume: big ? 1 : 0.6 })
     if (big) App.audio.sfx('dark', { volume: 0.5, delay: 0.05 })
     if (App.state.section === 'cast') {
       App.audio.setMood({ tension: 0.5 })
@@ -467,7 +484,7 @@
   /* =====================================================================
      帧循环：滚动 → 长廊推进；光标 → 烛光、照亮、投影、反光
      ===================================================================== */
-  function onAct() { S.lastAct = performance.now() }
+  function onAct() { S.lastAct = performance.now(); if (S.away) S.wake = true }
   window.addEventListener('pointermove', e => {
     onAct()
     if (e.pointerType === 'touch') S.lastTouch = performance.now()
@@ -506,14 +523,16 @@
     glow.style.transform = `translate3d(${S.cx.toFixed(1)}px,${S.cy.toFixed(1)}px,0) scale(${(R / 520).toFixed(3)})`
     glow.style.opacity = (0.75 + (fl - 1) * 4) * (1 - S.dip * 0.8)
     S.flare = Math.max(0, S.flare - dt * 0.012)
+    // 移开视线时眼里的光暗下去；转向你的那一刻同时亮起
+    S.watchK = approach(S.watchK == null ? 1 : S.watchK, S.away ? 0.38 : 1, S.away ? 0.02 : 0.35, dt)
 
     // 首次进入 / 停顿 → 移开视线；再动 → 同时转向你
     if (S.firstPending) {
       if (!S.away) lookAway(false)
       if ((S.p > 0.002 || (st <= 1 && now - S.visSince > 1600)) && now - S.visSince > 500) { S.firstPending = false; moment(true) }
     } else if (!App.overlay.isOpen) {
-      if (!S.away && now - S.lastAct > 5200 && now - S.lastMoment > 3000) lookAway(true)
-      else if (S.away && now - S.lastAct < 80 && now - S.awaySince > 1400) moment(false)
+      if (!S.away && now - S.lastAct > 6500 && now - S.lastMoment > 3000) lookAway(true)
+      else if (S.away && S.wake && now - S.awaySince > 1400) moment(false)
     }
 
     // 每幅画
@@ -571,7 +590,7 @@
         }
         let op
         if (it.void) op = (1 - smooth(0.05, 0.55, it.lit)) * (S.away ? 0.55 : 1)
-        else op = (0.55 + 0.45 * Math.max(S.flare, it.heat)) * (1 - 0.72 * it.lit * (1 - it.heat))
+        else op = (0.55 + 0.45 * Math.max(S.flare, it.heat)) * (1 - 0.72 * it.lit * (1 - it.heat)) * Math.max(S.watchK, it.heat)
         op *= blink
         const sc = 1 + S.flare * 0.6 + it.heat * 0.35
         const ht = `translate3d(${ox.toFixed(2)}px,${oy.toFixed(2)}px,0) scale(${sc.toFixed(3)},${(sc * Math.max(0.05, blink)).toFixed(3)})`
@@ -731,8 +750,8 @@
     const metaEl = el('div.dos-meta', { text: meta })
     const zh = el('p.dos-zh')
     const orig = el('p.dos-orig', { text: c.quote && c.quote.orig && c.quote.orig !== '—' ? typo(c.quote.orig) : '' })
-    const quote = el('blockquote.dos-quote', null, [el('span.dos-qmark', { text: '「', 'aria-hidden': 'true' }), zh, orig])
-    const see = el('div.dos-line', null, [el('span.dos-k', { text: '别人眼里' }), el('p.dos-v', { text: c.othersSee || '' })])
+    const quote = el('blockquote.dos-quote', null, [zh, orig])
+    const see = el('div.dos-line.dos-see', null, [el('span.dos-k', { text: '别人眼里' }), el('p.dos-v', { text: c.othersSee || '' })])
     const dream = el('div.dos-line.dos-line--dream', null, [el('span.dos-k', { text: '梦想' }), el('p.dos-v', { text: c.dream || '' })])
     const info = el('div.dos-info', null, [el('div.dos-head', null, [epi, work, metaEl]), quote, see, dream])
 

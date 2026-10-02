@@ -1,1 +1,150 @@
-/* wish */
+/* ==========================================================
+   终章 · wish
+   同一张圆桌（Canvas）、熄灭的计数、最后那个人、愿望低语、再睡一次、落款
+   ========================================================== */
+
+.wish { position: relative; }
+.wish-track { position: relative; height: 560vh; }
+.wish-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+.wish-stage { position: absolute; inset: 0; touch-action: pan-y; }
+.wish-cv, .wish-ribs { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.wish-ribs { pointer-events: none; filter: blur(1.4px); }
+
+/* ---------- 漂浮的愿望低语 ---------- */
+.wish-whispers { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.wish-w {
+  position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
+  font-family: var(--f-serif); font-size: 15px; line-height: 1.6; letter-spacing: .3em; white-space: nowrap;
+  color: var(--bone); opacity: 0; will-change: opacity, filter, transform;
+  text-shadow: 0 0 14px rgba(0, 0, 0, .95), 0 0 3px #000;
+}
+.wish-w.is-v { writing-mode: vertical-rl; }
+
+/* ---------- 熄灭的计数（与醒来的时钟同一位置） ---------- */
+.wish-count {
+  position: absolute; left: var(--gutter); bottom: calc(var(--gutter) * .7 + 8px); z-index: 3;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none; opacity: 0;
+}
+.wish-count-n {
+  font-family: var(--f-latin); font-weight: 700; font-size: clamp(60px, 7.4vw, 124px); line-height: .9; letter-spacing: .02em;
+  color: var(--brass); text-shadow: 0 0 26px rgba(194, 154, 91, .2);
+  transition: color 1.2s var(--ease-out), text-shadow 1.2s var(--ease-out);
+}
+.wish-count-bar { display: block; height: 1px; width: 100%; background: linear-gradient(90deg, var(--rust), transparent); }
+.wish-count.is-last .wish-count-n { color: var(--blood); text-shadow: 0 0 34px rgba(255, 46, 126, .45); }
+
+/* ---------- 最后那个人 ---------- */
+.wish-last { position: absolute; left: 0; top: 0; margin: 0; z-index: 3; pointer-events: none; will-change: transform; }
+.wish-face-wrap {
+  position: relative; height: min(56vh, 540px); aspect-ratio: 3 / 4; opacity: 0;
+  transition: filter 1.8s var(--ease-out);
+}
+.wish-face, .wish-face .portrait { width: 100%; height: 100%; }
+.wish-face .portrait > svg { transition: filter 1.8s var(--ease-out); }
+.wish-face-wrap.is-sil { filter: drop-shadow(0 -1px 0 rgba(240, 214, 160, .95)) drop-shadow(0 0 1px rgba(214, 178, 110, .9)) drop-shadow(0 -6px 14px rgba(240, 233, 220, .22)); }
+.wish-face-wrap.is-sil .portrait > svg { filter: brightness(0); }
+.wish-face {
+  -webkit-mask-image: linear-gradient(to bottom, #000 58%, rgba(0, 0, 0, .55) 74%, transparent 94%);
+  mask-image: linear-gradient(to bottom, #000 58%, rgba(0, 0, 0, .55) 74%, transparent 94%);
+}
+/* 身后的那束光：从画面顶端落到头上 */
+.wish-face-wrap::before {
+  content: ''; position: absolute; left: 50%; bottom: 52%; width: 46%; height: 140vh; transform: translateX(-50%);
+  pointer-events: none; z-index: -1;
+  background: linear-gradient(to top, rgba(240, 233, 220, .16), rgba(240, 233, 220, .05) 45%, rgba(240, 233, 220, 0));
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+  filter: blur(6px);
+}
+.wish-eyes { position: absolute; inset: 0; pointer-events: none; }
+.wish-eyes i {
+  position: absolute; top: 41%; width: 1.7%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
+  background: #fff; box-shadow: 0 0 6px 2px var(--acc, var(--bone)), 0 0 22px 6px var(--acc, var(--bone));
+  opacity: 0; transition: opacity 1.2s var(--ease-out);
+}
+.wish-eyes i:first-child { left: 41.7%; }
+.wish-eyes i:last-child { left: 58.3%; }
+.wish-face-wrap.is-sil .wish-eyes i { opacity: .85; }
+
+.wish-who {
+  position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none;
+  width: min(22em, 30vw); margin-left: calc(-1 * min(22em, 30vw)); text-align: right;
+  opacity: 0; transition: opacity .8s var(--ease-out);
+}
+.wish-who.is-on { opacity: 1; }
+.wish-who-head { display: flex; justify-content: flex-end; align-items: baseline; gap: 12px; }
+.wish-no { font-family: var(--f-latin); font-weight: 700; font-size: 13px; letter-spacing: .2em; color: var(--brass); }
+.wish-name {
+  font-family: var(--f-display); font-weight: 900; font-size: clamp(26px, 2.6vw, 40px); line-height: 1.15; letter-spacing: .06em;
+  color: var(--bone); text-shadow: 0 0 18px #000;
+}
+.wish-line {
+  margin-top: 14px; padding-right: 14px; border-right: 1px solid var(--acc, var(--brass));
+  font-family: var(--f-serif); font-size: clamp(15px, 1.25vw, 18px); line-height: 1.85; letter-spacing: .04em;
+  color: var(--bone); text-shadow: 0 0 14px #000, 0 0 3px #000; min-height: 1.85em;
+}
+
+/* ---------- 一句话（与醒来的标题同一位置） ---------- */
+.wish-rule {
+  position: absolute; right: calc(var(--gutter) + 2.4vw); top: 15vh; z-index: 3;
+  writing-mode: vertical-rl; text-orientation: upright;
+  font-family: var(--f-display); font-weight: 900; font-size: clamp(18px, 1.8vw, 28px); line-height: 1.2; letter-spacing: .32em;
+  color: var(--bone); opacity: 0; pointer-events: none;
+  text-shadow: .06em .02em 0 rgba(255, 46, 126, .32), 0 0 18px #000;
+}
+
+/* ---------- 再睡一次 ---------- */
+.wish-end {
+  position: relative; height: 100vh; display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(to bottom, #050404, rgba(5, 4, 4, .9) 30%, rgba(5, 4, 4, .94));
+}
+.wish-end-glow {
+  position: absolute; left: 50%; top: 50%; width: 70vmin; height: 70vmin; transform: translate(-50%, -50%);
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(235, 227, 214, .06), rgba(235, 227, 214, 0) 60%);
+}
+.wish-sleep {
+  position: relative; padding: 20px 52px; padding-right: calc(52px - .6em);
+  font-family: var(--f-display); font-weight: 900; font-size: 22px; letter-spacing: .6em;
+  color: var(--bone); opacity: 0;
+  transition: color .5s var(--ease-out), letter-spacing .8s var(--ease-out);
+}
+.wish-sleep::before, .wish-sleep::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 1px; background: currentColor;
+  transform: scaleX(.3); transition: transform .8s var(--ease-out);
+}
+.wish-sleep::before { top: 0; }
+.wish-sleep::after { bottom: 0; }
+.wish-sleep:hover, .wish-sleep:focus-visible { color: var(--blood); letter-spacing: .72em; outline: none; }
+.wish-sleep:hover::before, .wish-sleep:hover::after, .wish-sleep:focus-visible::before, .wish-sleep:focus-visible::after { transform: scaleX(1); }
+.wish-sleep:active { transform: scale(.97); }
+
+.wish-foot {
+  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px; opacity: 0;
+  font-family: var(--f-display); font-weight: 900; font-size: 11px; letter-spacing: .5em; color: var(--bone-dim);
+}
+.wish-foot-mark svg { width: 18px; height: 18px; fill: none; stroke: var(--brass); stroke-width: 1.6; }
+.wish-foot-mark svg circle:last-child { fill: var(--brass); stroke: none; }
+
+/* ---------- 眼睑 ---------- */
+.wish-lids { position: fixed; inset: 0; z-index: 70; display: none; }
+.wish-lid {
+  position: absolute; left: -5%; right: -5%; height: 51%; background: #050404; will-change: transform;
+}
+.wish-lid--top { top: 0; border-radius: 0 0 50% 50% / 0 0 7% 7%; box-shadow: 0 1px 0 rgba(125, 22, 22, .35), 0 24px 60px rgba(0, 0, 0, .7); }
+.wish-lid--bottom { bottom: 0; border-radius: 50% 50% 0 0 / 7% 7% 0 0; box-shadow: 0 -1px 0 rgba(125, 22, 22, .35), 0 -24px 60px rgba(0, 0, 0, .7); }
+
+@media (max-width: 760px) {
+  .wish-track { height: 500vh; }
+  .wish-ribs { filter: none; }
+  .wish-w { font-size: 13px; }
+  .wish-count { left: 16px; bottom: 22px; }
+  .wish-count-n { font-size: 52px; }
+  .wish-face-wrap { height: min(38vh, 340px); }
+  .wish-who { left: 16px; right: 16px; width: auto; margin-left: 0; text-align: center; }
+  .wish-who-head { justify-content: center; }
+  .wish-line { border-right: 0; padding-right: 0; font-size: 15px; }
+  .wish-rule { right: 12px; top: calc(var(--hud-h) + 8px); font-size: 15px; letter-spacing: .26em; }
+  .wish-sleep { font-size: 18px; padding: 16px 36px; padding-right: calc(36px - .6em); }
+}

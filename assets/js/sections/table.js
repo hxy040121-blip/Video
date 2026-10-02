@@ -89,21 +89,21 @@
     S.mob = vw < 760
     S.W = vw
     if (S.mob) {
-      S.Rx = Math.min(vw * 0.39, 168)
-      S.Ry = S.Rx * 0.6
-      S.Rz = S.Rx * 0.8
+      S.Rx = Math.min(vw * 0.4, 170)
+      S.Ry = S.Rx * 0.66
+      S.Rz = S.Rx * 0.75
       S.cx = vw / 2
-      S.cy = 112 + S.Ry + S.Rz * G.backZ + 14
-      S.d = Math.round(S.Rx * 0.25)
+      S.cy = Math.round(158 + S.Ry + S.Rz * G.headZ)
+      S.d = Math.round(S.Rx * 0.215)
       const cols = 7
       const gap = 8
       S.bd = Math.floor((vw - 32 - gap * (cols - 1)) / cols)
       S.bd = Math.min(S.bd, 48)
       S.trayCols = cols
       S.trayGap = gap
-      S.uiY = S.cy + S.Ry * 1.12 + 26
-      S.readY = S.uiY + 52
-      S.trayY = S.readY + 58
+      S.uiY = Math.round(S.cy + S.Ry * 1.12 + 22)
+      S.readY = S.uiY + 50
+      S.trayY = S.readY + 50
       const rows = Math.ceil(CH.length / cols)
       S.H = Math.round(S.trayY + rows * S.bd + (rows - 1) * (gap + 4) + 40)
     } else {

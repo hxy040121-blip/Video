@@ -376,7 +376,7 @@
     }
     // 席位附加的顶光（小光池 / 穹顶一束光）
     function seatExtra(s) {
-      let amt = s.lamp * 0.55, col = o.lampCol
+      let amt = s.lamp * 0.8, col = o.lampCol
       if (S.beam.k === s.k - 1 && S.beam.amt > 0) { amt += S.beam.amt * 1.5; col = o.beamCol }
       return amt > 0.002 ? { amt, col } : null
     }
@@ -663,7 +663,7 @@
         const ex = seatExtra(s)
         if (!ex) continue
         const beam = S.beam.k === s.k - 1
-        pool(ctx, [s.x + s.fx * 0.05, s.y + s.fy * 0.05, 0], [1, 0, 0], [0, 1, 0], beam ? 2.2 : 1.2, ex.amt * (beam ? 1.4 : 1.1), beam ? 1.3 : 0.9, ex.col, [0.45, 0.43, 0.4], beam ? 2.8 : 1.7, fa)
+        pool(ctx, [s.x + s.fx * 0.05, s.y + s.fy * 0.05, 0], [1, 0, 0], [0, 1, 0], beam ? 2.2 : 1.3, ex.amt * (beam ? 1.6 : 1.3), beam ? 1.4 : 1.0, ex.col, [0.5, 0.47, 0.43], beam ? 3 : 2, fa)
       }
       ctx.globalCompositeOperation = 'source-over'
       ctx.restore()
@@ -1298,17 +1298,20 @@
       const c = S.cam, col = o.beamCol
       const spr = glowSprite(col[0], col[1], col[2])
       ctx.globalCompositeOperation = 'lighter'
-      const n = 26
+      const n = 30
+      const hard = glowSprite(255, 250, 240, true)
+      const A = bm.amt * (1 - S.dark * 0.5)
       for (let i = 0; i <= n; i++) {
         const t = i / n
         const x = mix(0, s.x, t), y = mix(0, s.y, t), z = mix(G.apex - 0.3, 0.2, t)
         const p = c.p(x, y, z)
         if (!p) continue
         const r = mix(0.16, 0.62, t)
-        drawGlow(ctx, spr, p[0], p[1], r * p[3] * 1.5, bm.amt * (0.05 + 0.07 * t) * (1 - S.dark * 0.5))
+        drawGlow(ctx, spr, p[0], p[1], r * p[3] * 1.6, A * (0.07 + 0.09 * t))
+        drawGlow(ctx, hard, p[0], p[1], r * p[3] * 0.5, A * 0.05)
       }
       const p = c.p(s.x, s.y, 1.1)
-      if (p) drawGlow(ctx, spr, p[0], p[1], 1.2 * p[3], bm.amt * 0.22)
+      if (p) { drawGlow(ctx, spr, p[0], p[1], 1.3 * p[3], A * 0.3); drawGlow(ctx, hard, p[0], p[1], 0.3 * p[3], A * 0.25) }
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
     }
@@ -1823,6 +1826,9 @@
     // 遮幕打开之前，低频渲染即可
     if (!P.started && !P.gateOpen && (P.skip = (P.skip || 0) + 1) % 20) return
     const sec = Math.min(0.1, (dt || 1) / 60)
+    // 进度直接取自板块的位置（不依赖可能过期的 ScrollTrigger 缓存）
+    const er = P.el.getBoundingClientRect()
+    P.p = clamp01(-er.top / Math.max(1, er.height - window.innerHeight))
     P.ps += (P.p - P.ps) * (1 - Math.pow(0.88, dt || 1))
     if (Math.abs(P.p - P.ps) < 0.0004) P.ps = P.p
     applyScroll(P.ps)
@@ -1891,7 +1897,6 @@
       gsap.set(P.E.title._chars, { opacity: 0 })
       gsap.set([P.E.seal, P.E.latin, P.E.clock, P.E.cue, P.E.key], { opacity: 0 })
       P.vis = true
-      ScrollTrigger.create({ trigger: el, start: 'top top', end: 'bottom bottom', onUpdate: self => { P.p = self.progress } })
       App.onVisible(el, setVis, { rootMargin: '0px' })
       App.bus.on('wake', runWake)
       App.bus.on('cast:change', () => P.H.setPeople(domeHall.people()))

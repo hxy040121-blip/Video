@@ -115,7 +115,7 @@
 .cast-dark {
   position: absolute; left: 0; top: 0; z-index: 3; width: 1200px; height: 1200px; margin: -600px 0 0 -600px;
   pointer-events: none; will-change: transform;
-  background: radial-gradient(circle closest-side, rgba(5,2,3,0) 0, rgba(5,2,3,0) 7%, rgba(5,2,3,.32) 12%, rgba(5,2,3,.7) 19%, rgba(5,2,3,.88) 26%, rgba(4,2,3,.94) 40%);
+  background: radial-gradient(circle closest-side, rgba(5,2,3,0) 0, rgba(5,2,3,0) 7%, rgba(5,2,3,.3) 12%, rgba(5,2,3,.66) 19%, rgba(5,2,3,.84) 27%, rgba(4,2,3,.9) 42%);
 }
 .cast-glow {
   position: absolute; left: 0; top: 0; z-index: 4; width: 1040px; height: 1040px; margin: -520px 0 0 -520px;
@@ -148,7 +148,7 @@
 }
 .cast-eyes { position: absolute; left: 0; top: 0; pointer-events: none; }
 .cast-halo {
-  position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+  position: absolute; width: var(--hs, 22px); height: var(--hs, 22px); margin: calc(var(--hs, 22px) / -2) 0 0 calc(var(--hs, 22px) / -2); border-radius: 50%;
   opacity: .4; will-change: transform, opacity;
   background: radial-gradient(circle, rgba(255,246,226,.95) 0 9%, var(--accent, #ff2e7e) 18%, rgba(255,46,126,0) 70%);
   mix-blend-mode: screen;
@@ -248,17 +248,18 @@
 .cast-dos-page.is-red .cast-dos-name--ghost { -webkit-text-stroke-color: rgba(255,46,126,.9); }
 
 .cast-dos-info {
-  position: absolute; left: 47.5vw; top: 11vh; width: 22.5vw; z-index: 3;
-  display: flex; flex-direction: column; gap: 3.2vh;
+  position: absolute; left: 47.5vw; top: 11vh; bottom: 13vh; width: 22.5vw; z-index: 3;
+  display: flex; flex-direction: column; gap: 3vh;
 }
+.cast-dos-see { margin-top: auto; }
 .cast-dos-head { display: flex; flex-direction: column; gap: 8px; }
 .cast-dos-epi { font-family: var(--f-display); font-weight: 900; font-size: clamp(22px, 2.3vw, 34px); line-height: 1.15; color: var(--brass); letter-spacing: .04em; }
 .cast-dos-work { font-family: var(--f-serif); font-size: 15px; color: var(--bone); letter-spacing: .1em; }
 .cast-dos-meta { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .12em; color: var(--bone-dim); line-height: 1.7; }
-.cast-dos-quote { position: relative; margin: 1.6vh 0 0; padding: 0; border: 0; }
-.cast-dos-qmark { position: absolute; left: -.5em; top: -.62em; font-family: var(--f-display); font-weight: 900; font-size: 44px; line-height: 1; color: var(--accent); opacity: .9; }
-.cast-dos-page.is-light .cast-dos-qmark { color: var(--blood); }
-.cast-dos-zh { font-family: var(--f-serif); font-size: clamp(18px, 1.65vw, 25px); line-height: 1.55; color: var(--bone); min-height: 1.55em; }
+.cast-dos-quote { position: relative; margin: 2vh 0 0; padding: 2px 0 2px 20px; border: 0; }
+.cast-dos-quote::before { content: ''; position: absolute; left: 0; top: .35em; bottom: .3em; width: 3px; background: var(--accent); }
+.cast-dos-page.is-light .cast-dos-quote::before { background: var(--blood); }
+.cast-dos-zh { font-family: var(--f-serif); font-size: clamp(20px, 1.95vw, 30px); line-height: 1.5; color: var(--bone); min-height: 1.5em; }
 .cast-dos-orig { margin-top: 10px; font-family: var(--f-serif); font-size: 12.5px; line-height: 1.6; color: var(--bone-dim); letter-spacing: .04em; opacity: 0; }
 .cast-dos-line { display: grid; grid-template-columns: 4.6em 1fr; gap: 14px; align-items: baseline; padding-top: 12px; border-top: 1px solid rgba(111,85,50,.45); }
 .cast-dos-k { font-family: var(--f-sans); font-size: 10.5px; letter-spacing: .3em; color: var(--brass); white-space: nowrap; }
@@ -341,7 +342,8 @@
   .cast-dos-fig { position: relative; left: auto; bottom: auto; height: 62vh; margin: 2vh 0 0 -6vw; }
   .cast-dos-name { left: auto; right: 16px; top: 64px; font-size: min(9.5vh, 76px, calc(54vh / var(--n))); }
   .cast-dos-name--ghost { right: calc(16px - 1vh); top: calc(64px + 1vh); left: auto; }
-  .cast-dos-info { position: relative; left: auto; top: auto; width: auto; margin: 6vh 20px 0; gap: 22px; }
+  .cast-dos-info { position: relative; left: auto; top: auto; bottom: auto; width: auto; margin: 6vh 20px 0; gap: 22px; }
+  .cast-dos-see { margin-top: 0; }
   .cast-dos-stats { position: relative; right: auto; top: auto; width: auto; min-width: 0; margin: 30px 20px 0; }
   .cast-radar { max-width: 340px; margin: 0 auto; }
   .cast-dos-nav {
