@@ -102,6 +102,9 @@
 }
 .identities-stage.is-focus .identities-veil { opacity: 1; visibility: visible; transition: opacity .8s var(--ease-out), visibility 0s; }
 .identities-hit { position: absolute; inset: 0; z-index: 90; pointer-events: auto; }
+/* 手机上牌列自己接收点按；这层全屏的点击区只在拿起时（点空白处放回）才需要。
+   触屏上它会单独成一个全屏的合成层（用于触摸命中测试），不需要时不让它存在 */
+.identities.is-mob .identities-stage:not(.is-focus) .identities-hit { visibility: hidden; }
 
 .identities-slot {
   position: absolute; left: 0; top: 0;
@@ -302,9 +305,9 @@
 .identities-slot.is-read .identities-face.is-neg .identities-text { top: calc(var(--mm) * 33.2); }
 .identities-slot.is-read .identities-tx { font-size: calc(var(--mm) * var(--tfr, 1.9)); }
 
-/* 金箔反光 / 漆面高光 / 暗化
-   都是牌面上方各自独立的合成层：随光标移动只改它们的 transform（平移一条固定的渐变带 / 一个固定的光斑）
-   和 opacity（强度），牌面的纸、烫金、墨字都不重画。
+/* 金箔反光 / 漆面高光
+   亮着时是牌面上方各自独立的合成层：随光标移动只改它们的 transform（平移一条固定的渐变带 / 一个固定的光斑）
+   和 opacity（强度），牌面的纸、烫金、墨字都不重画。（暗化是整张牌位上的 brightness 滤镜，见 identities.js render）
    反光只在「亮着」的那一面出现（.identities-on，由脚本给光标附近、确实在动的那几张牌加上）。
    几何与原先的写法等价：原先是 260% 大小、118° 的渐变按 --fx/--fy 移动 background-position；
    现在把其中有颜色的那一段（32%–66%）做成一条 28° 倾斜的带，沿渐变方向平移。单位 --mm，牌 63×88 mm。 */
