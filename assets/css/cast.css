@@ -120,7 +120,7 @@
   position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; display: none;
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
 }
-.cast-item.is-live .cast-shine { display: block; }
+.cast-item.is-live.is-lit .cast-shine { display: block; } /* 只在烛光够得着的画框上存在（.is-lit 由 cast.js 按亮度标记） */
 .cast-shine-spot {
   position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform;
   background: radial-gradient(circle closest-side, #ffe7b0, #d4a85f 28%, #6f5532 62%, rgba(111,85,50,0));

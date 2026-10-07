@@ -195,6 +195,40 @@ ${corners}${mid}
 <text x="0" y="10.4" textLength="482" lengthAdjust="spacingAndGlyphs">${U.esc(COMMON[0])}</text>
 <text x="0" y="24.2" textLength="482" lengthAdjust="spacingAndGlyphs">${U.esc(COMMON[1])}</text></g></svg>`
   }
+  // 同一段小字预先画成两张图（金 / 红），所有牌共用。
+  // SVG <text> 会随祖先的 transform 变化重新排版、重画（牌每帧都在微微摆动），画成图之后就不会了。
+  // 与 SVG 版等价：viewBox 482×28、两行基线 10.4 / 24.2、字号 9.4、每行横向拉伸到正好 482 宽。
+  function fineImages() {
+    const font = '400 9.4px "Serif SC", "Noto Serif SC", serif'
+    const draw = color => {
+      const k = 3
+      const c = document.createElement('canvas')
+      c.width = 482 * k; c.height = 28 * k
+      const x = c.getContext('2d')
+      x.scale(k, k)
+      x.font = font
+      x.fillStyle = color
+      x.textBaseline = 'alphabetic'
+      ;[[COMMON[0], 10.4], [COMMON[1], 24.2]].forEach(([t, y]) => {
+        const w = x.measureText(t).width
+        if (!w) return
+        x.save(); x.translate(0, y); x.scale(482 / w, 1); x.fillText(t, 0, 0); x.restore()
+      })
+      return c.toDataURL('image/png')
+    }
+    const apply = () => {
+      try {
+        const pos = draw('#8a6838'), neg = draw('#8a2328')
+        if (!pos || !neg) return
+        S.stage.style.setProperty('--idn-fine-pos', `url(${pos})`)
+        S.stage.style.setProperty('--idn-fine-neg', `url(${neg})`)
+        for (const c of S.cards) for (const f of [c.front, c.back]) f.fine.replaceChildren()
+        S.stage.classList.add('is-fineimg')
+      } catch (e) { /* 画不出来就保留 SVG */ }
+    }
+    if (!document.fonts || !document.fonts.load) return
+    document.fonts.load(font, COMMON.join('')).then(apply, () => {})
+  }
 
   /* =====================================================================
      牌
@@ -1707,6 +1741,7 @@ ${corners}${mid}
       layout()
       fitAll()
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitAll() })
+      fineImages()
       for (const c of S.cards) Object.assign(c.cur, deckPose(c))
       bind()
       App.onVisible(sec, v => { S.visible = v; S.stage.classList.toggle('is-paused', !v); if (!v) parts.length = 0 }, { rootMargin: '0px' })

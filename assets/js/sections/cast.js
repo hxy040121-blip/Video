@@ -655,7 +655,8 @@
       const shx = (dx / d) * k, shy = (dy / d) * k * 0.8 + 6
       const sht = `translate3d(${shx.toFixed(1)}px,${shy.toFixed(1)}px,0)`
       if (sht !== it.shw) { it.shw = sht; it.shadow.style.transform = sht }
-      // 黄铜反光：光斑中心 = 烛光在框坐标里的位置（只改 transform）
+      // 黄铜反光：光斑中心 = 烛光在框坐标里的位置（只改 transform）；烛光够不着的画框连光斑层都不要（带滞回，免得在门槛上来回切）
+      if (it.lit2 ? L < 0.012 : L > 0.03) { it.lit2 = !it.lit2; it.node.classList.toggle('is-lit', it.lit2) }
       if (it.spot && L > 0.02) {
         const gx = S.cx - sx + it.P, gy = S.cy - it.y + it.P
         if (Math.abs(gx - it.gx) > 0.4 || Math.abs(gy - it.gy) > 0.4) moveShine(it, gx, gy)

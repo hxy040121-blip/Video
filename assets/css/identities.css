@@ -270,6 +270,9 @@
 }
 .identities-fine svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .identities-face.is-neg .identities-fine { bottom: calc(var(--mm) * 10.6); color: #8a2328; }
+/* 预先画好的小字图（见 identities.js fineImages）：不随牌的摆动重排、重画 */
+.identities-stage.is-fineimg .identities-fine { background: var(--idn-fine-pos) 0 0 / 100% 100% no-repeat; }
+.identities-stage.is-fineimg .identities-face.is-neg .identities-fine { background-image: var(--idn-fine-neg); }
 
 /* 细读版式：纹章缩小，字放大（小屏拿起时） */
 .identities-slot.is-read .identities-face.is-pos .identities-sig { top: calc(var(--mm) * 11.2); width: calc(var(--mm) * 13); height: calc(var(--mm) * 13); margin-left: calc(var(--mm) * -6.5); }
