@@ -1,5 +1,6 @@
 // 整站巡检（开发用）：打开 index.html，睁眼，然后沿整页滚动，每隔一段截一张图，并记录控制台错误。
-// 用法：node tools/tour.mjs --out /tmp/tour [--w 1440 --h 900] [--step 0.8] [--sections prologue,mansion] [--mouse 0.62,0.42]
+// 用法：node tools/tour.mjs --out /tmp/tour [--w 1440 --h 900] [--step 0.8] [--sections prologue,mansion] [--mouse 0.62,0.42] [--q 2]
+// --q：固定画质（默认 2 = 全效果；无头浏览器用软件渲染，很慢，不固定的话会自动降画质）
 // --step：每张图之间滚动的距离（视口高度的倍数）
 // 输出：<out>/<序号>-<板块>-<偏移>.png 与 <out>/errors.txt
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -25,7 +26,7 @@ const page = await browser.newPage({ viewport: { width: W, height: H }, hasTouch
 const errors = []
 page.on('console', m => { if ((m.type() === 'error' || m.type() === 'warning') && !/GroupMarkerNotSet|swiftshader|GPU stall/i.test(m.text())) errors.push(`[${m.type()}] ${m.text()}`) })
 page.on('pageerror', e => errors.push(`[pageerror] ${e.message}`))
-await page.goto(pathToFileURL(join(ROOT, 'index.html')).href)
+await page.goto(pathToFileURL(join(ROOT, 'index.html')).href + (args.q === 'auto' ? '' : '?q=' + (args.q || 2)))
 await page.waitForFunction(() => { const b = document.querySelector('.gate-open'); return b && !b.disabled }, null, { timeout: 30000 })
 await page.screenshot({ path: join(out, '000-gate.png') })
 await page.evaluate(() => { window.__woke = false; App.bus.on('wake', () => { window.__woke = true }) })

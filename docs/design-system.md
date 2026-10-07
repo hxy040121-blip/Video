@@ -18,6 +18,11 @@
 - 允许 Canvas 2D、WebGL1、Web Audio、CSS 3D、SVG 滤镜。不要依赖 WebGL2 专有特性。
 - 目标：桌面 Chrome / Edge / Safari 最新版 1440×900 与 1920×1080 为主；手机（390×844）能正常浏览、不横向溢出，复杂交互可降级为点击。
 - 性能：60fps 为目标。离开视口的板块必须暂停自己的 requestAnimationFrame/canvas 循环（用 `App.onVisible(el, fn)` 或 ScrollTrigger 的 onToggle）。
+  - 每帧变化的值只改合成层的 `transform` / `opacity`（元素加 `will-change`）；不要每帧改 `clip-path`、`filter`、渐变位置、阴影或大面积元素的 CSS 变量——它们会让整块图层每帧重画。
+  - 不要每帧在根元素或大容器上写 CSS 变量（会让上万个节点重算样式）。要光标坐标的元素用 `App.trackMouseVars(el)` 单独登记 `--mx/--my`。
+  - 数值没变就不写；先集中读布局（getBoundingClientRect），再集中写。
+  - 画质自适应：`App.quality.level`（2 全效果 / 1 / 0 最省）按真实帧时间自动下调，变化时广播 `App.bus` 的 `'quality'` 事件；画布分辨率、粒子数等按它取值。网址加 `?q=0/1/2` 可固定画质。
+  - 高刷新率屏幕上动画循环跑在 刷新率÷n（约 80 帧起步，跟不上再降一档，见 `app.js`）。
 - `prefers-reduced-motion` 时降低强度（不必完全关闭）。
 
 ## 2. 文件结构与分工

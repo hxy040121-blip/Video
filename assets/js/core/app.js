@@ -195,16 +195,27 @@
     App.bus.emit('quality', n)
   }
   document.documentElement.dataset.q = Q.level
-  let qAcc = 0, qN = 0, qSlow = 0, qFrom = performance.now() + 5000
+  // 高刷新率屏幕上的帧率上限：动画循环跑在 刷新率÷n（n 取整，节拍均匀，屏幕本身照常刷新）。
+  // 起步约 80 帧（120Hz→60，144→72，165→82，240→80）；跟不上目标就再降一档（165→55，240→60），
+  // 只有降到 50 帧以下也跟不上时才降画质。
+  const cap = { hz: 0, n: 1 }
+  const setCap = cap.set = n => { cap.n = n; if (window.gsap) gsap.ticker.fps(n > 1 ? cap.hz / n + 1 : 0) }
+  App.frameCap = cap // 调试用：App.frameCap.hz / .n
+  let qAcc = 0, qN = 0, qSlow = 0, capSlow = 0, qFrom = Infinity // 页面加载完、量过刷新率后才开始评估（见下）
   function sampleQuality(deltaMs) {
-    if (Q.locked || Q.level === 0) return
     const now = performance.now()
-    if (now < qFrom || document.hidden || deltaMs > 250) return
+    if (now < qFrom || document.hidden || deltaMs > 1000) return // 超过 1 秒的停顿多半是切走或系统卡顿，不计
     qAcc += deltaMs; qN++
     if (qAcc < 1500) return
     const avg = qAcc / qN
     Q.fps = 1000 / avg
     qAcc = 0; qN = 0
+    if (cap.hz && avg > 1300 * cap.n / cap.hz && cap.hz / (cap.n + 1) >= 50) { // 比目标帧时间慢 30% 以上
+      if (++capSlow >= 2) { capSlow = 0; qFrom = now + 2000; setCap(cap.n + 1) }
+      return
+    }
+    capSlow = 0
+    if (Q.locked || Q.level === 0) return
     if (avg > 23) { // 低于约 43 帧
       if (++qSlow >= 2) { qSlow = 0; qFrom = now + 3000; Q.set(Q.level - 1) }
     } else qSlow = 0
@@ -232,22 +243,33 @@
   }
   if (window.gsap) gsap.ticker.add(frame)
 
-  // 高刷新率屏幕（120/144/165/240Hz）上，把动画循环降到 刷新率÷n ≈ 55–72 帧：
-  // 网站每帧的计算不再随刷新率成倍放大，节拍仍然均匀（屏幕本身照常刷新）
+  // 量出屏幕刷新率，按上面的帧率上限起步：网站每帧的计算不再随刷新率成倍放大。
+  // 量法：页面加载完后，让动画循环暂时只跑 20 帧，中间空闲的帧间隔就是屏幕真实的刷新间隔（取第 25 百分位，
+  // 避开偶发的长任务）；否则每帧的计算会把间隔拉长，量到的只是网站自己跑出的帧率。量的时候不评估画质。
   if (window.gsap) {
-    const ds = []
-    let last = 0
-    const probe = t => {
-      if (last) ds.push(t - last)
-      last = t
-      if (ds.length < 45) { requestAnimationFrame(probe); return }
-      ds.sort((a, b) => a - b)
-      const hz = 1000 / ds[ds.length >> 1]
-      const n = Math.max(1, Math.floor(hz / 55)) // 90Hz 不限；120→60，144→72，165→55，240→60
-      App.refreshHz = Math.round(hz)
-      if (n > 1) gsap.ticker.fps(hz / n + 1)
+    let tries = 0
+    const measure = () => {
+      const ds = []
+      let last = 0
+      qFrom = Infinity
+      gsap.ticker.fps(20)
+      const probe = t => {
+        if (last) ds.push(t - last)
+        last = t
+        if (ds.length < 40) { requestAnimationFrame(probe); return }
+        ds.sort((a, b) => a - b)
+        const hz = 1000 / ds[ds.length >> 2]
+        qFrom = performance.now() + 2500; qAcc = 0; qN = 0
+        if (hz < 45 && ++tries < 4) { gsap.ticker.fps(0); setTimeout(measure, 2500); return } // 还太忙，过一会儿再量
+        App.refreshHz = cap.hz = Math.round(hz)
+        setCap(Math.max(1, Math.round(hz / 80))) // 60/75/90/100Hz 不限
+      }
+      requestAnimationFrame(probe)
     }
-    requestAnimationFrame(probe)
+    let started = false
+    const start = () => { if (!started) { started = true; setTimeout(measure, 800) } }
+    if (document.readyState === 'complete') start(); else addEventListener('load', start, { once: true })
+    setTimeout(start, 8000) // load 迟迟不来时也照常开始
   }
 
   /* ---------- 可见性 ---------- */
