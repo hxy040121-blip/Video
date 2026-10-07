@@ -500,9 +500,9 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
 
   kiritsugu: {
     wake: [
-      '出口两个，窗一扇。……烟呢。',
+      '门三扇，没有窗。……烟呢。',
       '没有武器，没有烟。先数人数。',
-      '十几个人，没一个认识的。……好。',
+      '十几个人。……先记下每一张脸。',
     ],
     discover: [
       '死了不到两小时。别碰门把手。',
@@ -516,7 +516,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
       '谁发现的？当时门开着还是关着？',
     ],
     search: [
-      '{ROOM}。地毯没有压痕，锁没有撬过。',
+      '{ROOM}。地毯没有新压痕，门没被动过。',
       '没有。{ROOM}排除。',
       '这里能藏人，但没人藏过。',
       '白看了。……不，白看也要看完。',
@@ -642,7 +642,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     search: [
       '{ROOM}，没有机关，也没有陷阱。',
       '这灯不用火也会亮……先不管。没有线索。',
-      '{ROOM}看过了。灰尘的样子，没人碰过。',
+      '{ROOM}看过了。东西都在原位，没人碰过。',
       '嗯，{ROOM}没有。下一处。',
     ],
     found: [
@@ -749,7 +749,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
   dio: {
     wake: [
       '哼哼……这里照得进日光吗？',
-      '一张圆桌，一群陌生人……呵呵，有趣。',
+      '一张圆桌，十几张面孔……呵呵，有趣。',
       '开罗的宅邸呢？……是谁把我搬到这里来的。',
     ],
     discover: [
@@ -874,7 +874,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     wake: [
       '腿……还是动不了。这是哪儿？',
       '杰洛？……杰洛呢！',
-      '铁球还在。……好，至少还有这个。',
+      '铁球不在了……杰洛的东西，一样都没带来。',
     ],
     discover: [
       '下手的人，一点都没犹豫。',

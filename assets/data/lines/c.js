@@ -128,7 +128,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
   itachi: {
     wake: [
       '……眼睛，看得清了。这不对。',
-      '不是那座据点。……佐助，还没走进来。',
+      '不是那座据点。……我本该在那里等佐助。',
       '胸口不闷了。……有人替我安排了这一场。',
     ],
     discover: [
@@ -376,7 +376,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
   obito: {
     wake: [
       '……神树的花呢？月亮，还没照下来。',
-      '一张圆桌，一群陌生人。……又是谁的计划。',
+      '一张圆桌，十几张脸。……又是谁的计划。',
       '脸上的疤还在。别的……都不对。',
     ],
     discover: [
@@ -393,7 +393,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     search: [
       '{ROOM}。什么都没有。和这个世界一样。',
       '空的。……凶手不在这种地方留东西。',
-      '没有血。只有灰。',
+      '没有血。……什么也没有。',
       '这里没人哭过，也没人动过手。',
     ],
     found: [
@@ -640,7 +640,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     ],
     search: [
       '{ROOM}，什么都没有啊。',
-      '翻了个遍，只找到一层灰。',
+      '翻了个遍，连根头发都没找到。',
       '这铁家伙是干嘛的？……算了，跟案子没关系。',
       '没有打过的痕迹。凶手没在这儿停。',
     ],
@@ -747,7 +747,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
 
   eren: {
     wake: [
-      '……门是锁着的。又被关起来了。',
+      '……门关着。又被关起来了。',
       '墙……不，是屋子。出口在哪。',
       '不是牢房。……也不是自由。',
     ],
@@ -871,7 +871,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
 
   mikasa: {
     wake: [
-      '艾伦在哪。……门在那边。',
+      '先找艾伦。……然后找门。',
       '围巾还在。……这里是哪里。',
       '请各位别靠近。我先看清楚这里。',
     ],
@@ -930,7 +930,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
       '我同意。是{X}。',
       '嗯。{X}，请您老实回答。',
       '{X}。我也一直在看。',
-      '阿尔敏在的话，也会这么说。是{X}。',
+      '换了阿尔敏，也会这么说。是{X}。',
     ],
     doubt: [
       '不是{X}。我不这样想。',
@@ -997,7 +997,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     wake: [
       '这、这里是……墙里？不，没有墙……',
       '这盏灯……没有火，怎么会亮？',
-      '艾伦？三笠？……不在。先、先确认出口。',
+      '艾伦？三笠？……先、先确认出口。',
     ],
     discover: [
       '等一下……谁都别碰。先记下来。',

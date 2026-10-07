@@ -1,9 +1,12 @@
 /* ==========================================================
-   CHARACTERS：38 张人物卡的提炼数据（来源：人物卡/<名>.md 与 人物卡/背景/<名>.md）
+   CHARACTERS：人物卡的提炼数据（来源：人物卡/<名>.md 与 人物卡/背景/<名>.md）。
+   本文件是最早的 38 人；v4.71 新增的 15 人在 characters-new.js，push 进同一个数组，字段相同。
    字段：
-   id            英文短名（立绘文件名 assets/art/portraits/<id>.svg）
-   name          卡名        epithet  称号（网站用的极短头衔）   work  原作
-   gender/age/heightCm/heightNote/era/nativeLang
+   id            英文短名（肖像文件名 assets/art/portraits/<id>.webp）
+   name          卡名（档案、卡池用）    epithet  称号（网站用的极短头衔）   work  原作
+   callName      在馆里自我介绍时报的名字（卡面「名字」一条；没写就是卡名去掉括号）；不报名为 null。
+                 广播与台词的 {X}/{V} 代入它；重名（同局两人报同一个名字）或 null 时，界面改说「N 号」
+   gender/age/heightCm/heightNote/era   age、era 照卡面；卡上没写年龄的留空
    knowsModernDevices  卡上「馆里多半没见过的」为「—」即 true；unknownDevices 为原文
    canWalk       false：卡上写明保留的残疾使他不能行走（格里菲斯、乔尼）
    stats         判定七项：physique 体能与格斗(普通/受训) physiqueNote 括号说明、disguise 伪装(高/中/低)、
@@ -12,13 +15,14 @@
    carried       随身物      othersSee  别人眼里（一句）
    quote         {zh, orig} 卡上「声线」一节的原作台词
    dream         梦想（一句）
-   lines         模拟庭审用的台词（新写，贴合各卡声线）：wake/discover/statement/accuse/defend/vote/executed/wish，{X} 代入人名
+   lines         模拟庭审用的台词（新写，贴合各卡声线）：wake/discover/statement/accuse/defend/vote/executed/wish，{X} 代入对方的 callName
    art           立绘说明与签名色 accent
    ========================================================== */
 window.CHARACTERS = [
  {
   "id": "l",
   "name": "L",
+  "callName": "龙崎",
   "epithet": "世界第一侦探",
   "work": "《死亡笔记》",
   "gender": "男",
@@ -26,7 +30,6 @@ window.CHARACTERS = [
   "heightCm": 179,
   "heightNote": "卡面写的是'一米七九上下'；他驼背，站着显不出这个个子",
   "era": "二〇〇四年，东京",
-  "nativeLang": "英语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -88,6 +91,7 @@ window.CHARACTERS = [
  {
   "id": "light",
   "name": "夜神月",
+  "callName": "夜神月",
   "epithet": "新世界之神",
   "work": "《死亡笔记》",
   "gender": "男",
@@ -95,7 +99,6 @@ window.CHARACTERS = [
   "heightCm": 179,
   "heightNote": "",
   "era": "二〇〇四年，东京",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -109,7 +112,7 @@ window.CHARACTERS = [
    "suspicion": "重"
   },
   "carried": [
-   "黑色封面笔记本一册（DEATH NOTE，已失效）",
+   "黑色封面笔记本一册（DEATH NOTE，从火口手里缴获的那一本）",
    "左腕腕表一只（表底夹层藏笔记纸片与针）"
   ],
   "othersSee": "英俊干净、有礼貌、让长辈放心的优等大学生",
@@ -157,14 +160,14 @@ window.CHARACTERS = [
  {
   "id": "junko",
   "name": "江之岛盾子",
-  "epithet": "超高校级绝望",
+  "callName": "江之岛盾子",
+  "epithet": "超高校级的绝望",
   "work": "《弹丸论破 希望的学园与绝望的高中生》",
   "gender": "女",
   "age": "按十八岁计",
   "heightCm": 169,
   "heightNote": "",
   "era": "二〇一〇年代的日本",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -225,6 +228,7 @@ window.CHARACTERS = [
  {
   "id": "kurisu",
   "name": "牧濑红莉栖",
+  "callName": "牧濑红莉栖",
   "epithet": "天才脑科学家",
   "work": "《命运石之门》",
   "gender": "女",
@@ -232,7 +236,6 @@ window.CHARACTERS = [
   "heightCm": 160,
   "heightNote": "",
   "era": "二〇一〇年，东京秋叶原",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -242,7 +245,7 @@ window.CHARACTERS = [
    "readsPeople": "一般",
    "medical": "基本常识",
    "observation": "擅长",
-   "killThreshold": "中",
+   "killThreshold": "高",
    "suspicion": "中"
   },
   "carried": [
@@ -294,6 +297,7 @@ window.CHARACTERS = [
  {
   "id": "shinichi",
   "name": "工藤新一",
+  "callName": "工藤新一",
   "epithet": "高中生名侦探",
   "work": "《名侦探柯南》",
   "gender": "男",
@@ -301,7 +305,6 @@ window.CHARACTERS = [
   "heightCm": 174,
   "heightNote": "",
   "era": "二〇二〇年代，东京米花町",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -362,14 +365,14 @@ window.CHARACTERS = [
  {
   "id": "sherlock",
   "name": "夏洛克·福尔摩斯",
+  "callName": "夏洛克·福尔摩斯",
   "epithet": "咨询侦探",
   "work": "《福尔摩斯探案集》",
   "gender": "男",
-  "age": "成年（卡上未写年龄）",
+  "age": "",
   "heightCm": 183,
   "heightNote": "卡面写'身高六英尺以上'，按六英尺≈183厘米折算，是下限；极瘦，显得更高",
   "era": "一八九〇年，伦敦",
-  "nativeLang": "英语",
   "knowsModernDevices": false,
   "unknownDevices": "电灯见得少；冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、放映机与影片、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料（另见\"时代\"一条）",
   "stats": {
@@ -396,7 +399,7 @@ window.CHARACTERS = [
   "lines": {
    "wake": "……这灯不用煤气。有意思。",
    "discover": "请诸位退后三步。地板会说话。",
-   "statement": "诸位都盯着尸体。我更在意那把椅子少了一道灰痕。",
+   "statement": "诸位都盯着尸体。我更在意那把椅子底下的压痕。",
    "accuse": "{X}，请原谅，您鞋上的泥只来自一个地方。",
    "defend": "怀疑我？请便。不过您漏了三处，容我指出。",
    "vote": "{X}。依据我稍后奉告。",
@@ -432,6 +435,7 @@ window.CHARACTERS = [
  {
   "id": "naruhodo",
   "name": "成步堂龙一",
+  "callName": "成步堂龙一",
   "epithet": "逆转律师",
   "work": "《逆转裁判》",
   "gender": "男",
@@ -439,7 +443,6 @@ window.CHARACTERS = [
   "heightCm": 176,
   "heightNote": "",
   "era": "二〇一九年（原作里的近未来日本）",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -500,6 +503,7 @@ window.CHARACTERS = [
  {
   "id": "beatrice",
   "name": "贝阿朵莉切",
+  "callName": "贝阿朵莉切",
   "epithet": "黄金魔女",
   "work": "《海猫鸣泣之时》",
   "gender": "女",
@@ -507,7 +511,6 @@ window.CHARACTERS = [
   "heightCm": 166,
   "heightNote": "卡上未写身高，按外貌估计",
   "era": "一九八六年的六轩岛",
-  "nativeLang": "日语（带古风的魔女腔）",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -521,7 +524,7 @@ window.CHARACTERS = [
    "suspicion": "中"
   },
   "carried": [
-   "金色长烟管一支（日式细杆キセル，烟锅是空的）",
+   "金色长烟管一支（日式细杆烟管，烟锅是空的）",
    "项圈（戴在颈上）",
    "发间缀玫瑰的蝴蝶结"
   ],
@@ -571,6 +574,7 @@ window.CHARACTERS = [
  {
   "id": "battler",
   "name": "右代宫战人",
+  "callName": "右代宫战人",
   "epithet": "魔女否定者",
   "work": "《海猫鸣泣之时》",
   "gender": "男",
@@ -578,7 +582,6 @@ window.CHARACTERS = [
   "heightCm": 180,
   "heightNote": "卡上写'一米八以上'，取下限180",
   "era": "一九八六年的日本",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -588,7 +591,7 @@ window.CHARACTERS = [
    "readsPeople": "一般",
    "medical": "无",
    "observation": "一般",
-   "killThreshold": "中",
+   "killThreshold": "高",
    "suspicion": "轻"
   },
   "carried": [],
@@ -638,6 +641,7 @@ window.CHARACTERS = [
  {
   "id": "haruaki",
   "name": "房石阳明",
+  "callName": "房石阳明",
   "epithet": "说谎的旅人",
   "work": "《人狼村之谜》",
   "gender": "男",
@@ -645,7 +649,6 @@ window.CHARACTERS = [
   "heightCm": 175,
   "heightNote": "卡上未写身高，按外貌估计",
   "era": "二〇一〇年代的东京",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -655,7 +658,7 @@ window.CHARACTERS = [
    "readsPeople": "是",
    "medical": "无",
    "observation": "一般",
-   "killThreshold": "中",
+   "killThreshold": "高",
    "suspicion": "中"
   },
   "carried": [
@@ -708,6 +711,7 @@ window.CHARACTERS = [
  {
   "id": "yumeko",
   "name": "蛇喰梦子",
+  "callName": "蛇喰梦子",
   "epithet": "赌狂",
   "work": "《狂赌之渊》",
   "gender": "女",
@@ -715,7 +719,6 @@ window.CHARACTERS = [
   "heightCm": 165,
   "heightNote": "卡上只写'个子偏高'，没有数字；按同龄女性偏高估算",
   "era": "二〇一〇年代的日本",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -778,6 +781,7 @@ window.CHARACTERS = [
  {
   "id": "baku",
   "name": "斑目貘",
+  "callName": "斑目貘",
   "epithet": "噬谎者",
   "work": "《噬谎者》",
   "gender": "男",
@@ -785,12 +789,11 @@ window.CHARACTERS = [
   "heightCm": 173,
   "heightNote": "卡上未写身高，按外貌估计",
   "era": "二〇〇〇年代的日本",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
    "physique": "普通",
-   "physiqueNote": "瘦，没练过，体弱，跑两步就喘（卡上写明保留）",
+   "physiqueNote": "瘦，没练过，体弱，跑两步就喘",
    "disguise": "高",
    "readsPeople": "是",
    "medical": "无",
@@ -844,21 +847,21 @@ window.CHARACTERS = [
  {
   "id": "akagi",
   "name": "赤木茂",
-  "epithet": "半死之人",
+  "callName": "赤木茂",
+  "epithet": "神域之男",
   "work": "《斗牌传说》",
   "gender": "男",
   "age": "十九岁上下",
   "heightCm": 174,
   "heightNote": "卡上未写身高，按外貌估计",
   "era": "一九六四年前后的东京",
-  "nativeLang": "日语",
   "knowsModernDevices": false,
   "unknownDevices": "一次性塑料打火机、跑步机、烘干机、洗碗机这类后来才普及的东西",
   "stats": {
    "physique": "受训",
    "physiqueNote": "街头打出来的，打架疯子，力气狠劲超常，不怕疼",
    "disguise": "高",
-   "readsPeople": "是",
+   "readsPeople": "一般",
    "medical": "无",
    "observation": "一般",
    "killThreshold": "低",
@@ -911,6 +914,7 @@ window.CHARACTERS = [
  {
   "id": "kaiji",
   "name": "伊藤开司",
+  "callName": "伊藤开司",
   "epithet": "绝境赌徒",
   "work": "《赌博默示录》",
   "gender": "男",
@@ -918,7 +922,6 @@ window.CHARACTERS = [
   "heightCm": 178,
   "heightNote": "卡上写的是“一米七八上下”",
   "era": "二〇〇〇年前后的东京",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -928,7 +931,7 @@ window.CHARACTERS = [
    "readsPeople": "一般",
    "medical": "无",
    "observation": "一般",
-   "killThreshold": "中",
+   "killThreshold": "高",
    "suspicion": "轻"
   },
   "carried": [],
@@ -977,6 +980,7 @@ window.CHARACTERS = [
  {
   "id": "makima",
   "name": "玛奇玛",
+  "callName": "玛奇玛",
   "epithet": "支配的恶魔",
   "work": "《电锯人》",
   "gender": "女",
@@ -984,12 +988,11 @@ window.CHARACTERS = [
   "heightCm": 173,
   "heightNote": "卡上未写身高，按外貌估计",
   "era": "一九九七年，另一个日本",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
-   "physique": "受训",
-   "physiqueNote": "受过公安的训练",
+   "physique": "普通",
+   "physiqueNote": "身体没打过架；她的强从来不在身上",
    "disguise": "高",
    "readsPeople": "是",
    "medical": "无",
@@ -1045,6 +1048,7 @@ window.CHARACTERS = [
  {
   "id": "muzan",
   "name": "鬼舞辻无惨",
+  "callName": "东云",
   "epithet": "鬼之始祖",
   "work": "《鬼灭之刃》",
   "gender": "男",
@@ -1052,7 +1056,6 @@ window.CHARACTERS = [
   "heightCm": 179,
   "heightNote": "",
   "era": "大正初年（一九一〇年代中期）的日本",
-  "nativeLang": "日语",
   "knowsModernDevices": false,
   "unknownDevices": "冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、有声的彩色影片与放映机、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料。电灯、电话、汽车、火车他都熟。",
   "stats": {
@@ -1112,6 +1115,7 @@ window.CHARACTERS = [
  {
   "id": "shinobu",
   "name": "蝴蝶忍",
+  "callName": "蝴蝶忍",
   "epithet": "虫柱",
   "work": "《鬼灭之刃》",
   "gender": "女",
@@ -1119,7 +1123,6 @@ window.CHARACTERS = [
   "heightCm": 151,
   "heightNote": "",
   "era": "大正初年（一九一〇年代中期）的日本",
-  "nativeLang": "日语",
   "knowsModernDevices": false,
   "unknownDevices": "冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、有声的彩色影片与放映机、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料；抽水马桶和淋浴少见。电灯、火车、自来水她见过。",
   "stats": {
@@ -1181,6 +1184,7 @@ window.CHARACTERS = [
  {
   "id": "sukuna",
   "name": "两面宿傩",
+  "callName": "两面宿傩",
   "epithet": "诅咒之王",
   "work": "《咒术回战》",
   "gender": "男",
@@ -1188,7 +1192,6 @@ window.CHARACTERS = [
   "heightCm": 175,
   "heightNote": "卡上写的是“一米七五上下”；这是伏黑惠的身体",
   "era": "二〇一八年十二月的东京（生于平安时代）",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—（这一年虎杖悠仁吞下他的手指以后，他寄在虎杖身上几个月，虎杖身边的事他看得见、听得见；涉谷那一夜和这些天，他自己走在东京的街上。电灯、汽车、电车、高楼、手机，他都认得，只是多半看着别人用，自己上手要先摆弄几下）",
   "stats": {
@@ -1253,6 +1256,7 @@ window.CHARACTERS = [
  {
   "id": "higuruma",
   "name": "日车宽见",
+  "callName": "日车宽见",
   "epithet": "堕落的律师",
   "work": "《咒术回战》",
   "gender": "男",
@@ -1260,7 +1264,6 @@ window.CHARACTERS = [
   "heightCm": 170,
   "heightNote": "卡上只写“中等个子”，按日本成年男性的中等身高约一米七推定",
   "era": "二〇一八年十一月的东京",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -1270,7 +1273,7 @@ window.CHARACTERS = [
    "readsPeople": "是",
    "medical": "无",
    "observation": "擅长",
-   "killThreshold": "中",
+   "killThreshold": "高",
    "suspicion": "中"
   },
   "carried": [
@@ -1322,6 +1325,7 @@ window.CHARACTERS = [
  {
   "id": "madara",
   "name": "宇智波斑",
+  "callName": "宇智波斑",
   "epithet": "战国修罗",
   "work": "《火影忍者》",
   "gender": "男",
@@ -1329,7 +1333,6 @@ window.CHARACTERS = [
   "heightCm": 179,
   "heightNote": "",
   "era": "忍界·第四次忍界大战",
-  "nativeLang": "忍界的语言（按日语算）",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -1392,6 +1395,7 @@ window.CHARACTERS = [
  {
   "id": "itachi",
   "name": "宇智波鼬",
+  "callName": "宇智波鼬",
   "epithet": "灭族的兄长",
   "work": "《火影忍者》",
   "gender": "男",
@@ -1399,7 +1403,6 @@ window.CHARACTERS = [
   "heightCm": 178,
   "heightNote": "",
   "era": "忍界·第四次忍界大战之前",
-  "nativeLang": "忍界的语言（按日语算）",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -1463,6 +1466,7 @@ window.CHARACTERS = [
  {
   "id": "sasuke",
   "name": "宇智波佐助",
+  "callName": "宇智波佐助",
   "epithet": "最后的宇智波",
   "work": "《火影忍者》",
   "gender": "男",
@@ -1470,7 +1474,6 @@ window.CHARACTERS = [
   "heightCm": 168,
   "heightNote": "",
   "era": "忍界·第四次忍界大战结束后不久",
-  "nativeLang": "忍界的语言（按日语算）",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -1533,6 +1536,7 @@ window.CHARACTERS = [
  {
   "id": "obito",
   "name": "宇智波带土",
+  "callName": null,
   "epithet": "谁也不是",
   "work": "《火影忍者》",
   "gender": "男",
@@ -1540,7 +1544,6 @@ window.CHARACTERS = [
   "heightCm": 182,
   "heightNote": "",
   "era": "忍界·第四次忍界大战",
-  "nativeLang": "忍界的语言（按日语算）",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -1606,6 +1609,7 @@ window.CHARACTERS = [
  {
   "id": "aizen",
   "name": "蓝染惣右介",
+  "callName": "蓝染惣右介",
   "epithet": "天之僭主",
   "work": "《BLEACH》",
   "gender": "男",
@@ -1613,7 +1617,6 @@ window.CHARACTERS = [
   "heightCm": 186,
   "heightNote": "",
   "era": "尸魂界（与现世二〇〇〇年代同时）",
-  "nativeLang": "尸魂界的语言（按日语算）",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -1673,14 +1676,14 @@ window.CHARACTERS = [
  {
   "id": "shanks",
   "name": "香克斯",
-  "epithet": "终战者",
+  "callName": "香克斯",
+  "epithet": "红发",
   "work": "《ONE PIECE》（海贼王）",
   "gender": "男",
   "age": "三十七岁",
   "heightCm": 199,
   "heightNote": "",
   "era": "大海贼时代，罗杰死后二十多年",
-  "nativeLang": "那个世界通用的语言（按日语算）",
   "knowsModernDevices": false,
   "unknownDevices": "播放器与扬声器、保龄球馆的自动设备与计分屏、跑步机、洗碗机、烘干机、电磁灶、塑料。他那里走海路靠帆船，通话、传画面靠电话虫，一种活的蜗牛。",
   "stats": {
@@ -1745,14 +1748,14 @@ window.CHARACTERS = [
  {
   "id": "eren",
   "name": "艾伦·耶格尔",
-  "epithet": "自由之囚",
+  "callName": "艾伦·耶格尔",
+  "epithet": "生而自由",
   "work": "《进击的巨人》",
   "gender": "男",
   "age": "十九岁",
   "heightCm": 183,
   "heightNote": "",
   "era": "帕拉迪岛·854年（虚构世界）",
-  "nativeLang": "墙内的语言（虚构，以日文呈现）",
   "knowsModernDevices": false,
   "unknownDevices": "冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、有声的彩色影片与放映机、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料。火车、轮船、飞艇、步枪和照片他见过。",
   "stats": {
@@ -1775,7 +1778,7 @@ window.CHARACTERS = [
   },
   "dream": "自由：岛上的人自由地活下去",
   "lines": {
-   "wake": "……门是锁着的。又被关起来了。",
+   "wake": "……门关着。又被关起来了。",
    "discover": "……哈。又死了一个。",
    "statement": "凶手也有他的来由，我懂。我照样会投。",
    "accuse": "坐下，{X}。你的来由，我听完了。是你。",
@@ -1813,14 +1816,14 @@ window.CHARACTERS = [
  {
   "id": "mikasa",
   "name": "三笠·阿克曼",
-  "epithet": "削肉者",
+  "callName": "三笠·阿克曼",
+  "epithet": "训练兵团首席",
   "work": "《进击的巨人》",
   "gender": "女",
   "age": "十九岁",
   "heightCm": 176,
   "heightNote": "",
   "era": "帕拉迪岛·854年（虚构世界）",
-  "nativeLang": "墙内的语言（虚构，以日文呈现）",
   "knowsModernDevices": false,
   "unknownDevices": "冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、有声的彩色影片与放映机、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料。火车、轮船、飞艇、步枪和照片她见过。",
   "stats": {
@@ -1830,7 +1833,7 @@ window.CHARACTERS = [
    "readsPeople": "一般",
    "medical": "战场急救",
    "observation": "一般",
-   "killThreshold": "中",
+   "killThreshold": "低",
    "suspicion": "中"
   },
   "carried": [
@@ -1844,7 +1847,7 @@ window.CHARACTERS = [
   },
   "dream": "回家：和艾伦、阿尔敏平安过日子",
   "lines": {
-   "wake": "艾伦在哪。……门在那边。",
+   "wake": "先找艾伦。……然后找门。",
    "discover": "不是艾伦。……那就好。",
    "statement": "我不猜人心。我只看谁做了什么。我都看见了。",
    "accuse": "{X}。是你。请您站着别动。",
@@ -1882,14 +1885,14 @@ window.CHARACTERS = [
  {
   "id": "armin",
   "name": "阿尔敏·阿诺德",
-  "epithet": "舍弃者",
+  "callName": "阿尔敏·阿诺德",
+  "epithet": "超大型巨人",
   "work": "《进击的巨人》",
   "gender": "男",
-  "age": "按十八岁计，看上去更小",
+  "age": "十五岁（身体按十八岁计）",
   "heightCm": 163,
   "heightNote": "",
-  "era": "墙内的世界·没有电（虚构世界）",
-  "nativeLang": "墙内的语言（虚构，以日文呈现）",
+  "era": "帕拉迪岛的墙内·850年（虚构世界）",
   "knowsModernDevices": false,
   "unknownDevices": "电和一切用电的东西（电灯、冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯）；冷热水龙头、抽水马桶和淋浴也多半没见过；塑料。",
   "stats": {
@@ -1902,9 +1905,7 @@ window.CHARACTERS = [
    "killThreshold": "中",
    "suspicion": "中"
   },
-  "carried": [
-   "贝壳一枚（祖父留下的）"
-  ],
+  "carried": [],
   "othersSee": "瘦小秀气的金发少年，一身军装，礼貌，紧张会结巴",
   "quote": {
    "zh": "如果有谁能改变什么，那个人一定是能够舍弃重要之物的人。",
@@ -1941,7 +1942,7 @@ window.CHARACTERS = [
     "#2c2420",
     "#3a6fb0"
    ],
-   "accessories": "a small pale spiral seashell held between his fingers near his chest (his grandfather's); no weapon, no ODM gear",
+   "accessories": "nothing in his hands; no weapon, no ODM gear",
    "expression": "head slightly bowed, eyes looking up through the bangs and too still; a gentle, apologetic half-smile while the eyes have already reached a terrible conclusion",
    "accent": "#3D8FC4"
   },
@@ -1950,6 +1951,7 @@ window.CHARACTERS = [
  {
   "id": "guts",
   "name": "格斯",
+  "callName": "格斯",
   "epithet": "黑剑士",
   "work": "《剑风传奇》",
   "gender": "男",
@@ -1957,7 +1959,6 @@ window.CHARACTERS = [
   "heightCm": 204,
   "heightNote": "卡上只写“身材极高大”，没有数字；204 取自原作常见的设定说法，属推断",
   "era": "架空中世纪·米特兰一带（“蚀”后两年）",
-  "nativeLang": "米特兰的语言（虚构，以日文呈现）",
   "knowsModernDevices": false,
   "unknownDevices": "电和一切用电的东西（电灯、冰箱、洗衣机、放映机、扬声器之类）；冷热水龙头、抽水马桶和淋浴；塑料。",
   "stats": {
@@ -2021,6 +2022,7 @@ window.CHARACTERS = [
  {
   "id": "griffith",
   "name": "格里菲斯",
+  "callName": "格里菲斯",
   "epithet": "折翼白鹰",
   "work": "《剑风传奇》",
   "gender": "男",
@@ -2028,7 +2030,6 @@ window.CHARACTERS = [
   "heightCm": 178,
   "heightNote": "卡上未写身高，按外貌估计",
   "era": "架空中世纪·米特兰王国（百年战争刚结束）",
-  "nativeLang": "米特兰的语言（虚构，以日文呈现）",
   "knowsModernDevices": false,
   "unknownDevices": "电和一切用电的东西（电灯、冰箱、洗衣机、放映机、扬声器之类）；冷热水龙头、抽水马桶和淋浴；塑料。",
   "stats": {
@@ -2090,6 +2091,7 @@ window.CHARACTERS = [
  {
   "id": "thragg",
   "name": "崔格",
+  "callName": "崔格",
   "epithet": "大摄政王",
   "work": "《无敌少侠》",
   "gender": "男",
@@ -2097,7 +2099,6 @@ window.CHARACTERS = [
   "heightCm": 210,
   "heightNote": "卡上只写“身形极其高大”，没有数字；按原作里他明显高过诺兰等维特鲁姆人估算，属推断",
   "era": "维特鲁姆帝国·星际时代（与地球二〇〇〇年代同时）",
-  "nativeLang": "维特鲁姆的语言",
   "knowsModernDevices": false,
   "unknownDevices": "地球人家里的日用器具（冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、钢琴、台球、扑克、麻将之类）；电和机器本身他不陌生，摆弄一下就明白用法。",
   "stats": {
@@ -2159,6 +2160,7 @@ window.CHARACTERS = [
  {
   "id": "saber",
   "name": "Saber",
+  "callName": "Saber",
   "epithet": "骑士王",
   "work": "《Fate/Zero》",
   "gender": "女",
@@ -2166,7 +2168,6 @@ window.CHARACTERS = [
   "heightCm": 154,
   "heightNote": "",
   "era": "一九九四年的冬木；生前是五、六世纪的不列颠",
-  "nativeLang": "古不列颠的凯尔特语",
   "knowsModernDevices": true,
   "unknownDevices": "—（圣杯给了她这个时代的常识）",
   "stats": {
@@ -2225,6 +2226,7 @@ window.CHARACTERS = [
  {
   "id": "gilgamesh",
   "name": "吉尔伽美什",
+  "callName": "吉尔伽美什",
   "epithet": "英雄王",
   "work": "《Fate/Zero》",
   "gender": "男",
@@ -2232,7 +2234,6 @@ window.CHARACTERS = [
   "heightCm": 182,
   "heightNote": "",
   "era": "一九九四年的冬木；生前是公元前三千纪的乌鲁克",
-  "nativeLang": "苏美尔语（乌鲁克的语言）",
   "knowsModernDevices": true,
   "unknownDevices": "—（召唤出来这几天，他常在冬木的街上闲逛）",
   "stats": {
@@ -2291,6 +2292,7 @@ window.CHARACTERS = [
  {
   "id": "kiritsugu",
   "name": "卫宫切嗣",
+  "callName": "卫宫切嗣",
   "epithet": "魔术师杀手",
   "work": "《Fate/Zero》",
   "gender": "男",
@@ -2298,7 +2300,6 @@ window.CHARACTERS = [
   "heightCm": 175,
   "heightNote": "",
   "era": "一九九四年的冬木",
-  "nativeLang": "日语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -2319,7 +2320,7 @@ window.CHARACTERS = [
   },
   "dream": "再也没有人流血的世界",
   "lines": {
-   "wake": "出口两个，窗一扇。……烟呢。",
+   "wake": "门三扇，没有窗。……烟呢。",
    "discover": "死了不到两小时。别碰门把手。",
    "statement": "凶手还会再动手。投错一个，多死一个。就这样。",
    "accuse": "{X}的说法里，少了二十分钟。",
@@ -2357,6 +2358,7 @@ window.CHARACTERS = [
  {
   "id": "frieren",
   "name": "芙莉莲",
+  "callName": "芙莉莲",
   "epithet": "葬送的魔法使",
   "work": "《葬送的芙莉莲》",
   "gender": "女",
@@ -2364,7 +2366,6 @@ window.CHARACTERS = [
   "heightCm": 150,
   "heightNote": "卡上未写身高，按外貌估计",
   "era": "剑与魔法的世界，勇者辛美尔死后二十多年",
-  "nativeLang": "她那个世界的语言（虚构，别人听来是没听过的语言）",
   "knowsModernDevices": false,
   "unknownDevices": "电和一切用电的东西（电灯、冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、有声的彩色影片与放映机、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶）；塑料；拧开就有冷热水的龙头、抽水马桶和淋浴多半也没见过。",
   "stats": {
@@ -2427,14 +2428,14 @@ window.CHARACTERS = [
  {
   "id": "dio",
   "name": "迪奥·布兰度",
+  "callName": "迪奥·布兰度",
   "epithet": "吸血鬼",
   "work": "《JOJO的奇妙冒险 星尘斗士》",
   "gender": "男",
-  "age": "卡上未写，成年男性",
+  "age": "",
   "heightCm": 195,
   "heightNote": "",
   "era": "一九八九年的开罗；一八六〇年代生于伦敦",
-  "nativeLang": "英语",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -2449,7 +2450,7 @@ window.CHARACTERS = [
   },
   "carried": [
    "素色手帕一方",
-   "皮面小开本书一册"
+   "皮面小开本笔记一册（写着“到天堂去的方法”）"
   ],
   "othersSee": "高大苍白的金发男人，打扮扎眼，目光像能把人钉住",
   "quote": {
@@ -2487,7 +2488,7 @@ window.CHARACTERS = [
     "#111111",
     "#C9A227"
    ],
-   "accessories": "A heart-shaped gold forehead ornament on a dark headband. A plain handkerchief or a small leather-bound book may be held in one hand.",
+   "accessories": "A heart-shaped gold forehead ornament on a dark headband. A plain handkerchief or a small leather-bound notebook may be held in one hand.",
    "expression": "Languid, predatory amusement: head tilted back, eyes looking down, a slow parted smile showing teeth. Calm as a nobleman, and about to burst into laughter.",
    "accent": "#6D1A36"
   },
@@ -2496,6 +2497,7 @@ window.CHARACTERS = [
  {
   "id": "johnny",
   "name": "乔尼·乔斯达",
+  "callName": "乔尼·乔斯达",
   "epithet": "漆黑的意志",
   "work": "《JOJO的奇妙冒险 飙马野郎》",
   "gender": "男",
@@ -2503,7 +2505,6 @@ window.CHARACTERS = [
   "heightCm": 180,
   "heightNote": "卡上未写身高，按外貌估计",
   "era": "一八九〇至九一年之交的美国费城",
-  "nativeLang": "英语",
   "knowsModernDevices": false,
   "unknownDevices": "电灯见得少；冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、放映机与影片、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料（另见\"时代\"一条）。",
   "stats": {
@@ -2517,7 +2518,6 @@ window.CHARACTERS = [
    "suspicion": "重"
   },
   "carried": [
-   "杰洛的铁球一枚（网球大小，沉甸甸）",
    "帽子上的小马蹄铁（取得下来）",
    "靴跟上的马刺（取得下来）"
   ],
@@ -2558,7 +2558,7 @@ window.CHARACTERS = [
     "#F1EDE4",
     "#9AA3AA"
    ],
-   "accessories": "Gyro's steel ball, a plain heavy grey metal sphere the size of a tennis ball, held in one hand near the chest; the horseshoe on the hat; spurs on the boot heels (out of frame).",
+   "accessories": "The horseshoe on the hat; spurs on the boot heels (out of frame). Nothing in his hands.",
    "expression": "Suddenly still and silent: eyes gone dark and fixed, pupils small, jaw tight. The 'pitch-black resolve' of someone who has just stopped hesitating.",
    "accent": "#8E7CC3"
   },
@@ -2567,6 +2567,7 @@ window.CHARACTERS = [
  {
   "id": "valentine",
   "name": "法尼·瓦伦泰",
+  "callName": "法尼·瓦伦泰",
   "epithet": "爱国者",
   "work": "《JOJO的奇妙冒险 飙马野郎》",
   "gender": "男",
@@ -2574,7 +2575,6 @@ window.CHARACTERS = [
   "heightCm": 188,
   "heightNote": "卡上未写身高，按外貌估计",
   "era": "一八九〇至九一年之交的美国费城",
-  "nativeLang": "英语",
   "knowsModernDevices": false,
   "unknownDevices": "电灯见得少；冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、放映机与影片、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料（另见\"时代\"一条）。",
   "stats": {
