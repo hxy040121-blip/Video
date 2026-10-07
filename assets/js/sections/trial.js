@@ -308,7 +308,7 @@
     E.exec = el('div.trial-exec', null, [
       el('i.trial-exec-dots'),
       el('i.trial-exec-rays'),
-      el('div.trial-exec-word', { text: '处刑' }),
+      el('div.trial-exec-word', null, [el('span', { text: '处刑' })]),
       el('div.trial-exec-who'),
       el('div.trial-exec-chain', { html: chainSVG() }),
     ])
@@ -1689,8 +1689,13 @@
       this.ctx = this.cv.getContext('2d')
       this.plan = document.createElement('canvas')
       this.pctx = this.plan.getContext('2d')
-      this.lcv = document.createElement('canvas')
-      this.lctx = this.lcv.getContext('2d')
+      // 手电单独一张小画布（只有光圈大小，跟着光平移）；整屏的 .trial-inv-cv 只画极暗的底图与标记，不再每帧重画
+      if (!this.lv) {
+        this.lv = el('canvas.trial-inv-light', { 'aria-hidden': 'true' })
+        this.cv.after(this.lv)
+        this.lvc = this.lv.getContext('2d')
+      }
+      this.lvx = this.lvy = null
       const r = U.seeded((c.no * 7919 + (S.G.seed % 100000)) >>> 0)
       this.layoutRoom(c, r)
       this.dust = Array.from({ length: 40 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random(), v: 0.2 + Math.random() * 0.6 }))
@@ -1919,8 +1924,12 @@
       this.cv.style.height = H + 'px'
       this.computeGeo()
       this.light.r = Math.max(this.geo.mobile ? 110 : 96, Math.min(W, H) * 0.15)
-      const L = Math.ceil(this.light.r * 2 * dpr) + 4
-      this.lcv.width = this.lcv.height = L
+      // 小画布盖住光圈外的暖光晕（1.3R）
+      this.lh = Math.ceil(this.light.r * 1.32) + 4
+      this.lv.width = this.lv.height = Math.round(this.lh * 2 * dpr)
+      this.lv.style.width = this.lv.style.height = this.lh * 2 + 'px'
+      this.lvx = this.lvy = null
+      S.E.inv.classList.toggle('is-narrow', !!this.geo.mobile)
       this.drawPlan()
       this.placeButtons()
       this.layoutTimer()
@@ -1943,6 +1952,7 @@
 
     /* --- 画平面（只画一次，光照时从这里取） --- */
     drawPlan() {
+      this.planVer = (this.planVer || 0) + 1 // 底图在下一帧随之重画
       const ctx = this.pctx, w = this.w, h = this.h, g = this.geo, d = this.dpr
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       ctx.clearRect(0, 0, this.plan.width, this.plan.height)
@@ -2221,10 +2231,38 @@
       ctx.restore()
     },
 
-    /* --- 每帧：黑暗 + 手电 --- */
+    /* --- 底图：极暗的环境光 + 已查过的标记（平面图或标记变了才重画） --- */
+    drawBase() {
+      const ctx = this.ctx
+      this.baseVer = this.planVer
+      this.nd = this.doneCount()
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.clearRect(0, 0, this.cv.width, this.cv.height)
+      ctx.globalAlpha = this.geo.mobile ? 0.11 : 0.06
+      ctx.drawImage(this.plan, 0, 0)
+      ctx.globalAlpha = 1
+      this.drawMarks(ctx, null)
+    },
+    doneCount() { let n = 0; for (const sp of this.spots) if (sp.done) n++; return n },
+    // 已查的标记（clip：只画落在这块矩形里的，设备像素）
+    drawMarks(ctx, clip) {
+      const d = this.dpr
+      let n = 0
+      for (const sp of this.spots) {
+        if (!sp.done) continue
+        if (sp.kind === 'clue') n++
+        const [x, y] = this.P(sp.u, sp.v)
+        if (clip && (x * d < clip[0] - 12 * d || x * d > clip[2] + 12 * d || y * d < clip[1] - 12 * d || y * d > clip[3] + 12 * d)) continue
+        if (sp.kind === 'clue') this.tent(ctx, x, y, n)
+        else if (sp.kind === 'decoy') { ctx.strokeStyle = 'rgba(160,150,138,.5)'; ctx.lineWidth = d; ctx.beginPath(); ctx.arc(x * d, y * d, 5 * d, 0, Math.PI * 2); ctx.stroke() }
+      }
+    },
+
+    /* --- 每帧：手电（只画光圈那一小块） --- */
     frame(t, dt) {
       if (!this.running || !this.geo) return
-      const ctx = this.ctx, d = this.dpr, L = this.light
+      const d = this.dpr, L = this.light
       const k = Math.min(1, 0.22 * dt)
       if (App.finePointer && !this.auto) {
         const r = S.stage.getBoundingClientRect()
@@ -2240,26 +2278,31 @@
         const age = (performance.now() - L.tapAt) / 1000
         R *= age < 0.2 ? 0.4 + age * 3 : Math.max(0.55, 1 - Math.max(0, age - 3) * 0.08)
       }
+      if (this.baseVer !== this.planVer || this.doneCount() !== this.nd) this.drawBase()
+      // 小画布以光为中心，对齐设备像素
+      const S2 = this.lv.width
+      const ox = Math.round((L.x - this.lh) * d), oy = Math.round((L.y - this.lh) * d)
+      if (ox !== this.lvx || oy !== this.lvy) {
+        this.lvx = ox; this.lvy = oy
+        this.lv.style.transform = 'translate3d(' + ox / d + 'px,' + oy / d + 'px,0)'
+      }
+      const ctx = this.lvc
       ctx.setTransform(1, 0, 0, 1, 0, 0)
-      ctx.clearRect(0, 0, this.cv.width, this.cv.height)
-      // 极暗的环境光
-      ctx.globalAlpha = this.geo.mobile ? 0.11 : 0.06
-      ctx.drawImage(this.plan, 0, 0)
+      ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
-      // 手电：只取光圈附近一块
-      const lc = this.lctx, Ls = this.lcv.width
+      ctx.clearRect(0, 0, S2, S2)
+      ctx.setTransform(1, 0, 0, 1, -ox, -oy) // 以下都按整屏的设备像素坐标画
+      // 手电：光圈里的平面图，边缘渐隐
+      const Ls = Math.ceil(R * 2 * d) + 4
       const sx = Math.round((L.x - R) * d), sy = Math.round((L.y - R) * d)
-      lc.globalCompositeOperation = 'source-over'
-      lc.clearRect(0, 0, Ls, Ls)
-      lc.drawImage(this.plan, sx, sy, Ls, Ls, 0, 0, Ls, Ls)
-      lc.globalCompositeOperation = 'destination-in'
-      const grd = lc.createRadialGradient(R * d, R * d, 0, R * d, R * d, R * d)
+      ctx.drawImage(this.plan, sx, sy, Ls, Ls, sx, sy, Ls, Ls)
+      ctx.globalCompositeOperation = 'destination-in'
+      const grd = ctx.createRadialGradient(L.x * d, L.y * d, 0, L.x * d, L.y * d, R * d)
       grd.addColorStop(0, 'rgba(0,0,0,1)')
       grd.addColorStop(0.55, 'rgba(0,0,0,.9)')
       grd.addColorStop(1, 'rgba(0,0,0,0)')
-      lc.fillStyle = grd
-      lc.fillRect(0, 0, Ls, Ls)
-      ctx.drawImage(this.lcv, sx, sy)
+      ctx.fillStyle = grd
+      ctx.fillRect(ox, oy, S2, S2)
       // 暖色光晕与尘
       ctx.globalCompositeOperation = 'lighter'
       const glow = ctx.createRadialGradient(L.x * d, L.y * d, 0, L.x * d, L.y * d, R * d * 1.25)
@@ -2278,17 +2321,14 @@
         ctx.fillRect(x * d, y * d, (1 + p.z) * d, (1 + p.z) * d)
       }
       ctx.globalCompositeOperation = 'source-over'
-      // 热点闪光 / 已查标记
-      let n = 0
+      // 已查标记压在光上（光圈里的那几个重画一遍）；未查的热点在光里闪
+      // （窄屏：光圈外那一点微光由热点按钮自己的 CSS 动画画，见 trial.css 的 .trial-inv.is-narrow .trial-spot::before）
+      this.drawMarks(ctx, [ox, oy, ox + S2, oy + S2])
       for (const sp of this.spots) {
+        if (sp.done) continue
         const [x, y] = this.P(sp.u, sp.v)
-        if (sp.done) {
-          if (sp.kind === 'clue') { n++; this.tent(ctx, x, y, n) }
-          else if (sp.kind === 'decoy') { ctx.strokeStyle = 'rgba(160,150,138,.5)'; ctx.lineWidth = d; ctx.beginPath(); ctx.arc(x * d, y * d, 5 * d, 0, Math.PI * 2); ctx.stroke() }
-          continue
-        }
         const dist = Math.hypot(x - L.x, y - L.y) / R
-        const vis = U.clamp(1.15 - dist) + (this.geo.mobile ? 0.12 : 0)
+        const vis = U.clamp(1.15 - dist) * (this.geo.mobile ? 1.12 : 1)
         if (vis <= 0.02) continue
         const tw = 0.6 + 0.4 * Math.sin(this.t * 0.12 + sp.u * 3 + sp.v)
         const s = (sp.kind === 'body' ? 9 : 6) * (0.8 + 0.4 * tw) * d
@@ -2324,6 +2364,7 @@
       this.light.y = this.light.ty = App.finePointer ? App.mouse.y - r.top : this.H / 2
       this.light.tapAt = performance.now() - 5000
       this.off = App.tick((t, dt) => this.frame(t, dt))
+      if (this.lv) this.lv.style.display = ''
       this.onTap = e => {
         if (App.finePointer) return
         const rr = S.stage.getBoundingClientRect()
@@ -2337,6 +2378,7 @@
     stop() {
       this.running = false
       if (this.off) { this.off(); this.off = null }
+      if (this.lv) this.lv.style.display = 'none'
       if (this.cv && this.onTap) this.cv.removeEventListener('pointerdown', this.onTap)
     },
 
@@ -3259,9 +3301,21 @@
     if (!App.reduced) {
       E.ring.style.transform = `perspective(1600px) rotateX(${(-tiltY * 4).toFixed(2)}deg) rotateY(${(tiltX * 5).toFixed(2)}deg)`
       E.dome.style.transform = `translate3d(${(-tiltX * 30).toFixed(1)}px, ${(-tiltY * 18).toFixed(1)}px, 0)`
-      if (S.scene === 'exec') E.exec.style.setProperty('--tx', (tiltX * 2).toFixed(3))
-      if (S.scene === 'end') E.end.style.setProperty('--tx', tiltX.toFixed(3)), E.end.style.setProperty('--ty', tiltY.toFixed(3))
-      if (S.scene === 'cine') E.cine.style.setProperty('--tx', tiltX.toFixed(3)), E.cine.style.setProperty('--ty', tiltY.toFixed(3))
+      // 视差变量只写给真正用到它的元素（写在场景容器上会让整棵子树每帧重算样式），数值没变不写
+      const tl = E.tilt || (E.tilt = {
+        exec: [E.exec.querySelector('.trial-exec-word')],
+        end: [E.end.querySelector('.trial-end-face')],
+        cine: [E.cine.querySelector('.trial-cine-dial'), E.cine.querySelector('.trial-cine-face')],
+      })
+      const els = tl[S.scene]
+      if (els) {
+        const tx = (S.scene === 'exec' ? tiltX * 2 : tiltX).toFixed(3), ty = tiltY.toFixed(3)
+        for (const n of els) {
+          if (!n) continue
+          if (n._tx !== tx) { n._tx = tx; n.style.setProperty('--tx', tx) }
+          if (S.scene !== 'exec' && n._ty !== ty) { n._ty = ty; n.style.setProperty('--ty', ty) }
+        }
+      }
     }
     // 加速：光标越快，调查期的灰尘越乱（不影响规则）
   }

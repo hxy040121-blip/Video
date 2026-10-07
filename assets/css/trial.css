@@ -53,18 +53,23 @@
    ========================================================== */
 .trial-dome {
   position: absolute; inset: -40px -60px 0; z-index: 0; pointer-events: none;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.65) 45%, transparent 80%);
-          mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.65) 45%, transparent 80%);
   will-change: transform;
 }
-.trial-dome-svg { width: 100%; height: 100%; }
+/* 渐隐遮罩放在里层（不单独合成）：栅格化时画一次；放在外层（合成层）上则每次合成都要做一遍遮罩 */
+.trial-dome-svg {
+  display: block; width: 100%; height: 100%;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.65) 45%, transparent 80%);
+          mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.65) 45%, transparent 80%);
+}
 .trial-dome-ribs path { fill: none; stroke: var(--brass-dim); stroke-width: 1; opacity: .38; vector-effect: non-scaling-stroke; }
 .trial-dome-arcs ellipse { fill: none; stroke: var(--brass-dim); stroke-width: 1; opacity: .22; vector-effect: non-scaling-stroke; stroke-dasharray: 2 6; }
 .trial-stage.is-vote .trial-dome-ribs path { stroke: var(--rust); opacity: .55; }
 
 .trial-fx { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-.trial-fx i { position: absolute; inset: -20%; opacity: 0; transition: opacity .3s var(--ease-out); }
-.trial-fx-lines {
+/* 平时完全不画（原先是两张 140% 大、透明度为 0 的遮罩层） */
+.trial-fx i { position: absolute; inset: -20%; opacity: 0; visibility: hidden; transition: opacity .3s var(--ease-out), visibility 0s linear .3s; }
+.trial-fx-lines::before {
+  content: ''; position: absolute; inset: 0;
   background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 46, 126, .0) 0deg 3deg, rgba(255, 46, 126, .16) 3deg 3.6deg);
   -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 22%, #000 62%);
           mask-image: radial-gradient(circle at 50% 50%, transparent 22%, #000 62%);
@@ -75,15 +80,22 @@
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, transparent 55%, #000 100%);
           mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, transparent 55%, #000 100%);
 }
-.trial-stage.is-hot .trial-fx-lines { opacity: 1; animation: trial-spin 6s linear infinite; }
-.trial-stage[data-scene="court"].is-vote .trial-fx-dots { opacity: .7; }
+.trial-fx-lines { animation: trial-spin 6s linear infinite paused; }
+.trial-stage.is-hot .trial-fx-lines { opacity: 1; visibility: visible; transition: opacity .3s var(--ease-out), visibility 0s; animation-play-state: running; }
+.trial-stage[data-scene="court"].is-vote .trial-fx-dots { opacity: .7; visibility: visible; transition: opacity .3s var(--ease-out), visibility 0s; }
 @keyframes trial-spin { to { transform: rotate(360deg); } }
 
 /* ==========================================================
    圆桌
    ========================================================== */
 .trial-ring { position: absolute; inset: 0; z-index: 5; transform-origin: 50% 55%; will-change: transform; }
-.trial-table { position: absolute; z-index: 15; pointer-events: none; filter: drop-shadow(0 30px 60px rgba(0,0,0,.8)); }
+.trial-table { position: absolute; z-index: 15; pointer-events: none; }
+/* 桌下的影：原为 filter: drop-shadow(0 30px 60px)（圆桌所在的整层每次重新栅格化都要做一遍大模糊）；
+   改为同样位置（下移 30px、外扩约 2σ）的椭圆径向渐变 */
+.trial-table::before {
+  content: ''; position: absolute; left: -60px; right: -60px; top: -30px; bottom: -90px; z-index: -1;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .8) 70%, rgba(0, 0, 0, .55) 80%, rgba(0, 0, 0, .3) 86%, rgba(0, 0, 0, .12) 92%, rgba(0, 0, 0, 0));
+}
 .trial-table-svg { width: 100%; height: 100%; overflow: visible; }
 .trial-table-rim { fill: #0d0a09; stroke: var(--brass-dim); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
 .trial-table-line { fill: none; stroke: var(--brass-dim); stroke-width: 1; opacity: .55; vector-effect: non-scaling-stroke; }
@@ -132,6 +144,14 @@
   content: ''; position: absolute; left: 6%; right: 6%; bottom: -1px; height: 26%;
   background: linear-gradient(to top, rgba(10, 8, 9, .92), transparent);
   pointer-events: none;
+}
+/* 呼吸光（可选的席位 / 待定的席位）：原为 filter: drop-shadow 的动画，每帧在每张席位上重做一遍模糊；
+   改为卡后一团预先画好的柔光，只动 opacity / transform（合成器完成） */
+.trial-seat-card::before {
+  content: ''; position: absolute; inset: -12% -16% -4%; z-index: -1; pointer-events: none;
+  border-radius: 50% 50% 22% 22% / 42% 42% 14% 14%;
+  background: radial-gradient(closest-side, rgba(255, 46, 126, .42), rgba(255, 46, 126, .16) 62%, rgba(255, 46, 126, 0));
+  opacity: 0; visibility: hidden;
 }
 
 .trial-seat-x, .trial-seat-lock { position: absolute; pointer-events: none; opacity: 0; transition: opacity .3s, transform .4s var(--ease-out); }
@@ -232,6 +252,14 @@
 }
 .trial-hitmark.is-no { border-color: var(--bone-dim); border-style: dashed; }
 
+/* 小尺寸的位图肖像（席位、名单、终局一排、通知）：光标视差只有 1px 上下，去掉 3D 变换，
+   不再每张各占一个合成层（连带压在它上面的渐隐、名字、标记也不必各自成层） */
+.trial-seat-pt .portrait.is-photo > img,
+.trial-roster-face .portrait.is-photo > img,
+.trial-end-mini .portrait.is-photo > img,
+.trial-note-face .portrait.is-photo > img,
+.trial-inv-vface .portrait.is-photo > img { transform: scale(1.035); }
+
 /* 席位状态 */
 .trial-seat.is-empty .trial-seat-pt,
 .trial-seat.is-empty .trial-seat-name { display: none; }
@@ -264,11 +292,15 @@
 .trial-seat.is-voter .trial-chair-inlay { stroke: var(--blood); opacity: 1; }
 
 .trial-seat.is-pending { z-index: 61 !important; }
-.trial-seat.is-pending .trial-seat-card { animation: trial-pending 1.1s ease-in-out infinite; }
+.trial-seat.is-pending .trial-seat-card::before {
+  visibility: visible;
+  background: radial-gradient(closest-side, rgba(255, 46, 126, .8), rgba(255, 46, 126, .3) 60%, rgba(255, 46, 126, 0));
+  animation: trial-pending 1.1s ease-in-out infinite;
+}
 .trial-seat.is-pending .trial-chair-back { stroke: var(--blood); stroke-width: 2.2; }
 @keyframes trial-pending {
-  0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 46, 126, .5)); }
-  50% { filter: drop-shadow(0 0 22px rgba(255, 46, 126, .95)); }
+  0%, 100% { opacity: .5; transform: scale(.9); }
+  50% { opacity: 1; transform: scale(1.12); }
 }
 
 .trial-seat.is-banned .trial-seat-lock,
@@ -309,16 +341,17 @@
 .trial-seat.is-target .trial-seat-hit:hover::before,
 .trial-seat.is-picked .trial-seat-hit::before { opacity: 1; transform: scale(.9); animation: none; transition-duration: .2s, .25s; }
 @keyframes trial-lockon { 50% { opacity: .85; transform: scale(1.07); } }
-.trial-seat.is-target .trial-seat-card { animation: trial-breath 2.2s ease-in-out infinite; }
+.trial-seat.is-target .trial-seat-card::before { visibility: visible; animation: trial-breath 2.2s ease-in-out infinite; }
 .trial-seat.is-target .trial-seat-hit:hover ~ .trial-seat-name,
 .trial-seat.is-target:hover .trial-seat-name { color: var(--bone); }
 .trial-seat.is-target:hover .trial-seat-card { transform: translateY(-5px); filter: brightness(1.3) drop-shadow(0 0 16px rgba(255, 46, 126, .55)); animation: none; }
+.trial-seat.is-target:hover .trial-seat-card::before, .trial-seat.is-picked .trial-seat-card::before { animation: none; opacity: 0; }
 .trial-seat.is-target:hover .trial-chair-inlay { stroke: var(--blood); opacity: 1; }
 @keyframes trial-breath {
-  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 46, 126, 0)); }
-  50% { filter: drop-shadow(0 0 10px rgba(255, 46, 126, .45)); }
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
 }
-.trial-stage.is-armed .trial-seat.is-target .trial-seat-card { animation-duration: 1s; }
+.trial-stage.is-armed .trial-seat.is-target .trial-seat-card::before { animation-duration: 1s; }
 /* 触屏选人：第一次点亮并标出动作，再点确认 */
 .trial-seat.is-picked { z-index: 62 !important; }
 .trial-seat.is-picked .trial-seat-card { transform: translateY(-5px); filter: brightness(1.3) drop-shadow(0 0 16px rgba(255, 46, 126, .75)); animation: none; }
@@ -392,7 +425,13 @@
 .trial-say-body {
   position: relative; flex: 1 1 auto; min-width: 0; margin-bottom: 10px;
   padding: 18px 30px 18px 42px; text-align: left;
-  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .55));
+  isolation: isolate;
+}
+/* 气泡的影：原为整块气泡上的 filter: drop-shadow（逐字打出时每一个字都要把整块重新模糊一遍）；
+   改为垫在底下的同样偏移、同样模糊的 box-shadow，只在栅格化时画一次 */
+.trial-say-body::after {
+  content: ''; position: absolute; inset: 0; z-index: -2; pointer-events: none;
+  box-shadow: 0 20px 30px rgba(0, 0, 0, .55);
 }
 .trial-say-body::before {
   content: ''; position: absolute; inset: 0; z-index: -1;
@@ -527,6 +566,7 @@
   position: absolute; left: 50%; top: 52%; width: min(70vh, 78vw); aspect-ratio: 1;
   transform: translate(calc(-50% + var(--tx) * -24px), calc(-50% + var(--ty) * -16px));
   transition: opacity .6s, filter .6s;
+  will-change: transform; /* 视差每帧只改它的 transform（不然连同模糊一起每帧重画） */
 }
 .trial-cine-dial svg { width: 100%; height: 100%; overflow: visible; }
 .trial-dial-ticks line { stroke: var(--ash); stroke-width: 2; }
@@ -563,7 +603,7 @@
 .trial-cine.is-found .trial-cine-mood { visibility: hidden; }
 .trial-cine-face {
   position: relative; width: clamp(200px, 24vw, 340px); aspect-ratio: 3 / 4; flex: 0 0 auto;
-  transform: translate(calc(var(--tx) * 14px), calc(var(--ty) * 10px));
+  transform: translate(calc(var(--tx) * 14px), calc(var(--ty) * 10px)); will-change: transform;
   -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent);
           mask-image: linear-gradient(to bottom, #000 72%, transparent);
 }
@@ -588,15 +628,19 @@
 .trial-inv-timer { position: absolute; z-index: 0; pointer-events: none; }
 .trial-inv-timer svg { width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg); }
 .trial-inv-ticks { transform: rotate(90deg); transform-origin: 500px 500px; }
-.trial-inv-ticks line { stroke: rgba(141, 152, 166, .32); stroke-width: 2; transition: stroke .3s, opacity .3s; }
+/* 用掉的刻度变暗：只改描边颜色（原为 opacity 过渡——每一格都会临时升成合成层，届满时上百格同时升层） */
+.trial-inv-ticks line { stroke: rgba(141, 152, 166, .32); stroke-width: 2; transition: stroke .3s; }
 .trial-inv-ticks line.is-major { stroke: rgba(235, 227, 214, .5); stroke-width: 3; }
-.trial-inv-ticks line.is-used { stroke: var(--ink-3); opacity: .5; }
+.trial-inv-ticks line.is-used { stroke: rgba(29, 23, 25, .5); }
 .trial-inv-track { fill: none; stroke: rgba(141, 152, 166, .06); stroke-width: 6; }
 .trial-inv-arc { fill: none; stroke: rgba(141, 152, 166, .38); stroke-width: 6; stroke-linecap: butt; transition: stroke .5s; }
 .trial-inv.is-low .trial-inv-arc { stroke: var(--blood); filter: drop-shadow(0 0 10px rgba(255, 46, 126, .7)); animation: trial-low 1s ease-in-out infinite; }
+.trial-stage:not([data-scene="inv"]) .trial-inv-arc { animation-play-state: paused; }
 @keyframes trial-low { 50% { opacity: .55; } }
 .trial-inv-cv { position: absolute; left: 0; top: 0; z-index: 1; touch-action: manipulation; }
-.trial-inv-spots { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+/* 手电：只有光圈大小的小画布，跟着光平移（整屏的 .trial-inv-cv 只放极暗的底图，不再每帧重画） */
+.trial-inv-light { position: absolute; left: 0; top: 0; z-index: 1; pointer-events: none; will-change: transform; }
+.trial-inv-spots { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; z-index: 2; pointer-events: none; }
 .trial-spot {
   position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
   pointer-events: auto; cursor: pointer;
@@ -607,6 +651,24 @@
 }
 .trial-spot:hover::after { border-color: rgba(235, 227, 214, .6); transform: scale(1.5); }
 .trial-spot.is-done { pointer-events: none; }
+/* 窄屏（手机）：光圈外的热点也有一点微光（原先在整屏画布上每帧画；改为按钮自己的合成器动画：慢慢转、一明一暗） */
+.trial-inv.is-narrow .trial-spot::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px;
+  background: rgba(255, 244, 222, .11);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  pointer-events: none;
+  animation: trial-spark-rot 10.5s linear infinite, trial-spark-tw .435s ease-in-out infinite alternate;
+}
+.trial-inv.is-narrow .trial-spot.is-body::before {
+  inset: auto; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 0; border-radius: 0;
+  background: rgba(255, 46, 126, .1); animation-name: trial-spark-rot, trial-spark-sz;
+}
+.trial-inv.is-narrow .trial-spot:nth-child(3n+1)::before { animation-delay: -2s, -.3s; }
+.trial-inv.is-narrow .trial-spot:nth-child(3n+2)::before { animation-delay: -5s, -.6s; }
+.trial-inv.is-narrow .trial-spot.is-done::before, .trial-inv.is-narrow.is-over .trial-spot::before { display: none; }
+@keyframes trial-spark-rot { to { rotate: 360deg; } }
+@keyframes trial-spark-tw { from { opacity: .2; scale: .8; } to { opacity: 1; scale: 1.2; } }
+@keyframes trial-spark-sz { from { scale: .8; } to { scale: 1.2; } }
 .trial-inv.is-over .trial-spot { pointer-events: none; }
 
 .trial-inv-meta {
@@ -655,7 +717,7 @@
   font-family: var(--f-sans); font-size: 12px; letter-spacing: .3em; padding: 3px 8px 3px calc(8px + .3em);
   color: var(--bone-dim); background: rgba(10, 8, 9, .85); white-space: nowrap; pointer-events: none;
 }
-.trial-inv.is-over .trial-inv-cv { filter: grayscale(1) brightness(.7); transition: filter 1s; }
+.trial-inv.is-over .trial-inv-cv, .trial-inv.is-over .trial-inv-light { filter: grayscale(1) brightness(.7); transition: filter 1s; }
 
 /* ==========================================================
    处刑
@@ -675,16 +737,23 @@
 }
 .trial-exec-rays {
   position: absolute; left: 50%; top: 55%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax;
+  /* 旋转时只需盖住视口：边长 = 2 × 中心到最远角的距离（原 220vmax 在 1440 宽时是 3168px 见方、约 10MP 的层） */
+  width: calc(2 * hypot(50vw, 55vh) + 8px); height: calc(2 * hypot(50vw, 55vh) + 8px);
+  margin: calc(-1 * hypot(50vw, 55vh) - 4px) 0 0 calc(-1 * hypot(50vw, 55vh) - 4px);
   background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .1) 0deg 6deg, transparent 6deg 15deg);
-  animation: trial-spin 40s linear infinite;
+  animation: trial-spin 40s linear infinite paused;
 }
+/* 无限循环的动画只在自己的场景里转（场景隐藏时停在原处，不让合成器每帧白转） */
+.trial-stage[data-scene="exec"] .trial-exec-rays { animation-play-state: running; }
 .trial-exec-word {
-  position: absolute; left: calc(-20% + var(--tx) * -30px); right: calc(-20% + var(--tx) * 30px); top: calc(var(--hud-h) + 2%); z-index: 1; text-align: center;
+  position: absolute; left: -20%; right: -20%; top: calc(var(--hud-h) + 2%); z-index: 1; text-align: center;
   font-family: var(--f-brush); font-size: clamp(150px, 32vh, 340px); line-height: .9; letter-spacing: -.02em; white-space: nowrap;
   color: var(--ink); opacity: 0;
   text-shadow: 10px 10px 0 rgba(255, 255, 255, .18);
   pointer-events: none;
 }
+/* 视差：原为每帧改 left/right（整行巨字每帧重排、重画）；改为里层的平移（外层的变换留给入场动画） */
+.trial-exec-word > span { display: inline-block; transform: translateX(calc(var(--tx, 0) * -30px)); will-change: transform; }
 .trial-exec-who {
   position: absolute; left: 50%; top: 61%; z-index: 3; transform: translate(-50%, -50%);
   display: flex; gap: clamp(16px, 3vw, 48px); align-items: flex-end;
@@ -736,15 +805,16 @@
   background: repeating-conic-gradient(from 0deg, rgba(226, 196, 140, .12) 0deg 2deg, transparent 2deg 12deg);
   -webkit-mask-image: radial-gradient(circle, transparent 28%, #000 40%, transparent 72%);
           mask-image: radial-gradient(circle, transparent 28%, #000 40%, transparent 72%);
-  animation: trial-spin 90s linear infinite;
+  animation: trial-spin 90s linear infinite paused;
 }
+.trial-stage[data-scene="end"] .trial-end-halo::after { animation-play-state: running; }
 .trial-end-face {
   position: relative; z-index: 1; width: clamp(180px, 22vh, 260px); aspect-ratio: 3 / 4;
   -webkit-mask-image: linear-gradient(to bottom, #000 75%, transparent);
           mask-image: linear-gradient(to bottom, #000 75%, transparent);
 }
 /* 视差挂在里层：外层的变换留给入场、倒下等动画 */
-.trial-end-face .portrait { width: 100%; transform: translate(calc(var(--tx) * 16px), calc(var(--ty) * 10px)); }
+.trial-end-face .portrait { width: 100%; transform: translate(calc(var(--tx) * 16px), calc(var(--ty) * 10px)); will-change: transform; }
 .trial-end-text { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 640px; }
 .trial-end-tag { font-family: var(--f-latin); font-size: 12px; letter-spacing: .5em; padding-left: .5em; color: var(--brass); }
 .trial-end-tag:empty { display: none; }
@@ -1045,6 +1115,7 @@
 .trial-veil-box { display: flex; flex-direction: column; align-items: center; gap: 30px; }
 .trial-veil-sigil { position: relative; width: 70px; height: 70px; border-radius: 50%; border: 1px solid var(--brass-dim); }
 .trial-veil-sigil i { position: absolute; left: 50%; top: 50%; width: 2px; height: 26px; margin: -24px 0 0 -1px; background: var(--brass); transform-origin: 50% 24px; animation: trial-spin 6s linear infinite; }
+.trial-veil:not(.is-on) .trial-veil-sigil i { animation-play-state: paused; }
 .trial-veil-sigil::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: var(--blood); }
 .trial-veil-row { display: flex; gap: 14px; }
 
@@ -1059,6 +1130,7 @@
   background: #f3d9a2; box-shadow: 0 0 6px 2px rgba(226, 196, 140, .35);
   animation: trial-glint 3.2s ease-in-out infinite;
 }
+.trial-desk:not(.is-on) i { animation-play-state: paused; }
 .trial-desk i::before, .trial-desk i::after { content: ''; position: absolute; left: 50%; top: 50%; background: rgba(243, 217, 162, .55); }
 .trial-desk i::before { width: 18px; height: 1px; margin: -.5px 0 0 -9px; }
 .trial-desk i::after { width: 1px; height: 12px; margin: -6px 0 0 -.5px; }
@@ -1231,9 +1303,12 @@
   .trial-end.is-win .trial-end-row { margin: 0 0 8px; }
 }
 
+/* 板块远离视口（core/scroll.js 加 .is-far）：所有循环动画停在原处 */
+#trial.is-far *, #trial.is-far *::before, #trial.is-far *::after { animation-play-state: paused !important; }
+
 /* ---------- 降低动效 ---------- */
 @media (prefers-reduced-motion: reduce) {
   .trial-fx-lines, .trial-exec-rays, .trial-end-halo::after, .trial-veil-sigil i { animation: none !important; }
-  .trial-seat.is-target .trial-seat-card, .trial-seat.is-target .trial-seat-hit::before, .trial-seat.is-tie .trial-seat-card, .trial-seat-count.is-lead, .trial-mark.is-known, .trial-btn.is-breath, .trial-me-act.is-on, .trial-card, .trial-me.is-choice .trial-me-card { animation: none !important; }
+  .trial-seat.is-target .trial-seat-card::before, .trial-seat.is-pending .trial-seat-card::before, .trial-seat.is-target .trial-seat-hit::before, .trial-seat.is-tie .trial-seat-card, .trial-inv.is-narrow .trial-spot::before, .trial-seat-count.is-lead, .trial-mark.is-known, .trial-btn.is-breath, .trial-me-act.is-on, .trial-card, .trial-me.is-choice .trial-me-card { animation: none !important; }
   .trial-idcard-inner { transition-duration: .3s; }
 }

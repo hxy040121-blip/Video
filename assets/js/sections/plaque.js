@@ -210,7 +210,7 @@
   // kind：n 普通刻字 / t 标题大字（多一道深影）/ x 离场一条（多一道深影和一圈血粉光）/ s 落款圆章
   function reg(el, k, opts) {
     el.setAttribute('data-pq', S.eng.length)
-    S.eng.push(Object.assign({ el, k, kind: 'n', cx: 0, cy: 0, sx: null, sy: null, sa: null, sd: null, boost: 0, vis: 1, sc: 1, lv: -1, lsc: -1, tw: [] }, opts || {}))
+    S.eng.push(Object.assign({ el, k, kind: 'n', boost: 0, vis: 1, sc: 1, gh: [] }, opts || {}))
     return el
   }
 
@@ -272,8 +272,10 @@
     // —— 视口层 ——
     E.fx = U.el('div.plaque-fx', { 'aria-hidden': 'true' })
     E.fxCv = U.el('canvas.plaque-fx-cv')
+    E.dustCv = U.el('canvas.plaque-dust-cv')
     E.inks = U.el('div.plaque-inks', { 'aria-hidden': 'true' })
-    E.fx.append(E.fxCv)
+    E.inks.hidden = true // 没有墨字时不显示（否则它压在视口层上方，整块板块多出一个合成层）
+    E.fx.append(E.fxCv, E.dustCv)
 
     // —— 墙与铜牌 ——
     E.scene = U.el('div.plaque-scene')
@@ -287,7 +289,8 @@
     E.jade = U.el('div.plaque-jade')
     E.face = U.el('div.plaque-face')
     E.body = U.el('div.plaque-body')
-    E.lips = ['t', 'r', 'b', 'l'].map(s => U.el('i.plaque-lip.plaque-lip--' + s))
+    // 唇口的影：同一时刻左右只有一侧、上下只有一侧有影，各用一层（另一侧时镜像过去）
+    E.lips = ['t', 'l'].map(s => U.el('i.plaque-lip.plaque-lip--' + s))
     E.spec = U.el('i.plaque-spec')
     E.specbox = U.el('div.plaque-specbox', {}, [E.spec])
     E.dodge = U.el('i.plaque-dodge')
@@ -384,17 +387,18 @@
   /* =====================================================================
      铜牌的光：光标是一束掠射的光
      ===================================================================== */
+  // 量一次各部件相对板块根元素的位置（排版变化、resize、refresh 时）；帧循环里只读根元素的位置，
+  // 墙、牌面、理币盘的位置由它推出来，不再每帧反复读排版
   function measure() {
     const E = S.E
     if (!E.face) return
     const fr = E.face.getBoundingClientRect()
     if (!fr.width) return
-    for (const e of S.eng) {
-      const r = e.el.getBoundingClientRect()
-      e.cx = r.left - fr.left + r.width / 2
-      e.cy = r.top - fr.top + r.height / 2
-      e.sx = e.sy = e.sa = e.sd = null
-    }
+    const rr = S.el.getBoundingClientRect()
+    const rel = r => ({ x: r.left - rr.left, y: r.top - rr.top, w: r.width, h: r.height })
+    S.off = { wall: rel(E.wall.getBoundingClientRect()), face: rel(fr), tray: rel(E.trayWrap.getBoundingClientRect()) }
+    measureUnits()
+    if (!S.on) parkLight()
   }
 
   function lightTarget(now) {
@@ -418,13 +422,19 @@
     if (c[k] !== v) { c[k] = v; el.style[k] = v }
   }
 
-  /* ---------- 刻字的阴阳边：每一行的暗边 / 亮边各是一层「影子副本」 ----------
+  /* ---------- 刻字的阴阳边：影子副本，按「段」成层 ----------
      原先每帧改每一行的 text-shadow（--sx/--sy/--sa/--sd），整块牌面（约 950×1400）跟着整张重画。
      现在把牌面上的刻字整体复制几份（同样的排版，字本身透明，只留一道定色的模糊影），
-     垫在原字下面；每一行的副本是独立的合成层，光源移动时只改它的 transform / opacity——
-     位移即阴阳边的偏移，不透明度即阴阳边的浓淡，与原来的 text-shadow 逐项对应，牌面不再重画。
+     垫在原字下面；光源移动时只改副本的 transform / opacity——位移即阴阳边的偏移，不透明度即浓淡，
+     与原来的 text-shadow 逐项对应，牌面不再重画。
      由下到上：血粉光（离场一条）→ 亮边 → 第二道深影（标题、离场）→ 暗边 → 原字。
-     光的微微闪烁（L.f）乘在亮边、血粉光两份副本的整体 opacity 上：光标不动时每一行都不必再写样式。 */
+     合成层：每一节里相邻的几行（不超过 SEG_H 高）合成一「段」，一段在每份副本里只占一个合成层
+     （原先每一行各占一层，视口里两百多层）。段内各行的偏移方向随光源呈放射状变化，用一个小的
+     仿射变换（以段中心为原点的平移 + 伸缩，伸缩量不超过 JMAX）近似；段很矮，浓淡按段中心取值。
+     标题大字、落款圆章、离场一条仍各自成层（偏移大、或有入场缩放）。
+     光的微微闪烁（L.f）按约 15 帧/秒取样，乘在亮边、血粉光副本各段的 opacity 上。 */
+  const SEG_H = 320
+  const JMAX = 0.006
   const PASSES = [
     { cls: 'pq-g-gl', kinds: 'x', lf: true, mul: () => 0, a: (sa, sd) => sa * 0.3 },
     { cls: 'pq-g-r', kinds: 'ntxs', lf: true, mul: () => 1, a: sa => sa },
@@ -436,87 +446,187 @@
     if (!E.body) return
     for (const g of E.ghosts || []) g.remove()
     E.ghosts = []
-    E.ghostLf = []
     S.rv = {}
-    for (const e of S.eng) { e.tw = []; e.sx = e.sy = e.sa = e.sd = null; e.lv = e.lsc = -1 }
+    S.units = []
+    for (const e of S.eng) e.gh = []
+    E.body.querySelectorAll('[data-pqs]').forEach(n => n.removeAttribute('data-pqs'))
     if (!S.live) return
     E.body.querySelectorAll('.plaque-reveal').forEach((n, i) => n.setAttribute('data-pr', i))
+    // 分段：每一节里相邻的几行（按排版高度）合成一段
+    const units = []
+    for (const blk of E.body.querySelectorAll('.plaque-blk')) {
+      let cur = null, h = 0
+      for (const ch of blk.children) {
+        const hh = ch.getBoundingClientRect().height || 30
+        if (!cur || h + hh > SEG_H) { cur = { seg: true, id: units.length, kids: [], eng: [], k: 1, kind: 'n' }; units.push(cur); h = 0 }
+        h += hh
+        cur.kids.push(ch)
+        ch.setAttribute('data-pqs', cur.id)
+      }
+    }
+    // 标题大字、落款圆章、离场一条的名与分：各自一个单元（离场的名与分相距很远，浓淡差别大，不合并）
+    for (const e of S.eng) {
+      const s = e.el.closest('[data-pqs]')
+      if (s) units[+s.getAttribute('data-pqs')].eng.push(e)
+      else units.push({ seg: false, id: units.length, el: e.el, eng: [e], k: e.k, kind: e.kind })
+    }
+    for (const u of units) {
+      if (u.seg) { u.aff = true; u.k = u.eng.reduce((a, e) => a + e.k, 0) / Math.max(1, u.eng.length) }
+      Object.assign(u, { cx: 0, cy: 0, hh: 0, sx: null, sy: null, j: null, sa: null, sd: null, lv: -1, lsc: -1, lf: -1, tw: [] })
+    }
     for (const P of PASSES) {
       const body = E.body.cloneNode(true)
       const wrap = U.el('div.pq-ghost.' + P.cls, { 'aria-hidden': 'true', inert: '' }, [body])
+      // 同一段的几行包进一个 div（只在有普通刻字的副本里）；外边距照常穿过它折叠，排版与原件一致
+      const segEl = {}
+      if (P.kinds.indexOf('n') >= 0) {
+        for (const n of Array.from(body.querySelectorAll('[data-pqs]'))) {
+          const id = n.getAttribute('data-pqs')
+          let w = segEl[id]
+          if (!w) { w = segEl[id] = document.createElement('div'); w.className = 'pq-seg'; n.parentNode.insertBefore(w, n) }
+          w.appendChild(n)
+        }
+      }
+      const byPq = {}
       for (const n of body.querySelectorAll('[data-pq]')) {
         const e = S.eng[+n.getAttribute('data-pq')]
-        if (!e || P.kinds.indexOf(e.kind) < 0) continue
-        n.classList.add('pq-on')
+        if (!e) continue
+        byPq[n.getAttribute('data-pq')] = n
+        e.gh.push(n)
         // 复制时原件身上可能正挂着入场动画的内联样式（模糊、缩放），副本不要带上；clip-path（逐行刻出）保留同步
         n.style.removeProperty('filter')
         n.style.removeProperty('transform')
-        n.style.opacity = '0'
-        e.tw.push({ el: n, m: P.mul(e.kind), a: P.a, tr: '', o: '0' })
+        n.style.removeProperty('opacity')
       }
-      for (const n of body.querySelectorAll('[data-pr]')) (S.rv[n.getAttribute('data-pr')] || (S.rv[n.getAttribute('data-pr')] = [])).push(n)
+      for (const u of units) {
+        if (P.kinds.indexOf(u.kind) < 0) continue
+        const n = u.seg ? segEl[u.id] : byPq[u.el.getAttribute('data-pq')]
+        if (!n) continue
+        if (!u.seg) n.classList.add('pq-on')
+        n.style.opacity = '0'
+        u.tw.push({ el: n, m: P.mul(u.kind), a: P.a, lf: !!P.lf, tr: '', o: '0' })
+      }
+      // 逐行刻出：只同步看得见普通刻字的那几份副本
+      if (P.kinds.indexOf('n') >= 0) for (const n of body.querySelectorAll('[data-pr]')) (S.rv[n.getAttribute('data-pr')] || (S.rv[n.getAttribute('data-pr')] = [])).push(n)
       E.face.insertBefore(wrap, E.body)
       E.ghosts.push(wrap)
-      if (P.lf) E.ghostLf.push(wrap)
+    }
+    S.units = units
+    measureUnits()
+  }
+  // 各单元（段 / 单独的字）在牌面上的中心与半高（按原件量，副本身上有变换）
+  function measureUnits() {
+    const E = S.E
+    const fr = E.face && E.face.getBoundingClientRect()
+    if (!fr || !fr.width) return
+    for (const u of S.units || []) {
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9
+      u.pts = []
+      for (const n of u.kids || [u.el]) {
+        const r = n.getBoundingClientRect()
+        if (r.left < x0) x0 = r.left
+        if (r.top < y0) y0 = r.top
+        if (r.right > x1) x1 = r.right
+        if (r.bottom > y1) y1 = r.bottom
+        u.pts.push(r.left + r.width / 2 - fr.left, r.top + r.height / 2 - fr.top)
+      }
+      if (x1 < x0) continue
+      u.cx = (x0 + x1) / 2 - fr.left
+      u.cy = (y0 + y1) / 2 - fr.top
+      u.hh = (y1 - y0) / 2
+      u.sx = u.sy = u.j = u.sa = u.sd = null
     }
   }
   // 原件上的状态变化同步到影子副本
   const twinsOf = el => {
     const e = S.eng[+el.getAttribute('data-pq')]
-    return e ? e.tw.map(t => t.el) : []
+    return e && e.gh ? e.gh : []
   }
   const revealTwins = el => (S.rv && S.rv[el.getAttribute('data-pr')]) || []
 
+  const r4 = v => String(Math.round(v * 1e4) / 1e4)
   function plaqueLight(vw, vh) {
-    const E = S.E
-    const wr = E.wall.getBoundingClientRect()
-    if (wr.bottom < -40 || wr.top > vh + 40) return
-    const fr = E.face.getBoundingClientRect()
-    const lx = L.x - fr.left, ly = L.y - fr.top
-    const tw = 'translate3d(' + (L.x - wr.left).toFixed(1) + 'px,' + (L.y - wr.top).toFixed(1) + 'px,0)'
+    const E = S.E, rr = S.rr, of = S.off
+    if (!rr || !of) return
+    const wl = rr.left + of.wall.x, wt = rr.top + of.wall.y
+    if (wt + of.wall.h < -40 || wt > vh + 40) return
+    const fl = rr.left + of.face.x, ft = rr.top + of.face.y, fw = of.face.w, fh = of.face.h
+    const lx = L.x - fl, ly = L.y - ft
+    const tw = 'translate3d(' + (L.x - wl).toFixed(1) + 'px,' + (L.y - wt).toFixed(1) + 'px,0)'
     put(E.dodge, 'transform', tw)
     put(E.wpool, 'transform', tw)
     put(E.dodge, 'opacity', (0.92 * L.f).toFixed(2))
     // 镜面反射点：落在光源与视点（屏幕中心）的连线上、靠近光源一侧
-    const ex = vw * 0.5 - fr.left, ey = vh * 0.5 - fr.top
+    const ex = vw * 0.5 - fl, ey = vh * 0.5 - ft
     put(E.spec, 'transform', 'translate3d(' + (lx + (ex - lx) * 0.14).toFixed(1) + 'px,' + (ly + (ey - ly) * 0.14).toFixed(1) + 'px,0)')
     put(E.spec, 'opacity', L.f.toFixed(2))
+    // 滚动中：上面三层光每帧跟着视口里的光走；投影、唇口的影与刻字的阴阳边每 4 帧更新一次（变化只有一两个像素）
+    if (S.scrolling && S.frame % 4) return
     // 框的投影（与光反向）、唇口投在牌面上的影（靠光的一侧）
-    let dx = fr.width / 2 - lx, dy = fr.height / 2 - ly
+    let dx = fw / 2 - lx, dy = fh / 2 - ly
     const dn = Math.hypot(dx, dy) || 1
     dx /= dn; dy /= dn
     const off = clamp(9 + dn * 0.018, 9, 26)
     put(E.cast, 'transform', 'translate3d(' + (dx * off).toFixed(1) + 'px,' + (dy * off).toFixed(1) + 'px,0)')
-    const lk = clamp(dn / (fr.height * 0.5), 0.3, 1)
-    put(E.lips[0], 'opacity', (clamp(dy) * lk).toFixed(2))
-    put(E.lips[2], 'opacity', (clamp(-dy) * lk).toFixed(2))
-    put(E.lips[3], 'opacity', (clamp(dx) * lk).toFixed(2))
-    put(E.lips[1], 'opacity', (clamp(-dx) * lk).toFixed(2))
+    const lk = clamp(dn / (fh * 0.5), 0.3, 1)
+    put(E.lips[0], 'opacity', (clamp(Math.abs(dy)) * lk).toFixed(2))
+    put(E.lips[0], 'transform', dy >= 0 ? 'none' : 'translate3d(0,' + (fh - 46).toFixed(1) + 'px,0) scaleY(-1)')
+    put(E.lips[1], 'opacity', (clamp(Math.abs(dx)) * lk).toFixed(2))
+    put(E.lips[1], 'transform', dx >= 0 ? 'none' : 'translate3d(' + (fw - 46).toFixed(1) + 'px,0,0) scaleX(-1)')
     // 每一行刻字：亮边在背光一侧，暗边在向光一侧；越掠射，阴阳边越宽
     // （低画质：刻字的阴阳边固定为顶光，不随光标变化，见 plaque.css 的默认值）
-    if (!S.live) return
-    for (const g of E.ghostLf) put(g, 'opacity', L.f.toFixed(2))
+    if (!S.live || !S.units) return
     const H = 140, R2 = 470 * 470
-    const top = -fr.top - 60, bot = vh - fr.top + 60
-    for (const e of S.eng) {
-      if (e.cy < top || e.cy > bot) continue
-      const ddx = e.cx - lx, ddy = e.cy - ly
+    const top = -ft - 60, bot = vh - ft + 60
+    const lf = Math.round(L.f * 100) / 100
+    for (const u of S.units) {
+      if (u.cy + u.hh < top || u.cy - u.hh > bot) continue
+      const ddx = u.cx - lx, ddy = u.cy - ly
       const r = Math.hypot(ddx, ddy) + 0.01
       const g = r / (r + H)
-      const o = (0.42 + 1.18 * g) * e.k
-      const sx = Math.round((ddx / r) * o * 10) / 10
-      const sy = Math.round((ddy / r) * o * 10) / 10
-      let sa = 0.1 + 0.86 * Math.exp(-(r * r) / R2) + e.boost // × L.f 在副本整体上
-      if (e.title) sa += S.titleBoost
+      const o = (0.42 + 1.18 * g) * u.k
+      const ux = ddx / r, uy = ddy / r
+      const sx = Math.round(ux * o * 10) / 10
+      const sy = Math.round(uy * o * 10) / 10
+      // 段：偏移场在段内的变化（雅可比：径向 a、切向 b），限幅后作为以段中心为原点的伸缩
+      let jxx = 0, jxy = 0, jyy = 0
+      if (u.aff) {
+        const a = Math.min(JMAX, (1.18 * H * u.k) / ((r + H) * (r + H)))
+        const b = Math.min(JMAX, o / r)
+        jxx = Math.round((a * ux * ux + b * uy * uy) * 1e4) / 1e4
+        jyy = Math.round((a * uy * uy + b * ux * ux) * 1e4) / 1e4
+        jxy = Math.round((a - b) * ux * uy * 1e4) / 1e4
+      }
+      const j = jxx + ',' + jxy + ',' + jyy
+      let boost = 0
+      for (const e of u.eng) if (e.boost > boost) boost = e.boost
+      const e0 = u.eng[0] || {}
+      const vis = u.aff ? 1 : e0.vis, sc = u.aff ? 1 : e0.sc
+      // 浓淡：段内各行按各自到光的距离取值再平均（一段里上下几行的亮边浓淡可以差得不少）
+      let ea = Math.exp(-(r * r) / R2), eg = g
+      if (u.seg && u.pts.length > 2) {
+        ea = 0; eg = 0
+        const n = u.pts.length / 2
+        for (let i = 0; i < u.pts.length; i += 2) {
+          const qx = u.pts[i] - lx, qy = u.pts[i + 1] - ly, q2 = qx * qx + qy * qy, q = Math.sqrt(q2)
+          ea += Math.exp(-q2 / R2) / n
+          eg += q / (q + H) / n
+        }
+      }
+      let sa = 0.1 + 0.86 * ea + boost
+      if (!u.aff && e0.title) sa += S.titleBoost
       sa = Math.round(clamp(sa) * 40) / 40
-      const sd = Math.round((0.46 + 0.42 * g) * 20) / 20
-      if (sx === e.sx && sy === e.sy && sa === e.sa && sd === e.sd && e.vis === e.lv && e.sc === e.lsc) continue
-      e.sx = sx; e.sy = sy; e.sa = sa; e.sd = sd; e.lv = e.vis; e.lsc = e.sc
-      const sc = e.sc !== 1 ? ' scale(' + e.sc.toFixed(3) + ')' : ''
-      for (const t of e.tw) {
-        const tr = 'translate3d(' + (sx * t.m).toFixed(2) + 'px,' + (sy * t.m).toFixed(2) + 'px,0)' + sc
+      const sd = Math.round((0.46 + 0.42 * eg) * 20) / 20
+      if (sx === u.sx && sy === u.sy && j === u.j && sa === u.sa && sd === u.sd && vis === u.lv && sc === u.lsc && lf === u.lf) continue
+      u.sx = sx; u.sy = sy; u.j = j; u.sa = sa; u.sd = sd; u.lv = vis; u.lsc = sc; u.lf = lf
+      const scs = sc !== 1 ? ' scale(' + sc.toFixed(3) + ')' : ''
+      for (const t of u.tw) {
+        const m = t.m
+        const tr = u.aff
+          ? 'matrix(' + r4(1 + m * jxx) + ',' + r4(m * jxy) + ',' + r4(m * jxy) + ',' + r4(1 + m * jyy) + ',' + (sx * m).toFixed(2) + ',' + (sy * m).toFixed(2) + ')'
+          : 'translate3d(' + (sx * m).toFixed(2) + 'px,' + (sy * m).toFixed(2) + 'px,0)' + scs
         if (tr !== t.tr) { t.tr = tr; t.el.style.transform = tr }
-        const op = (Math.round(clamp(t.a(sa, sd, e.kind) * e.vis) * 100) / 100).toString()
+        const op = (Math.round(clamp(t.a(sa, sd, u.kind) * vis * (t.lf ? lf : 1)) * 100) / 100).toString()
         if (op !== t.o) { t.o = op; t.el.style.opacity = op }
       }
     }
@@ -686,6 +796,7 @@
     const node = U.el('div.plaque-ink')
     const chars = Array.from(text).map(ch => U.el('span', { text: ch }))
     node.append(...chars)
+    E.inks.hidden = false
     E.inks.appendChild(node)
     const w = node.offsetWidth, h = node.offsetHeight
     const x = clamp(at.x - fr.left, w / 2 + 14, Math.max(w / 2 + 14, fr.width - w / 2 - 14))
@@ -698,7 +809,7 @@
     } else {
       gsap.fromTo(chars, { opacity: 0, yPercent: 70, scaleY: 1.5, filter: 'blur(12px)' }, { opacity: 1, yPercent: 0, scaleY: 1, filter: 'blur(0px)', duration: 1.2, stagger: 0.07, ease: 'expo.out', delay: 0.12 })
     }
-    gsap.to(node, { opacity: 0, y: -28, filter: 'blur(8px)', duration: 1.4, delay: 3, ease: 'power2.in', onComplete: () => node.remove() })
+    gsap.to(node, { opacity: 0, y: -28, filter: 'blur(8px)', duration: 1.4, delay: 3, ease: 'power2.in', onComplete: () => { node.remove(); if (!E.inks.childElementCount) E.inks.hidden = true } })
   }
 
   /* ---------- 退出券 ---------- */
@@ -804,7 +915,7 @@
     tg: { x: 0, y: 0.6, z: 2 },
     Lw: { x: 0, y: -30, z: 30 },
     glow: new Float32Array(NST), lift: new Float32Array(NST),
-    hint: 0, sweep: -9, key: '', dirty: true, time: 0,
+    hint: 0, sweep: -9, key: '', dirty: true, time: 0, last: 0,
   }
   function rrPts(hw, hh, r, z, n) {
     const out = []
@@ -962,10 +1073,12 @@
     const W = wrap.clientWidth, H = wrap.clientHeight
     if (!W || !H) return
     T.mob = H > W * 0.8
-    T.dpr = Math.min(window.devicePixelRatio || 1, S.q >= 2 ? 2 : S.q === 1 ? 1.25 : 1)
+    // 像素预算：全效果至多 1.5 倍（2 倍屏上金币仍清楚，像素少了近一半）
+    T.dpr = Math.min(window.devicePixelRatio || 1, S.q >= 2 ? 1.5 : S.q === 1 ? 1.25 : 1)
     T.W = W; T.H = H
-    T.cv.width = Math.round(W * T.dpr)
-    T.cv.height = Math.round(H * T.dpr)
+    // 板块远离视口时画布不占显存（section:near 时再分配、重画）
+    T.cv.width = S.far ? 0 : Math.round(W * T.dpr)
+    T.cv.height = S.far ? 0 : Math.round(H * T.dpr)
     if (T.mob) { T.yaw = -Math.PI / 2; T.elev = 0.92; T.dist = 150; T.fitW = 0.62; T.fitH = 0.86; T.fitY = 0.5 } else { T.yaw = 0; T.elev = 0.56; T.dist = 160; T.fitW = 0.9; T.fitH = 0.62; T.fitY = 0.56 }
     // 按基准视角取景（视差不改变取景）
     setCam(T.yaw, T.elev)
@@ -1000,8 +1113,11 @@
     T.Lw.x = lx; T.Lw.y = ly; T.Lw.z = lz
   }
 
-  function trayTick(dtf, vw, vh) {
-    const r = S.E.trayWrap.getBoundingClientRect()
+  function trayTick(dtf, vw, vh, now) {
+    if (!S.rr || !S.off || !T.cv.width) return
+    const ot = S.off.tray
+    const r = { left: S.rr.left + ot.x, top: S.rr.top + ot.y, width: ot.w, height: ot.h }
+    r.right = r.left + r.width; r.bottom = r.top + r.height
     if (r.bottom < -30 || r.top > vh + 30 || !r.width) return
     const nx = clamp((L.x - (r.left + r.width / 2)) / (vw * 0.5), -1, 1)
     const ny = clamp((L.y - (r.top + r.height / 2)) / (vh * 0.6), -1, 1)
@@ -1024,6 +1140,9 @@
     T.time += dtf / 60
     const key = T.Lw.x.toFixed(1) + ',' + T.Lw.y.toFixed(1) + ',' + T.Lw.z.toFixed(1) + '|' + T.pyaw.toFixed(4) + ',' + T.pel.toFixed(4)
     if (anim || T.dirty || key !== T.key) {
+      // 光在移动 / 光晕渐变时至多 30 帧重画一次（点按、取币等 dirty 立即画）
+      if (!T.dirty && (now - T.last < 30 || (S.scrolling && S.frame % 3))) return
+      T.last = now
       T.key = key
       T.dirty = false
       trayRender()
@@ -1432,11 +1551,19 @@
   /* =====================================================================
      视口特效层：飞行的金币、熔光、墨、退出之门、光里的浮尘
      ===================================================================== */
-  const FX = { cv: null, ctx: null, w: 1, h: 1, dpr: 1, fl: [], melts: [], pools: [], dust: [], door: null, ox: 0, oy: 0, frame: 0, pc: null, dirty: false, sprites: {} }
+  const FX = { cv: null, ctx: null, w: 1, h: 1, dpr: 1, fl: [], melts: [], pools: [], dust: [], door: null, ox: 0, oy: 0, frame: 0, pc: null, on: false, sprites: {} }
+  // 光里的浮尘单独画在一张小画布上：浮尘只在离光约 340px 以内看得见（再远亮度不到 6%），画布只盖住光圈附近、跟着光平移（transform），
+  // 约 24 帧/秒（浮尘漂得很慢；滚动时停住）。整屏的特效画布只在有金币飞行、熔光、墨、退出之门时才显示，闲着时不显示也不占显存。
+  const DU = { cv: null, ctx: null, D: 680, dpr: 1, on: false, t: 0, x: 1e9, y: 1e9 }
 
   function fxInit() {
     FX.cv = S.E.fxCv
     FX.ctx = FX.cv.getContext('2d')
+    DU.cv = S.E.dustCv
+    DU.ctx = DU.cv.getContext('2d')
+    FX.cv.style.display = 'none'
+    DU.cv.style.display = 'none'
+    FX.cv.width = FX.cv.height = 0
     fxResize()
     fxDust()
   }
@@ -1447,16 +1574,23 @@
     while (FX.dust.length < n) FX.dust.push({ x: Math.random(), y: Math.random(), vx: U.rand(-0.006, 0.006), vy: U.rand(-0.016, -0.003), r: U.rand(0.4, 1.4), ph: U.rand(0, TAU), z: U.rand(0.35, 1) })
   }
   function fxResize() {
-    const w = FX.cv.clientWidth, h = FX.cv.clientHeight
-    // 画质降级时画布分辨率随之降到 1 倍
-    const dpr = Math.min(window.devicePixelRatio || 1, S.q >= 2 ? 1.75 : 1)
-    if (!w || !h || (w === FX.w && h === FX.h && dpr === FX.dpr)) return
-    FX.w = w; FX.h = h; FX.dpr = dpr
-    FX.cv.width = Math.round(w * dpr)
-    FX.cv.height = Math.round(h * dpr)
-    FX.sprites = {}
-    FX.dirty = true
+    // 尺寸取自视口层容器（画布闲着时不显示）；画质降级时分辨率降到 1 倍
+    const w = S.E.fx.clientWidth, h = S.E.fx.clientHeight
+    const dpr = Math.min(window.devicePixelRatio || 1, S.q >= 2 ? 1.5 : 1)
+    if (!w || !h) return
+    if (w !== FX.w || h !== FX.h || dpr !== FX.dpr) { FX.w = w; FX.h = h; FX.dpr = dpr; FX.sprites = {} }
+    if (FX.on) {
+      const cw = Math.round(w * dpr), ch = Math.round(h * dpr)
+      if (FX.cv.width !== cw || FX.cv.height !== ch) { FX.cv.width = cw; FX.cv.height = ch }
+    }
+    DU.dpr = dpr
+    if (DU.on) dustSize()
   }
+  function fxShow() { FX.on = true; FX.cv.style.display = ''; fxResize() }
+  function fxHide() { FX.on = false; FX.cv.style.display = 'none'; FX.cv.width = FX.cv.height = 0 }
+  function dustSize() { const s = Math.round(DU.D * DU.dpr); if (DU.cv.width !== s) { DU.cv.width = DU.cv.height = s; DU.t = 0 } }
+  function dustShow() { DU.on = true; DU.cv.style.display = ''; dustSize() }
+  function dustHide() { DU.on = false; DU.cv.style.display = 'none' }
   function purseC() {
     if (FX.pc && FX.pc.f === FX.frame) return FX.pc
     const r = S.E.purseIco.getBoundingClientRect()
@@ -1512,14 +1646,12 @@
 
   function fxTick(dt, now) {
     const busy = FX.fl.length || FX.melts.length || FX.pools.length || FX.door
-    const dust = FX.dust.length > 0
-    if (!busy && !dust) { if (FX.dirty) fxClear(); return }
-    const r = FX.cv.getBoundingClientRect()
-    FX.ox = r.left; FX.oy = r.top
-    if (dust) stepDust(dt)
-    // 只有浮尘、而光圈附近一粒也没亮着：画布保持原样（已清空就不再动它）
-    if (!busy && !dustLit()) { if (FX.dirty) fxClear(); return }
-    fxResize()
+    const r = S.fxr
+    if (r) { FX.ox = r.left; FX.oy = r.top }
+    if (FX.dust.length) dustTick(dt, now)
+    else if (DU.on) dustHide()
+    if (!busy) { if (FX.on) fxHide(); return }
+    if (!FX.on) fxShow()
     FX.frame++
     const ctx = FX.ctx
     ctx.setTransform(FX.dpr, 0, 0, FX.dpr, 0, 0)
@@ -1527,16 +1659,29 @@
     ctx.globalAlpha = 1
     ctx.clearRect(0, 0, FX.w, FX.h)
     if (FX.door) drawDoor(ctx, now, dt)
-    if (dust) drawDust(ctx)
     if (FX.pools.length) drawPools(ctx, dt)
     if (FX.fl.length) { stepFlights(dt); drawFlights(ctx) }
     if (FX.melts.length) drawMelts(ctx, dt)
-    FX.dirty = true
   }
-  function fxClear() {
-    FX.ctx.setTransform(1, 0, 0, 1, 0, 0)
-    FX.ctx.clearRect(0, 0, FX.cv.width, FX.cv.height)
-    FX.dirty = false
+  // 浮尘：光圈附近一粒也没亮着时整张画布不显示
+  function dustTick(dt, now) {
+    // 滚动时浮尘停住（画布跟着视口，停一下看不出来；滚动中整屏都在动，不必再为它重画）
+    if (S.scrolling) return
+    stepDust(dt)
+    if (!dustLit()) { if (DU.on) dustHide(); return }
+    if (DU.on && now - DU.t < 41) return
+    if (!DU.on) dustShow()
+    DU.t = now
+    const half = DU.D / 2, d = DU.dpr
+    // 画布以光为中心（视口层坐标），对齐设备像素
+    const x = Math.round((L.x - FX.ox - half) * d) / d, y = Math.round((L.y - FX.oy - half) * d) / d
+    if (x !== DU.x || y !== DU.y) { DU.x = x; DU.y = y; DU.cv.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)' }
+    const ctx = DU.ctx
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.clearRect(0, 0, DU.cv.width, DU.cv.height)
+    ctx.setTransform(d, 0, 0, d, -x * d, -y * d)
+    drawDust(ctx)
   }
 
   function stepFlights(dt) {
@@ -1635,7 +1780,7 @@
     ctx.globalCompositeOperation = 'source-over'
   }
   function drawPools(ctx, dt) {
-    const rr = S.el.getBoundingClientRect()
+    const rr = S.rr || S.el.getBoundingClientRect()
     const ox = FX.ox - rr.left, oy = FX.oy - rr.top
     for (let i = FX.pools.length - 1; i >= 0; i--) {
       const p = FX.pools[i]
@@ -1681,21 +1826,22 @@
     }
   }
   function dustLit() {
-    const lx = L.x - FX.ox, ly = L.y - FX.oy, R2x4 = 210 * 210 * 4
+    const lx = L.x - FX.ox, ly = L.y - FX.oy, R2 = DUST_R * DUST_R
     for (const d of FX.dust) {
       const px = d.x * FX.w + Math.sin(d.ph) * 7, py = d.y * FX.h
-      if ((px - lx) * (px - lx) + (py - ly) * (py - ly) < R2x4) return true
+      if ((px - lx) * (px - lx) + (py - ly) * (py - ly) < R2) return true
     }
     return false
   }
+  const DUST_R = 340 // 浮尘的可见半径（= 小画布的一半）
   function drawDust(ctx) {
     const lx = L.x - FX.ox, ly = L.y - FX.oy
-    const R = 210, R2 = R * R
+    const R = 210, R2 = R * R, C2 = DUST_R * DUST_R
     ctx.globalCompositeOperation = 'lighter'
     for (const d of FX.dust) {
       const px = d.x * FX.w + Math.sin(d.ph) * 7, py = d.y * FX.h
       const dd = (px - lx) * (px - lx) + (py - ly) * (py - ly)
-      if (dd > R2 * 4) continue
+      if (dd > C2) continue
       const b = Math.exp(-dd / R2) * (0.55 + 0.45 * Math.sin(d.ph * 2.3)) * d.z * L.f
       if (b < 0.03) continue
       ctx.fillStyle = 'rgba(255,226,172,' + (b * 0.85).toFixed(3) + ')'
@@ -1969,19 +2115,37 @@
     const vw = window.innerWidth, vh = window.innerHeight
     // 按板块的实际位置判断：IntersectionObserver 在板块恰好贴着视口下沿时也算「相交」，
     // 那时（还在庭审里）特效画布会白白每帧重画
-    let on = S.visible
-    if (on) { const r = S.el.getBoundingClientRect(); on = r.bottom > 1 && r.top < vh - 1 }
-    if (on !== S.on) { S.on = on; S.el.classList.toggle('is-off', !on); if (on) { T.dirty = true; measure() } }
-    if (!on) { if (FX.dirty) fxClear(); return }
+    let on = S.visible, rr = null
+    if (on) { rr = S.el.getBoundingClientRect(); on = rr.bottom > 1 && rr.top < vh - 1 }
+    if (on !== S.on) {
+      S.on = on
+      S.el.classList.toggle('is-off', !on)
+      if (on) { T.dirty = true; measure() } else { if (FX.on) fxHide(); if (DU.on) dustHide(); parkLight() }
+    }
+    if (!on) return
+    // 本帧要用的位置只在这里读一次（先读后写，不在帧中途触发重排）
+    S.rr = rr
+    // 正在滚动：刻字阴阳边、投影、理币盘降频更新（每 3–4 帧一次），浮尘停住，光层照常每帧跟随
+    S.frame = (S.frame || 0) + 1
+    if (S.lastTop != null && Math.abs(rr.top - S.lastTop) > 0.5) S.scrollF = S.frame
+    S.lastTop = rr.top
+    S.scrolling = S.frame - (S.scrollF || -99) < 6
+    S.fxr = FX.dust.length || FX.on || FX.fl.length || FX.melts.length || FX.pools.length || FX.door ? S.E.fx.getBoundingClientRect() : null
     const now = performance.now()
     const dt = Math.min(0.064, dtf * 0.016667)
     const tgt = lightTarget(now)
     const k = 1 - Math.pow(1 - 0.16, dtf)
     L.x += (tgt[0] - L.x) * k
     L.y += (tgt[1] - L.y) * k
-    L.f = S.reduced ? 1 : 0.955 + 0.03 * Math.sin(now * 0.0093) + 0.015 * Math.sin(now * 0.031 + 1.7)
+    // 光的微微闪烁：约 15 帧/秒取样（幅度只有几个百分点，取样稀一点看不出来；整屏的光层不必每帧重新合成）
+    const fq = Math.floor(now / 66)
+    if (fq !== S.fq) {
+      S.fq = fq
+      const tq = fq * 66
+      L.f = S.reduced ? 1 : 0.955 + 0.03 * Math.sin(tq * 0.0093) + 0.015 * Math.sin(tq * 0.031 + 1.7)
+    }
     plaqueLight(vw, vh)
-    trayTick(dtf, vw, vh)
+    trayTick(dtf, vw, vh, now)
     fxTick(dt, now)
     // 别处改了钱袋（App.state.coins）→ 跟上
     if (typeof App.state.coins === 'number' && App.state.coins !== S.coins) {
@@ -1998,6 +2162,17 @@
       const tr = S.E.trayWrap.getBoundingClientRect()
       if (tr.top < vh * 0.9 && tr.bottom > vh * 0.1) traySweep()
     }
+  }
+
+  // 板块离开视口时，把跟着光走的大光层停在墙的中央（它们比墙还大，停在墙边时会伸进相邻板块的视口区域；
+  // 仍然保留栅格化结果，回来时不必重画）
+  function parkLight() {
+    const E = S.E, of = S.off
+    if (!of) return
+    const tw = 'translate3d(' + (of.wall.w / 2).toFixed(1) + 'px,' + (of.wall.h / 2).toFixed(1) + 'px,0)'
+    put(E.dodge, 'transform', tw)
+    put(E.wpool, 'transform', tw)
+    put(E.spec, 'transform', 'translate3d(' + (of.face.w / 2).toFixed(1) + 'px,' + (of.face.h / 2).toFixed(1) + 'px,0)')
   }
 
   // 画质：2 全效果；1 画布降到 1–1.25 倍、浮尘减半；0 再关掉随光变化的刻字阴阳边、浮尘与两层混合光
@@ -2032,6 +2207,19 @@
     window.addEventListener('resize', U.debounce(() => { if (layoutCols()) buildGhosts(); measure(); trayResize(); fxResize(); if (S.quoted) placeNeed(S.quoted) }, 160))
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); T.dirty = true })
     App.bus.on('quality', applyQuality)
+    // 远离视口（上下一屏以外）：画布释放显存；回来时重新分配并重画
+    App.bus.on('section:far', id => {
+      if (id !== 'plaque') return
+      S.far = true
+      if (T.cv) T.cv.width = T.cv.height = 0
+      if (DU.cv) { dustHide(); DU.cv.width = DU.cv.height = 0 }
+      if (FX.on) fxHide()
+    })
+    App.bus.on('section:near', id => {
+      if (id !== 'plaque' || !S.far) return
+      S.far = false
+      if (T.cv) trayResize()
+    })
     App.onVisible(el, v => {
       S.visible = v
       if (!v) { hideDoor(true); unquote(); S.hov = -1 }

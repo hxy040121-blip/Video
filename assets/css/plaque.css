@@ -30,14 +30,17 @@
   pointer-events: none;
 }
 
-/* ---------- 视口层（sticky）：飞行的金币、熔光、墨字、退出之门 ---------- */
+/* ---------- 视口层（sticky）：飞行的金币、熔光、退出之门（.plaque-fx-cv，闲着时不显示）；光里的浮尘（.plaque-dust-cv） ---------- */
 .plaque-fx {
   position: sticky; top: 0; z-index: 20;
   height: 100vh; height: 100svh;
   margin-bottom: -100vh; margin-bottom: -100svh;
+  overflow: hidden;
   pointer-events: none;
 }
 .plaque-fx-cv { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* 浮尘只在光圈附近看得见：一张 680px 见方的小画布跟着光平移（plaque.js 的 dustTick） */
+.plaque-dust-cv { position: absolute; left: 0; top: 0; width: 680px; height: 680px; will-change: transform; }
 /* 墨字：挂在板块上，随页面滚动 */
 .plaque-inks { position: absolute; inset: 0; z-index: 22; overflow: hidden; pointer-events: none; }
 .plaque-ink {
@@ -94,17 +97,21 @@
 }
 .plaque-wpool {
   position: absolute; left: 0; top: 0; z-index: 1;
-  width: 1900px; height: 1900px; margin: -950px 0 0 -950px; border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(232, 176, 100, .2), rgba(212, 150, 80, .07) 38%, rgba(0, 0, 0, 0) 72%);
-  mix-blend-mode: screen; pointer-events: none; will-change: transform;
+  /* 原为 1900px、渐变到 72% 处归零：裁到真正有光的 1400px（色标按半径折算，光斑不变） */
+  width: 1400px; height: 1400px; margin: -700px 0 0 -700px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(232, 176, 100, .2), rgba(212, 150, 80, .07) 51.6%, rgba(0, 0, 0, 0) 97.7%);
+  /* 原为 mix-blend-mode: screen：暗色石面上「滤色」与普通叠加相差不到 1/255，去掉混合省一次背景回读 */
+  pointer-events: none; will-change: transform;
 }
 
 /* 牌（框突出墙面 5 cm：投在墙上的影随光源反向移动） */
 .plaque-mount { position: relative; z-index: 2; width: max-content; }
+/* 影：原为 inset 6px 的黑块 + filter: blur(18px)（每次合成都要做一遍模糊）。
+   改为向内再缩 36px 的空盒 + 36px 扩展、36px 模糊的 box-shadow：同一个高斯（σ = 18px）落在同一个矩形上，
+   只在栅格化时画一次，之后只平移。盒子里面永远被框挡住，不填色（这些图块是空的，合成时直接跳过） */
 .plaque-cast {
-  position: absolute; inset: 6px; z-index: 0; border-radius: 4px;
-  background: rgba(0, 0, 0, .92);
-  filter: blur(18px);
+  position: absolute; inset: 42px; z-index: 0;
+  box-shadow: 0 0 36px 36px rgba(0, 0, 0, .92);
   pointer-events: none; will-change: transform;
 }
 .plaque-frame {
@@ -142,24 +149,23 @@
 }
 .plaque-body { position: relative; z-index: 1; }
 
-/* 框的唇口投在牌面上的影 */
-.plaque-lip { position: absolute; z-index: 3; pointer-events: none; opacity: 0; will-change: opacity; }
+/* 框的唇口投在牌面上的影（同一时刻上下、左右各只有一侧有影：各一层，另一侧时由 plaque.js 镜像过去） */
+.plaque-lip { position: absolute; z-index: 3; pointer-events: none; opacity: 0; will-change: transform, opacity; }
 .plaque-lip--t { left: 0; right: 0; top: 0; height: 46px; background: linear-gradient(180deg, rgba(0, 0, 0, .78), rgba(0, 0, 0, 0)); }
-.plaque-lip--b { left: 0; right: 0; bottom: 0; height: 46px; background: linear-gradient(0deg, rgba(0, 0, 0, .78), rgba(0, 0, 0, 0)); }
 .plaque-lip--l { top: 0; bottom: 0; left: 0; width: 46px; background: linear-gradient(90deg, rgba(0, 0, 0, .78), rgba(0, 0, 0, 0)); }
-.plaque-lip--r { top: 0; bottom: 0; right: 0; width: 46px; background: linear-gradient(270deg, rgba(0, 0, 0, .78), rgba(0, 0, 0, 0)); }
 
-/* 拉丝高光：遮罩固定在牌面上，光斑在遮罩里移动 */
+/* 拉丝高光：遮罩固定在牌面上，光斑在遮罩里移动。
+   原为 mix-blend-mode: screen（牌面因此要单独渲染成一张离屏面再回读）；改为普通叠加，
+   光斑颜色按青铜底色（约 20% 亮度）预先折算成「滤色」的结果：C' = C + B·(1 − C) */
 .plaque-specbox {
   position: absolute; inset: 0; z-index: 4; pointer-events: none;
-  mix-blend-mode: screen;
   -webkit-mask-image: var(--pq-brush, none); mask-image: var(--pq-brush, none);
   -webkit-mask-size: 512px 128px; mask-size: 512px 128px;
 }
 .plaque-spec {
   position: absolute; left: 0; top: 0;
   width: 360px; height: 1100px; margin: -550px 0 0 -180px; border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 232, 186, .62), rgba(255, 206, 132, .22) 42%, rgba(255, 190, 110, 0) 100%);
+  background: radial-gradient(closest-side, rgba(255, 235, 193, .62), rgba(255, 214, 145, .22) 42%, rgba(255, 190, 110, 0) 100%);
   will-change: transform, opacity;
 }
 /* 光源：颜色减淡，墙、框、牌面与嵌字一起受光 */
@@ -213,9 +219,10 @@
 .plaque-col { position: relative; min-width: 0; display: flex; flex-direction: column; }
 .plaque-col + .plaque-col::before {
   content: ''; position: absolute; top: .4em; bottom: 0; left: calc(var(--pq-fs) * -1.2 - 1px); width: 2px;
-  background: linear-gradient(90deg, rgba(0, 0, 0, .55) 0 1px, rgba(255, 222, 170, .1) 1px 2px);
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 6%, #000 94%, transparent);
-  mask-image: linear-gradient(180deg, transparent, #000 6%, #000 94%, transparent);
+  /* 两条 1px 的竖线，上下两端渐隐直接画进渐变（原为 mask-image：压在刻字副本上方时每条线要单独成一个带遮罩的层） */
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, .55) 6%, rgba(0, 0, 0, .55) 94%, rgba(0, 0, 0, 0)) 0 0 / 1px 100% no-repeat,
+    linear-gradient(180deg, rgba(255, 222, 170, 0), rgba(255, 222, 170, .1) 6%, rgba(255, 222, 170, .1) 94%, rgba(255, 222, 170, 0)) 1px 0 / 1px 100% no-repeat;
 }
 .plaque-blk + .plaque-blk { margin-top: calc(var(--pq-fs) * 2.1); }
 
@@ -315,7 +322,7 @@
 .plaque-item::before {
   content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 38%;
   background: linear-gradient(100deg, rgba(255, 240, 200, 0), rgba(255, 240, 200, .55), rgba(255, 240, 200, 0));
-  mix-blend-mode: screen; opacity: 0; transform: translateX(-110%);
+  opacity: 0; transform: translateX(-110%); visibility: hidden;
   pointer-events: none;
 }
 @media (hover: hover) {
@@ -325,7 +332,8 @@
 .plaque-item:hover::after, .plaque-item.is-quoted::after { background-size: 100% 100%; }
 .plaque-item:active { transform: translateY(.5px); }
 .plaque-item.is-lit .plaque-eng { color: var(--pq-plat-hi); transition: color 0s; }
-.plaque-item.is-lit::before { animation: pq-sweep .75s var(--ease-out) both; }
+/* 扫光只在亮起的那一下存在（平时不画、也不带混合模式，牌面上的近百行不必各留一个混合层） */
+.plaque-item.is-lit::before { visibility: visible; mix-blend-mode: screen; animation: pq-sweep .75s var(--ease-out) both; }
 @keyframes pq-sweep { 0% { opacity: 0; transform: translateX(-110%); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateX(280%); } }
 .plaque-pts.is-hot {
   color: #ffd08a;
@@ -434,10 +442,11 @@
   margin: -62px max(20px, var(--gutter)) 0 auto;
   padding: 7px 18px 7px 7px;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(24, 18, 14, .86), rgba(10, 8, 8, .9));
+  /* 原有 backdrop-filter: blur(8px)：底色本就 86–90% 不透明，透出来的只是一层模糊的平均色；
+     去掉背景模糊（每一帧都要回读并模糊它身后的画面），底色略加深到同样的观感 */
+  background: linear-gradient(180deg, rgba(22, 16, 13, .93), rgba(10, 8, 8, .95));
   border: 1px solid rgba(194, 154, 91, .34); border-radius: 999px;
   box-shadow: 0 12px 34px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 225, 170, .09);
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   transition: border-color .4s, box-shadow .4s;
 }
 .plaque-purse-ico {
@@ -471,8 +480,9 @@
 .plaque-purse.is-short .plaque-purse-ico { box-shadow: inset 0 0 0 1px rgba(255, 46, 126, .8), 0 0 14px rgba(255, 46, 126, .5); }
 
 /* ---------- 刻字的阴阳边：影子副本（plaque.js 的 buildGhosts） ----------
-   全效果时（.pq-live），原字不再带随光变化的 text-shadow；牌面下垫着几份同样排版的副本，
-   每一行在副本里是独立的合成层，只改 transform（偏移）与 opacity（浓淡），牌面不必重画。 */
+   全效果时（.pq-live），原字不再带随光变化的 text-shadow；牌面下垫着几份同样排版的副本。
+   副本里相邻的几行合成一「段」（.pq-seg），标题大字、圆章、离场一条各自一个单元（.pq-on）；
+   每个单元是一个合成层，只改 transform（偏移）与 opacity（浓淡），牌面不必重画。 */
 .pq-live .plaque-face > .plaque-body .plaque-eng,
 .pq-live .plaque-face > .plaque-body .plaque-tch { text-shadow: none; }
 .pq-live .plaque-face > .plaque-body .plaque-pts.is-hot { text-shadow: 0 0 2px rgba(255, 196, 110, .95), 0 0 9px rgba(255, 130, 40, .8); }
@@ -486,24 +496,28 @@
   visibility: hidden; pointer-events: none;
 }
 .plaque-root:not(.pq-live) .pq-ghost { display: none; }
-.pq-g-r, .pq-g-gl { will-change: opacity; } /* 光的闪烁乘在整份副本上 */
 .pq-ghost *, .pq-ghost *::before, .pq-ghost *::after { animation: none !important; transition: none !important; }
-.pq-ghost .pq-on { visibility: visible; color: transparent; will-change: transform, opacity; }
+.pq-ghost .pq-on, .pq-ghost .pq-seg { will-change: transform, opacity; }
+/* 段里只有刻字本身可见（点线、分隔线、菱形等装饰不进副本） */
+.pq-ghost .pq-on, .pq-ghost .pq-seg .plaque-eng { visibility: visible; }
+.pq-ghost .plaque-eng::before, .pq-ghost .plaque-eng::after,
 .pq-ghost .pq-on::before, .pq-ghost .pq-on::after,
 .pq-ghost .plaque-seal-ring::before, .pq-ghost .plaque-seal-ring::after { visibility: hidden; }
-.pq-ghost .pq-on.is-hot { visibility: hidden; }
+.pq-ghost .plaque-lead { visibility: hidden; }
+.plaque-face .pq-ghost .plaque-eng.is-hot, .pq-ghost .pq-on.is-hot { visibility: hidden; }
+.plaque-face .pq-ghost .plaque-eng { color: transparent; }
 /* 亮边（原 text-shadow 的 +sx/+sy 那一道） */
-.pq-g-r .pq-on { text-shadow: 0 0 .3px rgb(var(--pq-rim)); }
-.pq-g-r .plaque-tch.pq-on { text-shadow: 0 0 .6px rgb(var(--pq-rim)); }
-.pq-g-r .plaque-exit-item .pq-on { text-shadow: 0 0 .4px rgb(var(--pq-rim)); }
+.plaque-face .pq-g-r .plaque-eng { text-shadow: 0 0 .3px rgb(var(--pq-rim)); }
+.plaque-face .pq-g-r .plaque-tch { text-shadow: 0 0 .6px rgb(var(--pq-rim)); }
+.plaque-face .pq-g-r .plaque-exit-item .plaque-eng { text-shadow: 0 0 .4px rgb(var(--pq-rim)); }
 /* 暗边（-sx/-sy） */
-.pq-g-d .pq-on { text-shadow: 0 0 .5px rgb(5, 3, 2); }
-.pq-g-d .plaque-tch.pq-on,
-.pq-g-d .plaque-exit-item .pq-on { text-shadow: 0 0 1px rgb(4, 2, 1); }
+.plaque-face .pq-g-d .plaque-eng { text-shadow: 0 0 .5px rgb(5, 3, 2); }
+.plaque-face .pq-g-d .plaque-tch,
+.plaque-face .pq-g-d .plaque-exit-item .plaque-eng { text-shadow: 0 0 1px rgb(4, 2, 1); }
 /* 标题与离场多一道不模糊的深影（-0.45 / -0.5 倍偏移） */
-.pq-g-d0 .pq-on { color: rgb(4, 2, 1); text-shadow: none; }
+.plaque-face .pq-g-d0 .plaque-eng { color: rgb(4, 2, 1); text-shadow: none; }
 /* 离场一条的血粉光 */
-.pq-g-gl .pq-on { text-shadow: 0 0 10px rgb(255, 46, 126); }
+.plaque-face .pq-g-gl .plaque-eng { text-shadow: 0 0 10px rgb(255, 46, 126); }
 /* 落款圆章：圈、十五点、内圈、数字整体作为一层 */
 .pq-g-d .plaque-seal.pq-on .plaque-seal-ring { border-color: rgb(5, 3, 2); }
 .pq-g-d .plaque-seal.pq-on .plaque-seal-ring b { background: rgb(5, 3, 2); box-shadow: none; }
@@ -511,15 +525,13 @@
 .pq-g-r .plaque-seal.pq-on .plaque-seal-ring { border-color: rgb(var(--pq-rim)); }
 .pq-g-r .plaque-seal.pq-on .plaque-seal-ring b { background: rgb(var(--pq-rim)); box-shadow: none; }
 .pq-g-r .plaque-seal.pq-on .plaque-seal-in { border-color: rgb(var(--pq-rim)); box-shadow: none; opacity: .8; }
-.pq-ghost .plaque-seal.pq-on .plaque-seal-n { color: transparent; }
-.pq-g-d .plaque-seal.pq-on .plaque-seal-n { text-shadow: 0 0 .5px rgb(5, 3, 2); }
-.pq-g-r .plaque-seal.pq-on .plaque-seal-n { text-shadow: 0 0 .3px rgb(var(--pq-rim)); }
 
 /* 板块不在视口里：无限循环的动画停下；影子副本不绘制（几百个合成层不留在页面里拖累别的板块），
    排版结果保留，回到视口时不用重新排 */
 .plaque-root.is-off .plaque-exit::before,
 .plaque-root.is-off .plaque-exit::after { animation-play-state: paused; }
 .plaque-root.is-off .pq-ghost { content-visibility: hidden; }
+#plaque.is-far *, #plaque.is-far *::before, #plaque.is-far *::after { animation-play-state: paused !important; }
 
 /* 最省画质：关掉两层混合模式的光（墙上的暖光池、拉丝高光） */
 html[data-q="0"] .plaque-wpool,
