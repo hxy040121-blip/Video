@@ -198,14 +198,16 @@ ${corners}${mid}
   // 同一段小字预先画成两张图（金 / 红），所有牌共用。
   // SVG <text> 会随祖先的 transform 变化重新排版、重画（牌每帧都在微微摆动），画成图之后就不会了。
   // 与 SVG 版等价：viewBox 482×28、两行基线 10.4 / 24.2、字号 9.4、每行横向拉伸到正好 482 宽。
+  // 按拿起时的实际设备像素画（字重、清晰度与原来的 SVG 一致）；尺寸变了（resize）再画一次。
   function fineImages() {
     const font = '400 9.4px "Serif SC", "Noto Serif SC", serif'
+    const k = Math.max(0.5, 48 * S.mm * Math.min(3, window.devicePixelRatio || 1) / 482)
+    if (S._fineK && Math.abs(S._fineK - k) < 0.01) return
     const draw = color => {
-      const k = 3
       const c = document.createElement('canvas')
-      c.width = 482 * k; c.height = 28 * k
+      c.width = Math.round(482 * k); c.height = Math.round(28 * k)
       const x = c.getContext('2d')
-      x.scale(k, k)
+      x.scale(c.width / 482, c.height / 28)
       x.font = font
       x.fillStyle = color
       x.textBaseline = 'alphabetic'
@@ -224,6 +226,7 @@ ${corners}${mid}
         S.stage.style.setProperty('--idn-fine-neg', `url(${neg})`)
         for (const c of S.cards) for (const f of [c.front, c.back]) f.fine.replaceChildren()
         S.stage.classList.add('is-fineimg')
+        S._fineK = k
       } catch (e) { /* 画不出来就保留 SVG */ }
     }
     if (!document.fonts || !document.fonts.load) return
@@ -366,8 +369,10 @@ ${corners}${mid}
     if (lacquer) stage.style.setProperty('--idn-lacquer', `url(${lacquer})`)
 
     // 背景大字：正 / 逆
-    S.bgword = el('div.bgword', { 'aria-hidden': 'true' }, [el('span', { text: '正' })])
+    // 另有两层预先写好的「逆」「正」（亮色）叠在上面，闪一下时只切换 opacity，不重画
+    S.bgword = el('div.bgword', { 'aria-hidden': 'true' }, [el('span', { text: '正' }), el('span.bgword-f', { text: '逆' }), el('span.bgword-f', { text: '正' })])
     S.bgwordT = S.bgword.firstChild
+    S.bgFlash = [S.bgword.children[1], S.bgword.children[2]]
 
     // 圆桌（俯视，只看得见桌沿的一段）
     S.table = el('div.table', { 'aria-hidden': 'true' })
@@ -870,15 +875,22 @@ ${corners}${mid}
     c.peek = 1
     if (!same && S.q >= 2) App.glitch(c.glitch, 0.16)
     App.audio.sfx(same ? 'heartbeat' : 'glitch', { volume: same ? 0.35 : 0.3, pitch: same ? 1.3 : 0.8 })
-    const t = S.bgwordT
-    if (!same && !S.rev) {
-      S.bgword.classList.add('is-flicker')
-      t.textContent = '逆'
-    }
+    const fl = !same && !S.rev
+    if (fl) bgFlick('逆')
     setTimeout(() => {
       c.peek = 0
-      if (!S.rev) { t.textContent = '正'; S.bgword.classList.remove('is-flicker') }
+      if (fl) bgFlick(null)
     }, same ? 160 : 110)
+  }
+
+  // 巨字一瞬间闪成亮色的「逆」/「正」；which 为空时回到原样，亮色的「正」在 1 秒里淡回原来的颜色
+  function bgFlick(which) {
+    const [fr, fp] = S.bgFlash
+    if (S._bgFade) { S._bgFade.cancel(); S._bgFade = null }
+    S.bgwordT.style.opacity = which ? '0' : ''
+    fr.style.opacity = which === '逆' ? '1' : '0'
+    fp.style.opacity = which === '正' ? '1' : '0'
+    if (!which && fp.animate) S._bgFade = fp.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1000, easing: 'cubic-bezier(.16, 1, .3, 1)' })
   }
 
   /* =====================================================================
@@ -1163,12 +1175,10 @@ ${corners}${mid}
   function sameSide(c) {
     const face = faceOf(c)
     // 巨字：一瞬间闪成「逆」，又回到「正」
-    const t = S.bgwordT
-    S.bgword.classList.add('is-flicker')
-    t.textContent = '逆'
-    setTimeout(() => { t.textContent = '正' }, 70)
-    setTimeout(() => { t.textContent = '逆' }, 150)
-    setTimeout(() => { t.textContent = '正'; S.bgword.classList.remove('is-flicker') }, 210)
+    bgFlick('逆')
+    setTimeout(() => bgFlick('正'), 70)
+    setTimeout(() => bgFlick('逆'), 150)
+    setTimeout(() => bgFlick(null), 210)
     // 回声：牌的轮廓一圈圈荡开
     for (let k = 0; k < 2; k++) {
       const g = el('div.echo')
@@ -1716,6 +1726,7 @@ ${corners}${mid}
       layout()
       if (S.mode !== wasMode) { S.cards.forEach(c => { if (c.mode === 'fan') Object.assign(c.cur, fanTarget(c)) }) }
       fitAll()
+      fineImages()
     }, 180))
   }
 

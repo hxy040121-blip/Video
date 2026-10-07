@@ -24,10 +24,11 @@
   transition: -webkit-text-stroke-color 1s var(--ease-out);
   will-change: transform; /* 随光标漂移：只动合成层，不重画舞台 */
 }
-.identities-bgword span { display: block; transition: transform 1.4s var(--ease-out); }
+.identities-bgword span { display: block; transition: transform 1.4s var(--ease-out); will-change: opacity; }
+/* 闪一下时叠在上面的亮色字（见 identities.js bgFlick）：只切换 opacity，不重画巨字 */
+.identities-bgword .identities-bgword-f { position: absolute; left: 0; top: 0; opacity: 0; -webkit-text-stroke-color: rgba(235, 227, 214, .34); }
 .identities-stage.is-rev .identities-bgword { -webkit-text-stroke-color: rgba(255, 46, 126, .3); }
 .identities-stage.is-rev .identities-bgword span { transform: rotate(180deg); }
-.identities-bgword.is-flicker { transition: none; -webkit-text-stroke-color: rgba(235, 227, 214, .34); }
 .identities-stage.is-focus .identities-bgword { -webkit-text-stroke-color: rgba(194, 154, 91, .2); }
 .identities-stage.is-focus.is-rev .identities-bgword { -webkit-text-stroke-color: rgba(255, 46, 126, .34); }
 
