@@ -1068,13 +1068,14 @@
           scrollTrigger: { trigger: sec, start: 'top 55%', toggleActions: 'play none none none' },
         })
         gsap.fromTo(seatEls.map(s => s.num), { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.05, clearProps: 'opacity', scrollTrigger: { trigger: sec, start: 'top 55%', toggleActions: 'play none none none' } })
-        // 入场期间关掉徽章自带的 opacity 过渡：否则每一帧的 opacity 都会再起一段 CSS 过渡，38 枚徽章各自成层
+        // 入场的一秒多里徽章临时各自成层（只走合成器，不逐帧重画徽章区），并关掉徽章自带的 opacity 过渡
+        // （否则每一帧的 opacity 都会再起一段 CSS 过渡）；入场完就撤
         const tray = Array.from(trayEl.children)
         gsap.fromTo(tray, { opacity: 0, y: 20 }, {
           opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: { each: 0.015, from: 'center' }, clearProps: 'opacity,y',
           scrollTrigger: { trigger: sec, start: 'top 40%', toggleActions: 'play none none none' },
-          onStart: () => { for (const n of tray) n.style.transition = 'none' },
-          onComplete: () => { for (const n of tray) n.style.transition = '' },
+          onStart: () => { for (const n of tray) { n.style.transition = 'none'; n.style.willChange = 'transform, opacity' } },
+          onComplete: () => { for (const n of tray) { n.style.transition = ''; n.style.willChange = '' } },
         })
       }
       let rw = 0, lastW = window.innerWidth

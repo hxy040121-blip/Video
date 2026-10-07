@@ -410,6 +410,36 @@ section('去向、询问与拆穿')
       if (r2 && c.tCourt > g.minutes - r2.cost) { playerWit++; if (!c.known.some(k => k.liar === c.murderer && k.witness === g.player) || c.known.length <= before) askBad++ }
     }
   }
+  // 玩家问出凶手的谎、开庭时指认他：由玩家（在场的证人）当众拆穿
+  let shown = 0, tried = 0
+  for (let s = 1; s <= 400 && tried < 12; s++) {
+    const ids = ALL.slice(s % 24, s % 24 + 12)
+    const seats = Array(15).fill(null)
+    ids.forEach((id, i) => { seats[i] = id })
+    const g = TE.create({ seats, seed: s * 7, player: ids[s % 12] })
+    const c = TE.newCase(g)
+    if (c.type !== 'case' || c.lastStanding !== undefined || !c.where[c.murderer] || !c.where[c.murderer].lie) continue
+    if (!c.where[g.player] || c.where[g.player].room !== c.where[c.murderer].claim.room) continue
+    if (!TE.interview(g, c, c.murderer) || !c.known.length) continue
+    tried++
+    TE.courtOpen(g, c)
+    const T = TE.openTrial(g, c)
+    const it = TE.trialFlow(g, T)
+    let input, n = 0, hit = false, turn = false
+    while (n++ < 2000) {
+      const { value, done } = it.next(input)
+      if (done) break
+      input = undefined
+      if (value.type === 'expose' && value.speaker === g.player && value.target === c.murderer) hit = true
+      if (value.type === 'ask-debate') { turn = true; input = { kind: 'accuse', target: c.murderer } }
+      else if (value.type === 'ask-respond') input = { kind: 'defend' }
+      else if (value.type === 'ask-vote') input = value.forced || c.murderer
+      else if (value.type === 'ask-idiot' || value.type === 'ask-hope') input = false
+    }
+    if (!turn) { tried--; continue } // 执行者提前终止了辩论，没轮到玩家
+    if (hit) shown++
+  }
+  ok(tried > 0 && shown === tried, `询问时问出的谎，玩家指认时当众拆穿（${shown}/${tried}）`)
   ok(cases > 200 && bad === 0, `每个在馆者都有去向；无辜者照实说，亲手行凶的凶手说自己在别处（${lies} 案说谎，${truthful} 案下毒/关门照实说）`)
   ok(contraBad === 0, '只有凶手的说法会与旁人的真实去向相矛盾')
   ok(costBad === 0 && askBad === 0, `询问花费调查时间、每人一次、不能问自己；玩家本人在场时问出凶手的谎（${playerWit} 例）`)

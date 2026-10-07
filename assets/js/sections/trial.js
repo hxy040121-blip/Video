@@ -425,6 +425,9 @@
     S.stage = st
     sec._trial = { S, Lines, Inv: () => Inv } // 调试与巡检脚本用（台词统计、阶段）
 
+    // 舞台与板块都是 overflow: hidden：键盘聚焦、自动化工具的「滚到可见」仍可能把它们横向滚开，一律拉回原位
+    for (const box of [st, sec]) box.addEventListener('scroll', () => { if (box.scrollLeft || box.scrollTop) { box.scrollLeft = 0; box.scrollTop = 0 } }, { passive: true })
+
     // 事件
     st.addEventListener('click', onStageClick)
     E.top.querySelector('.trial-top-exit').addEventListener('click', e => { e.stopPropagation(); exitGame() })
@@ -1120,8 +1123,9 @@
   function voice(id, text) {
     const g = S.geo
     if (!g) return null
-    const bar = g.mobile ? 104 : 112
-    return quip(id, text, { at: { x: g.W / 2, y: g.H - bar - (g.mobile ? 40 : 46) }, tone: 'voice', life: 2.8 })
+    // 手机上让过右下角的「询问 / 开庭」
+    const y = g.mobile ? g.H - 104 - 14 - 48 - 44 : g.H - 112 - 46
+    return quip(id, text, { at: { x: g.W / 2, y }, tone: 'voice', life: 2.8 })
   }
   function clearQuips() { if (S.E.quips) S.E.quips.innerHTML = '' }
   // 随机挑几个人各说一句（反应、旁观、公布后）
@@ -2875,7 +2879,9 @@
       const body = Inv.spots.filter(x => x.kind === 'body')
       const clues = U.shuffle(Inv.spots.filter(x => x.kind === 'clue'))
       const decoys = Inv.spots.filter(x => x.kind === 'decoy').sort((a, b) => (b.herring ? 1 : 0) - (a.herring ? 1 : 0)).slice(0, 1)
-      let crew = U.shuffle(living().filter(x => x !== c.murderer && x !== S.me))
+      // 能走动的人先上（不能行走的人也在场，只是排在后面）
+      const walks = id => (charOf(id).canWalk === false ? 0 : 1)
+      let crew = U.shuffle(living().filter(x => x !== c.murderer && x !== S.me)).sort((a, b) => walks(b) - walks(a))
       if (!crew.length) crew = living()
       let i = 0
       for (const sp of body.concat(clues, decoys)) {
