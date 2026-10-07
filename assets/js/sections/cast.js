@@ -301,7 +301,7 @@
     return (shadowCache[key] = `url("${c.toDataURL()}")`)
   }
 
-  // 画框：静态的黄铜框 SVG + 以线条为遮罩的反光光斑（独立合成层），整组随 --lit 改 opacity
+  // 画框：静态的黄铜框 SVG + 以线条为遮罩的反光光斑（独立合成层），整组随亮度改 opacity（litOpacity）
   function makeFrame() {
     const frame = el('div.frame', { 'aria-hidden': 'true' })
     const border = sv('svg', { class: 'cast-border', 'aria-hidden': 'true' })
@@ -309,6 +309,21 @@
     const shine = el('div.shine', null, spot)
     frame.append(border, shine)
     return { frame, border, shine, spot }
+  }
+  // 随烛光变化的几层（原来是 .cast-item 上的 --lit/--pf 经 CSS calc 换算，公式不变，见 cast.css）
+  const setOp = (it, key, node, v) => {
+    if (!node) return
+    const o = v.toFixed(3)
+    if (it[key] !== o) { it[key] = o; node.style.opacity = o }
+  }
+  function litOpacity(it, L, pf) {
+    setOp(it, 'oBack', it.back, 0.12 + L * 0.88)
+    setOp(it, 'oVeil', it.veil, 0.62 - L * 0.62)
+    setOp(it, 'oFrame', it.frame, 0.42 + L * 0.58)
+    setOp(it, 'oShadow', it.shadow, 0.35 + L * 0.45)
+    setOp(it, 'oPlate', it.plate, (0.38 + L * 0.62) * (1 - pf) + 0.35 * pf)
+    if (it.dim) setOp(it, 'oDim', it.dim, pf * 0.62)
+    if (it.glass) setOp(it, 'oGlass', it.glass, 0.4 + L * 0.6)
   }
   function moveShine(it, gx, gy) {
     it.gx = gx; it.gy = gy
@@ -392,7 +407,7 @@
     const epi = el('span.epi', { text: '·····' })
     const plate = el('div.plate', null, [el('i.rivet'), el('span.name', { text: '？？？' }), epi, el('i.rivet')])
     node.append(wire, swing, plate)
-    Object.assign(it, { node, wire, swing, shadow, shadowIn: shadow.firstChild, win, back, por, veil, lamp, frame, border, shine, spot, plate, epi, svg: por.querySelector('svg') })
+    Object.assign(it, { node, wire, swing, shadow, shadowIn: shadow.firstChild, win, back, glass, por, veil, lamp, frame, border, shine, spot, plate, epi, svg: por.querySelector('svg') })
     it.blinkAt = 1e15
     Object.defineProperty(it, 'eyes', { get: () => por._eyes || null })
     it.gdx = -1; it.gdy = 0.1
@@ -661,12 +676,16 @@
       const lit = smooth(R * 1.05, R * 0.18, d) * U.clamp(S.flick, 0, 1.1)
       it.lit = approach(it.lit, lit, 0.3, dt)
       const L = Math.max(it.lit, it.heat)
-      if (Math.abs(L - (it.lw || 0)) > 0.006) { it.node.style.setProperty('--lit', L.toFixed(3)); it.lw = L }
-      // 悬停一幅时其余沉暗（原来是 CSS 过渡；改成这里平滑，只改 opacity）
+      // 悬停一幅时其余沉暗（原来是 CSS 过渡；改成这里平滑）
       const pfT = S.hot && S.hot !== it ? 1 : 0
       it.pf = approach(it.pf || 0, pfT, 0.085, dt)
       if (Math.abs(it.pf - pfT) < 0.004) it.pf = pfT
-      if (it.pf !== it.pfw && (Math.abs(it.pf - (it.pfw || 0)) > 0.008 || it.pf === pfT)) { it.pfw = it.pf; it.node.style.setProperty('--pf', it.pf.toFixed(3)) }
+      // 亮度与沉暗：直接写各层的 opacity（各自独立合成，只走合成器）。不再写继承型的 CSS 变量——
+      // 变量会让整幅画的几十个子元素每帧重算样式，单独写 opacity 只动这几层本身
+      if (Math.abs(L - (it.lw == null ? -1 : it.lw)) > 0.006 || (it.pf !== it.pfw && (Math.abs(it.pf - (it.pfw || 0)) > 0.008 || it.pf === pfT))) {
+        it.lw = L; it.pfw = it.pf
+        litOpacity(it, L, it.pf)
+      }
       // 投影：背向烛光
       const k = U.clamp(d * 0.028, 3, 26)
       const shx = (dx / d) * k, shy = (dy / d) * k * 0.8 + 6

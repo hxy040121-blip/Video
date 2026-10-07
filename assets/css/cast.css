@@ -107,11 +107,12 @@
   background: linear-gradient(104deg, transparent 40%, rgba(255,236,200,.1) 46%, rgba(255,246,226,.34) 50%, rgba(255,236,200,.08) 54%, transparent 60%);
 }
 .cast-veil { position: absolute; inset: 0; background: #050304; opacity: calc(.62 - var(--lit) * .62); pointer-events: none; }
-/* 悬停一幅时其余沉暗：--pf（0–1）由 cast.js 平滑写入，只改 opacity */
+/* 悬停一幅时其余沉暗、以及随烛光变亮的几层（back/veil/frame/shadow/plate/glass）：
+   下面的 calc 是初始值与公式说明；运行时由 cast.js 的 litOpacity 按同一公式直接写 opacity */
 .cast-dim { position: absolute; inset: 0; background: #050304; opacity: calc(var(--pf, 0) * .62); pointer-events: none; }
 .cast-frame { position: absolute; pointer-events: none; opacity: calc(.42 + var(--lit) * .58); }
-/* 逐帧变化的变量（--lit/--pf 在 .cast-item 上，--pvx/--rim 等在肖像上）会继承进 SVG：SVG 一重算样式，里面的渐变、滤镜资源就失效、
-   整张重画。在 SVG 根上把它们钉成常量，变化就传不进去 */
+/* 逐帧变化的 CSS 变量（肖像上的 --pvx/--rx/--rim 等）会继承进里面的 SVG：SVG 一重算样式，渐变、滤镜资源就失效、整张重画。
+   在 SVG 根上把这些变量钉成常量，变化就传不进去 */
 .cast-border, .cast-wire, .cast-por > svg { --lit: 0; --pf: 0; --pvx: 0; --pvy: 0; --rx: 0; --ry: 0; --rim: 0; }
 .cast-border { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
 .cast-mould { opacity: .96; }
