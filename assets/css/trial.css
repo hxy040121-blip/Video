@@ -750,11 +750,6 @@
 
 .trial-inv-go { position: absolute; right: var(--gutter); bottom: calc(var(--bar-h) + 22px); z-index: 7; display: flex; gap: 10px; }
 .trial-inv-go .trial-btn:disabled { opacity: .35; pointer-events: none; }
-.trial-inv-word {
-  position: absolute; z-index: 5; transform: translate(-50%, -100%);
-  font-family: var(--f-sans); font-size: 12px; letter-spacing: .3em; padding: 3px 8px 3px calc(8px + .3em);
-  color: var(--bone-dim); background: rgba(10, 8, 9, .85); white-space: nowrap; pointer-events: none;
-}
 .trial-inv.is-over .trial-inv-cv, .trial-inv.is-over .trial-inv-light { filter: grayscale(1) brightness(.7); transition: filter 1s; }
 
 /* ==========================================================

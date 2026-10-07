@@ -843,7 +843,8 @@
       // 烛光够得着才换成动态层（带滞回，免得在门槛上来回切）
       const warm = hot === it || h > 0.004 || swaying(it)
       // 「一齐亮起」那一下烛光会先缩一大圈再回来：这期间已有动态层的不撤（否则一圈画都要撤了又建、各重画一遍）
-      const want = warm || hot === it || L > (it.live ? 0.03 : 0.05) || (it.live && S.dip > 0.01)
+      // （亮度 .08 以下：交叉淡入的权重不到 .04、又压在八成以上的黑暗里，与静态版看不出差别）
+      const want = warm || hot === it || L > (it.live ? 0.05 : 0.08) || (it.live && S.dip > 0.01)
       if (want !== it.live) { if (want) promote(it); else demote(it) }
       if (warm !== it.warm && it.live) setWarm(it, warm)
 

@@ -153,13 +153,24 @@
   // 整句以（开头、）结尾的是动作描写（格里菲斯不能说话）：不加引号、斜体、无打字声
   const isAct = s => /^（[\s\S]*）$/.test(String(s || '').trim())
   const quoted = s => (isAct(s) || s === '……' ? s : '「' + s + '」')
+  const isFemaleName = n => !!(App.chars || []).find(c => c.name === n && c.gender === '女')
   function fitsLine(s, vars, ctx) {
     if (!holes(s).every(k => vars[k] != null && vars[k] !== '')) return false
+    // 「{X}先生」只称呼男性（蝴蝶忍的旧句）
+    if (/\{X\}先生/.test(s) && isFemaleName(vars.X)) return false
     if (ctx) {
       // 少数发现/反应的句子默认了现场细节：与死因、时刻、楼层对不上的不用
       if (/伤/.test(s) && ['poison', 'drown', 'alcohol', 'smother'].includes(ctx.cause)) return false
       if (/不到两小时/.test(s) && ctx.since >= 120) return false
       if (/那层楼/.test(s) && !/^[23]F$/.test(ctx.floor || '')) return false
+      // 调查时的自言自语提到的陈设，这间房里得有
+      if (ctx.objs != null) {
+        if (/地毯/.test(s) && !/毯/.test(ctx.objs)) return false
+        if (/花瓶/.test(s) && !/瓶|花器/.test(ctx.objs)) return false
+        if (/柜/.test(s) && !/柜|格|架/.test(ctx.objs)) return false
+        if (/帘/.test(s) && !/帘/.test(ctx.objs)) return false
+        if (/窗/.test(s) && !ctx.windows) return false
+      }
     }
     return true
   }
@@ -2646,7 +2657,9 @@
           const h = res.herring
           if (h) await this.popup(x, y, 'look', sp.object, h.bait, '', { fast, tag: '疑似', more: h.truth })
           else await this.popup(x, y, 'look', sp.object, res.desc + (res.detail || ''), '', { fast })
-          voice(who, line(who, 'search', { ROOM: c.roomInfo.name }))
+          const ri = c.roomInfo
+          // 自言自语不是每处都说（玩家自己每案至多一句，免得同一人的池子很快用完）
+          if (this.talk(who, 'search', !!h)) voice(who, line(who, 'search', { ROOM: ri.name }, { objs: (ri.objects || []).concat(ri.weapons || []).join('、'), windows: !!ri.windows }))
         } else if (sp.kind === 'body') {
           const cause = res.cause
           const sub = res.window ? hhmm(res.window[0]) + '—' + hhmm(res.window[1]) : ''
@@ -2656,7 +2669,7 @@
           const k = res.clue
           await this.popup(x, y, k.tpl, k.label, k.text, k.place === 'away' && k.awayTo ? k.awayTo : '', { fast, lead: res.lead })
           addCard({ id: k.id, label: k.label, text: k.text, predicate: k.predicate, icon: k.tpl }, { from: { x, y }, by: cardBy })
-          voice(who, line(who, 'found', { CLUE: k.name }))
+          if (this.talk(who, 'found', false)) voice(who, line(who, 'found', { CLUE: k.name }))
         }
       } catch (e) {
         if (e !== ABORT) console.error(e)
@@ -2665,6 +2678,15 @@
         this.placeButtons()
         this.updateGo()
       }
+    },
+    // 这一处要不要出声：旁观时轮流调查的人各说各的；玩家自己每案每种（search / found）至多一句
+    talk(who, key, force) {
+      if (who !== S.me) return true
+      const said = this.said || (this.said = {})
+      const k = this.c.no + key
+      if (said[k] || !(force || key === 'found' || Math.random() < 0.6)) return false
+      said[k] = true
+      return true
     },
     // 询问：点一个在场的人，他交代案发时的去向（凶手会说谎）；花费调查时间
     async interview() {
