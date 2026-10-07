@@ -389,7 +389,9 @@
 .cycle-d-ink { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: .9; }
 .cycle-d-pool {
   position: absolute; left: 0; top: 0; border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(150, 10, 52, .95), rgba(110, 12, 30, .75) 55%, rgba(80, 8, 20, 0));
+  background:
+    radial-gradient(ellipse 30% 22% at 38% 40%, rgba(255, 120, 160, .22), transparent 70%),
+    radial-gradient(closest-side, rgba(62, 2, 16, .97), rgba(88, 6, 26, .85) 50%, rgba(80, 8, 20, 0));
   filter: blur(1.5px);
   transform-origin: 32% 50%; scale: var(--pg, 1);
 }

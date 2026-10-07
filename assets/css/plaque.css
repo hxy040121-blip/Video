@@ -245,7 +245,7 @@
 }
 .plaque-item:focus { outline: none; }
 .plaque-item:focus-visible { outline: 1px solid rgba(232, 184, 92, .55); outline-offset: 3px; }
-.plaque-name { flex: 0 1 auto; min-width: 0; text-wrap: balance; }
+.plaque-name { flex: 0 1 auto; min-width: 0; word-break: keep-all; text-wrap: balance; }
 .plaque-lead {
   flex: 1 1 auto; min-width: 1.4em; height: 4px; margin: 0 .5em .5em;
   background:

@@ -898,10 +898,11 @@
 
   function drawTable(ctx) {
     const c = T.c
-    // 白玉台面
-    fillLit(ctx, prjPoly([[G.tx0, G.ty0, 0], [G.tx1, G.ty0, 0], [G.tx1, G.ty1, 0], [G.tx0, G.ty1, 0]]), 0, 0.06, 0.8, JADE)
+    // 白玉台面（竖屏俯视时台沿会横在画面一侧，干脆把台面铺满）
+    const ty0 = T.mob ? -70 : G.ty0
+    fillLit(ctx, prjPoly([[G.tx0, ty0, 0], [G.tx1, ty0, 0], [G.tx1, G.ty1, 0], [G.tx0, G.ty1, 0]]), 0, 0.06, 0.8, JADE)
     // 台面前沿厚 3 cm、铂金线，下面是沉香
-    if (-(c.py - G.ty0) < 0) {
+    if (!T.mob && -(c.py - G.ty0) < 0) {
       const fr = prjPoly([[G.tx0, G.ty0, 0], [G.tx1, G.ty0, 0], [G.tx1, G.ty0, -G.tth], [G.tx0, G.ty0, -G.tth]])
       if (fr.length > 2) {
         lit(T.Lw.x, G.ty0, -1.5, 0, -1, 0, 8)
@@ -1573,7 +1574,7 @@
     const up = sr.top - oy - 28, down = FX.h - (sr.bottom - oy) - 28
     const below = up < 300 && down > up
     const room = below ? down : up
-    const Hpx = clamp(Math.min(room - 46, FX.h * 0.74), 150, 680)
+    const Hpx = clamp(Math.min(room - 70, FX.h * 0.72), 150, 660)
     const base = below ? sr.bottom - oy + 26 + Hpx : up
     const p = Hpx / geo.H
     const Wd = geo.cols * p
@@ -1585,6 +1586,15 @@
     const pad = p * 0.55, Rr = geo.R * p, rad = Wd / 2 + pad
     const fp = easeOut(clamp((tIn - 0.05) / 0.7))
     const len = Rr * 2 + Math.PI * rad + 2 * pad
+    // 门洞：比幕更深的黑
+    ctx.fillStyle = 'rgba(2,1,1,' + (0.82 * vis).toFixed(3) + ')'
+    ctx.beginPath()
+    ctx.moveTo(x0 - pad, base + pad * 0.4)
+    ctx.lineTo(x0 - pad, base - Rr)
+    ctx.arc(cx, base - Rr, rad, Math.PI, 0)
+    ctx.lineTo(x0 + Wd + pad, base + pad * 0.4)
+    ctx.closePath()
+    ctx.fill()
     ctx.save()
     ctx.setLineDash([len * fp, len])
     ctx.strokeStyle = 'rgba(194,154,91,' + (0.6 * vis).toFixed(3) + ')'
