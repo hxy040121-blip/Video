@@ -314,7 +314,8 @@
     how.appendChild(reg(U.el('h3.plaque-h.plaque-eng.plaque-reveal', { text: '兑换方式' }), 1.3))
     for (const t of HOW) how.appendChild(reg(U.el('p.plaque-p.plaque-eng.plaque-reveal', { text: t }), 1))
     const blocks = [{ el: how, h: 2.2 + HOW.reduce((a, t) => a + Math.ceil(Array.from(t).length / 16) * 1.05 + 0.35, 0) }]
-    for (const ch of BODY) blocks.push({ el: chapterEl(ch), h: 2.2 + ch.items.reduce((a, it) => a + (it.sub ? 1.8 : 1), 0) })
+    // 估高：名字长过十二个字的条目在栏里折成两行（v4.71 的铜牌上这样的长名多了，落款圆章要放进真正最矮的那一栏）
+    for (const ch of BODY) blocks.push({ el: chapterEl(ch), h: 2.2 + ch.items.reduce((a, it) => a + (it.sub ? 1.8 : Array.from(it.name).length > 12 ? 1.75 : 1), 0) })
     S.blocks = blocks
     E.cols = U.el('div.plaque-cols')
     // 落款：一枚凹刻的圆章——十五个点围着「100」（十五摞金币、一枚一百分）。放在最矮的那一栏底部
