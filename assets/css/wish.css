@@ -83,7 +83,7 @@
 
 .wish-who {
   position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none;
-  width: min(22em, 30vw); margin-left: calc(-1 * min(22em, 30vw)); text-align: right;
+  width: min(26em, 32vw); margin-left: calc(-1 * min(26em, 32vw)); text-align: right;
   opacity: 0; transition: opacity .8s var(--ease-out);
 }
 .wish-who.is-on { opacity: 1; }
@@ -97,6 +97,7 @@
   margin-top: 14px; padding-right: 14px; border-right: 1px solid var(--acc, var(--brass));
   font-family: var(--f-serif); font-size: clamp(15px, 1.25vw, 18px); line-height: 1.85; letter-spacing: .04em;
   color: var(--bone); text-shadow: 0 0 14px #000, 0 0 3px #000; min-height: 1.85em;
+  text-wrap: pretty;
 }
 
 /* ---------- 一句话（与醒来的标题同一位置） ---------- */

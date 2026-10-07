@@ -165,18 +165,11 @@
 .cycle-stage .cycle-eyes > svg { visibility: hidden; filter: drop-shadow(0 0 4px #ff2e7e) drop-shadow(0 0 14px rgba(255, 46, 126, .7)); }
 .cycle-stage .cycle-eyes .p-iris { visibility: visible; }
 .cycle-stage .cycle-eyes .p-iris * { fill: #ff5c97; stroke: none; }
-/* 位图肖像：只留下眼睛那一道窄带，乘上血粉 */
+/* 位图肖像：只留下眼睛那一道窄带，亮度映射成血粉（#cycle-pinkeye 是本板块自带的 SVG 滤镜） */
 .cycle-stage .cycle-eyes.is-photo > img {
-  filter: grayscale(1) contrast(1.7) brightness(.95);
+  filter: grayscale(1) contrast(1.8) brightness(1.15) url(#cycle-pinkeye) drop-shadow(0 0 7px rgba(255, 46, 126, .75));
   -webkit-mask-image: linear-gradient(180deg, transparent 36%, #000 39.6%, #000 43%, transparent 46.5%);
   mask-image: linear-gradient(180deg, transparent 36%, #000 39.6%, #000 43%, transparent 46.5%);
-}
-.cycle-stage .cycle-eyes.is-photo::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 34% 7% at 50% 41.3%, #ff6f9f, #ff2e7e 55%, #7a0630);
-  mix-blend-mode: multiply;
-  -webkit-mask-image: linear-gradient(180deg, transparent 35%, #000 39%, #000 43.5%, transparent 47.5%);
-  mask-image: linear-gradient(180deg, transparent 35%, #000 39%, #000 43.5%, transparent 47.5%);
 }
 
 /* =========================================================
@@ -445,21 +438,21 @@
 .cycle-i-scene .cycle-tr.is-found { opacity: .16; }
 .cycle-i-scene.is-lit .cycle-tr { opacity: 1; }
 .cycle-tr path, .cycle-tr circle, .cycle-tr ellipse { vector-effect: non-scaling-stroke; }
-.tr-shoe path { fill: rgba(160, 188, 210, .55); }
-.tr-blood ellipse, .tr-blood circle { fill: #c10f45; }
-.tr-glass path { fill: rgba(200, 225, 240, .22); stroke: rgba(225, 240, 250, .85); stroke-width: .8; }
-.tr-glass .g-foot { fill: none; stroke: rgba(225, 240, 250, .7); stroke-width: 1.2; }
-.tr-glass .g-stem { fill: none; stroke: rgba(225, 240, 250, .8); stroke-width: 1.5; }
-.tr-glass .g-lip { fill: none; stroke: var(--blood); stroke-width: 2.4; stroke-linecap: round; }
-.tr-clock .c-face { fill: rgba(16, 16, 20, .9); stroke: var(--brass); stroke-width: 1.5; }
-.tr-clock .c-tk { stroke: var(--brass); stroke-width: 1.2; }
-.tr-clock .c-h { stroke: var(--bone); stroke-width: 2.4; stroke-linecap: round; }
-.tr-clock .c-m { stroke: var(--bone); stroke-width: 1.4; stroke-linecap: round; }
-.tr-clock .c-crack { fill: none; stroke: rgba(235, 227, 214, .75); stroke-width: .9; }
-.tr-glove path { fill: rgba(140, 112, 84, .62); }
-.tr-glove .g-smear { fill: none; stroke: rgba(140, 112, 84, .45); stroke-width: 2.6; stroke-linecap: round; }
-.tr-scrub path { fill: none; stroke: rgba(170, 194, 210, .5); stroke-width: 2; stroke-linecap: round; }
-.tr-scrub .g-edge { stroke: rgba(205, 225, 238, .8); stroke-width: 1; stroke-dasharray: 3 4; }
+.cycle-tr.tr-shoe path { fill: rgba(160, 188, 210, .55); }
+.cycle-tr.tr-blood ellipse, .cycle-tr.tr-blood circle { fill: #c10f45; }
+.cycle-tr.tr-glass path { fill: rgba(200, 225, 240, .22); stroke: rgba(225, 240, 250, .85); stroke-width: .8; }
+.cycle-tr.tr-glass .g-foot { fill: none; stroke: rgba(225, 240, 250, .7); stroke-width: 1.2; }
+.cycle-tr.tr-glass .g-stem { fill: none; stroke: rgba(225, 240, 250, .8); stroke-width: 1.5; }
+.cycle-tr.tr-glass .g-lip { fill: none; stroke: var(--blood); stroke-width: 2.4; stroke-linecap: round; }
+.cycle-tr.tr-clock .c-face { fill: rgba(16, 16, 20, .9); stroke: var(--brass); stroke-width: 1.5; }
+.cycle-tr.tr-clock .c-tk { stroke: var(--brass); stroke-width: 1.2; }
+.cycle-tr.tr-clock .c-h { stroke: var(--bone); stroke-width: 2.4; stroke-linecap: round; }
+.cycle-tr.tr-clock .c-m { stroke: var(--bone); stroke-width: 1.4; stroke-linecap: round; }
+.cycle-tr.tr-clock .c-crack { fill: none; stroke: rgba(235, 227, 214, .75); stroke-width: .9; }
+.cycle-tr.tr-glove path { fill: rgba(140, 112, 84, .62); }
+.cycle-tr.tr-glove .g-smear { fill: none; stroke: rgba(140, 112, 84, .45); stroke-width: 2.6; stroke-linecap: round; }
+.cycle-tr.tr-scrub path { fill: none; stroke: rgba(170, 194, 210, .5); stroke-width: 2; stroke-linecap: round; }
+.cycle-tr.tr-scrub .g-edge { stroke: rgba(205, 225, 238, .8); stroke-width: 1; stroke-dasharray: 3 4; }
 .cycle-i-scene .i-lbl {
   font-family: var(--f-sans); font-size: 11px; letter-spacing: .24em; fill: var(--bone);
   text-anchor: middle; paint-order: stroke; stroke: rgba(10, 12, 16, .9); stroke-width: 3px;

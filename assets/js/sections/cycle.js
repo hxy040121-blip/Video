@@ -35,6 +35,8 @@
   const fx = v => v.toFixed(1)
   const hms = s => { s = Math.max(0, Math.floor(s)); return pad2(Math.floor(s / 3600)) + ':' + pad2(Math.floor((s % 3600) / 60)) + ':' + pad2(s % 60) }
   const TAU = Math.PI * 2
+  // 预先解码位图肖像：藏着的人像第一次露面（人影掠过、处刑）时不会空一两帧
+  const warm = node => { if (node) for (const img of node.querySelectorAll('img')) if (img.decode) img.decode().catch(() => {}) }
 
   /* =========================================================
      原文数据
@@ -675,6 +677,7 @@
       App.portrait(id, { track: false, className: 'cycle-eyes' }),
       el('i.cycle-k-streak'),
     )
+    warm(SK.pass)
   }
   SK.layout = function () {
     SK.vp0 = { x: S.W * 0.5, y: S.H * 0.46 }
@@ -702,6 +705,7 @@
   }
   SK.enter = function (dir, q) {
     PH.show(true)
+    warm(SK.pass)
     const R = DAY - S.story.E
     SK.stampT.textContent = hms(R)
     SK.stampD.textContent = dayText(S.story.death) + '  ' + hhmm(S.story.death)
@@ -1461,6 +1465,7 @@
       App.portrait(c.K.id, { silhouette: true, track: false, className: 'cycle-v-shade' }),
       App.portrait(c.K.id, { className: 'cycle-eyes', eyeRange: 9 }),
     )
+    warm(SV.el)
   }
   SV.layout = function () {
     SV.divSvg.setAttribute('viewBox', `0 0 ${S.W} ${S.H}`)
@@ -1486,6 +1491,7 @@
   }
   SV.enter = function (dir) {
     PH.show(true)
+    warm(SV.el)
     SV.reset()
     if (dir > 0) { S.branch = null; SV.split = 0.5 }
     setPhaseLine('', true)
@@ -2197,6 +2203,12 @@
       el('div.cycle-lb', { 'aria-hidden': 'true' }, [el('i.t'), el('i.b')]),
       buildNav(), buildCut(),
     )
+    // 位图肖像的“眼睛”滤镜：亮度 → 血粉
+    const defs = U.svg('svg', { class: 'cycle-defs', width: 0, height: 0, 'aria-hidden': 'true', focusable: 'false' })
+    defs.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'
+    defs.innerHTML = '<filter id="cycle-pinkeye" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="' +
+      '.2445 .8225 .0830 0 0  .0383 .1287 .0130 0 0  .1084 .3648 .0368 0 0  0 0 0 1 0"/></filter>'
+    S.stage.appendChild(defs)
     S.sticky.appendChild(S.stage)
     sec.appendChild(S.sticky)
 

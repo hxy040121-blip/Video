@@ -206,7 +206,13 @@
 .trial-mark.is-lock { background: var(--ink); color: var(--bone); box-shadow: 0 0 0 1px var(--bone-dim); }
 .trial-mark.is-puffer { background: var(--ink-2); color: var(--bone); box-shadow: 0 0 0 1px var(--ash); padding: 0 6px; }
 .trial-mark.is-puffer.is-yes { background: var(--blood); color: var(--ink); box-shadow: 0 0 10px var(--blood); }
-.trial-mark.is-known { background: var(--blood); font-family: var(--f-display); font-weight: 900; font-size: 13px; box-shadow: 0 0 10px var(--blood); }
+.trial-mark.is-known {
+  min-width: 26px; height: 26px; border-radius: 13px;
+  background: var(--blood); font-family: var(--f-display); font-weight: 900; font-size: 16px;
+  box-shadow: 0 0 0 2px var(--ink), 0 0 14px var(--blood);
+  animation: trial-known 1.2s ease-in-out infinite;
+}
+@keyframes trial-known { 50% { box-shadow: 0 0 0 2px var(--ink), 0 0 0 6px rgba(255, 46, 126, .25), 0 0 26px var(--blood); } }
 
 .trial-seat-coins {
   position: absolute; left: 50%; top: calc(100% + 32px); transform: translateX(-50%);
@@ -1054,7 +1060,7 @@
 .trial-seat.is-far .trial-seat-coins { top: auto; bottom: calc(100% + 34px); }
 .trial-seat.is-far .trial-seat-count { top: 34%; left: auto; right: -16px; margin-left: 0; }
 .trial-seat.is-far .trial-seat-mark { top: 30%; right: auto; left: -12px; align-items: flex-start; }
-.trial-seat.is-far .trial-seat-tag { top: 30%; }
+.trial-seat.is-far .trial-seat-tag { top: 30%; bottom: auto; }
 
 /* 庭审时桌心刻着案号与死者的名字 */
 .trial-core-count, .trial-core-mood { transition: opacity .35s var(--ease-out); }
@@ -1087,7 +1093,7 @@
   .trial-pip { width: 5px; height: 5px; }
   .trial-seat-count { width: 22px; height: 22px; margin-left: -11px; top: -10px; font-size: 11px; }
   .trial-seat-count.is-lead { width: 28px; height: 28px; margin-left: -14px; top: -14px; font-size: 14px; }
-  .trial-seat-tag { font-size: 9px; padding: 1px 4px; left: -4px; }
+  .trial-seat-tag { font-size: 9px; padding: 1px 4px; left: -6px; top: auto; bottom: 20%; }
   .trial-seat-lock { width: 20px; height: 20px; margin-left: -10px; }
   .trial-seat-lock svg { width: 11px; height: 11px; }
   .trial-seat-mark { right: -8px; }
@@ -1199,6 +1205,6 @@
 /* ---------- 降低动效 ---------- */
 @media (prefers-reduced-motion: reduce) {
   .trial-fx-lines, .trial-exec-rays, .trial-end-halo::after, .trial-veil-sigil i { animation: none !important; }
-  .trial-seat.is-target .trial-seat-card, .trial-seat.is-target .trial-seat-hit::before, .trial-seat.is-tie .trial-seat-card, .trial-seat-count.is-lead, .trial-btn.is-breath, .trial-me-act.is-on, .trial-card, .trial-me.is-choice .trial-me-card { animation: none !important; }
+  .trial-seat.is-target .trial-seat-card, .trial-seat.is-target .trial-seat-hit::before, .trial-seat.is-tie .trial-seat-card, .trial-seat-count.is-lead, .trial-mark.is-known, .trial-btn.is-breath, .trial-me-act.is-on, .trial-card, .trial-me.is-choice .trial-me-card { animation: none !important; }
   .trial-idcard-inner { transition-duration: .3s; }
 }

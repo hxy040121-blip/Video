@@ -186,7 +186,7 @@
 
   // 材质（反照率）
   const EBONY = [0.07, 0.052, 0.046]
-  const SILK = [0.07, 0.085, 0.2]
+  const SILK = [0.055, 0.064, 0.14] // 暗蓝真丝：强光下也只是深蓝的缎光，不会亮成一块蓝板
   const SEAT_FACE = [SILK, null, null, null, null, null]
   const BACK_FACE = [null, null, null, SILK, null, null]
 
