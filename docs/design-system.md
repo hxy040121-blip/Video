@@ -35,6 +35,7 @@ assets/js/core/*.js        核心：app / bg / cursor / scroll / hud / gate / au
 assets/js/sections/<板块>.js
 assets/data/world.js       由 tools/build-data.mjs 生成：rooms / identities / prices
 assets/data/characters.js  window.CHARACTERS：38 人
+assets/data/lines/a–d.js   window.TRIAL_LINES：模拟庭审台词池（每人 21 个场合、79 句；占位符 {X}{CLUE}{ROOM}{TIME}{V}）
 assets/data/lore.js        window.LORE：房间氛围、线索模板、尸体变化、循环阶段、广播句式
 assets/data/portrait-images.js   由 tools/portraits/export.py 生成（肖像位图清单）
 assets/data/sigils.js      由 tools/build-art.mjs 打包 assets/art/sigils/*.svg 生成

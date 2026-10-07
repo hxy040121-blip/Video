@@ -420,10 +420,10 @@
       fixed: null, // 可设为 {x,y} 让视线固定看某处（屏幕坐标）
     }
     for (const e of eyes) { e.style.transformBox = 'fill-box'; e.style.transformOrigin = 'center' }
-    w.unobserve = App.onVisible(wrap, v => { w.visible = v })
+    w.unobserve = App.onVisible(wrap, v => { w.visible = v; if (photo) wrap.classList.toggle('is-tracked', v && !w.small) })
     watchers.add(w)
     wrap._eyes = w
-    return () => { watchers.delete(w); w.unobserve() }
+    return () => { watchers.delete(w); w.unobserve(); wrap.classList.remove('is-tracked') }
   }
 
   const live = [] // 本帧要更新的肖像（先统一读位置，再统一写，避免反复触发排版）
@@ -461,8 +461,8 @@
       w.ox = U.lerp(w.ox, gx, 0.2)
       w.oy = U.lerp(w.oy, gy, 0.2)
       if (w.photo) {
-        // 小肖像（席位、名单上的小头像）看不出视差，不写
-        if (r.width < 100) continue
+        // 小肖像（席位、名单上的小头像）看不出视差，不写，也不单独成层
+        if (r.width < 100) { if (!w.small) { w.small = true; w.wrap.classList.remove('is-tracked') } continue }
         // 只在数值变化时才写：光标停住后画像不再每帧触发样式与重绘
         const px = (w.ox / w.range).toFixed(2), py = (w.oy / w.range).toFixed(2)
         if (px !== w.px) { w.px = px; w.wrap.style.setProperty('--pvx', px) }

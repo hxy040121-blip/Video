@@ -8,6 +8,10 @@
 
 板块依次是：醒来、放映、洋馆、卡池、十五席、身份、受命、庭审、铜牌、愿望。
 
+换章：点左上角的圆标（或按 M）打开目录；电脑上也可以按 PgUp / PgDn 换章、按数字键 1–0 直达。模拟庭审进行中也可以随时跳走，回来点「续局」接着玩。
+
+觉得卡的话按 F：左下角会显示实际帧率、画质档位、屏幕刷新率和浏览器正在用的显卡。
+
 ## 角色肖像
 
 38 张肖像是用各作品的官方原图统一抠图、构图、调色做成的（暗金单色），版权属于原作，只适合本地自用。因此肖像图片（`assets/art/portraits/*.webp`）不放进公开仓库，只在本地成品包里；只有代码仓库时，网站会把每个人显示成剪影。加工流程、原图出处和重新生成的方法见 `tools/portraits/README.md`。
@@ -28,7 +32,7 @@
 node tools/build-data.mjs
 ```
 
-人物卡提炼出的数据在 `assets/data/characters.js`；身份纹章在 `assets/art/sigils/`（改完运行 `node tools/build-art.mjs` 重新打包）。网站新增了不常见的字时，运行 `python3 tools/subset-fonts.py <字体源目录>` 重新裁剪字体。
+人物卡提炼出的数据在 `assets/data/characters.js`，模拟庭审的台词池在 `assets/data/lines/`；身份纹章在 `assets/art/sigils/`（改完运行 `node tools/build-art.mjs` 重新打包）。网站新增了不常见的字时，运行 `python3 tools/subset-fonts.py <字体源目录>` 重新裁剪字体。
 
 ## 目录
 
