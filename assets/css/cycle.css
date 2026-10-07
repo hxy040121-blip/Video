@@ -401,16 +401,18 @@
 .cycle-d-body .b-rim circle { fill: var(--blood); }
 .cycle-d-body .b-fill path { stroke: #070304; }
 .cycle-d-body .b-fill circle { fill: #070304; }
+/* 粉点的浓淡写在点的颜色里（原先 .55 的点再乘元素 opacity .35 = .1925）：发现那一下的淡出动画改动颜色而不是 opacity，
+   不再在这一秒里把整屏粉点提成合成层（background-size 本来就在逐帧重画，数值完全相同） */
 .cycle-d-dots {
   position: absolute; inset: 0; pointer-events: none;
-  background-image: radial-gradient(rgba(255, 46, 126, .55) 1.1px, transparent 1.7px);
+  color: rgba(255, 46, 126, .1925);
+  background-image: radial-gradient(currentColor 1.1px, transparent 1.7px);
   background-size: 8px 8px;
   -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 55%, transparent 45%, #000 100%);
   mask-image: radial-gradient(ellipse 75% 70% at 50% 55%, transparent 45%, #000 100%);
-  opacity: .35;
 }
 .cycle-d.is-hit .cycle-d-dots { animation: cycle-dots 1s var(--ease-out); }
-@keyframes cycle-dots { 0% { opacity: 1; background-size: 14px 14px; } 100% { opacity: .35; background-size: 8px 8px; } }
+@keyframes cycle-dots { 0% { color: rgba(255, 46, 126, .55); background-size: 14px 14px; } 100% { color: rgba(255, 46, 126, .1925); background-size: 8px 8px; } }
 .cycle-d-stamp {
   position: absolute; left: 50%; top: calc(var(--hud-h) + 4vh); z-index: 4; transform: translateX(-50%);
   display: flex; align-items: baseline; gap: 12px; pointer-events: none;

@@ -427,6 +427,7 @@
   }
 
   const live = [] // 本帧要更新的肖像（先统一读位置，再统一写，避免反复触发排版）
+  const CHECK_VIS = { visibilityProperty: true, contentVisibilityAuto: true }
   App.tick(() => {
     if (!watchers.size) return
     const now = performance.now()
@@ -440,6 +441,8 @@
       }
       w.gone = 0
       if (!w.visible) continue
+      // IntersectionObserver 不管 visibility / content-visibility 的隐藏：藏起来的肖像不量也不写
+      if (w.wrap.checkVisibility && !w.wrap.checkVisibility(CHECK_VIS)) continue
       const r = w.wrap.getBoundingClientRect()
       if (r.width) live.push(w, r)
     }
@@ -554,12 +557,14 @@
   window.addEventListener('keydown', e => { if (e.key === 'Escape') App.overlay.close() })
 
   /* ---------- 全屏效果 ---------- */
+  // #flash 常驻一个合成层（base.css: will-change: opacity）；空闲时 visibility:hidden（autoAlpha），颜色没变不重写
   App.flash = (color = App.color.bone, opts = {}) => {
     const f = document.getElementById('flash')
     if (!f || !window.gsap) return
     gsap.killTweensOf(f)
-    gsap.set(f, { background: color, opacity: opts.opacity == null ? 0.9 : opts.opacity })
-    gsap.to(f, { opacity: 0, duration: opts.duration || 0.6, ease: 'power2.out', delay: opts.hold || 0.04 })
+    if (f.dataset.c !== color) { f.dataset.c = color; f.style.background = color }
+    gsap.set(f, { autoAlpha: opts.opacity == null ? 0.9 : opts.opacity })
+    gsap.to(f, { autoAlpha: 0, duration: opts.duration || 0.6, ease: 'power2.out', delay: opts.hold || 0.04 })
   }
 
   // 斜切转场：一道血粉斜幕扫过；midway 回调在幕布完全遮住时执行
@@ -592,12 +597,14 @@
     return tl
   }
 
+  // 抖动期间临时把目标提升为合成层：不然每抖一下（默认抖整个 #world）都要整页重画
   App.shake = (el = document.getElementById('world'), strength = 10, duration = 0.4) => {
     if (!window.gsap) return
     const tl = gsap.timeline()
     const n = 8
+    tl.set(el, { willChange: 'transform' })
     for (let i = 0; i < n; i++) tl.to(el, { x: U.rand(-strength, strength) * (1 - i / n), y: U.rand(-strength, strength) * (1 - i / n), duration: duration / n, ease: 'none' })
-    tl.to(el, { x: 0, y: 0, duration: 0.05, clearProps: 'transform' })
+    tl.to(el, { x: 0, y: 0, duration: 0.05, clearProps: 'transform,willChange' })
     return tl
   }
 

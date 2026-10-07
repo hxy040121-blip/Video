@@ -83,7 +83,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   position: fixed; inset: 0; z-index: 89; pointer-events: none;
   background: radial-gradient(ellipse 120% 90% at 50% 45%, transparent 35%, rgba(0,0,0,.55) 100%);
 }
-#flash { position: fixed; inset: 0; z-index: 95; pointer-events: none; opacity: 0; background: var(--bone); mix-blend-mode: normal; }
+#flash { position: fixed; inset: 0; z-index: 95; pointer-events: none; opacity: 0; visibility: hidden; background: var(--bone); will-change: opacity; }
 
 #world { position: relative; z-index: 2; }
 .sec { position: relative; min-height: 100vh; }

@@ -136,13 +136,14 @@
       if (lenis && dist > 3 && window.gsap && !App.reduced) {
         const veil = document.getElementById('flash')
         gsap.killTweensOf(veil)
-        gsap.set(veil, { background: '#050404' })
+        veil.dataset.c = '#050404'
+        veil.style.background = '#050404'
         gsap.to(veil, {
-          opacity: 1, duration: 0.28, ease: 'power2.in',
+          autoAlpha: 1, duration: 0.28, ease: 'power2.in',
           onComplete: () => {
             lenis.scrollTo(top, { immediate: true, force: true })
             ScrollTrigger.update()
-            gsap.to(veil, { opacity: 0, duration: 0.55, ease: 'power2.out', delay: 0.12 })
+            gsap.to(veil, { autoAlpha: 0, duration: 0.55, ease: 'power2.out', delay: 0.12 })
           },
         })
       } else App.scroll.to(top, { force: true, duration: Math.min(1.6, 0.6 + dist * 0.35) })
