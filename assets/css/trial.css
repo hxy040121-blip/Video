@@ -6,7 +6,6 @@
 
 #trial.trial-root {
   position: relative;
-  z-index: 1; /* 盖住下一板块（铜牌）溢出来的浮钮：庭审画面里只有庭审 */
   height: 100vh;
   height: 100svh;
   min-height: 680px;

@@ -17,7 +17,8 @@
   --pq-gold: #e8b85c;
   position: relative;
   z-index: 0;
-  overflow-x: clip;
+  /* 上下也裁：右下浮层（离馆钮、便笺）与光斑层不会在板块刚露头时伸进上一板块（庭审）。clip 不是滚动容器，sticky 照常 */
+  overflow: clip;
   padding: clamp(36px, 7vh, 90px) 0 clamp(70px, 12vh, 140px);
   color: var(--bone);
 }
