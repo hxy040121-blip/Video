@@ -458,6 +458,8 @@
       w.ox = U.lerp(w.ox, gx, 0.2)
       w.oy = U.lerp(w.oy, gy, 0.2)
       if (w.photo) {
+        // 小肖像（席位、名单上的小头像）看不出视差，不写
+        if (r.width < 100) continue
         // 只在数值变化时才写：光标停住后画像不再每帧触发样式与重绘
         const px = (w.ox / w.range).toFixed(2), py = (w.oy / w.range).toFixed(2)
         if (px !== w.px) { w.px = px; w.wrap.style.setProperty('--pvx', px) }

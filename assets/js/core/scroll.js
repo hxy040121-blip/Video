@@ -15,7 +15,9 @@
     if (window.Lenis && !App.reduced) {
       lenis = new Lenis({ lerp: 0.09, wheelMultiplier: 0.9, smoothWheel: true, syncTouch: false })
       lenis.on('scroll', ScrollTrigger.update)
-      gsap.ticker.add(time => lenis.raf(time * 1000))
+      // 排在帧循环最前面（prioritize）：先更新滚动位置，再跑各板块的 App.tick，
+      // 否则跟着滚动走的画面会比滚动晚一帧，滚动时看起来发抖
+      gsap.ticker.add(time => lenis.raf(time * 1000), false, true)
       gsap.ticker.lagSmoothing(0)
     }
     App.scroll.lenis = lenis
