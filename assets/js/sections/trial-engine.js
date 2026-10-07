@@ -1087,9 +1087,9 @@
     const m = c.murderer
     const tA = apparentDeath(c)
     const r10 = x => Math.round(x / 10) * 10
-    const cut = c.shift ? r10((c.tMurder + tA) / 2) : r10(c.tMurder + (rr() < 0.5 ? -1 : 1) * (25 + Math.floor(rr() * 46)))
+    const cut = c.shift ? r10((c.tMurder + tA) / 2) : r10(c.tMurder + (rr() < 0.5 ? -1 : 1) * (60 + Math.floor(rr() * 51)))
     const lo = Math.min(c.tMurder, tA, cut), hi = Math.max(c.tMurder, tA, cut)
-    c.span = { from: r10(lo - 40 - Math.floor(rr() * 31)), cut, to: r10(hi + 40 + Math.floor(rr() * 31)) }
+    c.span = { from: r10(lo - 70 - Math.floor(rr() * 51)), cut, to: r10(hi + 70 + Math.floor(rr() * 51)) }
     const segOf = t => (t < cut ? 0 : 1)
     const kTrue = segOf(c.tMurder), kFake = c.shift ? segOf(tA) : null
     const people = livingIds(g)
@@ -2004,10 +2004,10 @@
   }
   // 凶手拿陈设误导时说的「证据」（排除性事实的反面）：{O} 代入陈设名；用作台词里的 {CLUE}
   const CLAIM = {
-    'not-dragged': '{O}上的拖痕', 'not-moved': '{O}的挪动痕', 'nothing-hidden': '{O}里藏的东西', 'not-used': '{O}上的使用痕',
+    'not-dragged': '{O}上的拖痕', 'not-moved': '{O}的挪动痕', 'nothing-hidden': '{O}里藏的东西', 'not-used': '用过的{O}',
     'clean': '{O}上的血', 'no-wash': '{O}里的血水', 'not-from-water': '{O}边的水痕', 'no-steps': '{O}上的脚印',
-    'untouched': '{O}上的新痕', 'time-ok': '{O}上的拨针痕', 'no-handprint': '{O}上的手印', 'weapon-not-here': '{O}上的空位',
-    'not-searched': '{O}里的翻找痕', 'no-forced': '{O}上的撬痕',
+    'untouched': '被动过的{O}', 'time-ok': '被拨过的{O}', 'no-handprint': '{O}上的手印', 'weapon-not-here': '{O}那里少了的一件',
+    'not-searched': '被翻过的{O}', 'no-forced': '被撬过的{O}',
   }
   function* trialFlowRaw(g, T) {
     const c = T.case
@@ -2369,7 +2369,7 @@
         const acc = (T.accuse[a] || []).filter(x => isLiving(g, x) && !(T.answered[a] || []).includes(x))
         if (acc.length) add(2.3, { kind: 'respond', target: acc[acc.length - 1] })
         // 凶手：拿现场的一处陈设误导（每场一次）
-        if (a === T.murderer && !T.misled && misleadSpots().length && !T.knownMurderer) add(2.0, { kind: 'mislead' })
+        if (a === T.murderer && !T.misled && T.mayMislead && misleadSpots().length && !T.knownMurderer) add(2.0, { kind: 'mislead' })
         const rk = ranked(g, T, a, living)
         const top = rk[0], margin = rk.length > 1 ? rk[0].s - rk[1].s : 9
         // 手里有让时间窗偏移的证物、还没人识破：出示（凶手自己不会）
@@ -2445,6 +2445,7 @@
     }
     if (!T.ended && T.phase === 'debate' && livingIds(g).length > 2) {
       T.stage = 'open'
+      T.mayMislead = chance(g.r, 0.6) // 凶手这一场想不想拿陈设误导
       const n = livingIds(g).length
       let beats = n <= 8 ? randInt(g.r, 4, 6) : n >= 13 ? randInt(g.r, 6, 8) : randInt(g.r, 5, 7)
       T.beats = beats

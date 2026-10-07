@@ -4,6 +4,13 @@
    → 处刑 → 余波 → 结案对账（真相回放，可跳过）→ 下一案 … → 终局（一案一行的总表）
    规则全部在 TrialEngine（trial-engine.js）里；这里只负责画面、声音与交互。
    称呼：广播、台词的 {X}{V}、证言卡用 callOf（馆里报的名字；同局重名或不报名时说「N号」）；名牌、档案用卡名。
+   第二部分：
+   - 调查：验尸弹出三格读数与时间刻度（你自己拖出死亡时间窗；医护者自动有一个窗）；死者衣袋里的金币可取走；
+     「默念」兑换工具（鲁米诺要毛毯、指纹粉先问价、录音笔、拍立得）；询问得两段时间线，落在你的窗里的那段标亮。
+   - 庭审：席位下的小点是你自己的笔记（拿起证物点人：✓ ✗ ?）；当众出示（每场三次）→ 反证或辩解与破绽；
+     依次发言之后是公开讨论，举手（每场三次）可出示、对质（两张证言卡拖到桌心）、追问、附议、质疑、驳回误导。
+   - 余波：本轮的几枚落在各人面前（没有累计账）；「下一案」之前默念吃饭、一夜安眠；钱够可以买退出券，持券离馆。
+   - 钱袋是全站共用的 App.econ（开局 newGame；余波 gain；兑换 settle / pay；离馆 exit）。
    ========================================================== */
 (function () {
   'use strict'
@@ -714,6 +721,12 @@
      席位档案（悬停 / 长按）：看得见的特征——身高刻度、性别、体格、能否行走、随身物、「别人眼里」
      只放卡面原文与数字；医护、现场观察、年代这类别人看不见的不放（运行规则 3.2）
      ========================================================== */
+  // 能不能行走：卡上的 canWalk；本局在铜牌或默念里修复过残疾的，按能走算（App.econ.canWalk）
+  const cantWalk = id => {
+    const e = App.econ && App.econ.get()
+    if (e && S.econGame && e.game === S.econGame) return !App.econ.canWalk(id)
+    return charOf(id).canWalk === false
+  }
   const profOK = k => !!(S.seat[k] && S.seat[k].id && !S.paused && ['intro', 'court', 'after'].includes(S.scene) && !S.E.reel.classList.contains('is-on'))
   function rulerSVG(cm) {
     const H = 92, top = 6, min = 140, max = 215
@@ -744,7 +757,7 @@
     const traits = el('div.trial-prof-traits', null, [
       trait('gender', c.gender || '—'),
       trait('physique', st.physique || '—', st.physique === '受训' ? 'is-strong' : ''),
-      c.canWalk === false ? trait('walk', '不能行走', 'is-strong') : null,
+      cantWalk(id) ? trait('walk', '不能行走', 'is-strong') : null,
     ])
     const items = (c.carried || []).slice(0, 3)
     const bag = el('div.trial-prof-items', null, [el('i', { html: dimIcon('items') }), el('ul', null, items.length ? items.map(t => el('li', { text: t })) : [el('li', { text: '—' })])])
@@ -1047,9 +1060,10 @@
     if (S.cardPick) { if (S.cardPick.filter(rec)) S.cardPick.done(rec); else { App.audio.sfx('wrong', { volume: 0.25 }); shakeCard(rec) } return }
     // 疑似线索：调查期里点它「再看一次」（三到五分钟）
     if (rec.herring && !rec.herring.cleared && S.scene === 'inv') { Inv.recheck(rec); return }
-    // 验尸卡：打开死亡时间（三格读数与你框出的时间窗）
-    if (rec.item.id === 'body' && S.autopsy && (S.scene === 'inv' || S.scene === 'court')) { openAutopsy(); return }
-    if (rec.item.id === 'photo' && S.C && S.C.photo && S.scene === 'court') { openAutopsy({ photo: true }); return }
+    // 验尸卡、照片：打开死亡时间（三格读数与你框出的时间窗）；正要出示时，照常拿起
+    const presenting = !!(S.presentArm || S.debateResolve) && presentable(rec)
+    if (!presenting && rec.item.id === 'body' && S.autopsy && (S.scene === 'inv' || S.scene === 'court')) { openAutopsy(); return }
+    if (!presenting && rec.item.id === 'photo' && S.C && S.C.photo && S.scene === 'court') { openAutopsy({ photo: true }); return }
     if (S.scene !== 'court' || !(notable(rec) || presentable(rec))) { showTip(rec); App.audio.sfx('flip', { volume: 0.5 }); return }
     if (S.armed === rec) return disarm()
     if (!S.presentArm && !S.debateResolve) cancelTargeting()
@@ -3192,7 +3206,7 @@
         // 「这个时段你在哪」：两段时间线；台词说的是落在你框出的窗里的那一段（没框就是前一段）
         const f = S.frame
         const segs = r.segs || []
-        const hit = f ? segs.findIndex(sg => sg.from < f[1] && sg.to > f[0]) : -1
+        const hit = f ? segLight(segs, f).indexOf('is-lit') : -1
         const sg = segs[hit >= 0 ? hit : 0] || { room: r.room, from: r.time }
         const t = line(r.id, 'alibi', { ROOM: sg.room, TIME: hhmm(sg.from) })
         const rec = talkCard(r.id, r)
@@ -3494,7 +3508,9 @@
   // 顶栏的饥饿与困倦刻度（身体结算 2、4）
   function updateBody() {
     const box = S.E.top && S.E.top.querySelector('.trial-top-body')
-    if (!box || !S.G || !S.me || !S.G.people[S.me]) return
+    if (!box) return
+    box.classList.toggle('is-off', !meAlive() || !!S.spectate)
+    if (!S.G || !S.me || !S.G.people[S.me]) return
     const b = TE.bodyState(S.G, S.me)
     const key = b.hunger + '|' + b.sleep
     if (box._k === key) return
@@ -3507,7 +3523,7 @@
   }
   function murmur(where) {
     const box = S.E.mm
-    const list = MM_LIST[where] || MM_LIST.inv
+    const list = (MM_LIST[where] || MM_LIST.inv).slice()
     const note = [] // 这一次兑换：{key, qty}
     box.innerHTML = ''
     const purse = el('div.trial-mm-purse', null, [el('i.trial-mm-coin'), el('b')])
@@ -3528,7 +3544,7 @@
       if (note.length) {
         const parts = []
         for (const n of note) {
-          const chip = el('button.trial-mm-chip', { type: 'button', 'data-cursor': '', 'aria-label': IT[n.key] }, [el('i', { html: icon(MM_LIST[where].find(x => x[0] === n.key)[1]) }), n.qty > 1 ? el('b', { text: '×' + n.qty }) : null])
+          const chip = el('button.trial-mm-chip', { type: 'button', 'data-cursor': '', 'aria-label': IT[n.key] }, [el('i', { html: icon((list.find(x => x[0] === n.key) || [0, 'look'])[1]) }), n.qty > 1 ? el('b', { text: '×' + n.qty }) : null])
           chip.addEventListener('click', ev => { ev.stopPropagation(); n.qty--; if (n.qty <= 0) note.splice(note.indexOf(n), 1); App.audio.sfx('click'); render() })
           noteEl.appendChild(chip)
           parts.push(String((priceOf(n.key) || 0) * n.qty))
@@ -3545,6 +3561,14 @@
       noteEl.classList.toggle('is-on', !!note.length)
       go.classList.toggle('is-breath', !go.disabled)
       exitBtn.style.display = App.econ.hasTicket() && !(e && e.exited) && meAlive() ? '' : 'none'
+    }
+    // 铜牌上问过价的牌外物品，也列进来（问了才知道价）
+    const e0 = econ()
+    if (where === 'inv' && e0) for (const nm of Object.keys(e0.asked || {})) {
+      if (Object.values(IT).includes(nm)) continue
+      const key = 'asked:' + nm
+      IT[key] = nm
+      list.push([key, 'look'])
     }
     for (const [key, ico] of list) {
       if (key === 'repair' && !App.econ.disability(S.me)) continue
@@ -3581,6 +3605,7 @@
     box.append(el('div.trial-mm-head', null, [el('i.trial-mm-ico', { html: icon('look') }), purse]), rows, asks, noteEl, foot)
     box.classList.toggle('is-after', where === 'after')
     box.classList.add('is-on')
+    centerBox(box, where === 'after')
     render()
     App.audio.sfx('whoosh', { volume: 0.4 })
     if (window.gsap) gsap.fromTo(box, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'expo.out' })
@@ -3638,6 +3663,11 @@
      被干扰的那一格裂开，显出它本来该在的位置。框好的窗决定证言卡上哪一段标亮。
      ========================================================== */
   const READ_TONE = { temp: 'is-temp', rigor: 'is-rigor', livor: 'is-livor' }
+  // 居中的浮层：用 GSAP 的百分比位移（别用 CSS 的 translate 属性——GSAP 碰过一次就会把它覆盖成 none）
+  function centerBox(box, on) {
+    if (window.gsap) gsap.set(box, { xPercent: on ? -50 : 0, yPercent: on ? -50 : 0 })
+    else box.style.transform = on ? 'translate(-50%, -50%)' : ''
+  }
   // 你知不知道尸体被怎样处理过：证物栏里有那条让时间窗偏移的证物
   const knowShift = () => !!(S.C && S.C.shift && S.cards.some(r => r.item.shift))
   function openAutopsy(opts = {}) {
@@ -3646,7 +3676,14 @@
     const box = S.E.ap
     const c = S.C
     box.innerHTML = ''
-    const [r0, r1] = A.ruler
+    // 刻度只取有用的那一段：最早的读数、医护的窗、你的窗往前一点，到验尸的时刻；至少三小时
+    const r1 = A.ruler[1]
+    let lo = r1 - 180
+    for (const r of A.readings) lo = Math.min(lo, r.band[0] == null ? r.band[1] - 120 : r.band[0])
+    if (A.window) lo = Math.min(lo, A.window[0])
+    if (S.frame) lo = Math.min(lo, S.frame[0])
+    if (c && c.shift && knowShift()) lo = Math.min(lo, c.tMurder - 60, TE.apparentDeath(c) - 60)
+    const r0 = Math.max(A.ruler[0], Math.floor((lo - 30) / 60) * 60)
     const span = r1 - r0
     const known = knowShift()
     const off = c && c.shift ? c.shift.dir * c.shift.minutes : 0
@@ -3746,6 +3783,7 @@
     box.classList.toggle('is-photo', !!A.photo)
     box.classList.add('is-on')
     App.audio.sfx('flip', { volume: 0.6 })
+    centerBox(box, true)
     if (window.gsap) {
       gsap.fromTo(box, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'expo.out' })
       gsap.fromTo(rows.querySelectorAll('.trial-ap-band'), { scaleX: 0 }, { scaleX: 1, duration: 0.55, stagger: 0.08, delay: 0.2, ease: 'expo.out' })
@@ -3810,13 +3848,13 @@
     const box = el('div.trial-tl')
     const a = segs.length ? segs[0].from : 0, b = segs.length ? segs[segs.length - 1].to : 1
     const f = S.frame
-    for (const sg of segs) {
+    const L = segLight(segs, f)
+    segs.forEach((sg, i) => {
       const w = (sg.with || []).filter(x => S.G && S.G.people[x])
-      const on = !!(f && sg.from < f[1] && sg.to > f[0])
-      box.appendChild(el('div.trial-tl-seg' + (on ? '.is-lit' : '') + (w.length ? '' : '.is-alone'), { style: { flexGrow: String(Math.max(1, sg.to - sg.from)) } }, [
+      box.appendChild(el('div.trial-tl-seg' + (L[i] ? '.' + L[i] : '') + (w.length ? '' : '.is-alone'), { style: { flexGrow: String(Math.max(1, sg.to - sg.from)) } }, [
         el('i', { text: hhmm(sg.from) }), el('b', { text: sg.room }), w.length ? el('span', { text: w.map(callOf).join('、') }) : el('span.is-none', { text: '—' }),
       ]))
-    }
+    })
     box.appendChild(el('i.trial-tl-end', { text: hhmm(b) }))
     if (f && b > a) {
       const L = U.clamp((f[0] - a) / (b - a)) * 100, R = U.clamp((f[1] - a) / (b - a)) * 100
@@ -3840,15 +3878,21 @@
     return rec
   }
   // 与时间窗相交的那一段标亮（没框就都不亮）
+  // 与时间窗重叠得最多的那一段亮；另一段也碰到窗（重叠二十分钟以上）时半亮
+  const overlap = (sg, f) => Math.max(0, Math.min(sg.to, f[1]) - Math.max(sg.from, f[0]))
+  function segLight(segs, f) {
+    if (!f) return segs.map(() => '')
+    const ov = segs.map(sg => overlap(sg, f))
+    const best = Math.max(...ov)
+    return ov.map(o => (best > 0 && o === best ? 'is-lit' : o >= 20 ? 'is-half' : ''))
+  }
   function lightTalk() {
     const f = S.frame
     for (const id in S.talk || {}) {
       const rec = S.talk[id]
       const chips = rec.el.querySelectorAll('.trial-card-segs i')
-      ;(rec.item.segs || []).forEach((sg, i) => {
-        const on = !!(f && sg.from < f[1] && sg.to > f[0])
-        if (chips[i]) chips[i].classList.toggle('is-lit', on)
-      })
+      const L = segLight(rec.item.segs || [], f)
+      L.forEach((cls, i) => { if (chips[i]) { chips[i].classList.toggle('is-lit', cls === 'is-lit'); chips[i].classList.toggle('is-half', cls === 'is-half') } })
     }
   }
   function markConflict(k) {
@@ -3908,7 +3952,7 @@
       const clues = U.shuffle(Inv.spots.filter(x => x.kind === 'clue'))
       const decoys = Inv.spots.filter(x => x.kind === 'decoy').sort((a, b) => (b.herring ? 1 : 0) - (a.herring ? 1 : 0)).slice(0, 1)
       // 能走动的人先上（不能行走的人也在场，只是排在后面）
-      const walks = id => (charOf(id).canWalk === false ? 0 : 1)
+      const walks = id => (cantWalk(id) ? 0 : 1)
       let crew = U.shuffle(living().filter(x => x !== c.murderer && x !== S.me)).sort((a, b) => walks(b) - walks(a))
       if (!crew.length) crew = living()
       let i = 0
@@ -4070,6 +4114,7 @@
 
   async function renderEvent(ev, T, c) {
     const G = S.G
+    if (S.discuss) refreshHand()
     switch (ev.type) {
       case 'open': {
         // 从开庭到这一场结束，议事厅的门关着，打不开（主持人游戏 3.1）：南、西、东三道门依次合上、扣死
@@ -4686,7 +4731,9 @@
   function flyPair(idx, id) {
     const g = S.geo
     const { chip, rec } = talkChip(id)
-    const to = { x: g.cx + (idx ? 1 : -1) * Math.min(130, g.W * 0.2), y: g.cy - (g.mobile ? 70 : Math.min(120, g.ry * 0.5)) }
+    // 桌面：左右各一张；手机：上下各一张（并排放不下）
+    const half = (chip.offsetWidth || 220) / 2
+    const to = g.mobile ? { x: g.cx, y: g.cy - 70 + (idx ? 30 : -30) } : { x: g.cx + (idx ? 1 : -1) * Math.min(g.W * 0.45 - half, half + 14), y: g.cy - Math.min(120, g.ry * 0.5) }
     chip.style.left = to.x + 'px'
     chip.style.top = to.y + 'px'
     if (rec && window.gsap) {
@@ -4709,14 +4756,15 @@
       await wait(S.spectate ? 600 : 1000)
       tape.remove()
     }
-    if (window.gsap) await anim(r => gsap.to(pair, { x: (i) => (i ? -1 : 1) * Math.min(56, S.geo.W * 0.08), duration: 0.22, ease: 'power3.in', onComplete: r }))
+    const mob = S.geo && S.geo.mobile
+    if (window.gsap) await anim(r => gsap.to(pair, mob ? { y: (i) => (i ? -1 : 1) * 22, duration: 0.22, ease: 'power3.in', onComplete: r } : { x: (i) => (i ? -1 : 1) * Math.min(56, S.geo.W * 0.08), duration: 0.22, ease: 'power3.in', onComplete: r }))
     if (ev.ok) {
       App.audio.sfx('glitch', { volume: 0.6 })
       App.shake(S.stage, 9, 0.35)
       pair.forEach(p => p.classList.add('is-crack'))
     } else {
       App.audio.sfx('wrong', { volume: 0.45 })
-      if (window.gsap) gsap.to(pair, { x: (i) => (i ? 1 : -1) * 40, duration: 0.4, ease: 'back.out(3)' })
+      if (window.gsap) gsap.to(pair, mob ? { y: (i) => (i ? 1 : -1) * 26, duration: 0.4, ease: 'back.out(3)' } : { x: (i) => (i ? 1 : -1) * 40, duration: 0.4, ease: 'back.out(3)' })
     }
     await wait(ev.ok ? 450 : 700)
     if (window.gsap) gsap.to(pair, { opacity: 0, y: -16, duration: 0.35, onComplete: () => pair.forEach(p => p.remove()) })
@@ -4730,11 +4778,22 @@
     dots.innerHTML = ''
     for (let i = 0; i < TE.HAND_MAX; i++) dots.appendChild(el('b' + (i < S.T.hands ? '.is-on' : '')))
     h.disabled = S.T.hands <= 0
+    h._n = S.T.hands
     h.classList.add('is-on')
     h.classList.remove('is-up')
     if (window.gsap) gsap.fromTo(h, { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(2.2)', clearProps: 'transform,opacity' })
   }
   function hideHand() { if (S.E.hand) S.E.hand.classList.remove('is-on', 'is-up', 'is-hint') }
+  // 举过手之后：小点跟着少一颗，用完就灰掉
+  function refreshHand() {
+    const h = S.E.hand
+    if (!h || !S.T || !h.classList.contains('is-on')) return
+    const n = S.T.hands
+    if (h._n === n) return
+    h._n = n
+    h.querySelectorAll('.trial-hand-dots b').forEach((b, i) => b.classList.toggle('is-on', i < n))
+    h.disabled = n <= 0
+  }
   function pulseHand() {
     const h = S.E.hand
     if (!h || !h.classList.contains('is-on') || h.disabled) return
@@ -4836,7 +4895,10 @@
       }
       const move = e => {
         if (!drag) return
-        if (!drag.ghost && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 10) {
+        // 触屏：往上（朝桌心）拖才算拖，横着划是在滚证物栏
+        const up = drag.y - e.clientY, side = Math.abs(e.clientX - drag.x)
+        const go = e.pointerType === 'touch' ? up > 14 && up > side : Math.hypot(side, up) > 10
+        if (!drag.ghost && go) {
           drag.ghost = drag.r.el.cloneNode(true)
           drag.ghost.classList.add('trial-drag-ghost')
           S.stage.appendChild(drag.ghost)
@@ -4885,12 +4947,12 @@
     const cur = ev.current
     for (let n = 0; n < 12; n++) {
       const items = []
-      if (ev.presentLeft > 0 && S.cards.some(presentable)) items.push({ label: '出示', value: 'present', tone: 'blood' })
-      if (Object.keys(S.talk || {}).length >= 2) items.push({ label: '对质', value: 'confront' })
-      items.push({ label: '追问', value: 'question' })
-      if (cur && TE.isLiving(G, cur.target) && cur.target !== S.me) items.push({ label: '附议', value: 'agree' }, { label: '质疑', value: 'doubt' })
-      if (ev.claim && S.cards.some(refuter)) items.push({ label: '驳回', value: 'refute', tone: 'blood' })
-      items.push({ label: '放下', value: 'cancel' })
+      if (ev.presentLeft > 0 && S.cards.some(presentable)) items.push({ label: '出示', value: 'present', tone: 'blood', act: 'present' })
+      if (Object.keys(S.talk || {}).length >= 2) items.push({ label: '对质', value: 'confront', act: 'confront' })
+      items.push({ label: '追问', value: 'question', act: 'question' })
+      if (cur && TE.isLiving(G, cur.target) && cur.target !== S.me) items.push({ label: '附议', value: 'agree', act: 'agree' }, { label: '质疑', value: 'doubt', act: 'doubt' })
+      if (ev.claim && S.cards.some(refuter)) items.push({ label: '驳回', value: 'refute', tone: 'blood', act: 'refute' })
+      items.push({ label: '放下', value: 'cancel', act: 'hand-down' })
       const v = await choose(items)
       if (v === 'cancel') return null
       if (v === 'agree' || v === 'doubt') return { kind: v }
@@ -5205,6 +5267,10 @@
     if (rec.bottle) extra.appendChild(el('span', null, [el('i', { html: causeIcon('poison') }), el('span', { text: rec.bottle.room + ' · 书桌 · ' + hhmm(rec.bottle.at) })]))
     if (rec.doorLock) extra.appendChild(el('span', null, [el('i', { html: causeIcon('door') }), el('span', { text: hhmm(rec.doorLock.at) + '—' + hhmm(rec.doorLock.until) })]))
     if (rec.where && rec.where.lie) extra.appendChild(el('span.is-lie', null, [el('i', { html: LIE_MARK }), el('span', { text: rec.where.claim })]))
+    // 让死亡时间窗偏移：看上去的时刻 → 真正的时刻（识破了没有）
+    if (rec.death && rec.death.shift) extra.appendChild(el('span.is-shift' + (rec.death.refKnown ? '.is-seen' : ''), null, [el('i', { html: dimIcon('time') }), el('s', { text: hhmm(rec.death.apparent) }), el('span', { text: '→ ' + hhmm(rec.death.t) })]))
+    // 死者衣袋里的金币：谁取走了，或还留在现场
+    if (rec.coins && (rec.coins.taken || rec.coins.body)) extra.appendChild(el('span.is-coins', null, [el('i.trial-mm-coin'), el('span', { text: rec.coins.taken ? rec.coins.taken.n + ' · ' + U.roman(seatOf(rec.coins.taken.by)) : String(rec.coins.body) })]))
     // 发现者（凶手在心里要求播报时，就是他自己）
     if (rec.discoverer) extra.appendChild(el('span' + (rec.selfReport ? '.is-self' : ''), null, [el('i', { html: icon('look') }), el('span', { text: nameOf(rec.discoverer) + ' · ' + hhmm(rec.tDiscover) })]))
     const info = el('div.trial-rp-info', null, [
@@ -5276,7 +5342,7 @@
         el('span.trial-rp-k', null, [el('b', { text: String(i + 1) }), el('i', { html: icon(k.tpl) }), el('span', { text: k.label })]),
         el('span.trial-rp-by', { text: k.foundBy ? U.roman(seatOf(k.foundBy)) : '—' }),
         el('i.trial-rp-link'),
-        el('span.trial-rp-f' + (k.visible ? '' : '.is-unseen'), null, [el('i', { html: dimIcon(k.dim) }), el('span', { text: featureOf(k.dim, ch) })]),
+        el('span.trial-rp-f' + (k.visible ? '' : '.is-unseen'), null, [el('i', { html: dimIcon(k.dim) }), el('span', { text: k.dim === 'time' && rec.death ? hhmm(rec.death.apparent) + '→' + hhmm(rec.death.t) : featureOf(k.dim, ch) })]),
       ])
       clues.appendChild(row)
     })
@@ -5445,6 +5511,7 @@
     TE.leave(G, S.me)
     S.left = true
     S.deadShown = true
+    updateBody()
     const E = S.E
     S.endMood = 'end'
     hideHand()
