@@ -1456,7 +1456,11 @@
     SV.L.name.textContent = nameOf(c.K.id)
     SV.R.name.textContent = nameOf(c.W.id)
     SV.eyes.textContent = ''
-    SV.eyes.append(App.portrait(c.K.id, { className: 'cycle-eyes', eyeRange: 9 }))
+    // 黑暗里：几乎看不见的轮廓 + 发光的眼（位图肖像只留眼睛那一道窄带）
+    SV.eyes.append(
+      App.portrait(c.K.id, { silhouette: true, track: false, className: 'cycle-v-shade' }),
+      App.portrait(c.K.id, { className: 'cycle-eyes', eyeRange: 9 }),
+    )
   }
   SV.layout = function () {
     SV.divSvg.setAttribute('viewBox', `0 0 ${S.W} ${S.H}`)
@@ -1943,7 +1947,9 @@
     const w = Math.min(W * (S.mob ? 0.34 : 0.15), 230), h = w * 0.42
     const x = W - w / 2 - (S.mob ? 18 : W * 0.07), y = H * (S.mob ? 0.2 : 0.24)
     const d = Math.hypot(S.cur.x - x, S.cur.y - y)
-    let a = S.cur.auto ? 0.28 + 0.28 * Math.sin(t * 0.9) : clamp(1 - (d - 70) / 260)
+    // 光标靠近才看得见；没有光标（触屏 / 自动演示）时像烛光一样时隐时现
+    const near = S.cur.auto ? 0 : clamp(1 - (d - 70) / 260)
+    let a = S.cur.auto || !App.finePointer ? Math.max(near, 0.3 + 0.3 * Math.sin(t * 0.9)) : near
     a *= SA.deskT
     if (a < 0.01) return
     c.save()
@@ -2138,7 +2144,8 @@
         const [w, h] = viewSize()
         if (Math.abs(w - S.W) > 1 || Math.abs(h - S.H) > 1) layout()
       }
-      const p = S.st ? S.st.progress : 0
+      const sr = S.sec.getBoundingClientRect()
+      const p = clamp(-sr.top / Math.max(1, sr.height - S.H))
       S.p = p
       S.fast = S.st ? Math.abs(S.st.getVelocity()) > S.H * 3.2 : false
       const x = p * TOTAL
@@ -2200,14 +2207,14 @@
     for (const sh of SH) if (sh.setCast) sh.setCast()
     layout()
 
+    // 进度与可见性都按板块的实时位置算，不依赖 ScrollTrigger 缓存的起止点：
+    // 上方板块（卡池、十五席……）事后变高而没有 refresh 时，本板块的镜头也不会错位。
+    // ScrollTrigger 只用来读滚动速度（快速拖过时静默）。
     S.st = ScrollTrigger.create({ trigger: sec, start: 'top top', end: 'bottom bottom' })
-    ScrollTrigger.create({
-      trigger: sec, start: 'top bottom', end: 'bottom top',
-      onToggle: self => {
-        S.visible = self.isActive
-        if (!self.isActive) { clearLater(); hush() }
-      },
-    })
+    App.onVisible(sec, v => {
+      S.visible = v
+      if (!v) { clearLater(); hush() }
+    }, { rootMargin: '0px' })
     S.visible = (() => { const r = sec.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight })()
 
     const onTouch = e => {

@@ -165,11 +165,18 @@
 .cycle-stage .cycle-eyes > svg { visibility: hidden; filter: drop-shadow(0 0 4px #ff2e7e) drop-shadow(0 0 14px rgba(255, 46, 126, .7)); }
 .cycle-stage .cycle-eyes .p-iris { visibility: visible; }
 .cycle-stage .cycle-eyes .p-iris * { fill: #ff5c97; stroke: none; }
+/* 位图肖像：只留下眼睛那一道窄带，乘上血粉 */
 .cycle-stage .cycle-eyes.is-photo > img {
-  /* 位图肖像：只留下眼睛那一道窄带，染成血粉 */
-  filter: grayscale(1) brightness(1.35) contrast(2.2) sepia(1) saturate(7) hue-rotate(-48deg) drop-shadow(0 0 6px rgba(255, 46, 126, .8));
-  -webkit-mask-image: linear-gradient(180deg, transparent 35.5%, #000 39.5%, #000 43.5%, transparent 47.5%);
-  mask-image: linear-gradient(180deg, transparent 35.5%, #000 39.5%, #000 43.5%, transparent 47.5%);
+  filter: grayscale(1) contrast(1.7) brightness(.95);
+  -webkit-mask-image: linear-gradient(180deg, transparent 36%, #000 39.6%, #000 43%, transparent 46.5%);
+  mask-image: linear-gradient(180deg, transparent 36%, #000 39.6%, #000 43%, transparent 46.5%);
+}
+.cycle-stage .cycle-eyes.is-photo::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 34% 7% at 50% 41.3%, #ff6f9f, #ff2e7e 55%, #7a0630);
+  mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(180deg, transparent 35%, #000 39%, #000 43.5%, transparent 47.5%);
+  mask-image: linear-gradient(180deg, transparent 35%, #000 39%, #000 43.5%, transparent 47.5%);
 }
 
 /* =========================================================
@@ -633,6 +640,11 @@
 .cycle-v-r .cycle-v-fig > .portrait > svg, .cycle-v-r .cycle-v-fig > .portrait > img { filter: drop-shadow(0 0 22px rgba(255, 46, 126, .4)); }
 .cycle-v-r .cycle-v-fig > .portrait.is-photo > img { filter: drop-shadow(0 0 22px rgba(255, 46, 126, .4)) sepia(.5) hue-rotate(-30deg) saturate(1.6); }
 .cycle-v-fig > .portrait.is-photo { overflow: visible; }
+.cycle-v-fig > .portrait > svg, .cycle-v-fig > .portrait > img { transition: filter .22s steps(2); }
+/* 处刑：人先变成剪影，再被斜切的血粉光吞没 */
+.cycle-v-side.is-shadow .cycle-v-fig > .portrait > svg, .cycle-v-side.is-shadow .cycle-v-fig > .portrait > img {
+  filter: brightness(0) drop-shadow(0 0 1.5px rgba(255, 46, 126, .95)) drop-shadow(0 0 28px rgba(255, 46, 126, .5));
+}
 .cycle-v-fig::after {
   content: ''; position: absolute; top: -8%; bottom: -8%; width: 16%;
   left: calc(var(--cut) * 160% - 30% - 8%);
@@ -697,8 +709,13 @@
   opacity: 0; transition: opacity 1.4s var(--ease-out); pointer-events: none;
 }
 .cycle-v-dark.is-on { opacity: 1; }
-.cycle-v-eyes { position: absolute; left: 50%; top: 50%; width: min(80vh, 70vw); transform: translate(-50%, -43%); }
-.cycle-v-eyes .portrait { width: 100%; }
+.cycle-v-eyes { position: absolute; left: 50%; top: 50%; width: min(80vh, 70vw); aspect-ratio: 3 / 4; transform: translate(-50%, -43%); }
+.cycle-v-eyes .portrait { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cycle-v-dark .cycle-v-shade > svg, .cycle-v-dark .cycle-v-shade > img {
+  filter: brightness(0) drop-shadow(0 0 1px rgba(255, 46, 126, .4)) drop-shadow(0 0 22px rgba(255, 46, 126, .14));
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 85%);
+  mask-image: linear-gradient(180deg, #000 30%, transparent 85%);
+}
 .cycle-v-dark.is-on .cycle-v-eyes { animation: cycle-eyes 3.2s steps(1) infinite; }
 @keyframes cycle-eyes { 0%, 100% { opacity: 1; } 47% { opacity: 1; } 48% { opacity: .1; } 50% { opacity: 1; } }
 

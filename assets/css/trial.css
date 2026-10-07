@@ -144,12 +144,13 @@
 .trial-seat-x::after { transform: rotate(-45deg); }
 /* 锁：扣在胸前（远端席位的下半截被桌面挡住，所以不放底部；两侧与顶上留给票数、标记与「你」） */
 .trial-seat-lock {
-  left: 50%; top: 56%; margin-left: -12px; z-index: 7; width: 24px; height: 24px;
+  left: 50%; top: 54%; margin-left: -14px; z-index: 7; width: 28px; height: 28px;
   display: grid; place-items: center; border-radius: 50%;
   background: var(--ink); box-shadow: 0 0 0 1px var(--blood), 0 0 14px rgba(255, 46, 126, .55);
   color: var(--bone); transform: scale(2.2) rotate(-30deg);
 }
-.trial-seat-lock svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.trial-seat.is-far .trial-seat-lock { top: 30%; }
+.trial-seat-lock svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .trial-seat-no {
   position: absolute; left: 0; right: 0; top: calc(100% + 4px);
@@ -490,7 +491,7 @@
 }
 .trial-idcard-face {
   transform: rotateY(180deg);
-  display: flex; flex-direction: column; align-items: center; padding: 22px 20px 20px; gap: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 22px 20px 20px; gap: 10px;
   background: radial-gradient(ellipse at 50% 26%, #2c1f17, #0f0b0a 70%);
   color: var(--bone);
 }
@@ -499,7 +500,12 @@
 .trial-idcard-sigil { width: 46%; aspect-ratio: 1; color: var(--brass); filter: drop-shadow(0 0 16px rgba(194, 154, 91, .35)); }
 .trial-idcard-sigil .sigil, .trial-idcard-sigil svg { display: block; width: 100%; height: 100%; }
 .trial-idcard-name { font-family: var(--f-display); font-weight: 900; font-size: clamp(22px, 2.2vw, 30px); line-height: 1.1; letter-spacing: .14em; padding-left: .14em; }
-.trial-idcard-text { flex: 1 1 auto; overflow: hidden; font-size: 12px; line-height: 1.75; color: var(--bone-dim); text-align: justify; }
+.trial-idcard-text { flex: 0 1 auto; overflow: hidden; font-size: 12px; line-height: 1.75; color: var(--bone-dim); text-align: justify; }
+.trial-idcard.is-long .trial-idcard-sigil { width: 28%; }
+.trial-idcard.is-long .trial-idcard-text { font-size: 11px; line-height: 1.65; }
+.trial-idcard.is-xlong .trial-idcard-sigil { width: 20%; }
+.trial-idcard.is-xlong .trial-idcard-name { font-size: clamp(20px, 1.8vw, 24px); }
+.trial-idcard.is-xlong .trial-idcard-text { font-size: 10.5px; line-height: 1.55; }
 .trial-deal-go { position: absolute; left: 0; right: 0; bottom: max(7%, 40px); z-index: 31; display: flex; justify-content: center; pointer-events: none; }
 .trial-deal-go.is-on { pointer-events: auto; }
 .trial-deal-go:empty { display: none; }
@@ -974,6 +980,8 @@
   transition: opacity .3s;
 }
 .trial-stage[data-scene="end"] .trial-notes { opacity: 0; }
+/* 调查时右上角是倒计时：通知挪到它下面 */
+.trial-stage[data-scene="inv"] .trial-notes { top: calc(var(--hud-h) + 200px); }
 .trial-note {
   display: flex; align-items: center; gap: 10px; padding: 7px 14px 7px 10px; max-width: 280px;
   background: rgba(10, 8, 9, .92); border-right: 2px solid var(--bone-dim);
@@ -1080,6 +1088,8 @@
   .trial-seat-count { width: 22px; height: 22px; margin-left: -11px; top: -10px; font-size: 11px; }
   .trial-seat-count.is-lead { width: 28px; height: 28px; margin-left: -14px; top: -14px; font-size: 14px; }
   .trial-seat-tag { font-size: 9px; padding: 1px 4px; left: -4px; }
+  .trial-seat-lock { width: 20px; height: 20px; margin-left: -10px; }
+  .trial-seat-lock svg { width: 11px; height: 11px; }
   .trial-seat-mark { right: -8px; }
   .trial-mark { min-width: 16px; height: 16px; font-size: 9px; }
   .trial-seat-coins { top: calc(100% + 12px); font-size: 9px; min-width: 18px; }
@@ -1099,7 +1109,13 @@
   .trial-btn { padding: 11px 16px 11px calc(16px + .35em); font-size: 12px; }
   .trial-ask { bottom: 0; }
 
-  .trial-idcard { --cw: min(62vw, 240px); top: 45%; }
+  .trial-idcard { --cw: min(72vw, 280px); top: 46%; }
+  .trial-idcard-face { padding: 18px 16px 16px; gap: 8px; }
+  .trial-idcard-sigil { width: 40%; }
+  .trial-idcard-text { font-size: 11px; line-height: 1.65; }
+  .trial-idcard.is-long .trial-idcard-sigil { width: 28%; }
+  .trial-idcard.is-xlong .trial-idcard-sigil { width: 20%; }
+  .trial-idcard.is-xlong .trial-idcard-text { font-size: 10.5px; line-height: 1.55; }
   .trial-cine-time { font-size: 64px; }
   .trial-cine-dial { width: 92vw; }
   .trial-cine-found { flex-direction: column; gap: 10px; padding-top: calc(var(--hud-h) + 90px); justify-content: flex-start; text-align: center; }
@@ -1170,6 +1186,7 @@
   .trial-banner-text b { font-size: 34px; }
   .trial-banner-text span { font-size: 12px; }
   .trial-notes { right: 12px; top: calc(var(--hud-h) + 128px); }
+  .trial-stage[data-scene="inv"] .trial-notes { top: calc(var(--hud-h) + 128px); }
   .trial-note { max-width: 220px; }
   .trial-desk { right: 18%; }
 }

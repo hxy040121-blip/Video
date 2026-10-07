@@ -35,7 +35,7 @@
 
 /* ---------- 最后那个人 ---------- */
 .wish-last { position: absolute; left: 0; top: 0; margin: 0; z-index: 3; pointer-events: none; will-change: transform; }
-.wish-face-anim { opacity: 0; }
+.wish-face-anim { position: relative; opacity: 0; }
 .wish-face-wrap {
   position: relative; height: min(56vh, 540px); aspect-ratio: 3 / 4;
   filter: drop-shadow(0 -1px 0 rgba(240, 214, 160, .45)) drop-shadow(0 0 1px rgba(214, 178, 110, .35)) drop-shadow(0 -6px 14px rgba(240, 233, 220, .1));
@@ -45,8 +45,9 @@
 .wish-face .portrait > svg { transition: filter 1.8s var(--ease-out); }
 .wish-face-wrap.is-sil { filter: drop-shadow(0 -1px 0 rgba(240, 214, 160, .95)) drop-shadow(0 0 1px rgba(214, 178, 110, .9)) drop-shadow(0 -6px 14px rgba(240, 233, 220, .22)); }
 .wish-face-wrap.is-sil .portrait > svg { filter: brightness(0); }
-/* 下沿与两侧都化进黑暗（位图的身体常被裁成直边） */
-.wish-face {
+/* 下沿与两侧都化进黑暗（位图的身体常被裁成直边）。遮罩挂在描边滤镜的同一层上：先描边、再整体淡出，
+   否则半透明处会透出描边色 */
+.wish-face-wrap {
   -webkit-mask-image: linear-gradient(to bottom, #000 52%, rgba(0, 0, 0, .5) 70%, transparent 90%), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
   mask-image: linear-gradient(to bottom, #000 52%, rgba(0, 0, 0, .5) 70%, transparent 90%), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
   -webkit-mask-composite: source-in; mask-composite: intersect;
@@ -64,7 +65,7 @@
 .wish-face-wrap.is-empty { visibility: hidden; }
 .wish-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 /* 身后的那束光：从画面顶端落到头上 */
-.wish-face-wrap::before {
+.wish-face-anim::before {
   content: ''; position: absolute; left: 50%; bottom: 52%; width: 46%; height: 140vh; transform: translateX(-50%);
   pointer-events: none; z-index: -1;
   background: linear-gradient(to top, rgba(240, 233, 220, .16), rgba(240, 233, 220, .05) 45%, rgba(240, 233, 220, 0));

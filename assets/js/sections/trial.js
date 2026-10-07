@@ -684,8 +684,8 @@
     const btn = S.E.me.querySelector('.trial-me-act')
     const was = btn.classList.contains('is-on')
     btn.classList.toggle('is-on', !!a)
-    btn.classList.toggle('is-armed', arming)
-    if (btn.textContent !== label) btn.textContent = label
+    if (a) btn.classList.toggle('is-armed', arming) // 收起时保留原来的样子
+    if (label && btn.textContent !== label) btn.textContent = label // 收起时保留旧字，随按钮一同缩没
     btn.setAttribute('data-cursor', label)
     btn.setAttribute('aria-label', label)
     if (a && !was && window.gsap) gsap.fromTo(btn, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(2.4)', clearProps: 'transform,opacity' })
@@ -1461,6 +1461,10 @@
     fc.querySelector('.trial-idcard-name').textContent = id.name
     fc.querySelector('.trial-idcard-no').textContent = U.roman(d.no || 1)
     fc.querySelector('.trial-idcard-text').textContent = d.frontText || ''
+    // 卡面原文长短不一：长文时纹章让位
+    const len = (d.frontText || '').length
+    card.classList.toggle('is-long', len > 150 && len <= 240)
+    card.classList.toggle('is-xlong', len > 240)
     card.classList.add('is-on')
     card.classList.remove('is-flipped')
     const mk = seatOf(S.me)
@@ -2649,6 +2653,7 @@
         hideSay()
         clearLines(null)
         S.phase = 'vote'
+        updateMe()
         App.audio.setMood({ tension: 1 })
         S.stage.classList.add('is-vote')
         await broadcast(bcText('主持人只以【】喊停辩论') || '辩论结束，开始投票。')
@@ -3140,7 +3145,7 @@
       gsap.set(fc, { rotate: 0, rotationX: 0, x: 0, y: 0, opacity: 1, transformPerspective: 760, transformOrigin: '50% 100%' })
       gsap.timeline({ delay: 0.35 })
         .to(fc, { rotationX: -9, y: -4, duration: 0.32, ease: 'power2.out' })
-        .to(fc, { rotationX: 74, y: 0, duration: 1.0, ease: 'bounce.out', onStart: () => setTimeout(() => { App.audio.sfx('drop'); App.shake(S.stage, 6, 0.3) }, 380) })
+        .to(fc, { rotationX: 66, y: 0, duration: 1.0, ease: 'bounce.out', onStart: () => setTimeout(() => { App.audio.sfx('drop'); App.shake(S.stage, 6, 0.3) }, 380) })
         .to(fc, { opacity: 0.7, duration: 0.8, ease: 'power2.out' }, '<0.5')
     }
     await wait(1400)

@@ -163,7 +163,7 @@
   background: linear-gradient(90deg, rgba(139, 101, 47, 0), currentColor);
 }
 .identities-num::after { transform: scaleX(-1); }
-.identities-face.is-neg .identities-num { top: auto; bottom: calc(var(--mm) * 5.7); transform: rotate(180deg); color: #a8262d; }
+.identities-face.is-neg .identities-num { top: auto; bottom: calc(var(--mm) * 5.7); color: #a8262d; }
 
 /* 纹章 */
 .identities-sig {
@@ -306,6 +306,11 @@
 .identities-face .identities-fine { transition: opacity 1.2s var(--ease-out) .6s; }
 .identities-face .identities-oath { transition: opacity .9s var(--ease-out) .2s, top .5s var(--ease-out); }
 .identities-face.is-instant, .identities-face.is-instant * { transition: none !important; }
+/* 收拢成一叠后扣过去：背面的字隐去，只剩黑漆与边框 */
+.identities-stage.is-hush .identities-face--back .identities-num, .identities-stage.is-hush .identities-face--back .identities-sig,
+.identities-stage.is-hush .identities-face--back .identities-name, .identities-stage.is-hush .identities-face--back .identities-div,
+.identities-stage.is-hush .identities-face--back .identities-oath, .identities-stage.is-hush .identities-face--back .identities-text,
+.identities-stage.is-hush .identities-face--back .identities-fine { opacity: 0; }
 
 /* 焚名 */
 .identities-burn, .identities-burn-glow { position: absolute; pointer-events: none; }
@@ -332,19 +337,34 @@
 .identities-snap { position: absolute; top: 0; bottom: 0; scroll-snap-align: center; scroll-snap-stop: normal; }
 .identities-stage.is-focus .identities-scroller { pointer-events: none; }
 
+/* 牌列下的十五道刻度（只在手机） */
+.identities-rticks { display: none; }
+.identities.is-mob .identities-rticks {
+  position: absolute; left: 50%; z-index: 7; display: flex; gap: 0;
+  transform: translateX(-50%); opacity: var(--in, 1);
+  transition: opacity .5s var(--ease-out);
+}
+.identities.is-mob .identities-stage.is-focus .identities-rticks { opacity: 0; pointer-events: none; }
+.identities-rtick { position: relative; width: 16px; height: 28px; }
+.identities-rtick::before {
+  content: ''; position: absolute; left: 50%; top: 9px; bottom: 9px; width: 1px; margin-left: -.5px;
+  background: rgba(235, 227, 214, .28); transition: top .45s var(--ease-out), bottom .45s var(--ease-out), background .3s;
+}
+.identities-rtick.is-on::before { top: 2px; bottom: 2px; width: 2px; margin-left: -1px; background: var(--brass); }
+
 /* ==========================================================
    拿起后的操作：上一张 / 下一张 / 翻面 / 十五道刻度
    ========================================================== */
 .identities-ui { position: absolute; inset: 0; z-index: 110; pointer-events: none; }
 .identities-nav, .identities-flip, .identities-ticks, .identities-close {
-  position: absolute; pointer-events: auto; opacity: 0; visibility: hidden;
+  position: absolute; pointer-events: none; opacity: 0; visibility: hidden;
   transition: opacity .4s var(--ease-out), visibility 0s linear .4s, color .3s;
 }
 .identities-stage.is-focus .identities-nav,
 .identities-stage.is-focus .identities-flip,
 .identities-stage.is-focus .identities-ticks,
 .identities-stage.is-focus .identities-close {
-  opacity: 1; visibility: visible;
+  opacity: 1; visibility: visible; pointer-events: auto;
   transition: opacity .7s var(--ease-out) .35s, visibility 0s, color .3s;
 }
 
@@ -416,7 +436,8 @@
 /* ==========================================================
    手机
    ========================================================== */
-.identities.is-mob .identities-bgword { font-size: 92vw; right: -10vw; top: 44%; }
+.identities.is-mob .identities-bgword { font-size: 92vw; right: -10vw; top: 44%; opacity: .45; transition: opacity .8s var(--ease-out), -webkit-text-stroke-color 1s var(--ease-out); }
+.identities.is-mob .identities-stage.is-rev .identities-bgword { opacity: 1; }
 .identities.is-mob .identities-plate { top: calc(var(--hud-h) + 10px); }
 .identities.is-mob .identities-plate-name { font-size: 30px; }
 .identities.is-mob .identities-plate-num { font-size: 11px; }

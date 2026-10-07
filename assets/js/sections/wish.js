@@ -376,7 +376,8 @@
       w.el.style.top = w.y.toFixed(0) + 'px'
     })
   }
-  function updWhispers(t) {
+  function updWhispers(t, rdt) {
+    const up = 1 - Math.exp(-rdt / 0.11), down = 1 - Math.exp(-rdt / 0.5)
     if (!W.whispers.length) return
     const H = W.H
     const on = sstep(0.1, 0.26, W.ps)
@@ -392,7 +393,7 @@
       const d = Math.hypot(w.x - mx, w.y - my)
       let k = clamp01(1 - d / R)
       k = k * k * (3 - 2 * k) * str
-      w.o += (k - w.o) * (k > w.o ? 0.14 : 0.035)
+      w.o += (k - w.o) * (k > w.o ? up : down)
       const o = w.o
       const op = on * (0.045 + 0.85 * o)
       const key = op.toFixed(3) + '|' + o.toFixed(2)
@@ -431,6 +432,7 @@
     H.lensA = 0.85 - 0.35 * t
     // 镜头落下时，四壁与陈设退进黑暗，只留圆桌与那束光
     H.wallA = 1 - 0.85 * t
+    H.chandA = 1 - 0.85 * t
     // 熄灭后的厅更暗
     H.o.amb = mix(0.06, 0.03, sstep(T.out0, T.out0 + T.outSpan, p))
     // 计数与最后的那个人
@@ -442,13 +444,17 @@
 
   /* ---------- 帧 ---------- */
   function frame(time, dt) {
-    if (!W.H || !W.vis) return
+    if (!W.H) return
     const H = W.H, E = W.E
     const now = performance.now()
+    // 离得很远时隔几帧才量一次位置
+    if (W.far && (W.farSkip = ((W.farSkip || 0) + 1) % 8)) return
     const sec = Math.min(0.1, (dt || 1) / 60)
-    // 进度直接取自钉住段的位置（不依赖可能过期的 ScrollTrigger 缓存）
-    const tr = E.track.getBoundingClientRect()
-    if (tr.bottom < 0 || tr.top > window.innerHeight) { W.lastNow = 0; return } // 观察器回调可能迟到：完全离开视口就不画
+    // 可见性与进度都直接取自钉住段的位置（不依赖可能迟到的观察器回调或过期的 ScrollTrigger 缓存）
+    const tr = E.track.getBoundingClientRect(), vh = window.innerHeight
+    W.far = tr.bottom < -vh || tr.top > vh * 2
+    setVis(tr.bottom > 0 && tr.top < vh)
+    if (!W.vis) return
     W.p = clamp01(-tr.top / Math.max(1, tr.height - window.innerHeight))
     // 平滑跟随用真实时间（与帧率无关；隔了很久才回来就直接到位）
     const rdt = Math.min(1, (now - (W.lastNow || now)) / 1000)
@@ -474,7 +480,7 @@
     }
     H.update(sec)
     H.render()
-    updWhispers(H.time)
+    updWhispers(H.time, rdt)
     // 那个人的肖像：眼睛落在画布里那颗头的位置
     if (W.finaleOn) {
       const hs = H.headScreen(W.fk)
@@ -565,7 +571,6 @@
       const w0 = App.state.winner
       if (w0 && App.char(w0)) W.winner = w0
       setup()
-      App.onVisible(W.E.track, setVis, { rootMargin: '0px' })
       // 结尾：滚到时浮出「再睡一次」与落款（每隔几帧量一次位置，不依赖可能迟到的观察器回调）
       let endShown = false, endSkip = 0
       App.tick(() => {

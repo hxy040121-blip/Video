@@ -73,7 +73,8 @@
      ===================================================================== */
   const GOLD = [[0, [24, 14, 4]], [0.22, [80, 50, 14]], [0.45, [152, 105, 34]], [0.7, [214, 164, 70]], [0.95, [247, 210, 124]], [1.25, [255, 239, 192]], [1.7, [255, 253, 244]]]
   const SILVER = [[0, [26, 26, 30]], [0.3, [90, 92, 98]], [0.6, [162, 166, 172]], [0.95, [220, 224, 230]], [1.3, [251, 252, 253]]]
-  const JADE = [[0, [8, 8, 7]], [0.2, [40, 39, 34]], [0.45, [108, 105, 93]], [0.7, [174, 169, 152]], [0.95, [226, 222, 205]], [1.25, [247, 245, 236]]]
+  // 羊脂白玉：暗处是温润的灰褐，不是死黑；亮处是奶白
+  const JADE = [[0, [16, 13, 10]], [0.18, [52, 46, 38]], [0.42, [122, 114, 98]], [0.68, [192, 184, 164]], [0.92, [232, 226, 208]], [1.2, [250, 247, 238]]]
   const PLAT = [[0, [40, 40, 42]], [0.4, [122, 122, 126]], [0.8, [202, 204, 208]], [1.2, [252, 252, 253]]]
   const WOOD = [[0, [6, 4, 3]], [0.3, [26, 16, 10]], [0.7, [64, 40, 24]], [1.1, [120, 82, 52]]]
   function ramp(R, t) {
@@ -267,8 +268,8 @@
     // —— 视口层 ——
     E.fx = U.el('div.plaque-fx', { 'aria-hidden': 'true' })
     E.fxCv = U.el('canvas.plaque-fx-cv')
-    E.inks = U.el('div.plaque-inks')
-    E.fx.append(E.fxCv, E.inks)
+    E.inks = U.el('div.plaque-inks', { 'aria-hidden': 'true' })
+    E.fx.append(E.fxCv)
 
     // —— 墙与铜牌 ——
     E.scene = U.el('div.plaque-scene')
@@ -329,7 +330,7 @@
     E.hits = U.el('div.plaque-stacks', { role: 'group', 'aria-label': '理币盘' })
     E.stackBtns = []
     for (let i = 0; i < NST; i++) {
-      const b = U.el('button.plaque-stack', { type: 'button', 'data-cursor': '取', 'aria-label': stackLabel(i) })
+      const b = U.el('button.plaque-stack', { type: 'button', 'data-cursor': '', 'aria-label': stackLabel(i) })
       bindStack(b, i)
       E.hits.appendChild(b)
       E.stackBtns.push(b)
@@ -343,7 +344,7 @@
     E.purseN = U.el('b.plaque-purse-n', { text: '0' })
     E.purse = U.el('div.plaque-purse.is-empty', { role: 'status', 'aria-live': 'polite' }, [E.purseIco, E.purseN])
 
-    el.append(E.fx, E.scene, E.purse)
+    el.append(E.fx, E.scene, E.inks, E.purse)
   }
 
   function stackLabel(i) { return (i + 1) + ' · ' + S.stacks[i] }
@@ -453,6 +454,8 @@
   }
   function quote(b, sticky) {
     const E = S.E
+    const now = performance.now()
+    if (S.quoted !== b && now - (S.hovT || 0) > 70) { S.hovT = now; App.audio.sfx('hover', { volume: 0.32 }) }
     if (S.quoted && S.quoted !== b) S.quoted.classList.remove('is-quoted')
     S.quoted = b
     b.classList.add('is-quoted')
@@ -570,25 +573,26 @@
   }
 
   /* ---------- 墨：物品名从光标处的墨里浮出 ---------- */
+  // 墨字挂在板块上（跟着页面走），不挂在视口层
   function ink(text, at) {
     const E = S.E
-    const fr = E.fx.getBoundingClientRect()
+    const fr = S.el.getBoundingClientRect()
     const node = U.el('div.plaque-ink')
     const chars = Array.from(text).map(ch => U.el('span', { text: ch }))
     node.append(...chars)
     E.inks.appendChild(node)
     const w = node.offsetWidth, h = node.offsetHeight
     const x = clamp(at.x - fr.left, w / 2 + 14, Math.max(w / 2 + 14, fr.width - w / 2 - 14))
-    const y = clamp(at.y - fr.top, h * 1.6 + 70, Math.max(h * 1.6 + 70, fr.height - 20))
+    const y = clamp(at.y - fr.top, h * 1.6 + 20, Math.max(h * 1.6 + 20, fr.height - 20))
     node.style.left = x.toFixed(1) + 'px'
     node.style.top = y.toFixed(1) + 'px'
-    inkPool(fr.left + x, fr.top + y - h, w)
+    inkPool(x, y, w)
     if (S.reduced) {
       gsap.fromTo(node, { opacity: 0 }, { opacity: 1, duration: 0.5 })
     } else {
-      gsap.fromTo(chars, { opacity: 0, yPercent: 45, scale: 1.4, filter: 'blur(14px)' }, { opacity: 1, yPercent: 0, scale: 1, filter: 'blur(0px)', duration: 1.15, stagger: 0.06, ease: 'expo.out', delay: 0.14 })
+      gsap.fromTo(chars, { opacity: 0, yPercent: 70, scaleY: 1.5, filter: 'blur(12px)' }, { opacity: 1, yPercent: 0, scaleY: 1, filter: 'blur(0px)', duration: 1.2, stagger: 0.07, ease: 'expo.out', delay: 0.12 })
     }
-    gsap.to(node, { opacity: 0, y: -24, filter: 'blur(7px)', duration: 1.3, delay: 2.7, ease: 'power2.in', onComplete: () => node.remove() })
+    gsap.to(node, { opacity: 0, y: -28, filter: 'blur(8px)', duration: 1.4, delay: 3, ease: 'power2.in', onComplete: () => node.remove() })
   }
 
   /* ---------- 退出券 ---------- */
@@ -817,7 +821,7 @@
     T.W = W; T.H = H
     T.cv.width = Math.round(W * T.dpr)
     T.cv.height = Math.round(H * T.dpr)
-    if (T.mob) { T.yaw = -Math.PI / 2; T.elev = 0.92; T.dist = 150; T.fitW = 0.62; T.fitH = 0.86; T.fitY = 0.5 } else { T.yaw = 0; T.elev = 0.44; T.dist = 170; T.fitW = 0.9; T.fitH = 0.58; T.fitY = 0.58 }
+    if (T.mob) { T.yaw = -Math.PI / 2; T.elev = 0.92; T.dist = 150; T.fitW = 0.62; T.fitH = 0.86; T.fitY = 0.5 } else { T.yaw = 0; T.elev = 0.56; T.dist = 160; T.fitW = 0.9; T.fitH = 0.62; T.fitY = 0.56 }
     // 按基准视角取景（视差不改变取景）
     setCam(T.yaw, T.elev)
     T.F = 1; T.cx = 0; T.cy = 0
@@ -895,7 +899,7 @@
   function drawTable(ctx) {
     const c = T.c
     // 白玉台面
-    fillLit(ctx, prjPoly([[G.tx0, G.ty0, 0], [G.tx1, G.ty0, 0], [G.tx1, G.ty1, 0], [G.tx0, G.ty1, 0]]), 0, 0.04, 0.88, JADE)
+    fillLit(ctx, prjPoly([[G.tx0, G.ty0, 0], [G.tx1, G.ty0, 0], [G.tx1, G.ty1, 0], [G.tx0, G.ty1, 0]]), 0, 0.06, 0.8, JADE)
     // 台面前沿厚 3 cm、铂金线，下面是沉香
     if (-(c.py - G.ty0) < 0) {
       const fr = prjPoly([[G.tx0, G.ty0, 0], [G.tx1, G.ty0, 0], [G.tx1, G.ty0, -G.tth], [G.tx0, G.ty0, -G.tth]])
@@ -963,14 +967,14 @@
       const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2
       if (nx * (c.px - mx) + ny * (c.py - my) <= 0) continue
       lit(mx, my, G.ht * 0.5, nx, ny, 0, 10)
-      const col = rgba(ramp(JADE, 0.08 + LT.d * 0.8 + LT.s * 0.4))
+      const col = rgba(ramp(JADE, 0.2 + LT.d * 0.78 + LT.s * 0.4))
       ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 0.7
       path(ctx, prjPoly([a, b, OT[j], OT[i]])); ctx.fill(); ctx.stroke()
     }
     // 盘沿上面
-    fillLit(ctx, prjPoly(OT), G.ht, 0.08, 0.98, JADE)
+    fillLit(ctx, prjPoly(OT), G.ht, 0.26, 0.92, JADE)
     // 浅槽：开口里是槽底；再画朝向镜头的内壁
-    fillLit(ctx, prjPoly(IT), G.fl, 0.04, 0.66, JADE)
+    fillLit(ctx, prjPoly(IT), G.fl, 0.14, 0.7, JADE)
     for (let i = 0; i < IT.length; i++) {
       const j = (i + 1) % IT.length
       const a = IT[i], b = IT[j]
@@ -980,7 +984,7 @@
       const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2
       if (nx * (c.px - mx) + ny * (c.py - my) <= 0) continue
       lit(mx, my, (G.ht + G.fl) / 2, nx, ny, 0, 10)
-      const col = rgba(ramp(JADE, 0.05 + LT.d * 0.55))
+      const col = rgba(ramp(JADE, 0.12 + LT.d * 0.55))
       ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 0.6
       path(ctx, prjPoly([a, b, IB[j], IB[i]])); ctx.fill(); ctx.stroke()
     }
@@ -1299,11 +1303,19 @@
     const n = o.gold ? 5 : 8
     FX.melts.push({ at, t: 0, dur: o.dur || 0.95, gold: !!o.gold, sp: Array.from({ length: n }, () => ({ a: U.rand(-Math.PI * 0.95, -Math.PI * 0.05), v: U.rand(22, 70), r: U.rand(0.7, 1.6) })) })
   }
+  // 一滴墨落在光标处、晕开（坐标相对于板块根元素）
   function inkPool(x, y, w) {
-    const blobs = []
-    const R = Math.max(70, w * 0.5)
-    for (let k = 0; k < 9; k++) blobs.push({ dx: U.rand(-0.55, 0.55) * w * 0.8, dy: U.rand(-0.3, 0.3) * 40, r: U.rand(0.55, 0.9) * R, d: U.rand(0, 0.18) })
-    FX.pools.push({ x, y, t: 0, blobs })
+    const blobs = [{ dx: 0, dy: 0, r: 15, d: 0 }]
+    for (let k = 0; k < 6; k++) {
+      const a = U.rand(0, TAU), d = U.rand(6, 16)
+      blobs.push({ dx: Math.cos(a) * d, dy: Math.sin(a) * d * 0.6, r: U.rand(6, 11), d: U.rand(0.02, 0.12) })
+    }
+    const spat = []
+    for (let k = 0; k < 11; k++) {
+      const a = U.rand(0, TAU), d = U.rand(22, 30 + w * 0.22)
+      spat.push({ dx: Math.cos(a) * d, dy: Math.sin(a) * d * 0.55, r: U.rand(0.8, 2.6), d: U.rand(0.03, 0.2) })
+    }
+    FX.pools.push({ x, y, t: 0, blobs, spat, ring: U.rand(0, TAU) })
   }
 
   function coinSprite(kind, rad) {
@@ -1338,7 +1350,7 @@
     ctx.globalCompositeOperation = 'source-over'
     ctx.globalAlpha = 1
     ctx.clearRect(0, 0, FX.w, FX.h)
-    if (FX.door) drawDoor(ctx, now)
+    if (FX.door) drawDoor(ctx, now, dt)
     if (dust) drawDust(ctx, dt)
     if (FX.pools.length) drawPools(ctx, dt)
     if (FX.fl.length) { stepFlights(dt); drawFlights(ctx) }
@@ -1447,23 +1459,40 @@
     ctx.globalCompositeOperation = 'source-over'
   }
   function drawPools(ctx, dt) {
-    const ox = FX.ox, oy = FX.oy
+    const rr = S.el.getBoundingClientRect()
+    const ox = FX.ox - rr.left, oy = FX.oy - rr.top
     for (let i = FX.pools.length - 1; i >= 0; i--) {
       const p = FX.pools[i]
       p.t += dt
-      if (p.t > 4.2) { FX.pools.splice(i, 1); continue }
-      const fade = 1 - smooth(2.6, 4.2, p.t)
+      if (p.t > 3.6) { FX.pools.splice(i, 1); continue }
+      const fade = 1 - smooth(1.8, 3.6, p.t)
+      const cx = p.x - ox, cy = p.y - oy
+      // 墨滴：几团硬边的黑，彼此相融
       for (const b of p.blobs) {
-        const k = easeOut(clamp((p.t - b.d) / 0.55))
+        const k = easeOut(clamp((p.t - b.d) / 0.42))
         if (k <= 0) continue
-        const r = b.r * (0.3 + 0.7 * k) * (1 + 0.1 * p.t)
-        const x = p.x - ox + b.dx, y = p.y - oy + b.dy
+        const r = b.r * (0.25 + 0.75 * k) * (1 + 0.16 * p.t)
+        const x = cx + b.dx * (0.6 + 0.4 * k), y = cy + b.dy * (0.6 + 0.4 * k)
         const g = ctx.createRadialGradient(x, y, 0, x, y, r)
-        g.addColorStop(0, 'rgba(5,3,3,' + (0.5 * fade * k).toFixed(3) + ')')
-        g.addColorStop(0.55, 'rgba(5,3,3,' + (0.3 * fade * k).toFixed(3) + ')')
-        g.addColorStop(1, 'rgba(5,3,3,0)')
+        g.addColorStop(0, 'rgba(8,4,4,' + (0.82 * fade).toFixed(3) + ')')
+        g.addColorStop(0.72, 'rgba(8,4,4,' + (0.62 * fade).toFixed(3) + ')')
+        g.addColorStop(1, 'rgba(8,4,4,0)')
         ctx.fillStyle = g
         ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill()
+      }
+      // 溅开的细点
+      ctx.fillStyle = 'rgba(8,4,4,' + (0.8 * fade).toFixed(3) + ')'
+      for (const s of p.spat) {
+        const k = easeOut(clamp((p.t - s.d) / 0.3))
+        if (k <= 0) continue
+        ctx.beginPath(); ctx.arc(cx + s.dx * k, cy + s.dy * k, s.r, 0, TAU); ctx.fill()
+      }
+      // 墨在水里晕开的一圈淡环
+      const e = clamp(p.t / 1.6)
+      if (e < 1) {
+        ctx.strokeStyle = 'rgba(8,4,4,' + (0.38 * (1 - e)).toFixed(3) + ')'
+        ctx.lineWidth = 1.2
+        ctx.beginPath(); ctx.ellipse(cx, cy, 16 + 70 * easeOut(e), (16 + 70 * easeOut(e)) * 0.5, 0, 0, TAU); ctx.stroke()
       }
     }
   }
@@ -1516,7 +1545,7 @@
     DOOR = { pts, R, H: Math.max.apply(null, pts.map(p => p.y)) + 0.6, cols: c }
     return DOOR
   }
-  function drawDoor(ctx, now) {
+  function drawDoor(ctx, now, dt) {
     const D = FX.door
     const tIn = (now - D.t0) / 1000
     let vis = smooth(0, 0.35, tIn)
@@ -1528,21 +1557,29 @@
     const geo = doorGeom()
     const ox = FX.ox, oy = FX.oy
     const sr = S.E.exit.getBoundingClientRect()
-    // 幕：留出离场那一条
-    ctx.fillStyle = 'rgba(4,3,3,' + (0.74 * vis).toFixed(3) + ')'
-    ctx.beginPath()
-    ctx.rect(0, 0, FX.w, FX.h)
-    ctx.rect(sr.left - ox - 18, sr.top - oy - 12, sr.width + 36, sr.height + 24)
-    ctx.fill('evenodd')
-    // 门立在离场那一条上
-    let base = sr.top - oy - 22
-    let Hpx = Math.min(base - 84, FX.h * 0.7, 640)
-    if (Hpx < 240) { Hpx = Math.min(FX.h * 0.6, 560); base = FX.h * 0.52 + Hpx / 2 }
+    // 幕：留出离场那一条（边缘羽化）
+    const hx = sr.left - ox - 16, hy = sr.top - oy - 10, hw = sr.width + 32, hh = sr.height + 20
+    ctx.fillStyle = 'rgba(4,3,3,' + (0.8 * vis).toFixed(3) + ')'
+    ctx.fillRect(0, 0, FX.w, FX.h)
+    ctx.save()
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.shadowColor = 'rgba(0,0,0,' + (0.92 * vis).toFixed(3) + ')'
+    ctx.shadowBlur = 26
+    ctx.shadowOffsetX = FX.w * 3 * FX.dpr
+    ctx.fillStyle = '#000'
+    ctx.fillRect(hx - FX.w * 3, hy, hw, hh)
+    ctx.restore()
+    // 门立在离场那一条的上方（上方放不下就立在下方），尽量高
+    const up = sr.top - oy - 28, down = FX.h - (sr.bottom - oy) - 28
+    const below = up < 300 && down > up
+    const room = below ? down : up
+    const Hpx = clamp(Math.min(room - 46, FX.h * 0.74), 150, 680)
+    const base = below ? sr.bottom - oy + 26 + Hpx : up
     const p = Hpx / geo.H
     const Wd = geo.cols * p
     const cx = clamp(sr.left - ox + sr.width / 2, Wd / 2 + 60, Math.max(Wd / 2 + 60, FX.w - Wd / 2 - 60))
     const x0 = cx - Wd / 2
-    D.jolt *= 0.9
+    D.jolt *= Math.pow(0.0015, dt)
     const jolt = D.jolt
     // 门框
     const pad = p * 0.55, Rr = geo.R * p, rad = Wd / 2 + pad

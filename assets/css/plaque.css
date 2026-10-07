@@ -29,17 +29,18 @@
   pointer-events: none;
 }
 .plaque-fx-cv { position: absolute; inset: 0; width: 100%; height: 100%; }
-.plaque-inks { position: absolute; inset: 0; overflow: hidden; }
+/* 墨字：挂在板块上，随页面滚动 */
+.plaque-inks { position: absolute; inset: 0; z-index: 22; overflow: hidden; pointer-events: none; }
 .plaque-ink {
   position: absolute; left: 0; top: 0;
-  transform: translate(-50%, -150%);
+  transform: translate(-50%, -138%);
   white-space: nowrap;
   font-family: var(--f-brush); font-weight: 400;
-  font-size: clamp(26px, 2.5vw, 42px); line-height: 1; letter-spacing: .04em;
-  color: #efe6d4;
-  text-shadow: 0 0 1px rgba(0, 0, 0, .9), 0 0 10px rgba(5, 3, 3, .95), 0 0 26px rgba(5, 3, 3, .8);
+  font-size: clamp(30px, 3.1vw, 52px); line-height: 1; letter-spacing: .05em;
+  color: #120907;
+  text-shadow: 0 0 1px rgba(255, 238, 205, .5), 0 0 12px rgba(255, 222, 160, .7), 0 0 30px rgba(255, 196, 110, .45), 0 0 60px rgba(255, 170, 80, .25);
 }
-.plaque-ink span { display: inline-block; will-change: transform, opacity, filter; }
+.plaque-ink span { display: inline-block; transform-origin: 50% 100%; will-change: transform, opacity, filter; }
 
 /* ---------- 场景 ---------- */
 .plaque-scene { position: relative; z-index: 1; }
@@ -104,9 +105,9 @@
     0 0 0 1px rgba(0, 0, 0, .7);
 }
 .plaque-jade {
-  position: relative; padding: 3px; border-radius: 1px;
-  background: linear-gradient(180deg, #f1ecdd, #cfc8b1 48%, #e7e1cf);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, .65), inset 0 0 0 1px rgba(255, 255, 255, .3), 0 0 10px rgba(236, 228, 204, .08);
+  position: relative; padding: 2px; border-radius: 1px;
+  background: linear-gradient(180deg, #a8a190, #7d7666 48%, #958e7c);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 250, 235, .35), inset 0 -1px 0 rgba(0, 0, 0, .3);
 }
 .plaque-face {
   position: relative; overflow: hidden; isolation: isolate;
@@ -227,6 +228,7 @@
   position: relative;
   margin: 0 0 .5em; padding-left: 1.25em;
   font-family: var(--f-serif); font-size: var(--pq-fs); line-height: 1.86;
+  text-wrap: pretty;
 }
 .plaque-p::before {
   content: ''; position: absolute; left: .18em; top: .78em; width: .36em; height: .36em;
@@ -243,7 +245,7 @@
 }
 .plaque-item:focus { outline: none; }
 .plaque-item:focus-visible { outline: 1px solid rgba(232, 184, 92, .55); outline-offset: 3px; }
-.plaque-name { flex: 0 1 auto; min-width: 0; }
+.plaque-name { flex: 0 1 auto; min-width: 0; text-wrap: balance; }
 .plaque-lead {
   flex: 1 1 auto; min-width: 1.4em; height: 4px; margin: 0 .5em .5em;
   background:
@@ -287,8 +289,8 @@
 /* 报价：需要几枚 */
 .plaque-need {
   position: absolute; left: 0; top: 0; z-index: 8;
-  display: flex; align-items: center; gap: 3px;
-  padding: 5px 7px 5px 6px;
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 9px 6px 8px;
   transform: translate(-100%, -100%);
   background: rgba(9, 7, 6, .82);
   border: 1px solid rgba(194, 154, 91, .3); border-radius: 2px;
@@ -300,12 +302,12 @@
 .plaque-need.is-short { border-color: rgba(255, 46, 126, .45); }
 .plaque-need-n {
   margin-left: 4px;
-  font-family: var(--f-latin); font-weight: 700; font-size: 12px; letter-spacing: .04em; line-height: 1;
+  font-family: var(--f-latin); font-weight: 700; font-size: 14px; letter-spacing: .04em; line-height: 1;
   color: var(--pq-gold);
 }
 .plaque-need.is-short .plaque-need-n { color: var(--blood); }
 .plaque-coin {
-  display: block; flex: none; width: 10px; height: 10px; border-radius: 50%;
+  display: block; flex: none; width: 12px; height: 12px; border-radius: 50%;
   background: radial-gradient(circle at 34% 30%, #fff4c8 0 10%, #f2c766 26%, #c48f2c 62%, #6d4510 100%);
   box-shadow: inset 0 0 0 1px rgba(92, 56, 10, .55), 0 0 6px rgba(255, 186, 80, .35);
 }

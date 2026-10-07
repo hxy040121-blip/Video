@@ -471,8 +471,9 @@
     }
 
     function drawWalls(ctx) {
-      const c = S.cam, Lt = S.light, A = S.wallA * (1 - S.dark * 0.9)
-      if (A <= 0.01) return
+      // 墙面本身始终是一层墨色（挡住身后的烟雾，免得四壁淡出时露出一道地平线）；墙上的光与细节随 wallA 淡出
+      const c = S.cam, Lt = S.light, Af = 1 - S.dark * 0.9, A = S.wallA * Af
+      if (Af <= 0.01) return
       const C = c.pos
       ctx.save()
       for (const w of WALLS) {
@@ -480,7 +481,7 @@
         if ((C[0] - w.a[0]) * w.n[0] + (C[1] - w.a[1]) * w.n[1] <= 0) continue
         const q = c.poly([[w.a[0], w.a[1], 0], [w.b[0], w.b[1], 0], [w.b[0], w.b[1], G.spring], [w.a[0], w.a[1], G.spring]])
         if (!q) continue
-        ctx.globalAlpha = A
+        ctx.globalAlpha = Af
         pathPts(ctx, q)
         ctx.fillStyle = rgb(9, 7, 7)
         ctx.fill()
@@ -1106,11 +1107,12 @@
       if (vis <= 0.01) return
       const a = c.p(K.eyeL[0], K.eyeL[1], K.eyeL[2]), b = c.p(K.eyeR[0], K.eyeR[1], K.eyeR[2])
       if (!a || !b) return
-      const rr = Math.max(1.5, 0.026 * a[3]) * S.eyeScale
+      const rr = Math.min(5, Math.max(1.5, 0.026 * a[3])) * S.eyeScale // 镜头贴近时眼睛仍是两点寒光，不是两盏灯
       const rot = Math.atan2(b[1] - a[1], b[0] - a[0])
       const al = K.A * vis
-      S.eyeQ.push({ x: a[0], y: a[1], r: rr, rot, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover })
-      S.eyeQ.push({ x: b[0], y: b[1], r: rr, rot, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover })
+      const sep = Math.hypot(b[0] - a[0], b[1] - a[1])
+      S.eyeQ.push({ x: a[0], y: a[1], r: rr, rot, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover, sep })
+      S.eyeQ.push({ x: b[0], y: b[1], r: rr, rot, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover, sep })
     }
 
     /* ---------- 椅背上的黄铜编号 ---------- */
@@ -1417,7 +1419,9 @@
         const acc = e.acc
         const spr = glowSprite(acc[0], acc[1], acc[2])
         const lift = 1 + e.hov * 0.6
-        drawGlow(ctx, spr, e.x, e.y, e.r * (7 + e.flash * 24) * lift, a * Math.max(e.open, e.flash) * (0.6 + e.flash * 0.6))
+        // 光晕不超过两眼间距太多：远看是一团寒光，近看仍是分开的两点
+        const halo = Math.min(e.r * 7 * lift, Math.max(10, e.sep * 1.6)) + e.r * 24 * e.flash * lift
+        drawGlow(ctx, spr, e.x, e.y, Math.min(70, halo), a * Math.max(e.open, e.flash) * (0.6 + e.flash * 0.6))
         if (e.open > 0.02) {
           ctx.globalAlpha = Math.min(1, a * 1.1)
           ctx.fillStyle = rgb(mix(acc[0], 255, 0.62), mix(acc[1], 255, 0.62), mix(acc[2], 255, 0.62))
@@ -1689,7 +1693,7 @@
     const t = '17:0' + m
     P.H.clock = 17 * 60 + m
     // 让 HUD 的馆内时钟与大钟同步（只在板块顶端时；滚动后由核心按进度接管）
-    if (P.p < 0.02) { App.state.minutes = 17 * 60 + m; App.bus.emit('time', 17 * 60 + m) }
+    if (P.el && P.el.getBoundingClientRect().top > -40) { App.state.minutes = 17 * 60 + m; App.bus.emit('time', 17 * 60 + m) }
     const E = P.E
     if (instant || App.reduced) { E.time.textContent = t; return }
     App.text.scramble(E.time, t, { duration: 0.5, chars: '0123456789', revealDelay: 0.1 })
@@ -1883,15 +1887,19 @@
 
   /* ---------- 帧 ---------- */
   function frame(time, dt) {
-    if (!P.H || !P.vis) return
+    if (!P.H) return
     const H = P.H, E = P.E
     const now = performance.now()
     // 遮幕打开之前，低频渲染即可
     if (!P.started && !P.gateOpen && (P.skip = (P.skip || 0) + 1) % 20) return
+    // 离得很远时隔几帧才量一次位置
+    if (P.far && (P.farSkip = ((P.farSkip || 0) + 1) % 8)) return
     const sec = Math.min(0.1, (dt || 1) / 60)
-    // 进度直接取自板块的位置（不依赖可能过期的 ScrollTrigger 缓存）
-    const er = P.el.getBoundingClientRect()
-    if (er.bottom < 0 || er.top > window.innerHeight) return // 观察器回调可能迟到：完全离开视口就不画
+    // 可见性与进度都直接取自板块的位置（不依赖可能迟到的观察器回调或过期的 ScrollTrigger 缓存）
+    const er = P.el.getBoundingClientRect(), vh = window.innerHeight
+    P.far = er.bottom < -vh || er.top > vh * 2
+    setVis(er.bottom > 0 && er.top < vh)
+    if (!P.vis) return
     P.p = clamp01(-er.top / Math.max(1, er.height - window.innerHeight))
     // 平滑跟随用真实时间（与帧率无关；隔了很久才回来就直接到位）
     const rdt = Math.min(1, (now - (P.lastNow || now)) / 1000)
@@ -1922,7 +1930,7 @@
     // 眼睛随音乐轻轻起伏
     const lv = App.audio && App.audio.level ? App.audio.level() : 0
     P.lv += ((lv || 0) - P.lv) * 0.08
-    H.eyePulse = 0.86 + 0.5 * Math.min(1, P.lv * 1.6)
+    H.eyePulse = 0.88 + 0.3 * Math.min(1, P.lv * 1.6)
     // 悬停
     if (App.finePointer) {
       const k = H.ptr.on && P.ps < 0.6 && !(App.overlay && App.overlay.isOpen) ? H.pick(H.ptr.x, H.ptr.y) : -1
@@ -1977,7 +1985,6 @@
       gsap.set(P.E.title._chars, { opacity: 0 })
       gsap.set([P.E.seal, P.E.latin, P.E.clock, P.E.cue, P.E.key], { opacity: 0 })
       P.vis = true
-      App.onVisible(el, setVis, { rootMargin: '0px' })
       App.bus.on('wake', runWake)
       App.bus.on('cast:change', () => P.H.setPeople(domeHall.people()))
       // 光标进出
@@ -1998,7 +2005,5 @@
       window.addEventListener('resize', U.debounce(() => { layout() }, 160))
       App.tick(frame)
     },
-    enter() { setVis(true) },
-    leave() { setVis(false) },
   })
 })()

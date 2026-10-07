@@ -51,7 +51,7 @@
     cards: [], hover: -1, kb: -1, pointerIn: false, cursorForced: false,
     psi: 0, psiV: 0, pin: 0, gather: 0, rowX: 0,
     dealt: false, ready: false, focus: null, busy: false, rev: false,
-    fa: { v: 0 }, wheel: 0, hold: null, burning: false, lastPal: null,
+    fa: { v: 0 }, wheel: 0, hold: null, burning: false, lastPal: null, hush: false,
   }
 
   /* =====================================================================
@@ -285,14 +285,20 @@ ${corners}${mid}
   }
   function fitAll() {
     for (const c of S.cards) {
+      // 量尺寸时关掉过渡（否则 top 的过渡让量到的是旧版式的高度）
+      const inst = [c.front.el, c.back.el].filter(n => !n.classList.contains('is-instant'))
+      inst.forEach(n => n.classList.add('is-instant'))
+      c.slot.classList.remove('is-read')
       for (const f of [c.front, c.back]) f.tf = fitFace(f, false)
       c.slot.classList.add('is-read')
       for (const f of [c.front, c.back]) f.tfr = fitFace(f, true)
-      c.slot.classList.remove('is-read')
+      c.slot.classList.toggle('is-read', !!c._read)
       for (const f of [c.front, c.back]) {
         f.el.style.setProperty('--tf', f.tf.toFixed(3))
         f.el.style.setProperty('--tfr', f.tfr.toFixed(3))
       }
+      void c.slot.offsetWidth
+      inst.forEach(n => n.classList.remove('is-instant'))
     }
   }
   // 拿起时是否改用「细读」版式（纹章缩小，字更大）：正常版式下字小于约 11.5px 时
@@ -346,6 +352,18 @@ ${corners}${mid}
     S.track = el('div.track')
     for (let i = 0; i < N; i++) S.track.appendChild(el('i.snap'))
     S.scroller.appendChild(S.track)
+    // 手机：牌列下方十五道刻度，指示当前位置，点按跳到那张
+    S.rticks = el('div.rticks')
+    S.rtickEls = DEFS.map((d, i) => {
+      const b = el('button.rtick', { type: 'button', 'aria-label': U.roman(d.no) + ' ' + d.front })
+      b.addEventListener('click', e => {
+        e.stopPropagation()
+        if (S.focus != null || !S.ready) return
+        S.scroller.scrollTo({ left: i * S.geo.sp, behavior: RM ? 'auto' : 'smooth' })
+      })
+      S.rticks.appendChild(b)
+      return b
+    })
 
     // 拿起后的操作
     const chevron = d => `<svg viewBox="0 0 40 80" aria-hidden="true"><path d="${d}"/></svg>`
@@ -371,8 +389,8 @@ ${corners}${mid}
       el('span.foot-mm', { text: '63 × 88 mm' }),
     ])
 
-    for (const n of [S.plate, S.foot, S.table]) n.style.setProperty('--in', '0')
-    stage.append(S.bgword, S.table, S.plate, S.foot, S.cardsEl, S.scroller, S.ui, S.fx, S.ring)
+    for (const n of [S.plate, S.foot, S.table, S.rticks]) n.style.setProperty('--in', '0')
+    stage.append(S.bgword, S.table, S.plate, S.foot, S.cardsEl, S.scroller, S.rticks, S.ui, S.fx, S.ring)
     sec.appendChild(root)
     S.ctx = S.fx.getContext('2d')
     S.built = true
@@ -413,11 +431,12 @@ ${corners}${mid}
       const half = Math.asin(U.clamp(span / 2 / R, 0.1, 0.92))
       S.geo = { cx: vw / 2, cy: apexY + R, R, apexY, delta: half / MID, fh, fy, rt: R + fh * 0.98 }
     } else {
-      const fw = Math.min(vw * 0.45, 190)
+      // 牌列：中间一张够大（能看清纹章与名字），左右两张各露出一半，提示还能滑
+      const fw = Math.min(vw * 0.6, 250, (vh - hud - 300) / RATIO)
       S.fanW = fw; S.fanS = fw / W
       const fh = fw * RATIO
-      const sp = fw * 0.9
-      S.geo = { sp, fh, rowY: hud + (vh - hud) * 0.5 + 6, fy }
+      const sp = fw * 0.8
+      S.geo = { sp, fh, rowY: hud + (vh - hud) * 0.5 + 10, fy }
       S.track.style.width = (vw + (N - 1) * sp).toFixed(1) + 'px'
       Array.from(S.track.children).forEach((s, i) => {
         s.style.left = (vw / 2 + i * sp - sp / 2).toFixed(1) + 'px'
@@ -425,6 +444,7 @@ ${corners}${mid}
       })
       S.scroller.style.top = (S.geo.rowY - fh * 0.62).toFixed(1) + 'px'
       S.scroller.style.height = (fh * 1.24).toFixed(1) + 'px'
+      S.rticks.style.top = (S.geo.rowY + fh * 0.5 + 44).toFixed(1) + 'px'
     }
     layoutTable()
     // 特效画布
@@ -550,6 +570,9 @@ ${corners}${mid}
 
   function setHover(h) {
     S.hover = h
+    S.dwell = performance.now()
+    S.peekAt = U.rand(1700, 3200)
+    S.peeked = false
     if (h >= 0) {
       const c = S.cards[h]
       if (S.mode === 'desk' && S.awake) App.audio.sfx('hover', { pan: U.clamp((c.cur.x / S.vw - 0.5) * 1.4, -1, 1), pitch: 0.7 + (h / (N - 1)) * 0.6 })
@@ -600,6 +623,12 @@ ${corners}${mid}
     // 滚到板块末尾：扇面收拢成一叠
     const gT = S.mode === 'desk' && S.ready && S.focus == null ? smooth(0.8, 1, S.pin) : 0
     S.gather = approach(S.gather, gT, 0.1, dt)
+    const hush = S.gather > 0.56
+    if (hush !== S.hush) {
+      S.hush = hush
+      S.stage.classList.toggle('is-hush', hush)
+      if (S.awake) for (let k = 0; k < 5; k++) App.audio.sfx('flip', { delay: k * 0.08, pitch: (hush ? 0.78 : 0.95) + k * 0.04, volume: 0.22 })
+    }
 
     // 扇面被拨动：位置决定目标角，速度给一个冲量，弹簧回位
     if (S.mode === 'desk') {
@@ -619,7 +648,14 @@ ${corners}${mid}
       if (h < 0 && S.kb >= 0) h = S.kb
     }
     if (h !== S.hover) setHover(h)
+    if (S.hover >= 0 && !S.peeked && S.focus == null && !RM && S.t - S.dwell > S.peekAt) { S.peeked = true; peek(S.cards[S.hover]) }
+    if (S.mode === 'mob') {
+      const ri = nearestRow()
+      if (ri !== S._ri) { S._ri = ri; S.rtickEls.forEach((t, k) => t.classList.toggle('is-on', k === ri)) }
+    }
 
+    S.idle = S.ready && !RM && S.focus == null && S.hover < 0 && S.gather < 0.2
+    S.wave = ((S.t * 0.0024) % 27) - 6
     for (const c of S.cards) updateCard(c, dt, mx, my)
     updateTable(mx, my, inStage)
     updateBgword(mx, my, inStage)
@@ -671,6 +707,12 @@ ${corners}${mid}
       foilT = 0.6
       c.fx = approach(c.fx, 0.5 + Math.sin(S.t * 0.0007) * 0.35, 0.05, dt)
       c.fy = approach(c.fy, 0.35, 0.05, dt)
+    } else if (S.idle && c.mode === 'fan') {
+      // 无人触碰时：一道光缓缓扫过整副牌，金边逐张闪一下
+      const d = c.i - S.wave
+      foilT = 0.42 * Math.exp(-d * d * 0.45)
+      c.fx = approach(c.fx, U.clamp(0.5 - d * 0.32, 0, 1), 0.08, dt)
+      c.fy = approach(c.fy, 0.3, 0.08, dt)
     }
     c.tx = approach(c.tx, ttx, 0.14, dt)
     c.ty = approach(c.ty, tty, 0.14, dt)
@@ -683,10 +725,15 @@ ${corners}${mid}
 
   function render(c) {
     const p = c.cur
-    const s = p.s * (1 + c.flipLift * 0.06)
-    const t = `translate3d(${(p.x - S.W / 2).toFixed(2)}px,${(p.y - S.H / 2).toFixed(2)}px,0) rotate(${p.r.toFixed(3)}deg) scale(${s.toFixed(4)})`
+    // 收拢成一叠之后，牌由下往上逐张扣过去（牌背朝上，字隐去）
+    const gk = S.gather > 0.4 && c.mode === 'fan' ? smooth(0.5 + c.i * 0.018, 0.68 + c.i * 0.018, S.gather) : 0
+    const bump = Math.sin(Math.PI * gk)
+    const s = p.s * (1 + (c.flipLift + bump * 0.8) * 0.06)
+    const lift = bump * S.fanW * 0.1
+    const t = `translate3d(${(p.x - S.W / 2).toFixed(2)}px,${(p.y - S.H / 2 - lift).toFixed(2)}px,0) rotate(${p.r.toFixed(3)}deg) scale(${s.toFixed(4)})`
     if (t !== c._t) { c.slot.style.transform = t; c._t = t }
-    const ct = `rotateX(${(c.tx + c.swing).toFixed(2)}deg) rotateY(${(c.flip + c.ty).toFixed(2)}deg)`
+    const fl = c.flip + (c.peek ? 180 : 0) + gk * 180
+    const ct = `rotateX(${(c.tx + c.swing).toFixed(2)}deg) rotateY(${(fl + c.ty).toFixed(2)}deg)`
     if (ct !== c._c) { c.card.style.transform = ct; c._c = ct }
     // 叠放次序
     const z = S.focus === c.i ? 100 : c.mode === 'fly' ? (c.fly.to === 'focus' ? 99 : 90) : c.i === S.hover ? 60 : c.i + 1
@@ -703,7 +750,7 @@ ${corners}${mid}
       c.shadow.style.transform = `translate(${(-c.ty * 0.6).toFixed(1)}px, ${(10 + L * 28).toFixed(1)}px) scale(${(1 + L * 0.05).toFixed(3)})`
       c.shadow.style.opacity = (0.55 - L * 0.12).toFixed(3)
     }
-    const deep = c.mode !== 'fan' || c.lift > 0.04 || c.flipLift > 0.001 || Math.abs(c.tx) + Math.abs(c.ty) > 0.6
+    const deep = c.mode !== 'fan' || c.lift > 0.04 || c.flipLift > 0.001 || (gk > 0.001 && gk < 0.999) || Math.abs(c.tx) + Math.abs(c.ty) > 0.6
     if (deep !== c._deep) { c.card.classList.toggle('is-3d', deep); c._deep = deep }
   }
 
@@ -724,6 +771,24 @@ ${corners}${mid}
     S._bx = U.lerp(S._bx || 0, bx, 0.06)
     S._by = U.lerp(S._by || 0, by, 0.06)
     S.bgword.style.transform = `translate(${S._bx.toFixed(1)}px, calc(-50% + ${S._by.toFixed(1)}px))`
+  }
+
+  // 牌在光标下停久了，会在一瞬间露出它的另一面（两帧的硬切 + 色差），然后若无其事地回来
+  function peek(c) {
+    if (c.flipTw || c.mode !== 'fan') return
+    const same = !!c.def.noReverse
+    c.peek = 1
+    if (!same) App.glitch(c.glitch, 0.16)
+    App.audio.sfx(same ? 'heartbeat' : 'glitch', { volume: same ? 0.35 : 0.3, pitch: same ? 1.3 : 0.8 })
+    const t = S.bgwordT
+    if (!same && !S.rev) {
+      S.bgword.classList.add('is-flicker')
+      t.textContent = '逆'
+    }
+    setTimeout(() => {
+      c.peek = 0
+      if (!S.rev) { t.textContent = '正'; S.bgword.classList.remove('is-flicker') }
+    }, same ? 160 : 110)
   }
 
   /* =====================================================================
@@ -880,7 +945,6 @@ ${corners}${mid}
 
   function closeFocus(instant, nav) {
     if (S.focus == null) return
-    if (window.__idnTrace) console.log('[idn] closeFocus', instant, nav, new Error().stack.split('\n').slice(2, 6).join(' | '))
     const c = S.cards[S.focus]
     cancelHold(true)
     S.lastFocus = c.i
@@ -993,7 +1057,6 @@ ${corners}${mid}
 
   // 逆位：背景烟雾转为血红，巨字「逆」
   function setRev(on) {
-    if (window.__idnTrace) console.log('[idn] setRev', on, S.rev, new Error().stack.split('\n').slice(2, 5).join(' | '))
     if (S.rev === on) return
     S.rev = on
     S.stage.classList.toggle('is-rev', on)
@@ -1440,7 +1503,7 @@ ${corners}${mid}
         closeFocus()
         return
       }
-      if (!S.ready || S.mode !== 'desk') return
+      if (!S.ready || S.mode !== 'desk' || S.gather > 0.35) return
       const r = S.stage.getBoundingClientRect()
       const prevHover = S.hover
       S.hover = -1
@@ -1594,7 +1657,7 @@ ${corners}${mid}
         onEnter: () => {
           // 入场只动 --in（CSS 里与「拿起」状态相乘），不写内联 opacity，免得盖掉拿起时的隐藏
           gsap.fromTo(S.plate, { '--in': 0 }, { '--in': 1, duration: 1.4, ease: 'expo.out' })
-          gsap.fromTo(S.foot, { '--in': 0 }, { '--in': 1, duration: 2, delay: 0.6 })
+          gsap.fromTo([S.foot, S.rticks], { '--in': 0 }, { '--in': 1, duration: 2, delay: 0.6 })
           gsap.fromTo(S.table, { '--in': 0 }, { '--in': 1, duration: 2.2, ease: 'power2.out' })
         },
       })
