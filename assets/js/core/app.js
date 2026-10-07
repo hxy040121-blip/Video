@@ -257,7 +257,15 @@
     if (c && c.art && c.art.accent) wrap.style.setProperty('--accent', c.art.accent)
     if (PHOTOS[id]) {
       wrap.classList.add('is-photo')
-      wrap.appendChild(U.el('img', { src: PHOTOS[id], alt: '', decoding: 'async', draggable: 'false' }))
+      const img = U.el('img', { src: PHOTOS[id], alt: '', decoding: 'async', draggable: 'false' })
+      // 肖像文件缺失时（比如只拿到了代码仓库），退回统一的剪影占位
+      img.addEventListener('error', () => {
+        wrap.classList.remove('is-photo')
+        wrap.innerHTML = uniquify(placeholderSVG(c))
+        if (wrap._eyes) { watchers.delete(wrap._eyes); wrap._eyes.unobserve() }
+        if (opts.track !== false) App.trackEyes(wrap, opts)
+      }, { once: true })
+      wrap.appendChild(img)
     } else {
       wrap.innerHTML = uniquify(App.portraitSVG(id))
       const svg = wrap.querySelector('svg')
