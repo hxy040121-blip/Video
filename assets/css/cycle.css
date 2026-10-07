@@ -636,8 +636,11 @@
 .cycle-v-fig > .portrait, .cycle-v-dead .portrait { position: absolute; inset: 0; width: 100%; height: 100%; }
 .cycle-v-fig > .portrait {
   clip-path: polygon(calc(var(--cut) * 160%) 0, 110% 0, 110% 100%, calc(var(--cut) * 160% - 60%) 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
+  /* 下沿渐隐，左右两侧也渐隐：位图人物常被原图边缘截断，不渐隐会留下一道竖直的硬边 */
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(180deg, #000 70%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-composite: intersect;
 }
 .cycle-v-l .cycle-v-fig > .portrait > svg, .cycle-v-l .cycle-v-fig > .portrait > img { filter: drop-shadow(0 0 22px rgba(194, 154, 91, .35)); }
 .cycle-v-r .cycle-v-fig > .portrait > svg, .cycle-v-r .cycle-v-fig > .portrait > img { filter: drop-shadow(0 0 22px rgba(255, 46, 126, .4)); }
@@ -661,7 +664,13 @@
 .cycle-v-r.is-alt .cycle-v-p:not(.is-alt), .cycle-v-r.is-alt .cycle-v-deadp .portrait:not(.is-alt) { display: none; }
 .cycle-v-dead { opacity: 0; transition: opacity .5s; pointer-events: none; }
 .cycle-v-side.is-gone .cycle-v-dead { opacity: 1; }
-.cycle-v-deadp { position: absolute; inset: 0; opacity: .55; -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%); mask-image: linear-gradient(180deg, #000 60%, transparent 100%); }
+.cycle-v-deadp {
+  position: absolute; inset: 0; opacity: .55;
+  -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(180deg, #000 60%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-composite: intersect;
+}
 .cycle-v-x { position: absolute; left: 22%; right: 22%; top: 24%; aspect-ratio: 1; }
 .cycle-v-x::before, .cycle-v-x::after {
   content: ''; position: absolute; left: -10%; right: -10%; top: 50%; height: 6px; margin-top: -3px;
