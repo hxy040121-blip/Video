@@ -25,6 +25,7 @@ uniform float uGlow;
 uniform float uPulse;
 uniform float uDark;
 uniform float uScroll;
+uniform int uOct;
 
 float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); return fract(p.x*p.y); }
 float noise(vec2 p){
@@ -36,7 +37,7 @@ float noise(vec2 p){
 float fbm(vec2 p){
   float v = 0.0, a = 0.5;
   mat2 r = mat2(0.8,-0.6,0.6,0.8);
-  for(int i=0;i<5;i++){ v += a*noise(p); p = r*p*2.02 + 3.1; a *= 0.5; }
+  for(int i=0;i<5;i++){ if(i>=uOct) break; v += a*noise(p); p = r*p*2.02 + 3.1; a *= 0.5; }
   return v;
 }
 void main(){
@@ -108,22 +109,27 @@ void main(){
     gl.enableVertexAttribArray(loc)
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
     const u = {}
-    for (const n of ['uRes', 'uTime', 'uMouse', 'uVel', 'uColA', 'uColB', 'uGlow', 'uPulse', 'uDark', 'uScroll']) u[n] = gl.getUniformLocation(prog, n)
+    for (const n of ['uRes', 'uTime', 'uMouse', 'uVel', 'uColA', 'uColB', 'uGlow', 'uPulse', 'uDark', 'uScroll', 'uOct']) u[n] = gl.getUniformLocation(prog, n)
 
-    let scale = 0.5
+    // 烟雾本身是柔的：按 CSS 像素的一小部分渲染即可（不乘设备像素比，高分屏上也不会多算 4 倍），
+    // 画质每降一级：分辨率更低、噪声层数更少、隔帧渲染
+    const Q = () => (App.quality ? App.quality.level : 2)
+    const SCALE = [0.24, 0.32, 0.42], OCT = [3, 4, 5], EVERY = [3, 2, 1]
     function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      scale = App.isMobile() ? 0.35 : 0.5
-      canvas.width = Math.max(2, Math.floor(window.innerWidth * dpr * scale))
-      canvas.height = Math.max(2, Math.floor(window.innerHeight * dpr * scale))
+      const scale = SCALE[Q()] * (App.isMobile() ? 0.8 : 1)
+      canvas.width = Math.max(2, Math.floor(window.innerWidth * scale))
+      canvas.height = Math.max(2, Math.floor(window.innerHeight * scale))
       gl.viewport(0, 0, canvas.width, canvas.height)
     }
     resize()
     window.addEventListener('resize', U.debounce(resize, 120))
+    App.bus.on('quality', resize)
 
     const start = performance.now()
+    let nFrame = 0
     App.tick(() => {
       if (!state.running) return
+      if (++nFrame % EVERY[Q()]) return
       const m = App.mouse
       const k = canvas.width / window.innerWidth
       gl.uniform2f(u.uRes, canvas.width, canvas.height)
@@ -136,6 +142,7 @@ void main(){
       gl.uniform1f(u.uPulse, state.pulse)
       gl.uniform1f(u.uDark, state.dark)
       gl.uniform1f(u.uScroll, state.scroll)
+      gl.uniform1i(u.uOct, OCT[Q()])
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     })
     return gl
@@ -167,8 +174,12 @@ void main(){
     resize()
     window.addEventListener('resize', U.debounce(resize, 120))
     let f = 0, n = 0
+    const applyQ = () => { c.style.display = App.quality && App.quality.level === 0 ? 'none' : '' }
+    applyQ()
+    App.bus.on('quality', applyQ)
     App.tick(() => {
       if (++n % 3) return
+      if (App.quality && App.quality.level < 2 && f) return
       f = (f + 1) % frames.length
       ctx.save()
       ctx.translate(Math.random() * -S, Math.random() * -S)

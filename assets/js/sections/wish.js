@@ -668,6 +668,7 @@
       W.E.sleep.addEventListener('click', sleepAgain)
       W.E.sleep.addEventListener('pointerenter', () => App.audio.sfx('heartbeat', { volume: 0.3, pitch: 1.2 }))
       window.addEventListener('resize', U.debounce(layout, 160))
+      App.bus.on('quality', layout)
       App.tick(frame)
     },
   })

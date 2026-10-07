@@ -71,10 +71,10 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 /* ---------- 全局层 ---------- */
 #bg { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
 #grain { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 90; pointer-events: none; opacity: .09; mix-blend-mode: overlay; }
+/* 暗角：固定在画面中央（光标的光已经由背景烟雾与各板块负责，暗角不必每帧跟着重绘全屏） */
 #vignette {
   position: fixed; inset: 0; z-index: 89; pointer-events: none;
-  background:
-    radial-gradient(ellipse 120% 90% at calc(var(--mx) * 100%) calc(var(--my) * 100%), transparent 35%, rgba(0,0,0,.55) 100%);
+  background: radial-gradient(ellipse 120% 90% at 50% 45%, transparent 35%, rgba(0,0,0,.55) 100%);
 }
 #flash { position: fixed; inset: 0; z-index: 95; pointer-events: none; opacity: 0; background: var(--bone); mix-blend-mode: normal; }
 

@@ -322,7 +322,9 @@
       const r = S.canvas.parentNode.getBoundingClientRect()
       const W = Math.max(2, Math.round(r.width)), H = Math.max(2, Math.round(r.height))
       let dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const budget = App.isMobile() ? 2.2e6 : 4.4e6
+      // 像素预算随画质自适应下调（App.quality：2 全效果 → 0 最省）
+      const lvl = App.quality ? App.quality.level : 2
+      const budget = (App.isMobile() ? [0.7e6, 1.1e6, 1.6e6] : [1.1e6, 1.8e6, 2.8e6])[lvl]
       if (W * H * dpr * dpr > budget) dpr = Math.sqrt(budget / (W * H))
       S.W = W; S.H = H; S.dpr = dpr
       for (const c of [S.canvas, S.ribCanvas]) {
@@ -2004,6 +2006,7 @@
       window.addEventListener('blur', () => { P.ptrIn = false })
       P.E.stage.addEventListener('click', onTap)
       window.addEventListener('resize', U.debounce(() => { layout() }, 160))
+      App.bus.on('quality', () => layout())
       App.tick(frame)
     },
   })

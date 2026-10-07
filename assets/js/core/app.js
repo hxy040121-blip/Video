@@ -178,12 +178,40 @@
     el.style.setProperty('--mx', mouse.nx.toFixed(3)); el.style.setProperty('--my', mouse.ny.toFixed(3))
     return () => mouseVarEls.delete(el)
   }
-  App.trackMouseVars(document.getElementById('vignette'))
 
   /* ---------- 帧循环（统一使用 gsap.ticker） ---------- */
   const tickers = new Set()
   App.tick = fn => { tickers.add(fn); return () => tickers.delete(fn) }
+  /* ---------- 画质自适应 ---------- */
+  // level 2 = 全效果，1 = 降一级，0 = 最省。按这台电脑上的真实帧时间自动下调（只降不升，避免来回跳）。
+  // 各部件读 App.quality.level，并监听 App.bus 的 'quality' 事件重新设定分辨率等。网址加 ?q=0/1/2 可手动指定。
+  const qParam = /[?&]q=([012])/.exec(location.search)
+  const Q = App.quality = { level: qParam ? +qParam[1] : 2, fps: 60, locked: !!qParam }
+  Q.set = n => {
+    n = Math.max(0, Math.min(2, n | 0))
+    if (n === Q.level) return
+    Q.level = n
+    document.documentElement.dataset.q = n
+    App.bus.emit('quality', n)
+  }
+  document.documentElement.dataset.q = Q.level
+  let qAcc = 0, qN = 0, qSlow = 0, qFrom = performance.now() + 5000
+  function sampleQuality(deltaMs) {
+    if (Q.locked || Q.level === 0) return
+    const now = performance.now()
+    if (now < qFrom || document.hidden || deltaMs > 250) return
+    qAcc += deltaMs; qN++
+    if (qAcc < 1500) return
+    const avg = qAcc / qN
+    Q.fps = 1000 / avg
+    qAcc = 0; qN = 0
+    if (avg > 23) { // 低于约 43 帧
+      if (++qSlow >= 2) { qSlow = 0; qFrom = now + 3000; Q.set(Q.level - 1) }
+    } else qSlow = 0
+  }
+
   function frame(time, delta) {
+    sampleQuality(delta)
     const dt = Math.min(delta, 64) / 16.667
     const dx = mouse.x - lastX, dy = mouse.y - lastY
     lastX = mouse.x; lastY = mouse.y
@@ -345,8 +373,10 @@
       w.ox = U.lerp(w.ox, gx, 0.2)
       w.oy = U.lerp(w.oy, gy, 0.2)
       if (w.photo) {
-        w.wrap.style.setProperty('--pvx', (w.ox / w.range).toFixed(3))
-        w.wrap.style.setProperty('--pvy', (w.oy / w.range).toFixed(3))
+        // 只在数值变化时才写：光标停住后画像不再每帧触发样式与重绘
+        const px = (w.ox / w.range).toFixed(2), py = (w.oy / w.range).toFixed(2)
+        if (px !== w.px) { w.px = px; w.wrap.style.setProperty('--pvx', px) }
+        if (py !== w.py) { w.py = py; w.wrap.style.setProperty('--pvy', py) }
         continue
       }
       const tr = `translate(${w.ox.toFixed(2)}px, ${w.oy.toFixed(2)}px)`
