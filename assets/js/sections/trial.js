@@ -4171,7 +4171,7 @@
         const ch = charOf(ev.speaker)
         const chip = rebutChip(ev, ch)
         const pool = linePool(ev.speaker, 'rebut').length ? 'rebut' : 'defend'
-        await say(ev.speaker, line(ev.speaker, pool, { X: callOf(ev.against) }, toX(ev.against)), { tone: 'defend', tag: '' })
+        await say(ev.speaker, line(ev.speaker, pool, { X: callOf(ev.against), CLUE: ev.clue && ev.clue.name }, toX(ev.against)), { tone: 'defend', tag: '' })
         if (chip) setTimeout(() => chip.remove(), 400)
         markNote(ev.speaker, ev.clue && ev.clue.id, 'no')
         clearLines('accuse')
