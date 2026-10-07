@@ -56,6 +56,21 @@
       },
     })
 
+    // 远离视口（上下一屏以外）的板块整块不画：visibility 不影响排版与滚动位置，
+    // 但浏览器不再为里面的几百个合成层分配显存、每帧合成（整页图层从七百多个降到几十个）。
+    // 板块可以监听 'section:far' / 'section:near' 释放或恢复自己的画布。
+    if (window.IntersectionObserver) {
+      const io = new IntersectionObserver(entries => {
+        for (const e of entries) {
+          const far = !e.isIntersecting
+          if (e.target.classList.contains('is-far') === far) continue
+          e.target.classList.toggle('is-far', far)
+          App.bus.emit(far ? 'section:far' : 'section:near', e.target.id)
+        }
+      }, { rootMargin: '100% 0px 100% 0px' })
+      for (const def of App.sections) { const el = document.getElementById(def.id); if (el) io.observe(el) }
+    }
+
     // 板块事后变高（字体、图片、动态内容）时重算所有触发位置，色调与音乐切换才不会错位
     if (window.ResizeObserver) {
       const world = document.getElementById('world')
@@ -84,7 +99,11 @@
     init,
     lenis: null,
     stop() { if (lenis) lenis.stop(); else document.body.style.overflow = 'hidden' },
-    start() { if (lenis) lenis.start(); else document.body.style.overflow = '' },
+    // 有交互模式（App.mode）锁着滚动时不解锁，除非 force
+    start(force) {
+      if (!force && App.mode && App.mode.active) return
+      if (lenis) lenis.start(); else document.body.style.overflow = ''
+    },
     to(target, opts = {}) {
       if (lenis) lenis.scrollTo(target, Object.assign({ duration: 1.6, easing: t => 1 - Math.pow(1 - t, 4) }, opts))
       else {
@@ -95,6 +114,50 @@
     },
     refresh: U.debounce(() => ScrollTrigger.refresh(), 200),
     setCurrent,
+  }
+
+  /* ---------- 章节导航：顶栏编号、目录、键盘都走这里 ---------- */
+  // 跳转前先让正在进行的交互模式（如模拟庭审）退出并留存进度、关掉浮层，再解锁滚动
+  const ids = () => App.sections.map(d => d.id).filter(id => document.getElementById(id))
+  App.nav = {
+    ids,
+    index() { return Math.max(0, ids().indexOf(App.state.section)) },
+    go(id) {
+      const el = document.getElementById(id)
+      if (!el) return
+      if (App.mode) App.mode.exitAll()
+      if (App.overlay && App.overlay.isOpen) App.overlay.close(true)
+      App.scroll.start(true)
+      const top = el.getBoundingClientRect().top + window.scrollY
+      const dist = Math.abs(top - window.scrollY) / window.innerHeight
+      // 远距离跳转不慢慢滑过中间所有板块：先淡出到黑，瞬移，再淡入
+      if (lenis && dist > 3 && window.gsap && !App.reduced) {
+        const veil = document.getElementById('flash')
+        gsap.killTweensOf(veil)
+        gsap.set(veil, { background: '#050404' })
+        gsap.to(veil, {
+          opacity: 1, duration: 0.28, ease: 'power2.in',
+          onComplete: () => {
+            lenis.scrollTo(top, { immediate: true, force: true })
+            ScrollTrigger.update()
+            gsap.to(veil, { opacity: 0, duration: 0.55, ease: 'power2.out', delay: 0.12 })
+          },
+        })
+      } else App.scroll.to(top, { force: true, duration: Math.min(1.6, 0.6 + dist * 0.35) })
+      App.bus.emit('nav:go', id)
+    },
+    step(d) {
+      const list = ids()
+      const i = U.clamp(App.nav.index() + d, 0, list.length - 1)
+      // 板块很长时，「上一章」先回到本章开头
+      if (d < 0) {
+        const cur = document.getElementById(list[App.nav.index()])
+        if (cur && cur.getBoundingClientRect().top < -window.innerHeight * 0.6) return App.nav.go(list[App.nav.index()])
+      }
+      App.nav.go(list[i])
+    },
+    next() { App.nav.step(1) },
+    prev() { App.nav.step(-1) },
   }
 
   window.addEventListener('resize', () => App.scroll.refresh())

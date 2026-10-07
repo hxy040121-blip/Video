@@ -272,6 +272,51 @@
     setTimeout(start, 8000) // load 迟迟不来时也照常开始
   }
 
+  /* ---------- 帧率表（按 F 开关）：在用户自己的电脑上看真实帧率与浏览器实际用的显卡 ---------- */
+  ;(function () {
+    let box = null, on = false, frames = 0, worst = 0, last = 0, t0 = 0, gpu = null
+    const gpuName = () => {
+      if (gpu != null) return gpu
+      try {
+        const gl = document.createElement('canvas').getContext('webgl')
+        const ext = gl && gl.getExtension('WEBGL_debug_renderer_info')
+        gpu = (gl && (ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER))) || '未知'
+        gpu = String(gpu).replace(/^ANGLE \((.*)\)$/, '$1').replace(/ Direct3D.*$/, '').replace(/, or similar/, '')
+      } catch (e) { gpu = '未知' }
+      return gpu
+    }
+    const tick = (time, dt) => {
+      const now = performance.now()
+      if (last) { const d = now - last; if (d > worst) worst = d }
+      last = now
+      frames++
+      if (now - t0 < 500) return
+      const fps = frames * 1000 / (now - t0)
+      const cap = App.frameCap && App.frameCap.n > 1 ? ` · 上限 ${Math.round(App.frameCap.hz / App.frameCap.n)}` : ''
+      box.textContent = `${fps.toFixed(0)} 帧/秒 · 最慢一帧 ${worst.toFixed(0)}ms\n画质 ${App.quality.level} · 屏幕 ${App.refreshHz || '?'}Hz${cap} · 缩放 ${(window.devicePixelRatio || 1).toFixed(2)}\n${gpuName()}`
+      frames = 0; worst = 0; t0 = now
+    }
+    let off = null
+    function toggle() {
+      on = !on
+      if (on) {
+        box = box || U.el('div.fps-meter', { 'aria-hidden': 'true' })
+        document.body.appendChild(box)
+        box.textContent = '测量中……'
+        t0 = performance.now(); frames = 0; worst = 0; last = 0
+        off = App.tick(tick)
+      } else {
+        if (off) off()
+        off = null
+        if (box) box.remove()
+      }
+    }
+    window.addEventListener('keydown', e => {
+      if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey && !(e.target && e.target.closest && e.target.closest('input, textarea, [contenteditable]'))) toggle()
+    })
+    App.fpsMeter = { toggle, gpu: gpuName }
+  })()
+
   /* ---------- 可见性 ---------- */
   App.onVisible = (el, cb, opts) => {
     const io = new IntersectionObserver(entries => {
@@ -441,6 +486,23 @@
   }
 
   /* ---------- 浮层 ---------- */
+  /* ---------- 交互模式（会锁住滚动的小游戏等） ---------- */
+  // 板块进入需要锁住滚动的模式时调用 App.mode.enter(名字, 退出函数)，结束时 App.mode.leave(名字)。
+  // 导航（顶栏编号、目录、键盘）跳转前调用 App.mode.exitAll()：每个模式先体面地退出（暂停、留存进度），再放开滚动。
+  // 有模式在场时，App.scroll.start() 不会解锁滚动（比如模式里打开又关闭了浮层）。
+  const modes = new Map()
+  App.mode = {
+    enter(name, exit) { modes.set(name, exit || null) },
+    leave(name) { modes.delete(name) },
+    get active() { return modes.size > 0 },
+    exitAll() {
+      for (const [name, exit] of Array.from(modes)) {
+        modes.delete(name)
+        if (exit) try { exit() } catch (e) { console.error('[mode]', name, e) }
+      }
+    },
+  }
+
   const ov = { el: null, onClose: null, open: false }
   App.overlay = {
     open(node, opts = {}) {
@@ -559,10 +621,14 @@
     reveal(el, opts = {}) {
       const chars = el._chars || (el._chars = App.text.split(el))
       const from = { opacity: 0, yPercent: opts.y == null ? 60 : opts.y, filter: 'blur(10px)', scale: opts.scale || 1 }
+      // 动画期间才提升为合成层；结束后撤掉 will-change 与 filter，不长期占显存
+      const lift = () => gsap.set(chars, { willChange: 'transform, opacity, filter' })
+      const settle = () => gsap.set(chars, { willChange: 'auto', filter: 'none' })
       const to = {
         opacity: 1, yPercent: 0, filter: 'blur(0px)', scale: 1,
         duration: opts.duration || 1.1, ease: opts.ease || 'expo.out',
         stagger: opts.stagger == null ? 0.045 : opts.stagger, delay: opts.delay || 0,
+        onStart: lift, onComplete: settle, onReverseComplete: settle,
       }
       if (opts.scroll) {
         to.scrollTrigger = Object.assign({ trigger: opts.trigger || el, start: 'top 82%', toggleActions: 'play none none reverse' }, opts.scroll === true ? {} : opts.scroll)

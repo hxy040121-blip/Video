@@ -23,15 +23,16 @@ mkdirSync(out, { recursive: true })
 
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] })
 const page = await browser.newPage({ viewport: { width: W, height: H }, hasTouch: W < 760, isMobile: W < 760 })
+page.setDefaultTimeout(240000); page.setDefaultNavigationTimeout(240000) // 机器忙时也别超时
 const errors = []
 page.on('console', m => { if ((m.type() === 'error' || m.type() === 'warning') && !/GroupMarkerNotSet|swiftshader|GPU stall/i.test(m.text())) errors.push(`[${m.type()}] ${m.text()}`) })
 page.on('pageerror', e => errors.push(`[pageerror] ${e.message}`))
 await page.goto(pathToFileURL(join(ROOT, 'index.html')).href + (args.q === 'auto' ? '' : '?q=' + (args.q || 2)))
-await page.waitForFunction(() => { const b = document.querySelector('.gate-open'); return b && !b.disabled }, null, { timeout: 30000 })
+await page.waitForFunction(() => { const b = document.querySelector('.gate-open'); return b && !b.disabled }, null, { timeout: 120000 })
 await page.screenshot({ path: join(out, '000-gate.png') })
 await page.evaluate(() => { window.__woke = false; App.bus.on('wake', () => { window.__woke = true }) })
 await page.click('.gate-open', { force: true })
-await page.waitForFunction(() => window.__woke, null, { timeout: 30000 })
+await page.waitForFunction(() => window.__woke, null, { timeout: 120000 })
 await page.mouse.move(W * mx, H * my, { steps: 8 })
 
 const ids = await page.evaluate(() => App.sections.map(s => s.id))

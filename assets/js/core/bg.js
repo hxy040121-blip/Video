@@ -111,10 +111,10 @@ void main(){
     const u = {}
     for (const n of ['uRes', 'uTime', 'uMouse', 'uVel', 'uColA', 'uColB', 'uGlow', 'uPulse', 'uDark', 'uScroll', 'uOct']) u[n] = gl.getUniformLocation(prog, n)
 
-    // 烟雾本身是柔的：按 CSS 像素的一小部分渲染即可（不乘设备像素比，高分屏上也不会多算 4 倍），
-    // 画质每降一级：分辨率更低、噪声层数更少、隔帧渲染
+    // 烟雾本身是柔的、动得慢：按 CSS 像素的一小部分渲染（不乘设备像素比，高分屏上也不会多算），
+    // 每秒最多画 FPS 次（屏幕照常按自己的刷新率显示上一张）；画质每降一级：分辨率更低、噪声层数更少、画得更少
     const Q = () => (App.quality ? App.quality.level : 2)
-    const SCALE = [0.24, 0.32, 0.42], OCT = [3, 4, 5], EVERY = [3, 2, 1]
+    const SCALE = [0.2, 0.27, 0.34], OCT = [3, 4, 4], FPS = [15, 24, 30]
     function resize() {
       const scale = SCALE[Q()] * (App.isMobile() ? 0.8 : 1)
       canvas.width = Math.max(2, Math.floor(window.innerWidth * scale))
@@ -126,10 +126,12 @@ void main(){
     App.bus.on('quality', resize)
 
     const start = performance.now()
-    let nFrame = 0
+    let lastDraw = -1e9
     App.tick(() => {
       if (!state.running) return
-      if (++nFrame % EVERY[Q()]) return
+      const now = performance.now()
+      if (now - lastDraw < 1000 / FPS[Q()] - 4) return
+      lastDraw = now
       const m = App.mouse
       const k = canvas.width / window.innerWidth
       gl.uniform2f(u.uRes, canvas.width, canvas.height)
@@ -148,45 +150,33 @@ void main(){
     return gl
   }
 
+  // 胶片颗粒：开场生成一张带透明度的噪声贴图，作为 #grain 的背景；#grain 比屏幕大一圈，
+  // 用 CSS 动画按帧跳着平移（只改 transform，合成器完成，不占主线程、不重画）。
+  // 不再用 mix-blend-mode: overlay——全屏混合层会让整个画面每帧多走一遍离屏合成。
   function initGrain() {
-    const c = document.getElementById('grain')
-    if (!c) return
-    const ctx = c.getContext('2d')
-    const S = 256
-    const frames = []
-    for (let f = 0; f < 6; f++) {
-      const t = document.createElement('canvas')
-      t.width = t.height = S
-      const tc = t.getContext('2d')
-      const img = tc.createImageData(S, S)
-      for (let i = 0; i < img.data.length; i += 4) {
-        const v = Math.random() * 255
-        img.data[i] = img.data[i + 1] = img.data[i + 2] = v
-        img.data[i + 3] = 255
-      }
-      tc.putImageData(img, 0, 0)
-      frames.push(ctx.createPattern(t, 'repeat'))
+    const g = document.getElementById('grain')
+    if (!g) return
+    const S = 192
+    const t = document.createElement('canvas')
+    t.width = t.height = S
+    const tc = t.getContext('2d')
+    const img = tc.createImageData(S, S)
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = Math.random()
+      const light = v > 0.5
+      const a = Math.abs(v - 0.5) * 2
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = light ? 255 : 0
+      img.data[i + 3] = Math.round(a * a * (light ? 24 : 40))
     }
-    function resize() {
-      c.width = Math.ceil(window.innerWidth / 2)
-      c.height = Math.ceil(window.innerHeight / 2)
+    tc.putImageData(img, 0, 0)
+    try { g.style.backgroundImage = `url(${t.toDataURL('image/png')})` } catch (e) { g.style.display = 'none'; return }
+    const applyQ = () => {
+      const q = App.quality ? App.quality.level : 2
+      g.style.display = q === 0 ? 'none' : ''
+      g.classList.toggle('is-still', q < 2)
     }
-    resize()
-    window.addEventListener('resize', U.debounce(resize, 120))
-    let f = 0, n = 0
-    const applyQ = () => { c.style.display = App.quality && App.quality.level === 0 ? 'none' : '' }
     applyQ()
     App.bus.on('quality', applyQ)
-    App.tick(() => {
-      if (++n % 3) return
-      if (App.quality && App.quality.level < 2 && f) return
-      f = (f + 1) % frames.length
-      ctx.save()
-      ctx.translate(Math.random() * -S, Math.random() * -S)
-      ctx.fillStyle = frames[f]
-      ctx.fillRect(0, 0, c.width + S, c.height + S)
-      ctx.restore()
-    })
   }
 
   const proxy = { a0: 0, a1: 0, a2: 0, b0: 0, b1: 0, b2: 0, glow: 0 }
