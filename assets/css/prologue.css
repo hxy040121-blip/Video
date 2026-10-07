@@ -4,13 +4,11 @@
    ========================================================== */
 
 .prologue { position: relative; height: 380vh; }
-.prologue-sticky {
-  position: sticky; top: 0; height: 100vh; overflow: hidden;
-  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(20, 14, 11, .0), rgba(5, 4, 4, .55) 100%);
-}
+/* 舞台的暗角画在画布最底下（原来是这里的 CSS 背景，单独占一个整屏合成层）；
+   穹顶肋拱也画进同一张画布（半分辨率放大即景深，不再是第二张带 CSS 模糊的整屏画布） */
+.prologue-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 .prologue-stage { position: absolute; inset: 0; touch-action: pan-y; }
-.prologue-cv, .prologue-ribs { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-.prologue-ribs { pointer-events: none; filter: blur(1.4px); }
+.prologue-cv { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 
 /* ---------- 标题：巨大竖排「夙与愿」 ---------- */
 .prologue-head {
@@ -95,12 +93,15 @@
   background: var(--blood); box-shadow: 0 0 8px var(--blood);
   animation: prologue-cue 2.4s var(--ease-in-out) infinite;
 }
+/* 收起时连同循环的小点一起停掉 */
+.prologue-cue.is-off { visibility: hidden; }
+.prologue-cue.is-off i { animation-play-state: paused; }
 @keyframes prologue-cue { 0% { transform: translateY(-6px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(64px); opacity: 0; } }
 
 /* ---------- 落下的黄铜钥匙 ---------- */
 .prologue-key {
   position: absolute; left: 0; top: 0; width: 150px; height: 57px;
-  pointer-events: none; opacity: 0; will-change: transform, opacity;
+  pointer-events: none; opacity: 0; visibility: hidden; will-change: transform, opacity;
   filter: drop-shadow(0 0 10px rgba(226, 178, 96, .45)) drop-shadow(0 6px 10px rgba(0, 0, 0, .8));
 }
 .prologue-key svg { width: 100%; height: 100%; overflow: visible; }
@@ -120,7 +121,6 @@
   .prologue-tag-name { font-size: 18px; }
   .prologue-tag-line { font-size: 13px; }
   .prologue-tag-in { max-width: 62vw; }
-  .prologue-ribs { filter: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

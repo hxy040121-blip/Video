@@ -1,10 +1,12 @@
 /* ==========================================================
    卡池 · cast —— 东肖像廊 / 档案（通信簿）
+   渲染结构见 cast.js「渲染结构」：整条长廊只有墙一个合成层；每幅画的静态版画在墙里，
+   只有烛光够得着的几幅在 .cast-live 里有动态层。静态元素一律不用 will-change / 三维变换。
    ========================================================== */
 
 .cast { position: relative; }
 .cast-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; isolation: isolate; }
-.cast.is-paused .cast-sticky * { animation-play-state: paused !important; }
+/* 板块里没有 CSS 动画：不再用 .is-paused .cast-sticky * 暂停（那条通配规则每次进出视口都要重算整块上千个元素） */
 
 /* ---------- 墙 ---------- */
 .cast-wall, .cast-fore { position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
@@ -40,17 +42,18 @@
 }
 .cast-wains i { position: absolute; left: 0; right: 0; top: 10px; bottom: 12px; border-top: 1px solid rgba(111,85,50,.35); border-bottom: 1px solid rgba(111,85,50,.25); }
 
-.cast-thread { position: absolute; left: 0; top: 0; height: 100%; pointer-events: none; overflow: visible; filter: drop-shadow(0 0 4px rgba(255,46,126,.55)); }
+/* 红线：SVG 只框住线本身（cast.js），发光滤镜只落在这一小块上 */
+.cast-thread { position: absolute; pointer-events: none; overflow: visible; filter: drop-shadow(0 0 4px rgba(255,46,126,.55)); }
 
-/* ---------- 画 ---------- */
-.cast-item { position: absolute; --lit: 0; }
-.cast-wire { position: absolute; left: 0; overflow: visible; pointer-events: none; }
-.cast-swing { position: absolute; inset: 0; will-change: transform; }
-/* 投影：模糊预先烘焙成图（cast.js 的 shadowImage），随烛光移动只改 transform；不再用 CSS blur 滤镜逐帧在 GPU 上糊 */
-.cast-shadow { position: absolute; opacity: calc(.35 + var(--lit) * .45); pointer-events: none; will-change: transform; }
+/* ---------- 画：静态版（画在墙里，画一次） ---------- */
+.cast-item { position: absolute; }
+.cast-a, .cast-b, .cast-swing, .cast-w { position: absolute; inset: 0; pointer-events: none; }
+.cast-wire { position: absolute; left: 0; display: block; pointer-events: none; background: no-repeat 0 0 / 100% 100%; }
+/* 投影：模糊预先烘焙成图（cast.js 的 shadowImage）；静态，取原来随亮度 .35–.8 之间的中间值 */
+.cast-shadow { position: absolute; opacity: .5; transform: translate(0, 8px); pointer-events: none; }
 .cast-shadow > i { position: absolute; display: block; background: no-repeat 0 0 / 100% 100%; }
-.cast-win {
-  position: absolute; inset: 0; overflow: hidden; outline: none;
+.cast-win, .cast-bwin {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
   background: #0b0708;
 }
 .cast-back {
@@ -58,88 +61,105 @@
   background:
     radial-gradient(ellipse 70% 55% at 50% 44%, rgba(214,168,96,.62), rgba(122,74,38,.28) 48%, rgba(30,14,10,0) 78%),
     linear-gradient(180deg, #2a1810, #120a08);
-  opacity: calc(.12 + var(--lit) * .88);
+  opacity: .12;
 }
+/* 面纱：未照亮时压在窗上的暗（照亮后由动态层的 brightness() 代替） */
+.cast-shade { position: absolute; inset: 0; background: rgba(5,3,4,.62); pointer-events: none; }
+.cast-frame { position: absolute; pointer-events: none; opacity: .42; background: no-repeat 0 0 / 100% 100%; }
+/* 可交互的窗：透明、形状同窗口（clip-path 由 cast.js 写），不随静态版一起藏起来 */
+.cast-hit { position: absolute; inset: 0; outline: none; }
+
+/* ---------- 肖像：.portrait（静态、裁边）> .cast-turn（偏转）> 图 + 地面暗影 ---------- */
+.cast-por { position: absolute; }
+.cast-turn { position: absolute; inset: 0; }
+.cast-turn > svg { display: block; width: 100%; height: 100%; overflow: visible; filter: grayscale(.85) brightness(.78); }
+.cast-turn > img {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block;
+  object-fit: cover; object-position: 50% 0%;
+  transform: scale(1.07); /* 原来的偏转里那一份放大；偏转本身写在 .cast-turn 上 */
+  user-select: none; -webkit-user-drag: none;
+}
+.cast-floor { position: absolute; display: block; pointer-events: none; background: linear-gradient(180deg, rgba(8,5,6,0) 60%, rgba(8,5,6,.5) 84%, rgba(8,5,6,.86) 100%); }
+/* 轮廓光：同一幅画的暖金剪影，朝烛光一侧错开几像素；只在被照亮（悬停）的那一幅上存在 */
+.cast-turn > img.cast-rim {
+  filter: brightness(0) invert(.86) sepia(1) saturate(3) hue-rotate(-10deg);
+  opacity: 0; display: none;
+}
+.cast-lv.is-warm .cast-turn > img.cast-rim { display: block; will-change: transform, opacity; }
+
+/* ---------- 动态层（.cast-live 里，烛光够得着的那几幅才显示） ---------- */
+.cast-live { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+.cast-lv { position: absolute; display: none; pointer-events: none; }
+.cast-lv.is-on { display: block; }
+.cast-lv.is-warm .cast-swing { will-change: transform; } /* 悬停时晃动：整组一起转，只走合成器 */
+/* 照亮版：背光、黄铜框、名牌全亮的一份，opacity 随亮度（cast.js 的 litMix） */
+.cast-b { will-change: opacity; opacity: 0; }
+.cast-bwin {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 44%, rgba(214,168,96,.62), rgba(122,74,38,.28) 48%, rgba(30,14,10,0) 78%),
+    linear-gradient(180deg, #2a1810, #120a08);
+}
+.cast-frame--lit { opacity: 1; }
+.cast-b .cast-plate { opacity: 1; }
+/* 照亮时肖像搬到这里的窗里：偏转与压暗只走合成器 */
+.cast-w .cast-turn { will-change: transform, filter, opacity; }
+/* 悬停期间：墙里的静态版藏起来，换成跟着晃的拷贝 .cast-a2；照亮版的背光挪进窗里（暖斑要混合得到它）；名牌不晃，静态版直接全亮 */
+.cast-item.is-warm > .cast-a { visibility: hidden; }
+.cast-item.is-warm > .cast-plate { opacity: 1; }
+.cast-lv.is-warm .cast-b .cast-plate, .cast-lv.is-warm .cast-bwin { display: none; }
+.cast-wback {
+  position: absolute; inset: 0; display: none; opacity: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 44%, rgba(214,168,96,.62), rgba(122,74,38,.28) 48%, rgba(30,14,10,0) 78%),
+    linear-gradient(180deg, #2a1810, #120a08);
+}
+.cast-lv.is-warm .cast-wback { display: block; will-change: opacity; }
 .cast-hotglow {
-  position: absolute; inset: -10%;
+  position: absolute; inset: -10%; display: block;
   background: radial-gradient(ellipse 60% 48% at 50% 46%, rgba(255,224,160,.55), rgba(236,170,90,.18) 45%, transparent 72%);
   opacity: 0; transition: opacity .6s var(--ease-out);
 }
-.cast-item.is-hot .cast-hotglow { opacity: 1; }
-.cast-por { position: absolute; }
-.cast-por > svg { filter: grayscale(.85) brightness(.78); }
-/* 位图肖像：在长廊里偏转得更明显（像整幅画在转头看你）。只动 transform，不做逐帧滤镜 */
-.cast-por.is-photo > img {
-  position: relative;
-  transform: translate3d(calc(var(--pvx, 0) * 3.2%), calc(var(--pvy, 0) * 2.2%), 0) perspective(900px) rotateY(calc(var(--pvx, 0) * 5deg)) scale(1.07);
-  transition: none;
-}
-/* 轮廓光：同一幅画的暖金剪影，朝烛光一侧错开几像素（--rx/--ry/--rim 由 cast.js 写在悬停的那一幅上） */
-.cast-por.is-photo > img.cast-rim {
-  position: absolute; left: 0; top: 0;
-  transform: translate3d(calc(var(--pvx, 0) * 3.2% + var(--rx, 0px)), calc(var(--pvy, 0) * 2.2% + var(--ry, 0px)), 0) perspective(900px) rotateY(calc(var(--pvx, 0) * 5deg)) scale(1.07);
-  filter: brightness(0) invert(.86) sepia(1) saturate(3) hue-rotate(-10deg);
-  opacity: var(--rim, 0);
-  display: none; /* 只在被照亮（悬停）的那几幅上存在 */
-}
-.cast-item.is-warm .cast-por.is-photo > img.cast-rim { display: block; will-change: transform, opacity; }
-/* 视口附近的画（.is-live，由 cast.js 标记）：会随光标变化的部分各有独立合成层，变化只走合成器、不重画整幅画 */
-.cast-item.is-live .cast-por.is-photo > img { will-change: transform; }
-.cast-item.is-live .cast-back,
-.cast-item.is-live .cast-veil,
-.cast-item.is-live .cast-dim,
-.cast-item.is-live .cast-frame,
-.cast-item.is-live .cast-plate,
-.cast-item.is-live .cast-glass { will-change: opacity; }
-.cast-item.is-live .cast-shadow { will-change: transform, opacity; }
-.cast-floor { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(8,5,6,0) 60%, rgba(8,5,6,.5) 84%, rgba(8,5,6,.86) 100%); }
-/* 烛光落在画上：暖光跟着烛火移动——一块光斑（独立合成层）只改 transform；只在被照亮的那一幅上存在 */
+.cast-lv.is-warm .cast-hotglow { will-change: opacity; }
+.cast-lv.is-hot .cast-hotglow { opacity: 1; }
+/* 烛光落在画上：暖光跟着烛火移动——一块光斑只改 transform；只在被照亮的那一幅上存在 */
 .cast-lamp { position: absolute; inset: 0; pointer-events: none; opacity: 0; mix-blend-mode: soft-light; display: none; }
-.cast-item.is-warm .cast-lamp { display: block; will-change: opacity; }
+.cast-lv.is-warm .cast-lamp { display: block; will-change: opacity; }
+.cast-lv--void .cast-lamp { display: none !important; }
 .cast-lamp-spot {
-  position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform;
+  position: absolute; left: 0; top: 0; display: block; border-radius: 50%; will-change: transform;
   background: radial-gradient(circle closest-side, rgba(255,222,160,.95), rgba(255,186,110,.45) 32%, rgba(255,170,90,0) 64%);
 }
-.cast.is-lowq .cast-lamp { display: none; } /* 降画质：去掉唯一的混合模式层 */
-/* 玻璃上的反光：普通叠加（暗底上与 screen 几乎一样） */
+.cast.is-lowq .cast-lamp { display: none !important; } /* 降画质：去掉唯一的混合模式层 */
+/* 玻璃上的反光（悬停时掠过一次；掠过期间 cast.js 临时给它独立合成） */
 .cast-glint {
   position: absolute; top: -10%; bottom: -10%; left: -40%; right: -40%; pointer-events: none; opacity: 0;
   background: linear-gradient(104deg, transparent 40%, rgba(255,236,200,.1) 46%, rgba(255,246,226,.34) 50%, rgba(255,236,200,.08) 54%, transparent 60%);
 }
-.cast-veil { position: absolute; inset: 0; background: #050304; opacity: calc(.62 - var(--lit) * .62); pointer-events: none; }
-/* 悬停一幅时其余沉暗、以及随烛光变亮的几层（back/veil/frame/shadow/plate/glass）：
-   下面的 calc 是初始值与公式说明；运行时由 cast.js 的 litOpacity 按同一公式直接写 opacity */
-.cast-dim { position: absolute; inset: 0; background: #050304; opacity: calc(var(--pf, 0) * .62); pointer-events: none; }
-.cast-frame { position: absolute; pointer-events: none; opacity: calc(.42 + var(--lit) * .58); }
-/* 逐帧变化的 CSS 变量（肖像上的 --pvx/--rx/--rim 等）会继承进里面的 SVG：SVG 一重算样式，渐变、滤镜资源就失效、整张重画。
-   在 SVG 根上把这些变量钉成常量，变化就传不进去 */
-.cast-border, .cast-wire, .cast-por > svg { --lit: 0; --pf: 0; --pvx: 0; --pvy: 0; --rx: 0; --ry: 0; --rim: 0; }
-.cast-border { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
-.cast-mould { opacity: .96; }
-/* 黄铜反光：画框线条做遮罩，里面一块光斑跟着烛光只改 transform（原来是每帧改 SVG 渐变中心而整框重画） */
+/* 黄铜反光：画框线条做遮罩，里面一块光斑跟着烛光只改 transform；亮度够时才有（.is-shine） */
 .cast-shine {
-  position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; display: none;
+  position: absolute; left: 0; top: 0; overflow: hidden; display: none;
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
 }
-.cast-item.is-live.is-lit .cast-shine { display: block; } /* 只在烛光够得着的画框上存在（.is-lit 由 cast.js 按亮度标记） */
+.cast-lv.is-shine .cast-shine { display: block; }
 .cast-shine-spot {
-  position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform;
+  position: absolute; left: 0; top: 0; display: block; border-radius: 50%; will-change: transform, opacity;
   background: radial-gradient(circle closest-side, #ffe7b0, #d4a85f 28%, #6f5532 62%, rgba(111,85,50,0));
 }
+
 /* ---------- 名牌 ---------- */
 .cast-plate {
-  position: absolute; transform: translateX(-50%); z-index: 2;
+  position: absolute; transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   min-width: 112px; padding: 7px 18px 7px;
   background: linear-gradient(180deg, #3b2a17 0%, #22170c 48%, #140d07 100%);
   border: 1px solid rgba(194,154,91,.55);
   box-shadow: 0 1px 0 rgba(255,231,176,.12) inset, 0 6px 14px rgba(0,0,0,.6);
-  opacity: calc((.38 + var(--lit) * .62) * (1 - var(--pf, 0)) + .35 * var(--pf, 0));
+  opacity: .38;
   pointer-events: none; white-space: nowrap;
 }
 .cast-name { font-family: var(--f-display); font-weight: 900; font-size: 14px; line-height: 1.1; letter-spacing: .08em; color: #f0dcae; text-shadow: 0 1px 0 #000; }
 .cast-epi { font-family: var(--f-sans); font-size: 9.5px; line-height: 1.2; letter-spacing: .32em; padding-left: .32em; color: rgba(194,154,91,.62); min-height: 1.2em; }
-.cast-item.is-hot .cast-epi { color: #e9c78a; }
+.cast-item.is-hot .cast-epi, .cast-lv.is-hot .cast-epi { color: #e9c78a; }
 .cast-rivet { position: absolute; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe7b0, #6f5532 70%); }
 .cast-plate .cast-rivet:first-child { left: 6px; }
 .cast-plate .cast-rivet:last-child { right: 6px; }
@@ -153,28 +173,30 @@
 .cast-plate.is-seated .cast-seatno { display: grid; }
 
 /* 空框 */
-.cast-item--void .cast-win { background: #050304; }
+.cast-item--void .cast-win, .cast-lv--void .cast-bwin, .cast-lv--void .cast-wback { background: #050304; }
 .cast-item--void .cast-back { background: radial-gradient(ellipse 70% 60% at 50% 45%, rgba(60,30,40,.5), transparent 75%), #070405; }
-.cast-item--void .cast-glass {
+.cast-lv--void .cast-bwin {
+  background:
+    linear-gradient(115deg, transparent 30%, rgba(235,227,214,.07) 42%, transparent 48%, transparent 60%, rgba(235,227,214,.04) 66%, transparent 70%),
+    radial-gradient(ellipse 70% 60% at 50% 45%, rgba(60,30,40,.5), transparent 75%), #070405;
+}
+.cast-glass {
   position: absolute; inset: 0;
   background: linear-gradient(115deg, transparent 30%, rgba(235,227,214,.07) 42%, transparent 48%, transparent 60%, rgba(235,227,214,.04) 66%, transparent 70%);
-  opacity: calc(.4 + var(--lit) * .6);
+  opacity: .4;
 }
-.cast-item--void .cast-por > svg { filter: none; }
-.cast-item--void.is-live .cast-por { will-change: opacity; }
-.cast-item--void .cast-name { color: var(--blood); letter-spacing: .3em; }
+.cast-item--void .cast-turn > svg { filter: none; }
+.cast-item--void .cast-name, .cast-lv--void .cast-name { color: var(--blood); letter-spacing: .3em; }
 
-/* ---------- 黑暗与烛光 ---------- */
+/* ---------- 黑暗与烛光（一层：黑暗与暖光合成好的渐变由 cast.js 写） ---------- */
 .cast-dark {
   position: absolute; left: 0; top: 0; z-index: 3; width: 1200px; height: 1200px; margin: -600px 0 0 -600px;
   pointer-events: none; will-change: transform;
-  background: radial-gradient(circle closest-side, rgba(5,2,3,0) 0, rgba(5,2,3,0) 7%, rgba(5,2,3,.3) 12%, rgba(5,2,3,.66) 19%, rgba(5,2,3,.84) 27%, rgba(4,2,3,.9) 42%);
 }
-.cast-glow {
-  position: absolute; left: 0; top: 0; z-index: 4; width: 1040px; height: 1040px; margin: -520px 0 0 -520px;
-  pointer-events: none; will-change: transform, opacity; /* 普通叠加：暗底上与 screen 几乎一样，省掉整屏的混合 */
-  background: radial-gradient(circle closest-side, rgba(255,190,110,.2), rgba(255,160,80,.08) 30%, rgba(255,140,60,.02) 60%, transparent 80%);
-}
+/* 离开视口：大黑暗层藏起来（它的合成层比视口大得多，会压到邻近板块上），换成只盖本板块的静态暗幕 */
+.cast-darkstill { position: absolute; inset: 0; z-index: 3; display: none; pointer-events: none; background: rgba(5,2,3,.9); }
+.cast.is-paused .cast-dark { visibility: hidden; }
+.cast.is-paused .cast-darkstill { display: block; }
 
 /* ---------- 前景：标题、眼睛的光 ---------- */
 .cast-fore { z-index: 5; pointer-events: none; }
@@ -199,16 +221,16 @@
   position: absolute; left: max(var(--gutter), 6vw); top: calc(15vh + min(25vh, 220px) * 2 + 34px);
   font-family: var(--f-latin); font-size: 11px; letter-spacing: .42em; color: rgba(194,154,91,.75); white-space: nowrap;
 }
+/* 眼睛的光点：画在 .cast-fore 这一层里（不各自成层；变化只重画几个小方块）。整组的平移与明暗写在 .cast-eyes 上，缩放与眨眼写在光点上 */
 .cast-eyes { position: absolute; left: 0; top: 0; pointer-events: none; }
 .cast-halo {
   position: absolute; width: var(--hs, 22px); height: var(--hs, 22px); margin: calc(var(--hs, 22px) / -2) 0 0 calc(var(--hs, 22px) / -2); border-radius: 50%;
-  opacity: .4; will-change: transform, opacity;
   background: radial-gradient(circle, rgba(255,246,226,.95) 0 9%, var(--accent, #ff2e7e) 18%, rgba(255,46,126,0) 70%);
-  /* 不用 mix-blend-mode：.cast-fore 自成层叠上下文，底下是透明的，screen 本来就等于普通叠加 */
 }
+.cast-eyes { opacity: .4; }
 /* 位图：只有虹膜是血粉——黑暗里亮着的就是它们 */
+.cast-eyes.is-photo { opacity: 0; }
 .cast-eyes.is-photo .cast-halo {
-  opacity: 0;
   background: radial-gradient(circle, rgba(255,240,246,.96) 0 7%, rgba(255,74,144,.95) 19%, rgba(255,46,126,.42) 38%, rgba(255,46,126,0) 68%);
 }
 .cast-eyes.is-void .cast-halo { background: radial-gradient(circle, #fff 0 8%, var(--blood) 20%, transparent 70%); }
@@ -219,12 +241,13 @@
   display: flex; align-items: center; gap: 22px; pointer-events: none;
 }
 .cast-hudname { font-family: var(--f-latin); font-size: 10px; letter-spacing: .4em; color: rgba(194,154,91,.6); white-space: nowrap; }
-.cast-bar { position: relative; flex: 1; height: 12px; --p: 0; }
+.cast-bar { position: relative; flex: 1; height: 12px; }
 .cast-bar::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(111,85,50,.45); }
-.cast-bar > i { position: absolute; left: 0; right: 0; top: 50%; height: 1px; margin-top: 0; background: var(--brass); transform-origin: left; transform: scaleX(var(--p)); will-change: transform; }
+.cast-bar > i { position: absolute; left: 0; right: 0; top: 50%; height: 1px; margin-top: 0; background: var(--brass); transform-origin: left; transform: scaleX(0); }
 .cast-ticks { position: absolute; inset: 0; display: flex; justify-content: space-between; }
-.cast-ticks i { width: 1px; height: 7px; margin-top: 2.5px; background: rgba(111,85,50,.7); transition: background .4s, height .4s, margin .4s; }
-.cast-ticks i.is-on { background: var(--brass); height: 12px; margin-top: 0; }
+/* 刻度点亮：用 transform 拉长（不动 height/margin，不触发排版；也不做 transform 过渡，免得每根刻度过渡时各自成层） */
+.cast-ticks i { width: 1px; height: 12px; background: rgba(111,85,50,.7); transform: scaleY(.5834); transition: background .4s; }
+.cast-ticks i.is-on { background: var(--brass); transform: none; }
 .cast-count { font-family: var(--f-mono); font-size: 12px; letter-spacing: .18em; color: var(--bone); min-width: 8ch; text-align: right; }
 
 /* ---------- 手机 ---------- */

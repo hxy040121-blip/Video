@@ -17,6 +17,8 @@
   const sstep = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
   const mix = (a, b, t) => a + (b - a) * t
   const easeIO = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+  // 写样式：值没变就不写（免得每帧让元素重算样式）
+  const css = (el, k, v) => { const c = el._css || (el._css = {}); if (c[k] !== v) { c[k] = v; el.style[k] = v } }
   // 《主持人游戏》第六节：仍存活、在馆且参加游戏的人只剩一名时，主持人实现其任何愿望。
   const RULE = '只剩一名时，实现其任何愿望。'
 
@@ -38,8 +40,7 @@
     E.sticky = U.el('div.wish-sticky')
     E.stage = U.el('div.wish-stage')
     E.cv = U.el('canvas.wish-cv', { 'aria-hidden': 'true' })
-    E.ribs = U.el('canvas.wish-ribs', { 'aria-hidden': 'true' })
-    E.stage.append(E.cv, E.ribs)
+    E.stage.append(E.cv)
     E.whis = U.el('div.wish-whispers', { 'aria-hidden': 'true' })
     E.countN = U.el('span.wish-count-n', { text: 'XV' })
     E.count = U.el('div.wish-count', { 'aria-hidden': 'true' }, [E.countN, U.el('i.wish-count-bar')])
@@ -102,7 +103,15 @@
     H.lensH = portrait ? 0.38 : 0.62
     H.ribA = portrait ? 0.55 : 1
     W.oy0 = portrait ? H.H * 0.04 : 0
+    // 尺寸在这里量好缓存（帧循环里不再读布局）
+    W.endH = W.E.end.offsetHeight || window.innerHeight
+    measureFace()
     layoutWhispers()
+  }
+  function measureFace() {
+    const E = W.E
+    W.fw = E.faceWrap.offsetWidth || 1
+    W.fh = E.faceWrap.offsetHeight || 1
   }
 
   /* ---------- 席位与熄灭顺序 ---------- */
@@ -492,11 +501,15 @@
     // 离得很远时隔几帧才量一次位置
     if (W.far && (W.farSkip = ((W.farSkip || 0) + 1) % 8)) return
     const sec = Math.min(0.1, (dt || 1) / 60)
-    // 可见性与进度都直接取自钉住段的位置（不依赖可能迟到的观察器回调或过期的 ScrollTrigger 缓存）
+    // 可见性与进度都直接取自钉住段的位置（不依赖可能迟到的观察器回调或过期的 ScrollTrigger 缓存）；
+    // 舞台位置也在这里一起量（之后再量会逼浏览器当场重算样式）
     const tr = E.track.getBoundingClientRect(), vh = window.innerHeight
     W.far = tr.bottom < -vh || tr.top > vh * 2
+    // 结尾「再睡一次」紧接在钉住段下面：位置由钉住段的底边推出来，不再另量
+    endCheck(tr.bottom, tr.bottom + (W.endH || vh), vh)
     setVis(tr.bottom > 0 && tr.top < vh)
     if (!W.vis) return
+    const r = E.stage.getBoundingClientRect()
     W.p = clamp01(-tr.top / Math.max(1, tr.height - window.innerHeight))
     edges(tr, vh)
     // 平滑跟随用真实时间（与帧率无关；隔了很久才回来就直接到位）
@@ -505,7 +518,6 @@
     W.ps += (W.p - W.ps) * (1 - Math.exp(-rdt / 0.12))
     if (Math.abs(W.p - W.ps) < 0.0004) W.ps = W.p
     applyScroll(W.ps)
-    const r = E.stage.getBoundingClientRect()
     const m = App.mouse
     const inside = m.x >= r.left && m.x <= r.right && m.y >= r.top && m.y <= r.bottom
     H.ptr.x = m.x - r.left; H.ptr.y = m.y - r.top
@@ -522,25 +534,26 @@
       H.home.z = 2.5; H.homePow = 1.3; H.homeRange = 2.6
     }
     H.update(sec)
-    H.render()
+    // 镜头/光在动、状态在变时每帧画；只剩环境动画时约 30 帧
+    if (H.needs(now)) H.render()
     updWhispers(H.time, rdt)
     // 那个人的肖像：眼睛落在画布里那颗头的位置
     if (W.finaleOn) {
       const hs = H.headScreen(W.fk)
-      const fh = E.faceWrap.offsetHeight || 1
-      const fw = E.faceWrap.offsetWidth || 1
+      const fh = W.fh || 1
+      const fw = W.fw || 1
       let x = H.W / 2, y = H.H * 0.42
       if (hs) { x = hs.x; y = hs.y }
       x = U.clamp(x, fw * 0.5 + 8, H.W - fw * 0.5 - 8)
       y = W.mob ? U.clamp(y, fh * 0.41 + 64, H.H * 0.34) : U.clamp(y, fh * 0.41 + 70, H.H - fh * 0.59 - 20)
-      E.last.style.transform = 'translate3d(' + (x - fw / 2).toFixed(1) + 'px,' + (y - fh * 0.41).toFixed(1) + 'px,0)'
+      css(E.last, 'transform', 'translate3d(' + (x - fw / 2).toFixed(1) + 'px,' + (y - fh * 0.41).toFixed(1) + 'px,0)')
       // 没有肖像时，名字贴着画布里那颗头
       const gap = W.kind === 'none' ? Math.max(70, (hs ? hs.s : 100) * 0.45) : fw * 0.5 + 28
-      if (W.mob) E.who.style.transform = 'translate3d(0,' + (y + (W.kind === 'none' ? gap * 0.9 : fh * 0.5)).toFixed(1) + 'px,0)'
-      else E.who.style.transform = 'translate3d(' + (x - gap).toFixed(1) + 'px,' + (y + (W.kind === 'none' ? -10 : fh * 0.12)).toFixed(1) + 'px,0)'
+      if (W.mob) css(E.who, 'transform', 'translate3d(0,' + (y + (W.kind === 'none' ? gap * 0.9 : fh * 0.5)).toFixed(1) + 'px,0)')
+      else css(E.who, 'transform', 'translate3d(' + (x - gap).toFixed(1) + 'px,' + (y + (W.kind === 'none' ? -10 : fh * 0.12)).toFixed(1) + 'px,0)')
       // 矢量旧稿剪影时的两点眼光，跟着肖像的视线走
       const ew = W.eyeOk && W.pt && W.pt._eyes
-      if (ew) E.eyes.style.transform = 'translate(' + (ew.ox * fw / 600).toFixed(2) + 'px,' + (ew.oy * fh / 800).toFixed(2) + 'px)'
+      if (ew) css(E.eyes, 'transform', 'translate(' + (ew.ox * fw / 600).toFixed(2) + 'px,' + (ew.oy * fh / 800).toFixed(2) + 'px)')
     }
   }
 
@@ -558,20 +571,37 @@
     // 舞台比页面滚得慢：像是沉进黑暗，而不是被推走
     const dy = e > 0 ? e * 0.38 : 0
     W.lv = lv
-    const key = top.toFixed(3) + '|' + fe.toFixed(3) + '|' + sh.toFixed(3) + '|' + dy.toFixed(1)
-    if (key === W.edgeKey) return
-    W.edgeKey = key
-    E.fadeTop.style.transform = 'scaleY(' + top.toFixed(3) + ')'
-    E.fadeEnd.style.transform = 'scaleY(' + fe.toFixed(3) + ')'
-    E.shade.style.opacity = sh.toFixed(3)
-    // 落后的那一截不越过钉住段的底边（下面「再睡一次」的底色是半透明的）
-    E.sticky.style.transform = dy ? 'translate3d(0,' + dy.toFixed(1) + 'px,0)' : ''
-    E.sticky.style.clipPath = dy ? 'inset(0 0 ' + dy.toFixed(1) + 'px 0)' : ''
+    // 这几层都是独立的合成层（CSS will-change）：只改 transform / opacity，值没变不写；收尽时连层一起藏起来
+    const ts = top.toFixed(3), fs = fe.toFixed(3), ss = sh.toFixed(3)
+    css(E.fadeTop, 'transform', 'scaleY(' + ts + ')')
+    css(E.fadeTop, 'visibility', top > 0 ? 'visible' : 'hidden')
+    css(E.fadeEnd, 'transform', 'scaleY(' + fs + ')')
+    css(E.fadeEnd, 'visibility', fe > 0 ? 'visible' : 'hidden')
+    css(E.shade, 'opacity', ss)
+    css(E.shade, 'visibility', sh > 0 ? 'visible' : 'hidden')
+    // 落后的那一截不越过钉住段的底边（下面「再睡一次」的底色是半透明的）：由钉住段的 overflow: clip 裁掉，
+    // 不再每帧改 clip-path（那会让整块舞台每帧重画）
+    css(E.sticky, 'transform', dy ? 'translate3d(0,' + dy.toFixed(1) + 'px,0)' : '')
   }
 
   function setVis(v) {
     if (W.vis === v) return
     W.vis = v
+  }
+
+  // 结尾：滚到时浮出「再睡一次」与落款（top/bottom 是结尾这一屏的上下沿）
+  function endCheck(top, bottom, vh) {
+    const E = W.E
+    if (!W.endShown && top < vh * 0.72 && bottom > vh * 0.3) {
+      W.endShown = true
+      E.end.classList.add('is-shown')
+      gsap.fromTo([E.sleep, E.foot], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1.6, stagger: 0.25, ease: 'expo.out', delay: 0.5, overwrite: true })
+      App.audio.sfx('chime', { volume: 0.35, pitch: 0.5 })
+    } else if (W.endShown && (top > vh * 1.05 || bottom < 0)) {
+      W.endShown = false
+      E.end.classList.remove('is-shown')
+      gsap.set([E.sleep, E.foot], { opacity: 0 })
+    }
   }
 
   /* ---------- 再睡一次 ---------- */
@@ -623,7 +653,7 @@
       el.classList.add('wish')
       build(el)
       W.H = App.domeHall.create({
-        canvas: W.E.cv, ribCanvas: W.E.ribs,
+        canvas: W.E.cv,
         lightCol: [232, 222, 206], amb: 0.06, ambCol: [118, 118, 132],
         lampCol: [214, 188, 150], beamCol: [240, 233, 220],
         rim: [212, 196, 170], motes: App.reduced ? 20 : 60,
@@ -639,22 +669,7 @@
       const w0 = App.state.winner
       if (w0 && App.char(w0)) W.winner = w0
       setup()
-      // 结尾：滚到时浮出「再睡一次」与落款（每隔几帧量一次位置，不依赖可能迟到的观察器回调）
-      let endShown = false, endSkip = 0
-      App.tick(() => {
-        if ((endSkip = (endSkip + 1) % 2)) return
-        const r = W.E.end.getBoundingClientRect(), vh = window.innerHeight
-        if (!endShown && r.top < vh * 0.72 && r.bottom > vh * 0.3) {
-          endShown = true
-          W.E.end.classList.add('is-shown')
-          gsap.fromTo([W.E.sleep, W.E.foot], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1.6, stagger: 0.25, ease: 'expo.out', delay: 0.5, overwrite: true })
-          App.audio.sfx('chime', { volume: 0.35, pitch: 0.5 })
-        } else if (endShown && (r.top > vh * 1.05 || r.bottom < 0)) {
-          endShown = false
-          W.E.end.classList.remove('is-shown')
-          gsap.set([W.E.sleep, W.E.foot], { opacity: 0 })
-        }
-      })
+      // 结尾「再睡一次」与落款的浮现由帧循环里的 endCheck 负责（位置由钉住段的底边推出，不另量布局）
       App.bus.on('trial:winner', setWinner)
       App.bus.on('cast:change', () => setup())
       const onMove = e => {
@@ -669,6 +684,9 @@
       W.E.sleep.addEventListener('pointerenter', () => App.audio.sfx('heartbeat', { volume: 0.3, pitch: 1.2 }))
       window.addEventListener('resize', U.debounce(layout, 160))
       App.bus.on('quality', layout)
+      // 远离视口时交还画布内存，回来之前重新铺好
+      App.bus.on('section:far', id => { if (id === el.id && W.H) W.H.release() })
+      App.bus.on('section:near', id => { if (id === el.id && W.H) layout() })
       App.tick(frame)
     },
   })

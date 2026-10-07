@@ -368,10 +368,12 @@
     const ramp = (a, b) => Math.min(1, Math.max(0, (h - a) / (b - a)))
     const lowK = h >= 23 ? ramp(23, 23.25) : h < 5 ? 1 : 1 - ramp(5, 5.25)
     const offK = h >= 7 && h < 17 ? ramp(7, 7.25) : h >= 17 && h < 17.25 ? 1 - ramp(17, 17.25) : 0
-    const lampO = 1 - 0.7 * lowK
-    const lampW = lampO * (1 - offK)
+    // 灯的明暗分四档过渡（不再随每一分钟连续变）：每变一档，楼板的线稿就得整层重画一次
+    const lowQ = Math.round(lowK * 4) / 4, offQ = Math.round(offK * 4) / 4
+    const lampO = 1 - 0.7 * lowQ
+    const lampW = lampO * (1 - offQ)
     const day = h >= 7 && h < 17
-    return { h, win, low, day, lampO, lampW, dim: 1 - 0.34 * lowK }
+    return { h, win: Math.round(win * 24) / 24, low, day, lampO, lampW, dim: 1 - 0.34 * lowQ }
   }
   // 低亮：软边圆窗的半亮处约在三米（CSS 在低亮时段把圆窗的实心核放大）
   const LAN_R = { normal: 7.5, low: 4.2, stack: 9.5 }
@@ -402,7 +404,8 @@
     const ext = view.rect(-0.4, -0.4, 52.4, 36.4)
     const txBase = txLayer(view, 'mz-tx-base')
     const txLit = txLayer(view, 'mz-tx-lit')
-    const fl = { fid, view, base, lit, fx, txBase, txLit, svgs: [base, lit, fx], uid, rooms, roomEls: {}, clocks: [], ext }
+    // dimEls：随低亮时段变暗的少数元素（--mz-dim 只写给它们，不写在根节点上让上万个节点重算样式）
+    const fl = { fid, view, base, lit, fx, txBase, txLit, svgs: [base, lit, fx], uid, rooms, roomEls: {}, clocks: [], ext, dimEls: [] }
 
     // —— 楼板：黑玻璃 ——
     mk('rect', rectAttrs(ext, { class: 'mz-slab-fill' }), base)
@@ -417,20 +420,22 @@
         const t = (d.side === '西' || d.side === '南') ? [d.line - 0.2, d.line] : [d.line, d.line + 0.2]
         rockD += d.o === 'v' ? rp(t[0], d.a, t[1], d.b) : rp(d.a, t[0], d.b, t[1])
       }
-      mk('path', { d: rockD, class: 'mz-rock', 'fill-rule': 'evenodd' }, base)
+      fl.dimEls.push(mk('path', { d: rockD, class: 'mz-rock', 'fill-rule': 'evenodd' }, base))
       // 水面：玉石泳池与冷热两池
       fl.waterD = [[4.25, 12.15, 9.95, 23.85], [0.4, 28.6, 2.4, 30.4], [0.4, 32.8, 2.4, 34.6]].map(q => rp(...q)).join('')
-      mk('path', { d: fl.waterD, class: 'mz-water' }, base)
+      fl.dimEls.push(mk('path', { d: fl.waterD, class: 'mz-water' }, base))
     }
     mk('rect', rectAttrs(ext, { class: 'mz-slab-sheen', fill: url('sh') }), base)
 
     // —— 刻度尺 ——
-    const gR = mk('g', { class: 'mz-ruler' }, base)
-    let rd = ''
-    for (let x = 0; x <= 52; x++) { const big = x % 4 === 0; rd += 'M' + view.pt(x, 36.62) + 'L' + view.pt(x, big ? 37.12 : 36.86) }
-    for (let y = 0; y <= 36; y++) { const big = y % 4 === 0; rd += 'M' + view.pt(-0.62, y) + 'L' + view.pt(big ? -1.12 : -0.86, y) }
-    rd += 'M' + view.pt(0, 36.62) + 'L' + view.pt(52, 36.62) + 'M' + view.pt(-0.62, 0) + 'L' + view.pt(-0.62, 36)
-    mk('path', { d: rd, class: 'mz-ruler-ticks' }, gR)
+    // 两条刻度各自成组：放平时的淡入只重画两条细带，而不是整块 L 形外接框（≈ 整层楼板）
+    let rdx = '', rdy = ''
+    for (let x = 0; x <= 52; x++) { const big = x % 4 === 0; rdx += 'M' + view.pt(x, 36.62) + 'L' + view.pt(x, big ? 37.12 : 36.86) }
+    for (let y = 0; y <= 36; y++) { const big = y % 4 === 0; rdy += 'M' + view.pt(-0.62, y) + 'L' + view.pt(big ? -1.12 : -0.86, y) }
+    rdx += 'M' + view.pt(0, 36.62) + 'L' + view.pt(52, 36.62)
+    rdy += 'M' + view.pt(-0.62, 0) + 'L' + view.pt(-0.62, 36)
+    mk('path', { d: rdx, class: 'mz-ruler-ticks' }, mk('g', { class: 'mz-ruler' }, base))
+    mk('path', { d: rdy, class: 'mz-ruler-ticks' }, mk('g', { class: 'mz-ruler' }, base))
     const txRuler = U.el('div.mz-tx-ruler')
     txBase.appendChild(txRuler)
     for (let x = 0; x <= 52; x += 4) { const p = view.P(x, 37.5); htx(txRuler, view, p[0], p[1], 0.52, x, 'mz-ruler-num', { anchor: view.rot ? 's' : 'm' }) }
@@ -499,9 +504,9 @@
     xd += 'L' + view.pt(52.4, -0.4) + 'L' + view.pt(52.4, 36.4) + 'L' + view.pt(-0.4, 36.4) + 'L' + view.pt(-0.4, -0.4)
     const fd = furnitureFor(fid).map(p => primD(view, p)).join('')
 
-    mk('path', { d: fd, class: 'mz-furn-dim' }, base)
-    mk('path', { d: wd + jd, class: 'mz-walls-dim' }, base)
-    mk('path', { d: xd, class: 'mz-ext' }, base)
+    fl.dimEls.push(mk('path', { d: fd, class: 'mz-furn-dim' }, base))
+    fl.dimEls.push(mk('path', { d: wd + jd, class: 'mz-walls-dim' }, base))
+    fl.dimEls.push(mk('path', { d: xd, class: 'mz-ext' }, base))
     const gWin = mk('g', { class: 'mz-wins' }, base)
     fl.gGlow = mk('g', { class: 'mz-glows' }, gWin)
     fl.gWinLine = mk('g', { class: 'mz-winlines' }, gWin)
@@ -565,8 +570,8 @@
         const [bx, by, bfs, vert] = big[view.rot ? 'm' : 'd']
         const p = view.P(bx, by)
         for (const [g, cls] of [[gBn, 'mz-bname'], [gBnLit, 'mz-bname.mz-bname-lit']]) {
-          if (vert) htx(g, view, p[0], p[1], bfs, r.name, cls, { vert: 1.42 })
-          else htx(g, view, p[0] + bfs * 0.09, p[1], bfs, r.name, cls, { ls: 0.18 })
+          const t = vert ? htx(g, view, p[0], p[1], bfs, r.name, cls, { vert: 1.42 }) : htx(g, view, p[0] + bfs * 0.09, p[1], bfs, r.name, cls, { ls: 0.18 })
+          if (g === gBn) fl.dimEls.push(t)
         }
         continue
       }
@@ -607,7 +612,7 @@
     const gHit = mk('g', { class: 'mz-hit' }, fx)
     for (const r of rooms) {
       const rr = view.rect(r.x0, r.y0, r.x1, r.y1)
-      fl.roomEls[r.key] = { hit: mk('rect', rectAttrs(rr, { 'data-room': r.key, 'data-cursor': '' }), gHit), rr }
+      fl.roomEls[r.key] = { hit: mk('rect', rectAttrs(rr, { class: 'mz-hr', 'data-room': r.key, 'data-cursor': '' }), gHit), rr }
     }
     if (fl.seal) gHit.appendChild(fl.seal.hit)
     // 悬停房间的底色：三块轮换的合成矩形（换房时只重画新房间那一块一次，淡入淡出不重画）
@@ -618,12 +623,16 @@
     fl.hl = mk('g', { class: 'mz-hl' }, fx)
     fl.hlC = { k: -1, c: [0, 1, 2, 3].map(() => mk('path', { class: 'mz-hlc' }, fl.hl)), t: [] }
     // 刻度尺游标（合成层上平移）
-    fl.markX = mk('path', { class: 'mz-ruler-mark', d: view.rot ? 'M0.45 -0.3L0 0L0.45 0.3Z' : 'M-0.3 -0.45L0 0L0.3 -0.45Z' }, fx)
-    fl.markY = mk('path', { class: 'mz-ruler-mark', d: view.rot ? 'M-0.3 -0.45L0 0L0.3 -0.45Z' : 'M-0.45 -0.3L0 0L-0.45 0.3Z' }, fx)
+    const dX = view.rot ? 'M0.45 -0.3L0 0L0.45 0.3Z' : 'M-0.3 -0.45L0 0L0.3 -0.45Z', dY = view.rot ? 'M-0.3 -0.45L0 0L0.3 -0.45Z' : 'M-0.45 -0.3L0 0L-0.45 0.3Z'
+    fl.markX = mk('path', { class: 'mz-ruler-mark', d: dX }, fx)
+    fl.markY = mk('path', { class: 'mz-ruler-mark', d: dY }, fx)
+    // 楼板叠放时游标不动：改由底图里的一对「钉」显示在原处，动效层就什么也不画、不必另起一层合成
+    fl.pinX = mk('path', { class: 'mz-ruler-mark', d: dX, style: 'visibility:hidden' }, base)
+    fl.pinY = mk('path', { class: 'mz-ruler-mark', d: dY, style: 'visibility:hidden' }, base)
 
     // —— HTML 层 ——
     const el = U.el('div.mz-floor', { 'data-floor': fid })
-    const pool = U.el('div.mz-pool', { 'aria-hidden': 'true' })
+    // 手提灯：暖光池（.mz-lens::before）与灯照圆窗装在同一个移动的盒子里，一次 transform 带走两样
     const lens = U.el('div.mz-lens', { 'aria-hidden': 'true' })
     // 灯照层（SVG + 文字）装进同一个反向平移的盒子：手提灯移动只改这个合成层的 transform。
     // 软边遮罩放在圆窗里一层不动的盒子上（.mz-masker）：遮罩若直接挂在移动的圆窗上，Chrome 会随移动反复重画遮罩
@@ -632,7 +641,7 @@
     // 底图 + 底图文字：悬停楼层时整块提亮（filter 落在合成层上，不重画）
     const under = U.el('div.mz-under', {}, [base, txBase])
     if (fl.hands) under.appendChild(fl.hands)
-    el.append(under, pool)
+    el.append(under)
     if (fid === '1F') {
       fl.domeEl = U.el('div.mz-dome', { 'aria-hidden': 'true' }, [U.el('i.d'), U.el('i.r'), U.el('i.r.r2')])
       fl.domeC = view.P(26, 29)
@@ -640,10 +649,9 @@
     }
     el.append(lens, fx)
     fl.el = el
-    fl.pool = pool
     fl.lens = lens
     fl.litWrap = litWrap
-    fl.lanS = { x: -60, y: -60, r: LAN_R.normal, tx: -60, ty: -60, last: '' }
+    fl.lanS = { x: -60, y: -60, r: LAN_R.normal, tx: -60, ty: -60, last: '', fade: 1 }
     return fl
   }
 
@@ -655,7 +663,7 @@
     const vb = fl.view.vb
     fl.Rref = Math.max(40, LAN_R.normal * w / vb.w)
     const d = (fl.Rref * 2).toFixed(1) + 'px'
-    for (const n of [fl.lens, fl.pool]) { n.style.width = d; n.style.height = d }
+    fl.lens.style.width = d; fl.lens.style.height = d
     fl.lanS.last = ''
     placeDome(fl)
     placeTx(fl)
@@ -693,7 +701,6 @@
     const tx = (x - rp).toFixed(2), ty = (y - rp).toFixed(2)
     const t = `translate3d(${tx}px, ${ty}px, 0) scale(${s.toFixed(4)})`
     fl.lens.style.transform = t
-    fl.pool.style.transform = t
     fl.litWrap.style.transform = `scale(${(1 / s).toFixed(4)}) translate3d(${(-x + rp).toFixed(2)}px, ${(-y + rp).toFixed(2)}px, 0)`
     // 刻度尺游标（只有放平的平面才显示刻度尺）：合成层上的平移（svg 单位）
     if (!fl.rulerLive) return true
@@ -705,6 +712,12 @@
     return true
   }
 
+  // 刻度游标 ⇄ 底图里的钉：叠放时显示钉（停在游标最后的位置），放平时显示会动的游标
+  function swapPins(fl, pinned) {
+    if (pinned) { fl.pinX.style.transform = fl.markX.style.transform; fl.pinY.style.transform = fl.markY.style.transform }
+    fl.pinX.style.visibility = fl.pinY.style.visibility = pinned ? 'visible' : 'hidden'
+    fl.markX.style.visibility = fl.markY.style.visibility = pinned ? 'hidden' : 'visible'
+  }
   // 悬停框（四只角）：角的臂长取目标房间的，滑行时只平移
   function placeHl(fl, r, k) {
     const H = fl.hlC
@@ -798,7 +811,7 @@
   const S = {
     mode: null, el: null, root: null, stage: null, floors: {}, cleanup: [],
     p: 0, enter: 0, visible: false, house: App.state.minutes, override: null, light: null, lightKey: '',
-    par: { x: 0, y: 0 }, poses: {}, mats: {}, focus: {}, active: null, flat: null, lastActive: null,
+    par: { x: 0, y: 0 }, poses: {}, bases: {}, mats: {}, focus: {}, active: null, flat: null, lastActive: null,
     hoverFloor: null, hoverRoom: null, zoom: null, tipOn: false, lanR: LAN_R.normal, sealT: 0,
     hlBox: null, mobFloor: '1F', mobSel: null, zk: 0, lastNow: 0, q: 2, clockKey: null, lines: null,
   }
@@ -813,7 +826,28 @@
      时刻
      ===================================================================== */
   const curMin = () => (S.override != null ? S.override : ((S.house % 1440) + 1440) % 1440)
-  // 时刻只在变了的部分落笔：指针每（馆内）分钟转一格（合成层）；灯与窗光只在明暗交界的时段里变
+  // 钟：只有看得清的那一层（放平 / 放大 / 光标指着；手机上是当前那一层）每（馆内）分钟走一格；
+  // 叠放与侧边小叠层里的钟只有两三个像素，等它被抽出来时再对时。指针不单独合成，走一格只重画指针那一小块
+  function handsLive(fid) {
+    if (S.mode === 'mob') return fid === S.mobFloor
+    const f = S.focus[fid]
+    return !!((f && f.a > 0.3) || (S.zoom && S.zoom.fid === fid) || S.hoverFloor === fid)
+  }
+  function syncHands(force) {
+    const m = curMin()
+    const ck = Math.floor(m)
+    const ha = (((m / 60) % 12) * 30).toFixed(1), ma = ((m % 60) * 6).toFixed(1)
+    for (const fid in S.floors) {
+      const fl = S.floors[fid]
+      if (!fl.clocks.length || fl._hk === ck || (!force && !handsLive(fid))) continue
+      fl._hk = ck
+      for (const c of fl.clocks) {
+        c.hh.style.transform = c.pre + ha + c.post
+        c.mm.style.transform = c.pre + ma + c.post
+      }
+    }
+  }
+  // 时刻只在变了的部分落笔：指针见上；灯与窗光只在明暗交界的时段里变（分档）
   function applyLight(force) {
     const m = curMin()
     const L = lightAt(m)
@@ -823,13 +857,7 @@
     S.light = L
     if (force || ck !== S.clockKey) {
       S.clockKey = ck
-      const ha = (((m / 60) % 12) * 30).toFixed(1), ma = ((m % 60) * 6).toFixed(1)
-      for (const fid in S.floors) {
-        for (const c of S.floors[fid].clocks) {
-          c.hh.style.transform = c.pre + ha + c.post
-          c.mm.style.transform = c.pre + ma + c.post
-        }
-      }
+      syncHands(force)
     }
     if (force || key !== S.lightKey) {
       S.lightKey = key
@@ -843,8 +871,13 @@
         setO(fl.gGlow, (L.win * 0.9).toFixed(3))
         if (fl.sky) setO(fl.sky, (0.08 + L.win * 0.55).toFixed(3))
       }
+      // 低亮时的线稿变暗：--mz-dim 只写给用到它的那几条路径与 B1 房名，不写在根节点上
+      const dim = L.dim.toFixed(3)
+      if (dim !== S._dim || force) {
+        S._dim = dim
+        for (const fid in S.floors) for (const n of S.floors[fid].dimEls) n.style.setProperty('--mz-dim', dim)
+      }
       if (S.root) {
-        S.root.style.setProperty('--mz-dim', L.dim.toFixed(3))
         S.root.classList.toggle('is-low', L.low)
         S.root.classList.toggle('is-day', L.win > 0.5)
       }
@@ -1037,7 +1070,14 @@
       edge.style.width = WP + 'px'
       edge.style.height = HP + 'px'
       const ex = fl.ext, vb = VBD
-      Object.assign(edge.firstChild.style, { left: ((ex.x - vb.x) / vb.w * 100) + '%', top: ((ex.y - vb.y) / vb.h * 100) + '%', width: (ex.w / vb.w * 100) + '%', height: (ex.h / vb.h * 100) + '%' })
+      const exBox = { left: ((ex.x - vb.x) / vb.w * 100) + '%', top: ((ex.y - vb.y) / vb.h * 100) + '%', width: (ex.w / vb.w * 100) + '%', height: (ex.h / vb.h * 100) + '%' }
+      Object.assign(edge.firstChild.style, exBox)
+      // 叠放时（楼板姿态只差 z）楼板厚度改由楼板自己画：在楼板平面内错开一段（= 26px 厚度沿视线投到板面上），
+      // 和楼板同一个合成层，不再另起一张整层大小、每帧都要跟着重写 transform 的底板；只在抽出的前三分之一（厚度收起）时才用独立底板
+      const edgeIn = U.el('i.mz-edge-in', { 'aria-hidden': 'true' })
+      Object.assign(edgeIn.style, exBox)
+      el.insertBefore(edgeIn, el.firstChild)
+      fl.edgeIn = edgeIn
       scene.append(edge, el)
       fl.edge = edge
       S.floors[fid] = fl
@@ -1060,11 +1100,20 @@
     const door = U.el('div.mz-w-door')
     const dpos = U.el('div.mz-w-door-pos', {}, [U.el('i.mz-w-door-ring'), U.el('i.mz-w-door-dia')])
     S.lines = {
-      shafts: [0, 1, 2].map(() => STAIR_RECTS.flatMap(() => [0, 1, 2, 3].map(() => ln(lStack, 'is-shaft')))),
-      posts: [0, 1, 2].map(() => [0, 1, 2, 3].map(() => ln(lStack, 'is-post', true))),
+      // 每个角一根竖线（楼梯井 12 根实线 + 楼板四角 4 根虚线），各备 3 段：楼板未被抽出时同一角的上下各段共线，
+      // 合成一根（各段深浅不同时用渐变分段），只在有楼板被抽出、断开时才分段
+      // 楼梯井：每口井前后两个竖面（各带左右两条边），竖面在楼板共用的 3D 姿态里摆好——一个元素画两条竖线，
+      // 层距变化时只改这一个元素的 matrix3d（12 根线 → 6 个面）
+      faces: STAIR_RECTS.flatMap(([x0, y0, x1, y1]) => [y0, y1].map(y => {
+        const el = U.el('i.mz-wf')
+        lStack.appendChild(el)
+        const qa = VD.P(x0, y), qb = VD.P(x1, y)
+        return { el, ua: (qa[0] - VBD.x) / VBD.w * WP, ub: (qb[0] - VBD.x) / VBD.w * WP, va: (qa[1] - VBD.y) / VBD.h * HP, w0: 0, h0: 0, t: '', bg: '', on: false }
+      })),
+      cols: [...STAIR_RECTS.flatMap(([x0, y0, x1, y1]) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([x, y]) => ({ x, y, dashed: false }))),
+        ...RING.map(([x, y]) => ({ x, y, dashed: true }))].map(c => Object.assign(c, { ls: [0, 1, 2].map(() => ln(lStack, c.dashed ? 'is-post' : 'is-shaft', c.dashed)) })),
       ghost: [0, 1, 2, 3].map(() => ln(lStack, 'is-ghost', true)),
       hover: [0, 1, 2, 3].map(() => ln(lStack, 'is-hover')),
-      leads: FIDS.map(() => ln(lStack, 'is-lead')),
       hfill,
       // 终幕：一层正门（唯一的门，已封死）→ 引线 → 终句
       door: { el: door, pos: dpos, v: ln(door, 'is-door'), h: ln(door, 'is-door') },
@@ -1186,6 +1235,10 @@
     S.root.style.setProperty('--mz-10m', px10.toFixed(1) + 'px')
     if (S.outro) { const ls = S.outro.style.letterSpacing; S.outro.style.letterSpacing = '0.5em'; S.outroW = S.outro.offsetWidth; S.outro.style.letterSpacing = ls }
     if (S.sealWall) for (const h of S.sealWall.halves) { h.pat.style.width = Math.ceil(vw * 0.5 + 80) + 'px'; h.pat.style.height = Math.ceil(vh) + 'px' }
+    // 楼板内的厚度错位：按叠放的基准视角（rotateX 57°、rotateZ −36°）把 z 方向 26px 投到板面上（板面像素）
+    const ek0 = 26 * Math.tan(57 * Math.PI / 180) / S.L.stackS, ea = -36 * Math.PI / 180
+    const et = `translate(${(ek0 * Math.sin(ea)).toFixed(1)}px, ${(ek0 * Math.cos(ea)).toFixed(1)}px)`
+    for (const fid of FIDS) if (S.floors[fid] && S.floors[fid].edgeIn) S.floors[fid].edgeIn.style.transform = et
     S.scaleEl.style.left = (S.L.flatCx - fw / 2 + 4) + 'px'
     S.scaleEl.style.top = (S.L.flatCy + (fw / ratio) / 2 - 30) + 'px'
   }
@@ -1238,6 +1291,7 @@
       // 入场：自上方依次落下
       const k = sstep(i * 0.14, 0.5 + i * 0.14, S.enter)
       if (k < 1) base = Object.assign({}, base, { z: base.z + (1 - k) * L.vh * 0.9 })
+      S.bases[fid] = base // 各层的「叠放姿态」：除 z 之外各层相同（楼梯井的竖面用它）
       const a = focusOf(fid, p)
       out[fid] = { a, k }
       if (a > bestA) { bestA = a; best = fid }
@@ -1265,20 +1319,32 @@
       const tr = mstr(m)
       if (tr !== fl._tr) { fl.el.style.transform = tr; fl._tr = tr; S.dirty = true }
       const f = S.focus[fid]
-      const thick = Math.max(0, 1 - f.a * 3) * 26 * pose.s / S.L.stackS
+      // 楼板厚度：未抽出（a = 0）时由楼板自己的 .mz-edge-in 画；抽出的前三分之一用独立底板（厚度随之收起）
+      const inner = f.a === 0
+      if (inner !== fl._inner) { fl._inner = inner; fl.edgeIn.style.visibility = inner ? '' : 'hidden' }
+      const thick = inner ? 0 : Math.max(0, 1 - f.a * 3) * 26 * pose.s / S.L.stackS
       const tre = thick > 0.2 ? mstr(poseMatrix(Object.assign({}, pose, { z: pose.z - thick }))) : 'none'
-      if (tre !== fl._tre) { fl.edge.style.transform = tre; fl.edge.style.visibility = thick > 0.2 ? 'visible' : 'hidden'; fl._tre = tre }
+      if (tre !== fl._tre) {
+        const was = fl._tre && fl._tre !== 'none'
+        fl.edge.style.transform = tre; fl._tre = tre
+        if (was !== (tre !== 'none')) { fl.edge.style.visibility = tre !== 'none' ? 'visible' : 'hidden'; fl._eop = fl._ez = null }
+      }
       let op = f.k
       if (S.active && S.active !== fid) op *= 0.8
       if (S.zoom && S.zoom.fid !== fid) op *= 0.06
       const ops = op.toFixed(3)
-      if (ops !== fl._op) { fl.el.style.opacity = ops; fl.edge.style.opacity = ops; fl.el.style.visibility = op < 0.005 ? 'hidden' : 'visible'; fl._op = ops }
+      if (ops !== fl._op) { fl.el.style.opacity = ops; fl.el.style.visibility = op < 0.005 ? 'hidden' : 'visible'; fl._op = ops }
       const z = f.a > 0.01 ? 20 : i + 1
-      if (z !== fl._z) { fl.el.style.zIndex = z; fl.edge.style.zIndex = z; fl._z = z }
+      if (z !== fl._z) { fl.el.style.zIndex = z; fl._z = z }
+      // 独立底板只在用到时才跟着写透明度与层序
+      if (tre !== 'none') {
+        if (fl._eop !== ops) { fl._eop = ops; fl.edge.style.opacity = ops }
+        if (fl._ez !== z) { fl._ez = z; fl.edge.style.zIndex = z }
+      }
       const isFlat = S.flat === fid
       if (isFlat !== fl._flat) { fl._flat = isFlat; fl.el.classList.toggle('is-flat', isFlat) }
       const stackish = f.a < 0.5
-      if (stackish !== fl._stackish) { fl._stackish = stackish; fl.el.classList.toggle('is-stack', stackish); fl.rulerLive = !stackish; fl.lanS.last = '' }
+      if (stackish !== fl._stackish) { fl._stackish = stackish; fl.el.classList.toggle('is-stack', stackish); fl.rulerLive = !stackish; fl.lanS.last = ''; swapPins(fl, stackish) }
       const hov = S.hoverFloor === fid
       if (hov !== fl._hov) { fl._hov = hov; fl.el.classList.toggle('is-hover', hov) }
     }
@@ -1300,6 +1366,9 @@
 
   function updateLanterns(mx, my, inside, dt) {
     const L = S.light || lightAt(curMin())
+    // 光标没动、只是楼板在动（滚动）：灯跟着光标下的那一点平移，不留缓动的尾巴（尾巴意味着之后每帧都要重写）
+    const still = App.mouse.x === S._lmx && App.mouse.y === S._lmy
+    S._lmx = App.mouse.x; S._lmy = App.mouse.y
     for (const fid of FIDS) {
       const fl = S.floors[fid]
       const f = S.focus[fid]
@@ -1310,17 +1379,30 @@
       const on = fl._op !== '0.000' && (S.mini < 0.5 || isFlat || zoomHere || S.hoverFloor === fid)
       if (on !== fl._lanOn) {
         fl._lanOn = on
-        fl.lens.style.visibility = fl.pool.style.visibility = on ? '' : 'hidden'
+        fl.lens.classList.toggle('is-off', !on) // 熄灯：藏起，光池的闪烁也停
         if (on) st.fresh = true
       }
       if (!on) continue
+      // 光池的闪烁、穹顶的脉冲只在看得清的那一层（放平 / 放大）跑；叠放时停住（CSS 动画每帧都要重算样式）
+      const live = isFlat || zoomHere
+      if (live !== fl._live) { fl._live = live; fl.lens.classList.toggle('is-still', !live); if (fl.domeEl) fl.domeEl.classList.toggle('is-still', !live) }
       let tr = isFlat ? (L.low ? LAN_R.low : LAN_R.normal) : LAN_R.stack
+      const ptx = st.tx, pty = st.ty
       if (zoomHere) { st.tx = S.zoom.lx; st.ty = S.zoom.ly; tr = S.zoom.lr }
       else if (inside) {
         const q = screenToSvg(fid, mx, my)
         if (q) { st.tx = q[0]; st.ty = q[1] }
       }
-      if (st.fresh) { st.fresh = false; st.x = st.tx; st.y = st.ty; st.r = tr * 0.35 } // 重新点亮：从光标处慢慢亮开
+      if (st.fresh) {
+        // 重新点亮：从光标处慢慢亮开（淡入；不再从小放大——放大会让软边遮罩每帧重新栅格化）
+        st.fresh = false; st.x = st.tx; st.y = st.ty; st.r = tr; st.fade = 0
+      } else if (still && !zoomHere) { st.x += st.tx - ptx; st.y += st.ty - pty }
+      if (st.fade < 1) {
+        st.fade += (1 - st.fade) * ek(0.08, dt)
+        if (st.fade > 0.995) st.fade = 1
+        const fo = st.fade.toFixed(3)
+        if (fo !== fl._fo) { fl._fo = fo; fl.lens.style.opacity = st.fade < 1 ? fo : '' }
+      }
       const kk = ek(zoomHere ? 0.12 : 0.26, dt)
       st.x += (st.tx - st.x) * kk
       st.y += (st.ty - st.y) * kk
@@ -1339,48 +1421,113 @@
   const VD = makeView(false)
   // 屏幕空间的一根线：独立合成的 1px 细条，平移 + 旋转 + 横向缩放。
   // 实线是纯色层，怎么缩放都不用重新栅格化；虚线的长度偏离超过 15% 时才重设一次宽度（重画这一根细条）。
+  // 不用的线 visibility:hidden（只设 opacity:0 的话，它照样占一层合成）
   function wline(parent, cls, dashed) {
     const el = U.el('i.mz-wl.' + cls)
     parent.appendChild(el)
-    return { el, dashed: !!dashed, w0: 0, t: '', o: '' }
+    return { el, dashed: !!dashed, w0: 0, t: '', o: '0', bg: '' }
   }
-  function setLine(L, x1, y1, x2, y2, o) {
-    if (o !== L.o) { L.o = o; L.el.style.opacity = o }
+  // bg：分段渐变（同一根线上各段深浅不同）；空串 = 用类名里的纯色
+  function setLine(L, x1, y1, x2, y2, o, bg) {
+    if (o !== L.o) {
+      if (L.o === '0') L.el.style.visibility = 'visible'
+      L.o = o; L.el.style.opacity = o
+      if (o === '0') { L.el.style.visibility = 'hidden'; return }
+    }
     if (o === '0') return
+    bg = bg || ''
+    if (bg !== L.bg) { L.bg = bg; L.el.style.background = bg }
     const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy)
-    if (!L.w0 || (L.dashed ? Math.abs(len / L.w0 - 1) > 0.15 : (len > L.w0 * 4 || len < L.w0 * 0.25))) {
+    if (!L.w0 || ((L.dashed || bg) ? Math.abs(len / L.w0 - 1) > 0.15 : (len > L.w0 * 4 || len < L.w0 * 0.25))) {
       const w0 = Math.max(4, Math.round(len))
       if (w0 !== L.w0) { L.w0 = w0; L.el.style.width = w0 + 'px' }
     }
     const t = `translate(${x1.toFixed(1)}px, ${y1.toFixed(1)}px) rotate(${Math.atan2(dy, dx).toFixed(4)}rad) scaleX(${(len / L.w0).toFixed(4)})`
     if (t !== L.t) { L.t = t; L.el.style.transform = t }
   }
-  const hideLine = L => { if (L.o !== '0') { L.o = '0'; L.el.style.opacity = '0' } }
+  const hideLine = L => { if (L.o !== '0') { L.o = '0'; L.el.style.opacity = '0'; L.el.style.visibility = 'hidden' } }
   const RING = [[-0.4, -0.4], [52.4, -0.4], [52.4, 36.4], [-0.4, 36.4]]
+
+  // 楼梯井竖面：PERSP·T(cx,cy)·RX·RY·RZ（叠放姿态）· 平移到井角（z 取最上一层）· 面内基（x → 板面 x，y → −z）· 缩放
+  const WFW = 1.25 // 竖面左右两条边的宽度（面内像素；投到屏幕约 1px）
+  function updateFaces(W, po, rigid) {
+    const B = S.bases, b0 = B && B[FIDS[0]]
+    if (!b0) return
+    const zs = FIDS.map(fid => B[fid].z)
+    const fo = [0, 1, 2].map(i => (po[i] && rigid[i] && rigid[i + 1] ? po[i] : 0))
+    const zTop = zs[3], H = zTop - zs[0]
+    const on = (fo[0] || fo[1] || fo[2]) && H > 1
+    let bg = ''
+    let Mr = null
+    if (on) {
+      const stops = []
+      for (let i = 2; i >= 0; i--) { // 自上而下：2F–3F、1F–2F、B1–1F
+        const c = `rgba(194,154,91,${(0.5 * fo[i]).toFixed(3)})`
+        stops.push(`${c} ${((zTop - zs[i + 1]) / H * 100).toFixed(2)}%`, `${c} ${((zTop - zs[i]) / H * 100).toFixed(2)}%`)
+      }
+      const g = `linear-gradient(180deg,${stops.join(',')})`
+      bg = `${g} left top / ${WFW}px 100% no-repeat, ${g} right top / ${WFW}px 100% no-repeat`
+      Mr = M4.mul(M4.mul(M4.mul(M4.mul(S.PERSP, M4.T(b0.cx, b0.cy, 0)), M4.RX(b0.rx)), M4.RY(b0.ry)), M4.RZ(b0.rz))
+    }
+    for (const F of W.faces) {
+      if (!on) { if (F.on) { F.on = false; F.el.style.visibility = 'hidden' }; continue }
+      const Wr = b0.s * (F.ub - F.ua)
+      if (!F.w0 || Math.abs(Wr / F.w0 - 1) > 0.15) { F.w0 = Math.max(8, Math.round(Wr)); F.el.style.width = (F.w0 + WFW).toFixed(2) + 'px' }
+      if (!F.h0 || Math.abs(H / F.h0 - 1) > 0.15) { F.h0 = Math.max(8, Math.round(H)); F.el.style.height = F.h0 + 'px' }
+      const sx = Wr / F.w0, sy = H / F.h0
+      const ax = b0.s * (F.ua - WP / 2) - WFW / 2 * sx, ay = b0.s * (F.va - HP / 2)
+      const t = mstr(M4.mul(Mr, [sx, 0, 0, 0, 0, 0, -sy, 0, 0, 1, 0, 0, ax, ay, zTop, 1]))
+      if (t !== F.t) { F.t = t; F.el.style.transform = t }
+      if (bg !== F.bg) { F.bg = bg; F.el.style.background = bg }
+      if (!F.on) { F.on = true; F.el.style.visibility = 'visible' }
+    }
+  }
 
   function updateWire() {
     const W = S.lines
     const P = (fid, x, y) => { const q = VD.P(x, y); return svgToScreen(fid, q[0], q[1]) }
-    const vis = fid => (1 - Math.min(1, S.focus[fid].a * 2.2)) * S.focus[fid].k
-    for (let i = 0; i < 3; i++) {
-      const a = FIDS[i], b = FIDS[i + 1]
-      const o = Math.min(vis(a), vis(b))
-      const os = o > 0.01 ? o.toFixed(3) : '0'
-      let j = 0
-      for (const [x0, y0, x1, y1] of STAIR_RECTS) {
-        for (const [x, y] of [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]) {
-          const ln = W.shafts[i][j++]
-          if (os === '0') { hideLine(ln); continue }
-          const p = P(a, x, y), q = P(b, x, y)
-          setLine(ln, p[0], p[1], q[0], q[1], os)
+    // 楼梯井与楼板四角的竖线：相邻两层之间一段，深浅 = 两层可见度的较小者。
+    // 两层都没被抽出（a = 0，姿态只差 z）时，同一角在各层的投影共线：连着的几段合成一根线（只写一个元素），
+    // 各段深浅不同（入场时各层先后落下）就用硬边渐变分段；虚线各段深浅不同时不合并（虚线的纹样里塞不下分段）
+    const vis = FIDS.map(fid => (1 - Math.min(1, S.focus[fid].a * 2.2)) * S.focus[fid].k)
+    const rigid = FIDS.map(fid => S.focus[fid].a === 0)
+    const po = [0, 1, 2].map(i => { const o = Math.min(vis[i], vis[i + 1]); return o > 0.01 ? o : 0 })
+    const pos = po.map(o => (o ? o.toFixed(3) : '0'))
+    updateFaces(W, po, rigid)
+    for (const col of W.cols) {
+      let used = 0, i = 0
+      let pts = null
+      while (i < 3) {
+        if (!po[i]) { i++; continue }
+        // 楼梯井的实线：两层都没被抽出的那几段由竖面画；这里只画连着被抽出那层、正在弯折淡出的段
+        if (!col.dashed && rigid[i] && rigid[i + 1]) { i++; continue }
+        let j = i
+        let rig = rigid[i] && rigid[i + 1]
+        while (j + 1 < 3 && po[j + 1] && rig && rigid[j + 2] && (!col.dashed || pos[j + 1] === pos[i])) j++
+        if (!pts) pts = FIDS.map(fid => P(fid, col.x, col.y))
+        const a = pts[i], b = pts[j + 1]
+        let mx = 0
+        for (let k = i; k <= j; k++) if (po[k] > mx) mx = po[k]
+        let bg = ''
+        if (j > i && !col.dashed) {
+          let same = true
+          for (let k = i + 1; k <= j; k++) if (pos[k] !== pos[i]) same = false
+          if (!same) {
+            const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+            const stops = []
+            for (let k = i; k <= j; k++) {
+              const t0 = k === i ? 0 : Math.hypot(pts[k][0] - a[0], pts[k][1] - a[1]) / len * 100
+              const t1 = k === j ? 100 : Math.hypot(pts[k + 1][0] - a[0], pts[k + 1][1] - a[1]) / len * 100
+              const c = `rgba(194,154,91,${(0.5 * po[k] / mx).toFixed(3)})`
+              stops.push(`${c} ${t0.toFixed(1)}%`, `${c} ${t1.toFixed(1)}%`)
+            }
+            bg = `linear-gradient(90deg,${stops.join(',')})`
+          }
         }
+        setLine(col.ls[used++], a[0], a[1], b[0], b[1], mx.toFixed(3), bg)
+        i = j + 1
       }
-      RING.forEach(([x, y], k) => {
-        const ln = W.posts[i][k]
-        if (os === '0') { hideLine(ln); return }
-        const p = P(a, x, y), q = P(b, x, y)
-        setLine(ln, p[0], p[1], q[0], q[1], os)
-      })
+      while (used < 3) hideLine(col.ls[used++])
     }
     // 被抽出的那一层在小叠层里留下虚线空位
     if (S.active && S.mini > 0.01) {
@@ -1400,10 +1547,10 @@
       for (let k = 0; k < 4; k++) { const p = c[k], q = c[(k + 1) % 4]; setLine(W.hover[k], p[0], p[1], q[0], q[1], '1') }
       const tr = mstr(S.mats[S.hoverFloor])
       if (tr !== W._hft) { W._hft = tr; W.hfill.style.transform = tr }
-      if (!W._hfOn) { W._hfOn = true; W.hfill.style.opacity = '1' }
+      if (!W._hfOn) { W._hfOn = true; W.hfill.style.opacity = '1'; W.hfill.style.visibility = 'visible' }
     } else {
       W.hover.forEach(hideLine)
-      if (W._hfOn) { W._hfOn = false; W.hfill.style.opacity = '0' }
+      if (W._hfOn) { W._hfOn = false; W.hfill.style.opacity = '0'; W.hfill.style.visibility = 'hidden' }
     }
     // 楼层标签与引线
     const L = S.L
@@ -1426,12 +1573,17 @@
       const tx = `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px)`
       if (tx !== lab._tx) { lab.style.transform = tx; lab._tx = tx }
       const os = Math.max(0, o).toFixed(3)
-      if (os !== lab._o) { lab.style.opacity = os; lab._o = os; lab.style.pointerEvents = o > 0.3 ? 'auto' : 'none' }
+      if (os !== lab._o) {
+        const show = o > 0.002
+        if (show !== lab._show) { lab._show = show; lab.style.visibility = show ? 'visible' : 'hidden' }
+        lab.style.opacity = os; lab._o = os; lab.style.pointerEvents = o > 0.3 ? 'auto' : 'none'
+      }
       const hv = S.hoverFloor === fid, mn = S.mini > 0.5
       if (hv !== lab._hv) { lab._hv = hv; lab.classList.toggle('is-hover', hv) }
       if (mn !== lab._mn) { lab._mn = mn; lab.classList.toggle('is-mini', mn) }
-      if (o > 0.02) setLine(W.leads[i], lx + 6, ly, left[0] - 4, left[1], os)
-      else hideLine(W.leads[i])
+      // 引线：标签右侧的伪元素（与标签一起平移、一起淡出）；长度通常固定，只在被页边挤短时改
+      const lead = Math.max(0, Math.round(left[0] - 4 - (lx + 6))) + 'px'
+      if (lead !== lab._lead) { lab._lead = lead; lab.style.setProperty('--lead', lead) }
     })
     // 终幕：正门标记与引线（引线按进度从门口画出：先竖段、再横段）
     const D = W.door
@@ -1452,6 +1604,8 @@
       if (Hl > 0.5 && drawn > V) setLine(D.h, q[0], y1, q[0] + Math.sign(ex - q[0]) * (drawn - V), y1, '1')
       else hideLine(D.h)
     }
+    const dOn = dk > 0.002
+    if (dOn !== D._on) { D._on = dOn; D.el.style.visibility = dOn ? 'visible' : 'hidden' }
     setO(D.el, dk.toFixed(3))
   }
 
@@ -1464,7 +1618,8 @@
     const s = fl.seal
     if (!s) return
     if (S.q === 0) { stillSeal(s); return }
-    if (S.mode === 'desk' && S.mini > 0.5 && S.focus['1F'] && S.focus['1F'].a < 0.5 && S.hoverFloor !== '1F') return
+    // 桌面：只有一层放平（或放大、或光标指着一层）时才闪；叠放时菱形只有两三个像素，静止即可
+    if (S.mode === 'desk' && S.focus['1F'] && S.focus['1F'].a < 0.5 && S.hoverFloor !== '1F' && !(S.zoom && S.zoom.fid === '1F')) { stillSeal(s); return }
     s.still = false
     const lan = fl.lanS
     const lanOn = fl._lanOn !== false
@@ -1474,7 +1629,7 @@
     s.heat += (hot - s.heat) * ek(0.12, dt || 1)
     S.sealT++
     const full = near > 0.02 || s.heat > 0.02
-    const every = (full ? 2 : 4) * (S.q >= 2 ? 1 : 2)
+    const every = (full ? 2 : 6) * (S.q >= 2 ? 1 : 2) // 灯远时的零星闪烁 10 帧/秒就够
     if (S.sealT % every) return
     const shake = s.heat > 0.35 && !App.reduced && S.q >= 2
     const jitNow = shake && (S.sealT / every) % 3 < 1
@@ -1483,7 +1638,7 @@
       const lit = U.clamp(1 - dd / 6) * near
       const tw = Math.pow(0.5 + 0.5 * Math.sin(time * dm.sp * 2.4 + dm.ph), 14)
       const o = U.clamp(0.1 + tw * 0.75 * (0.35 + lit) + lit * 0.5)
-      const so = o.toFixed(2)
+      const so = (Math.round(o * 20) / 20).toFixed(2) // 分 20 档：少写一大半（每写一次就是一个元素重算样式）
       if (so !== dm.lastO) { dm.el.style.strokeOpacity = so; dm.lastO = so }
       const blood = s.heat > 0.35 && (dd < 3.2 || S.sealHot)
       const f = blood ? (tw > 0.2 ? '#ff2e7e' : '#5a0a2a') : (tw > 0.6 && lit > 0.2 ? '#2a2422' : '#060505')
@@ -1546,7 +1701,12 @@
     const isMini = S.mini > 0.5
     if (isMini !== S._isMini) { S._isMini = isMini; S.root.classList.toggle('is-mini', isMini) }
     const outroK = sstep(PH.close[0] + 0.03, PH.close[1] - 0.01, S.p)
-    if (Math.abs(outroK - (S._ok || 0)) > 0.002) { S._ok = outroK; S.outro.style.opacity = outroK.toFixed(3); S.outro.style.transform = `translate(-50%, ${(1 - outroK) * 16}px)`; S.outro.style.letterSpacing = (0.9 - outroK * 0.4).toFixed(3) + 'em' }
+    if (Math.abs(outroK - (S._ok || 0)) > 0.002 || (outroK === 0 && S._ok)) {
+      S._ok = outroK
+      const on = outroK > 0.002
+      if (on !== S._oOn) { S._oOn = on; S.outro.style.visibility = on ? 'visible' : 'hidden' }
+      if (on) { S.outro.style.opacity = outroK.toFixed(3); S.outro.style.transform = `translate(-50%, ${(1 - outroK) * 16}px)`; S.outro.style.letterSpacing = (0.9 - outroK * 0.4).toFixed(3) + 'em' }
+    }
     updateSealWall(mx, my, inside)
 
     // 叠放时：光标悬停楼层
@@ -1571,6 +1731,7 @@
     }
 
     updateLanterns(mx, my, inside, dt)
+    syncHands()
     if (S.dirty || S.hoverFloor !== S._wireHover) { S.dirty = false; S._wireHover = S.hoverFloor; updateWire() }
     animateSpecials(time, dt)
     if (S.zoom) updateStrings()
@@ -1600,6 +1761,12 @@
     const e = sstep(PH.close[0] + 0.01, PH.close[1] - 0.012, S.p)
     const isEnd = e > 0.001
     if (isEnd !== S._isEnd) { S._isEnd = isEnd; S.root.classList.toggle('is-end', isEnd); W.el.style.visibility = isEnd ? 'visible' : 'hidden' }
+    const glint = e > 0.6
+    if (glint !== S._glint) {
+      S._glint = glint
+      if (glint) for (const h of W.halves) for (const g of h.glints) placeGlint(h, g) // 先散开，再开始闪
+      S.root.classList.toggle('is-glint', glint)
+    }
     if (!isEnd) { W.k = 0; return }
     const L = S.L
     const px = S.par.x * 16
@@ -1971,6 +2138,7 @@
       })
     }
     if (S.zoom) S.zoom.tags = tags
+    if (tags.length) S.wire.svg.classList.add('is-on') // 证物红线的全屏 SVG 平时藏起（不占一层整屏合成）
   }
 
   function updateStrings() {
@@ -2002,6 +2170,7 @@
       gsap.to(t.str, { opacity: 0, duration: d * 0.6, onComplete: () => t.str.remove() })
     })
     gsap.to(fl.gZoom, { opacity: 0, duration: d * 0.6, onComplete: () => { fl.gZoom.innerHTML = '' } })
+    if (S.wire) gsap.delayedCall(d * 0.6 + 0.05, () => { if (!S.zoom && S.wire && !S.wire.strings.childElementCount) S.wire.svg.classList.remove('is-on') })
     gsap.to([fl.spot, fl.focus], { opacity: 0, duration: d })
     vbAnimate(fl, Object.assign({}, fl.view.vb), instant ? 0.01 : 0.9, 'expo.inOut', () => { if (!S.zoom) fl.el.classList.remove('is-clip') })
   }
@@ -2103,6 +2272,9 @@
     const prev = S.mobFloor
     S.mobFloor = fid
     for (const f of FIDS) {
+      const ff = S.floors[f]
+      ff.lens.classList.toggle('is-still', f !== fid)
+      if (ff.domeEl) ff.domeEl.classList.toggle('is-still', f !== fid)
       S.tabs[f].classList.toggle('is-on', f === fid)
       S.tabs[f].setAttribute('aria-selected', f === fid ? 'true' : 'false')
       S.floors[f].el.classList.toggle('is-on', f === fid)
@@ -2229,6 +2401,7 @@
     if (Math.abs(tr - st.r) < 0.004) st.r = tr
     if (!fl.box || !fl.box.w) measureMob()
     placeLantern(fl, st.x, st.y, st.r)
+    syncHands()
     if (S.mobFloor === '1F') animateSpecials(time, dt)
   }
 
@@ -2249,7 +2422,7 @@
     S.lines = null
     S.lastActive = undefined
     // 重建（桌面⇄手机）后这些「上一帧」缓存必须作废，否则新节点拿不到对应的类名与样式
-    S.sealWall = null; S._isEnd = undefined; S.end = 0; S._ok = undefined; S._isMini = undefined; S._lastFlat = undefined; S._bt = S._tipT = undefined
+    S.sealWall = null; S._isEnd = undefined; S._glint = undefined; S.end = 0; S._ok = undefined; S._isMini = undefined; S._lastFlat = undefined; S._bt = S._tipT = undefined
     if (S.el) { S.el.innerHTML = ''; S.el.classList.remove('is-desk', 'is-mob', 'is-pinned') }
   }
 

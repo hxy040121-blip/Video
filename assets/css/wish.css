@@ -4,25 +4,26 @@
    ========================================================== */
 
 .wish { position: relative; }
-.wish-track { position: relative; height: 560vh; }
+/* overflow: clip 不形成滚动容器（钉住照常），离场时下沉的舞台在这里被裁掉（原来每帧改 clip-path，整块舞台每帧重画） */
+.wish-track { position: relative; height: 560vh; overflow: clip; }
 .wish-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 .wish-stage { position: absolute; inset: 0; touch-action: pan-y; }
-.wish-cv, .wish-ribs { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-.wish-ribs { pointer-events: none; filter: blur(1.4px); }
+/* 穹顶肋拱画进同一张画布（半分辨率放大即景深，不再是第二张带 CSS 模糊的整屏画布） */
+.wish-cv { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 
 /* ---------- 两端的暗（由 wish.js 按位置驱动） ---------- */
-/* 离场：整幅舞台压暗 */
-.wish-shade { position: absolute; inset: 0; z-index: 6; pointer-events: none; background: #050404; opacity: 0; }
+/* 离场：整幅舞台压暗（独立合成层，改透明度不重画；为 0 时连层藏起，wish.js 切换 visibility） */
+.wish-shade { position: absolute; inset: 0; z-index: 6; pointer-events: none; background: #050404; opacity: 0; visibility: hidden; will-change: opacity; }
 /* 进场：上沿从上一板块的墨色里化开（钉住后收尽） */
 .wish-fade-top {
   position: absolute; left: 0; right: 0; top: 0; height: 52vh; z-index: 6; pointer-events: none;
-  transform-origin: 50% 0; transform: scaleY(0);
+  transform-origin: 50% 0; transform: scaleY(0); visibility: hidden; will-change: transform;
   background: linear-gradient(to bottom, var(--ink) 0%, rgba(10, 8, 9, .9) 16%, rgba(10, 8, 9, .62) 40%, rgba(10, 8, 9, .26) 70%, rgba(10, 8, 9, .07) 88%, rgba(10, 8, 9, 0));
 }
 /* 离场：下沿沉进「再睡一次」的黑（挂在钉住段底边，与下面同色相接） */
 .wish-fade-end {
   position: absolute; left: 0; right: 0; bottom: 0; height: 100vh; z-index: 1; pointer-events: none;
-  transform-origin: 50% 100%; transform: scaleY(0);
+  transform-origin: 50% 100%; transform: scaleY(0); visibility: hidden; will-change: transform;
   background: linear-gradient(to top, #050404 0%, #050404 5%, rgba(5, 4, 4, .9) 22%, rgba(5, 4, 4, .62) 46%, rgba(5, 4, 4, .3) 70%, rgba(5, 4, 4, .08) 88%, rgba(5, 4, 4, 0));
 }
 
@@ -50,7 +51,10 @@
 .wish-count.is-last .wish-count-n { color: var(--blood); text-shadow: 0 0 34px rgba(255, 46, 126, .45); }
 
 /* ---------- 最后那个人 ---------- */
-.wish-last { position: absolute; left: 0; top: 0; margin: 0; z-index: 3; pointer-events: none; will-change: transform; }
+.wish-last { position: absolute; left: 0; top: 0; margin: 0; z-index: 3; pointer-events: none; will-change: transform;
+  visibility: hidden; transition: visibility 0s linear .7s; }
+/* 终章之外不占合成层（退场淡出 0.5s 之后才藏） */
+.wish-last.is-on { visibility: visible; transition-delay: 0s; }
 .wish-face-anim { position: relative; opacity: 0; }
 .wish-face-wrap {
   position: relative; height: min(56vh, 540px); aspect-ratio: 3 / 4;
@@ -138,7 +142,7 @@
 .wish-end-ring {
   position: absolute; left: 50%; top: 50%; width: min(64vmin, 560px); aspect-ratio: 1;
   transform: translate(-50%, -50%) rotate(calc((var(--mx) - .5) * 18deg + var(--ring-rot, 0deg)));
-  pointer-events: none; opacity: 0; scale: .84;
+  pointer-events: none; opacity: 0; scale: .84; will-change: transform;
   transition: opacity 1.8s var(--ease-out), scale 3s var(--ease-out);
 }
 .wish-end.is-shown .wish-end-ring { opacity: .9; scale: 1; }
@@ -147,10 +151,11 @@
 .wish-end-ring .wish-end-ring-in { stroke: rgba(111, 85, 50, .18); stroke-dasharray: 1 3; }
 .wish-end-ring line { stroke: var(--rust); stroke-width: .9; opacity: .75; }
 .wish-end-ring line.is-last { stroke: var(--bone); stroke-width: 1.4; opacity: 1; filter: drop-shadow(0 0 3px rgba(235, 227, 214, .8)); }
+/* 「再睡一次」与落款的浮现补间、圆环随光标转动都只动自己的小合成层，不再让整屏的结尾层跟着重画 */
 .wish-sleep {
   position: relative; padding: 20px 52px; padding-right: calc(52px - .6em);
   font-family: var(--f-display); font-weight: 900; font-size: 22px; letter-spacing: .6em;
-  color: var(--bone); opacity: 0;
+  color: var(--bone); opacity: 0; will-change: transform, opacity;
   transition: color .5s var(--ease-out), letter-spacing .8s var(--ease-out);
 }
 .wish-sleep::before, .wish-sleep::after {
@@ -165,7 +170,7 @@
 
 .wish-foot {
   position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 10px; opacity: 0;
+  display: flex; align-items: center; gap: 10px; opacity: 0; will-change: transform, opacity;
   font-family: var(--f-display); font-weight: 900; font-size: 11px; letter-spacing: .5em; color: var(--bone-dim);
 }
 .wish-foot-mark svg { width: 18px; height: 18px; fill: none; stroke: var(--brass); stroke-width: 1.6; }
@@ -181,7 +186,6 @@
 
 @media (max-width: 760px) {
   .wish-track { height: 500vh; }
-  .wish-ribs { filter: none; }
   .wish-w { font-size: 13px; }
   .wish-count { left: 16px; bottom: 22px; }
   .wish-count-n { font-size: 52px; }

@@ -37,6 +37,18 @@
   const TAU = Math.PI * 2
   // 预先解码位图肖像：藏着的人像第一次露面（人影掠过、处刑）时不会空一两帧
   const warm = node => { if (node) for (const img of node.querySelectorAll('img')) if (img.decode) img.decode().catch(() => {}) }
+  // 只在动画期间提升为合成层：开始时加 will-change，结束（或被打断）时撤掉
+  const lift = (targets, v) => ({
+    onStart: () => gsap.set(targets, { willChange: v }),
+    onComplete: () => gsap.set(targets, { willChange: 'auto' }),
+    onInterrupt: () => gsap.set(targets, { willChange: 'auto' }),
+  })
+  // 肖像随光标偏转（App.trackEyes）只在镜头放映时开：藏着的肖像不必每帧量位置、写样式
+  function track(wrap, on, opts) {
+    if (!wrap) return
+    if (on && !wrap._trk) wrap._trk = App.trackEyes(wrap, opts || {})
+    else if (!on && wrap._trk) { wrap._trk(); wrap._trk = null }
+  }
 
   /* =========================================================
      原文数据
@@ -110,14 +122,17 @@
     cur: { x: 0, y: 0, rx: 0, ry: 0, nx: 0.5, ny: 0.5, speed: 0, auto: true },
     lastTouch: -1e9, touchX: 0, touchY: 0,
     tension: -1, timers: [],
-    q: 2, qDirty: false, on: undefined, // 画质（App.quality.level）；画质变了待重设画布；板块是否真在视口里
+    q: 2, qDirty: false, lock: undefined, far: false, // 画质（App.quality.level）；画质变了待重设画布；舞台是否被锁住（离开视口）；板块是否离视口很远
   }
-  // 板块是否真在视口里：不在时给板块加 is-off，CSS 里无限循环的动画随之暂停
-  function setOn(v) {
-    if (v === S.on || !S.sec) return
-    S.on = v
-    S.sec.classList.toggle('is-off', !v)
+  /* 板块离开视口：舞台 content-visibility: hidden——里面所有元素不再算样式、不再画、循环动画也不跑。
+     只改舞台这一个元素（原先给整个板块切 is-off 类，会让板块里所有元素重算样式）。 */
+  function setLock(v) {
+    if (v === S.lock || !S.stage) return
+    S.lock = v
+    S.stage.style.contentVisibility = v ? 'hidden' : ''
   }
+  // 震屏只震本板块的舞台（常驻合成层，只改 transform）；默认的 #world 不是合成层，每震一下整页都要重画
+  const shake = (strength, dur) => { if (S.stage) App.shake(S.stage, strength, dur) }
   const later = (fn, ms) => { const id = setTimeout(() => { S.timers = S.timers.filter(x => x !== id); fn() }, ms); S.timers.push(id); return id }
   const clearLater = () => { for (const id of S.timers) clearTimeout(id); S.timers = [] }
 
@@ -245,7 +260,7 @@
     }
     if (!opts.quiet && !App.reduced && !same) {
       gsap.killTweensOf(PH.chars)
-      gsap.fromTo(PH.chars, { opacity: 0, scale: 1.7, yPercent: k => (k ? 22 : -22) }, { opacity: 1, scale: 1, yPercent: 0, duration: 0.55, ease: 'expo.out', stagger: 0.07 })
+      gsap.fromTo(PH.chars, { opacity: 0, scale: 1.7, yPercent: k => (k ? 22 : -22) }, { opacity: 1, scale: 1, yPercent: 0, duration: 0.55, ease: 'expo.out', stagger: 0.07, ...lift(PH.chars, 'transform, opacity') })
       PH.root.classList.remove('is-stamp'); void PH.root.offsetWidth; PH.root.classList.add('is-stamp')
     } else if (!same) gsap.set(PH.chars, { opacity: 1, scale: 1, yPercent: 0 })
   }
@@ -321,15 +336,16 @@
     CUT.root = el('div.cycle-cut', { 'aria-hidden': 'true' }, [CUT.k, CUT.bar, CUT.scan])
     return CUT.root
   }
+  // 三块满屏的硬切效果平时 visibility: hidden（autoAlpha），只在动画的几百毫秒里存在；动画期间加 will-change 成合成层，不逐帧重画
   function cutFX(dir, quiet) {
     if (App.reduced) return
     gsap.killTweensOf([CUT.k, CUT.bar, CUT.scan])
     if (dir > 0 && !quiet) {
-      gsap.fromTo(CUT.k, { opacity: 1 }, { opacity: 0, duration: 0.14, ease: 'steps(2)' })
-      gsap.fromTo(CUT.bar, { xPercent: -140, opacity: 1 }, { xPercent: 140, duration: 0.46, ease: 'expo.inOut', onComplete: () => gsap.set(CUT.bar, { opacity: 0 }) })
+      gsap.fromTo(CUT.k, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.14, ease: 'steps(2)', ...lift(CUT.k, 'opacity') })
+      gsap.fromTo(CUT.bar, { xPercent: -140, autoAlpha: 1 }, { xPercent: 140, duration: 0.46, ease: 'expo.inOut', ...lift(CUT.bar, 'transform'), onComplete: () => gsap.set(CUT.bar, { autoAlpha: 0, willChange: 'auto' }) })
       App.audio.sfx('whoosh', { volume: 0.4, pitch: 1.25 })
     } else {
-      gsap.fromTo(CUT.scan, { opacity: 0.85 }, { opacity: 0, duration: 0.4, ease: 'power2.out' })
+      gsap.fromTo(CUT.scan, { autoAlpha: 0.85 }, { autoAlpha: 0, duration: 0.4, ease: 'power2.out', ...lift(CUT.scan, 'opacity') })
     }
   }
 
@@ -372,6 +388,8 @@
     this.blobs = []
     this.w = 0; this.h = 0; this.k = 1
     this.dirty = true
+    this.full = true // 下一次整张重画；否则只重画活着的墨迹（与上一帧）占的那一块
+    this.prev = null
   }
   Ink.prototype.resize = function (w, h) {
     const k = Math.min(S.q >= 2 ? 1.5 : 1, window.devicePixelRatio || 1) * (App.isMobile() ? 0.85 : 1) // 画质降级时降到 1 倍
@@ -379,12 +397,29 @@
     this.w = w; this.h = h; this.k = k
     for (const c of [this.cv, this.dry]) { c.width = Math.max(2, Math.round(w * k)); c.height = Math.max(2, Math.round(h * k)) }
     this.blobs.length = 0
-    this.dirty = true
+    this.dirty = this.full = true
   }
   Ink.prototype.clear = function () {
     this.blobs.length = 0
     this.dctx.clearRect(0, 0, this.dry.width, this.dry.height)
-    this.dirty = true
+    this.dirty = this.full = true
+  }
+  // 一滴墨（含外圈晕、拖痕的延长段）在画布上可能占到的范围（CSS 像素），并入 box
+  Ink.prototype.extent = function (b, box) {
+    let x0, y0, x1, y1
+    if (b.x2 != null) {
+      const x3 = b.x2 + (b.x2 - b.x) * 0.25, y3 = b.y2 + (b.y2 - b.y) * 0.25
+      const r = b.R + 2
+      x0 = Math.min(b.x, x3) - r; x1 = Math.max(b.x, x3) + r
+      y0 = Math.min(b.y, y3) - r; y1 = Math.max(b.y, y3) + r
+    } else {
+      const r = b.R * 1.6 + 2
+      x0 = b.x - r; x1 = b.x + r; y0 = b.y - r; y1 = b.y + r
+    }
+    if (x0 < box[0]) box[0] = x0
+    if (y0 < box[1]) box[1] = y0
+    if (x1 > box[2]) box[2] = x1
+    if (y1 > box[3]) box[3] = y1
   }
   Ink.prototype.add = function (x, y, R, o = {}) {
     if (this.blobs.length > 240) this.bake(this.blobs.shift())
@@ -445,7 +480,7 @@
     this.paint(this.dctx, b, true)
     this.dirty = true
   }
-  Ink.prototype.bakeAll = function () { for (const b of this.blobs) this.bake(b); this.blobs.length = 0; this.dirty = true }
+  Ink.prototype.bakeAll = function () { for (const b of this.blobs) this.bake(b); this.blobs.length = 0; this.dirty = this.full = true }
   Ink.prototype.step = function (dt) {
     for (let i = this.blobs.length - 1; i >= 0; i--) {
       const b = this.blobs[i]
@@ -454,15 +489,45 @@
     }
     if (this.blobs.length) this.dirty = true
   }
+  /* 只重画「这一帧活着的墨迹 ∪ 上一帧活着的墨迹」占的那一块：干透的部分从 dry 拷回来，活的再画一遍。
+     （原先每帧整张清空重画；墨迹几乎总是只占光标附近、门口那一小片） */
   Ink.prototype.draw = function () {
     if (!this.dirty) return
     this.dirty = false
-    const c = this.ctx
+    const c = this.ctx, k = this.k
+    const cw = this.cv.width, ch = this.cv.height
+    const box = [Infinity, Infinity, -Infinity, -Infinity]
+    for (const b of this.blobs) this.extent(b, box)
+    const cur = box[0] < box[2] ? box.slice() : null
+    const prev = this.prev
+    this.prev = cur
     c.setTransform(1, 0, 0, 1, 0, 0)
-    c.clearRect(0, 0, this.cv.width, this.cv.height)
-    c.drawImage(this.dry, 0, 0)
-    c.setTransform(this.k, 0, 0, this.k, 0, 0)
+    if (this.full) {
+      this.full = false
+      c.clearRect(0, 0, cw, ch)
+      c.drawImage(this.dry, 0, 0)
+      c.setTransform(k, 0, 0, k, 0, 0)
+      for (const b of this.blobs) this.paint(c, b, false)
+      return
+    }
+    if (prev) {
+      if (prev[0] < box[0]) box[0] = prev[0]
+      if (prev[1] < box[1]) box[1] = prev[1]
+      if (prev[2] > box[2]) box[2] = prev[2]
+      if (prev[3] > box[3]) box[3] = prev[3]
+    }
+    if (!(box[0] < box[2])) return
+    const X0 = Math.max(0, Math.floor(box[0] * k)), Y0 = Math.max(0, Math.floor(box[1] * k))
+    const X1 = Math.min(cw, Math.ceil(box[2] * k)), Y1 = Math.min(ch, Math.ceil(box[3] * k))
+    if (X1 <= X0 || Y1 <= Y0) return
+    const w = X1 - X0, h = Y1 - Y0
+    c.save()
+    c.beginPath(); c.rect(X0, Y0, w, h); c.clip()
+    c.clearRect(X0, Y0, w, h)
+    c.drawImage(this.dry, X0, Y0, w, h, X0, Y0, w, h)
+    c.setTransform(k, 0, 0, k, 0, 0)
     for (const b of this.blobs) this.paint(c, b, false)
+    c.restore()
   }
 
   /* =========================================================
@@ -572,8 +637,11 @@
     const fl = Math.sin(t * 1.25) * 7 * (1 - open) * k
     put(SM.card, 'transform', `translateY(${fx(fl)}px) scale(${(1 + push * 1.1).toFixed(4)})`)
     put(SM.card, 'opacity', SM.revealed ? '0' : (1 - push * 0.35).toFixed(3))
+    put(SM.card, 'visibility', SM.revealed ? 'hidden' : '') // 透明了就别留着 3D 合成层
     put(SM.card, 'filter', push > 0.01 ? `blur(${(push * 2.4).toFixed(2)}px)` : '')
-    put(SM.hint, 'opacity', (1 - seg(0, 0.05, lp)).toFixed(3))
+    const ho = 1 - seg(0, 0.05, lp)
+    put(SM.hint, 'opacity', ho.toFixed(3))
+    put(SM.hint, 'visibility', ho > 0 ? '' : 'hidden')
 
     const live = lp >= 0.52 && !S.frozen
     if (live) {
@@ -606,8 +674,8 @@
   SM.reveal = function (q) {
     SM.revealed = true
     gsap.killTweensOf(SM.bigTx)
-    if (q || App.reduced) { gsap.set(SM.bigTx, { opacity: 1, scale: 1, x: 0, y: 0 }); return }
-    gsap.fromTo(SM.bigTx, { opacity: 0, scale: 1.4 }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.55, ease: 'expo.out' })
+    if (q || App.reduced) { gsap.set(SM.bigTx, { autoAlpha: 1, scale: 1, x: 0, y: 0, willChange: 'auto' }); return }
+    gsap.fromTo(SM.bigTx, { autoAlpha: 0, scale: 1.4 }, { autoAlpha: 1, scale: 1, x: 0, y: 0, duration: 0.55, ease: 'expo.out', ...lift(SM.bigTx, 'transform, opacity') })
     App.flash(App.color.blood, { opacity: 0.3, duration: 0.55 })
     App.bg.pulse(0.55, 1.1)
     App.audio.sfx('stamp')
@@ -616,36 +684,37 @@
   SM.unreveal = function () {
     SM.revealed = false
     gsap.killTweensOf(SM.bigTx)
-    gsap.set(SM.bigTx, { opacity: 0, x: 0, y: 0, scale: 1 })
+    gsap.set(SM.bigTx, { autoAlpha: 0, x: 0, y: 0, scale: 1, willChange: 'auto' })
   }
   SM.toColumn = function (q) {
     PH.show(true)
     setPhase(0, { quiet: true, force: true })
     gsap.killTweensOf([SM.bigTx, SM.cd, ...PH.chars])
     if (q || App.reduced) {
-      gsap.set(SM.bigTx, { opacity: 0 })
-      gsap.set(SM.cd, { opacity: 1, y: 0 })
-      gsap.set(PH.chars, { opacity: 1 })
+      gsap.set(SM.bigTx, { autoAlpha: 0, willChange: 'auto' })
+      gsap.set(SM.cd, { opacity: 1, y: 0, willChange: 'auto' })
+      gsap.set(PH.chars, { opacity: 1, willChange: 'auto' })
       return
     }
     const a = SM.bigTx.getBoundingClientRect(), b = PH.name.getBoundingClientRect()
     const sc = b.height / Math.max(1, a.height)
     gsap.set(PH.chars, { opacity: 0 })
+    gsap.set(SM.bigTx, { willChange: 'transform, opacity' })
     gsap.to(SM.bigTx, {
       x: b.left + b.width / 2 - (a.left + a.width / 2), y: b.top + b.height / 2 - (a.top + a.height / 2), scale: sc,
       duration: 0.7, ease: 'expo.inOut',
     })
-    gsap.to(SM.bigTx, { opacity: 0, duration: 0.12, delay: 0.62 })
+    gsap.to(SM.bigTx, { autoAlpha: 0, duration: 0.12, delay: 0.62, onComplete: () => gsap.set(SM.bigTx, { willChange: 'auto' }) })
     gsap.to(PH.chars, { opacity: 1, duration: 0.1, delay: 0.62 })
-    gsap.fromTo(SM.cd, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.9, ease: 'expo.out', delay: 0.4 })
+    gsap.fromTo(SM.cd, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.9, ease: 'expo.out', delay: 0.4, ...lift(SM.cd, 'transform, opacity') })
     gsap.fromTo(SM.digits, { scrambleText: { text: '--:--:--' } }, { duration: 0.9, delay: 0.4, scrambleText: { text: hms(DAY - S.E), chars: '0123456789', speed: 0.8 } })
     App.audio.sfx('whoosh', { volume: 0.5, pitch: 0.8 })
   }
   SM.fromColumn = function () {
     PH.show(false)
     gsap.killTweensOf([SM.bigTx, SM.cd, SM.digits])
-    gsap.set(SM.bigTx, { x: 0, y: 0, scale: 1, opacity: SM.revealed ? 1 : 0 })
-    gsap.set(SM.cd, { opacity: 0 })
+    gsap.set(SM.bigTx, { x: 0, y: 0, scale: 1, autoAlpha: SM.revealed ? 1 : 0, willChange: 'auto' })
+    gsap.set(SM.cd, { opacity: 0, willChange: 'auto' })
     SM.lastS = null
   }
   SM.beats = [
@@ -660,8 +729,7 @@
      ========================================================= */
   /* 走廊随视线偏移：一点透视里消失点平移 δ，整幅走廊（线、灯、人影、墨迹）也恰好平移 δ。
      所以走廊只在布局时按基准消失点画一次，之后整层（.cycle-k-move，合成层）平移，不再每帧改 SVG 路径重画。
-     光标处照亮的那一圈（原先是随光标移动的 mask，整张重画）改为一个带固定圆形遮罩的小窗跟着光标平移，
-     窗里的亮线反向平移。 */
+     光标处照亮的那一圈：一个带固定圆形遮罩的小窗（520×520）跟着光标平移，窗里的亮线用 viewBox 取光标周围那一块。 */
   const LIT_R = 260
   const SK = { key: 'murder', vp: { x: 0, y: 0 }, vp0: { x: 0, y: 0 }, ox: 0, oy: 0, hb: 0.6, lastX: -999, lastY: -999, seep: 0, flowOn: false, flowT: 0, flowAcc: 0 }
   SK.build = function () {
@@ -669,7 +737,7 @@
     SK.lit = corrSVG('cycle-k-lines is-lit')
     SK.litWrap = el('div.cycle-k-litwrap', null, [SK.lit.svg])
     SK.lampsEl = el('div.cycle-k-lamps')
-    SK.lamps = LAMPS.map((l, i) => { const n = el('i.cycle-k-lamp'); n.style.animationDelay = (-i * 0.73).toFixed(2) + 's'; SK.lampsEl.appendChild(n); return n })
+    SK.lamps = LAMPS.map(() => { const n = el('i.cycle-k-lamp'); SK.lampsEl.appendChild(n); return n })
     SK.cv = el('canvas.cycle-k-ink')
     SK.ink = new Ink(SK.cv)
     SK.walker = el('div.cycle-k-walker', { html: WALKER_SVG })
@@ -696,9 +764,8 @@
   SK.layout = function () {
     SK.vp0 = { x: S.W * 0.5, y: S.H * 0.46 }
     if (SK.vp.x === 0) SK.vp = { x: SK.vp0.x, y: SK.vp0.y }
-    for (const o of [SK.base, SK.lit]) o.svg.setAttribute('viewBox', `0 0 ${S.W} ${S.H}`)
-    SK.lit.svg.style.width = S.W + 'px'
-    SK.lit.svg.style.height = S.H + 'px'
+    SK.base.svg.setAttribute('viewBox', `0 0 ${S.W} ${S.H}`)
+    SK.lit.svg._cya = null // 亮线的 viewBox 每帧按光标写（见 update）
     SK.ink.resize(S.W, S.H)
     SK.inkK = S.mob ? 0.72 : 1
     const fs = clamp(S.W * 0.12, 54, 210)
@@ -735,20 +802,20 @@
       const st = SK.stamp.getBoundingClientRect()
       const sr = S.rect
       const cy = S.H / 2, ty = st.top - sr.top + st.height * 0.3
-      gsap.fromTo(SK.frz, { opacity: 1, scale: 1, y: 0 }, { scale: 0.13, y: ty - cy, opacity: 0, duration: 0.6, delay: 0.5, ease: 'expo.inOut' })
+      gsap.fromTo(SK.frz, { autoAlpha: 1, scale: 1, y: 0 }, { scale: 0.13, y: ty - cy, autoAlpha: 0, duration: 0.6, delay: 0.5, ease: 'expo.inOut', ...lift(SK.frz, 'transform, opacity') })
       SK.frz.classList.remove('is-cut'); void SK.frz.offsetWidth; SK.frz.classList.add('is-cut')
       gsap.to(SK.scene, { opacity: 1, duration: 0.9, delay: 0.45, ease: 'power2.out' })
       gsap.to(SK.stamp, { opacity: 1, duration: 0.3, delay: 1 })
       App.audio.sfx('stamp', { volume: 0.9, pitch: 0.62 })
       App.audio.sfx('heartbeat', { volume: 0.8, delay: 0.35 })
     } else {
-      gsap.set(SK.frz, { opacity: 0 })
+      gsap.set(SK.frz, { autoAlpha: 0 })
       gsap.set([SK.scene, SK.stamp], { opacity: 1 })
     }
   }
   SK.leave = function () {
     gsap.killTweensOf([SK.frz, SK.pass])
-    gsap.set(SK.frz, { opacity: 0 })
+    gsap.set(SK.frz, { autoAlpha: 0, willChange: 'auto' })
     gsap.set(SK.pass, { display: 'none' })
     SK.flowOn = false
   }
@@ -764,10 +831,12 @@
     const ox = SK.vp.x - SK.vp0.x, oy = SK.vp.y - SK.vp0.y
     SK.ox = ox; SK.oy = oy
     put(SK.move, 'transform', `translate3d(${fx(ox)}px, ${fx(oy)}px, 0)`)
-    // 照亮的一圈：窗口中心 = 光标（换算到走廊层里）
-    const lx = +fx(S.cur.x - ox), ly = +fx(S.cur.y - oy)
+    // 照亮的一圈：窗口中心 = 光标（换算到走廊层里）。窗里的亮线只有窗那么大（520×520），
+    // 用 viewBox 取走廊里光标周围的那一块——不再是一整张比屏幕还大、只露出一小圈的合成层
+    // 取整像素：光标停住后走廊还在缓缓归位的那几十帧里，亮线不必每帧重画（这一圈边缘本就是虚的）
+    const lx = Math.round(S.cur.x - ox), ly = Math.round(S.cur.y - oy)
     put(SK.litWrap, 'transform', `translate3d(${lx}px, ${ly}px, 0)`)
-    put(SK.lit.svg, 'transform', `translate3d(${fx(LIT_R - lx)}px, ${fx(LIT_R - ly)}px, 0)`)
+    putAttr(SK.lit.svg, 'viewBox', `${lx - LIT_R} ${ly - LIT_R} ${LIT_R * 2} ${LIT_R * 2}`)
 
     // 远处的人影走进尽头的门
     const wk = seg(0.05, 0.34, lp)
@@ -827,9 +896,22 @@
     SK.ink.step(dt)
     SK.ink.draw()
 
+    SK.flicker(t)
+
     SK.hb -= dt
     if (SK.hb <= 0 && !S.fast) { App.audio.sfx('heartbeat', { volume: 0.42 }); SK.hb = clamp(1.4 - S.cur.speed / 28, 0.55, 1.4) }
     setPhaseFill(lp)
+  }
+  /* 壁灯闪烁：原 CSS 动画 cycle-lamp 4.3s steps(1)，八盏各错开 0.73 秒。steps(1) 是一段段的常值，
+     CSS 动画却每帧都要在主线程上重算这八个元素的样式；改为只在换档的那一帧写 opacity（每盏 4.3 秒里换 6 次） */
+  const LAMP_K = [[0, 1], [0.41, 0.55], [0.43, 1], [0.71, 0.82], [0.72, 0.25], [0.74, 0.95]]
+  SK.flicker = function (t) {
+    SK.lamps.forEach((n, i) => {
+      const u = (((t + i * 0.73) % 4.3) + 4.3) % 4.3 / 4.3
+      let v = 1
+      for (const [a, o] of LAMP_K) if (u >= a) v = o
+      put(n, 'opacity', String(v))
+    })
   }
   SK.doPass = function () {
     gsap.killTweensOf(SK.pass)
@@ -859,27 +941,45 @@
      ========================================================= */
   const SD = { key: 'discover' }
   SD.build = function () {
-    SD.rays = el('div.cycle-d-rays')
-    SD.lines = corrSVG('cycle-d-lines')
+    // 放射的血光（原 .cycle-d-rays：满屏 repeating-conic + 径向遮罩 + CSS 闪烁动画）画成一张静止的画布（遮罩烘焙进去，
+    // 不再有离屏遮罩面），闪烁只改这张画布的 opacity（合成层，不重画）；
+    // 走廊线（原一张满屏 SVG）与干透的墨迹（原一张画布）合画在另一张画布上。两张都只在进入镜头/重排时画一次
+    SD.rcv = el('canvas.cycle-d-rays')
     SD.cv = el('canvas.cycle-d-ink')
     SD.pool = el('i.cycle-d-pool')
     SD.body = el('div.cycle-d-body', { html: `<svg viewBox="-110 -60 220 120" aria-hidden="true">${bodyShape(7, 'b-rim')}${bodyShape(0, 'b-fill')}</svg>` })
-    SD.scene = el('div.cycle-d-scene', null, [SD.rays, SD.lines.svg, SD.cv, SD.pool, SD.body])
+    SD.scene = el('div.cycle-d-scene', null, [SD.rcv, SD.cv, SD.pool, SD.body])
+    // 粉点网放在场景下面（原先在上面，会把它下面的层都逼成合成层；粉点只在四周，与场景几乎不重叠）
     SD.dots = el('div.cycle-d-dots')
     SD.stampT = el('b')
     SD.stampD = el('span')
     SD.stamp = el('div.cycle-d-stamp', null, [el('i'), SD.stampT, SD.stampD])
-    SD.el = el('div.cycle-shot.cycle-d', null, [SD.scene, SD.dots, SD.stamp])
+    SD.el = el('div.cycle-shot.cycle-d', null, [SD.dots, SD.scene, SD.stamp])
     return SD.el
   }
   SD.layout = function () {
-    SD.lines.svg.setAttribute('viewBox', `0 0 ${S.W} ${S.H}`)
     if (SD.el.classList.contains('is-on')) SD.place()
+  }
+  // 与原 SVG（.cycle-d-lines）同样的笔画：先填后描，次序 doorway → joint → run → rib → door → edge → far
+  const D_LINE = 'rgba(235, 227, 214, .14)'
+  const D_PATHS = [
+    ['doorway', 'rgba(60, 4, 20, .8)', 'rgba(255, 46, 126, .4)'],
+    ['joint', null, D_LINE], ['run', null, 'rgba(255, 46, 126, .3)'], ['rib', null, D_LINE],
+    ['door', 'rgba(0, 0, 0, .5)', D_LINE], ['edge', null, D_LINE], ['far', null, D_LINE],
+  ]
+  const D_M = 20 // 画布四周多出的边：场景随光标视差平移（±12px）时边上不露空
+  // 血光的闪烁：原 CSS 动画 cycle-rays 2.4s steps(3)（关键帧 0% .7 → 33% 1 → 66% .55 → 100% .7）
+  const D_K = [[0, 0.7], [0.33, 1], [0.66, 0.55], [1, 0.7]]
+  function raysAlpha(t) {
+    const u = (((t % 2.4) + 2.4) % 2.4) / 2.4
+    let i = 0
+    while (i < 2 && u >= D_K[i + 1][0]) i++
+    const v = (u - D_K[i][0]) / (D_K[i + 1][0] - D_K[i][0])
+    return D_K[i][1] + (D_K[i + 1][1] - D_K[i][1]) * (Math.floor(v * 3) / 3)
   }
   SD.place = function () {
     const vp = SK.vp.x ? SK.vp : { x: S.W * 0.5, y: S.H * 0.46 }
     const g = corrGeo(vp)
-    corrDraw(SD.lines, g)
     const tb = 0.34
     const c = g.P(0.06, 1, tb)
     const len = g.hw * 2 * csc(tb) * 0.82
@@ -894,16 +994,74 @@
     SD.setPool(SD.pgv == null ? 1 : SD.pgv)
     SD.el.style.setProperty('--bx', fx(c[0]) + 'px')
     SD.el.style.setProperty('--by', fx(c[1]) + 'px')
+    SD.bx = +fx(c[0]); SD.by = +fx(c[1])
     // 墨迹快照：与行凶镜头同一位置，已经干透
     SK.ink.bakeAll()
     SK.ink.draw()
-    SD.cv.width = SK.cv.width
-    SD.cv.height = SK.cv.height
-    const ctx = SD.cv.getContext('2d')
-    ctx.clearRect(0, 0, SD.cv.width, SD.cv.height)
-    ctx.drawImage(SK.cv, 0, 0)
-    SD.cv.style.transform = `translate(${fx(SK.ox)}px, ${fx(SK.oy)}px)` // 行凶镜头里墨迹随走廊平移到的位置
+    // 画布分辨率：细线要清楚（最多 2 倍）；画质降级时 1.5 / 1 倍
+    const k = Math.min(S.q >= 2 ? 2 : S.q === 1 ? 1.5 : 1, window.devicePixelRatio || 1)
+    SD.k = k
+    const w = Math.max(2, Math.round((S.W + D_M * 2) * k)), h = Math.max(2, Math.round((S.H + D_M * 2) * k))
+    const kr = Math.min(k, 1.5), wr = Math.max(2, Math.round((S.W + D_M * 2) * kr)), hr = Math.max(2, Math.round((S.H + D_M * 2) * kr))
+    if (SD.cv.width !== w || SD.cv.height !== h) { SD.cv.width = w; SD.cv.height = h }
+    if (SD.rcv.width !== wr || SD.rcv.height !== hr) { SD.rcv.width = wr; SD.rcv.height = hr }
+    const box = { left: -D_M + 'px', top: -D_M + 'px', width: `calc(100% + ${D_M * 2}px)`, height: `calc(100% + ${D_M * 2}px)` }
+    Object.assign(SD.cv.style, box)
+    Object.assign(SD.rcv.style, box)
+    SD.drawRays(kr)
+    SD.drawLines(g, k)
+    SD.ra = -1
   }
+  // 血光：原元素盒子是舞台四周各扩 10%，conic 中心 at (--bx + 1.25%, --by)、遮罩 circle at 50% 62%（farthest-corner），
+  // 都按那个盒子换算到屏幕坐标；每 4° 一道、亮 0.8°（3.2°–4°），从 12 点钟方向起顺时针
+  SD.drawRays = function (k) {
+    const ctx = SD.rcv.getContext('2d'), W = S.W, H = S.H
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.clearRect(0, 0, SD.rcv.width, SD.rcv.height)
+    ctx.setTransform(k, 0, 0, k, D_M * k, D_M * k)
+    const X0 = -0.1 * W, Y0 = -0.1 * H, BW = 1.2 * W, BH = 1.2 * H
+    const cx = X0 + SD.bx + 0.0125 * BW, cy = Y0 + SD.by
+    const R = 3 * Math.max(W, H)
+    ctx.fillStyle = 'rgba(255, 46, 126, .12)'
+    ctx.beginPath()
+    for (let i = 0; i < 90; i++) {
+      const a1 = ((4 * i + 3.2 - 90) * Math.PI) / 180, a2 = ((4 * i + 4 - 90) * Math.PI) / 180
+      ctx.moveTo(cx, cy)
+      ctx.lineTo(cx + Math.cos(a1) * R, cy + Math.sin(a1) * R)
+      ctx.lineTo(cx + Math.cos(a2) * R, cy + Math.sin(a2) * R)
+      ctx.closePath()
+    }
+    ctx.fill()
+    const mx = X0 + 0.5 * BW, my = Y0 + 0.62 * BH
+    const fr = Math.hypot(Math.max(mx - X0, X0 + BW - mx), Math.max(my - Y0, Y0 + BH - my))
+    const mg = ctx.createRadialGradient(mx, my, 0, mx, my, fr)
+    mg.addColorStop(0.08, 'rgba(0,0,0,0)'); mg.addColorStop(0.34, 'rgba(0,0,0,1)'); mg.addColorStop(0.78, 'rgba(0,0,0,0)')
+    ctx.globalCompositeOperation = 'destination-in'
+    ctx.fillStyle = mg
+    ctx.fillRect(X0, Y0, BW, BH)
+    ctx.globalCompositeOperation = 'source-over'
+  }
+  SD.drawLines = function (g, k) {
+    const ctx = SD.cv.getContext('2d'), W = S.W, H = S.H
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.clearRect(0, 0, SD.cv.width, SD.cv.height)
+    ctx.setTransform(k, 0, 0, k, D_M * k, D_M * k)
+    // 走廊线
+    ctx.lineWidth = 1
+    for (const [key, fill, stroke] of D_PATHS) {
+      const path = new Path2D(g[key])
+      if (fill) { ctx.fillStyle = fill; ctx.fill(path) }
+      ctx.strokeStyle = stroke; ctx.stroke(path)
+    }
+    // 墨迹（原画布 CSS 不透明度 .9）：放到行凶镜头里墨迹随走廊平移到的位置
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.globalAlpha = 0.9
+    ctx.drawImage(SK.cv, (D_M + SK.ox) * k, (D_M + SK.oy) * k, W * k, H * k)
+    ctx.globalAlpha = 1
+  }
+  // 离开很远时释放画布（回来时 SD.place 重画）
+  SD.release = function () { SD.cv.width = SD.cv.height = SD.rcv.width = SD.rcv.height = 1 }
   SD.enter = function (dir, q) {
     PH.show(true)
     SD.place()
@@ -916,7 +1074,7 @@
       App.flash(App.color.blood, { opacity: App.reduced ? 0.4 : 0.88, duration: 0.85, hold: 0.06 })
       App.audio.sfx('discover')
       App.bg.pulse(1.1, 1.8)
-      if (!App.reduced) App.shake(undefined, 13, 0.55)
+      if (!App.reduced) shake(13, 0.55)
     }
   }
   SD.leave = function () { hush(); SD.el.classList.remove('is-hit') }
@@ -928,7 +1086,8 @@
     SD.pg = v
     SD.pool.style.transform = `scale(${v}) ${SD.poolT}`
   }
-  SD.update = function (lp) {
+  SD.update = function (lp, dt, t) {
+    put(SD.rcv, 'opacity', raysAlpha(t).toFixed(3)) // 血光闪烁：只在换档时改 opacity（合成层）
     // 场景随光标视差：整层（合成层）平移，不再改继承的自定义属性（那会让血泊等每帧重画）
     put(SD.scene, 'transform', `translate3d(${fx((S.cur.nx - 0.5) * -24)}px, ${fx((S.cur.ny - 0.5) * -18)}px, 0)`)
     put(SD.scene, 'opacity', (1 - sstep(0.8, 1, lp) * 0.65).toFixed(3))
@@ -1036,6 +1195,7 @@
       m += `<path class="c-m" d="M${fx(c[0])} ${fx(c[1])}L${fx(c[0] + Math.sin(ma) * r * 0.74)} ${fx(c[1] - Math.cos(ma) * r * 0.74)}"/>`
       m += `<path class="c-crack" d="M${fx(c[0] - r * 0.6)} ${fx(c[1] - r * 0.5)}l${fx(r * 0.5)} ${fx(r * 0.35)}l${fx(r * 0.1)} ${fx(r * 0.55)}m${fx(-r * 0.1)} ${fx(-r * 0.55)}l${fx(r * 0.6)} ${fx(-r * 0.1)}"/>`
       const tl = tm ? pad2(Math.floor(tm / 60) || 12) + ':' + pad2(tm % 60) : '12:00'
+      SI.clk = { c, r }
       T.push({ id: 'clock', cls: 'tr-clock', m, pts: [c], lbl: tl, lp: [c[0], c[1] + r + R * 0.09] })
     }
     // 手套污印
@@ -1083,14 +1243,18 @@
     const bodyT = `translate(${fx(C[0])} ${fx(C[1])}) rotate(-16) scale(${bsc.toFixed(4)})`
     const bodyG = `<g class="i-body" transform="${bodyT}">${bodyShape(6, 'b-rim')}${bodyShape(0, 'b-fill')}<g class="b-cloth">${bodyShape(0, 'b-cl')}</g></g>`
 
+    // 剩余时间的亮弧拆成四段（每段一个象限，从 12 点钟起顺时针）：滚动时只有指针所在那一段在变，
+    // 重画的只是那四分之一圈（原先一整个圆，每一步都重画整个圆环那么大一块）
+    const qp = a => `${fx(C[0] + Math.sin(a) * R)} ${fx(C[1] - Math.cos(a) * R)}`
+    const arcs = [0, 1, 2, 3].map(k => `<path class="r-arc" pathLength="1" d="M${qp((k * Math.PI) / 2)}A${fx(R)} ${fx(R)} 0 0 1 ${qp(((k + 1) * Math.PI) / 2)}"/>`).join('')
     const ring = lit => `<g class="i-ring">
       <circle class="r-track" cx="${fx(C[0])}" cy="${fx(C[1])}" r="${fx(R)}" pathLength="1" transform="rotate(-90 ${fx(C[0])} ${fx(C[1])})"/>
       <path class="r-tk" d="${tk}"/><path class="r-tkm" d="${tkM}"/>
-      <circle class="r-arc" cx="${fx(C[0])}" cy="${fx(C[1])}" r="${fx(R)}" pathLength="1" transform="rotate(-90 ${fx(C[0])} ${fx(C[1])})"/>
+      ${arcs}
       <circle class="r-hand" cx="${fx(C[0])}" cy="${fx(C[1] - R)}" r="${lit ? 4 : 4.5}"/>${nums}</g>`
 
     const traces = lit => T.map((t, i) => `<g class="cycle-tr ${t.cls}" data-i="${i}">${t.m}</g>`).join('') +
-      (lit ? T.map(t => (t.lbl ? `<text class="i-lbl" x="${fx(t.lp[0])}" y="${fx(t.lp[1])}">${U.esc(t.lbl)}</text>` : '')).join('') : '')
+      (lit ? T.map(t => (t.lbl ? `<text class="i-lbl${t.id === 'clock' ? ' i-clk' : ''}" x="${fx(t.lp[0])}" y="${fx(t.lp[1])}">${U.esc(t.lbl)}</text>` : '')).join('') : '')
     const mk0 = T.map((t, i) => `<g class="i-mk" data-i="${i}" transform="translate(${fx(t.pts[0][0] + R * 0.07)} ${fx(t.pts[0][1] - R * 0.07)})"><path d="M0 -15L10 4H-10Z"/><text y="1.5">${i + 1}</text></g>`).join('')
     const stageX = C[0] - R * 0.5, stageY = C[1] - R * 0.36
 
@@ -1098,24 +1262,41 @@
     SI.lit.setAttribute('viewBox', `0 0 ${W} ${H}`)
     SI.base.innerHTML = `<path class="i-seam" d="${seams}"/>${bodyG}${traces(false)}${ring(false)}<g class="i-mks">${mk0}</g>`
     SI.lit.innerHTML = `<rect class="i-litbg" width="${W}" height="${H}"/><path class="i-seam" d="${seams}"/>${bodyG}${traces(true)}${ring(true)}<text class="i-stage" x="${fx(stageX)}" y="${fx(stageY)}"></text>`
-    SI.rings = [SI.base, SI.lit].map(s => ({ track: s.querySelector('.r-track'), arc: s.querySelector('.r-arc'), hand: s.querySelector('.r-hand') }))
+    SI.rings = [SI.base, SI.lit].map(s => ({ track: s.querySelector('.r-track'), arcs: Array.from(s.querySelectorAll('.r-arc')), hand: s.querySelector('.r-hand') }))
     SI.trBase = Array.from(SI.base.querySelectorAll('.cycle-tr'))
     SI.trLit = Array.from(SI.lit.querySelectorAll('.cycle-tr'))
     SI.mks = Array.from(SI.base.querySelectorAll('.i-mk'))
     SI.stageEl = SI.lit.querySelector('.i-stage')
     SI.bodies = [SI.base, SI.lit].map(s => s.querySelector('.i-body'))
+    SI.clkEls = { h: SI.svgs().map(s => s.querySelector('.tr-clock .c-h')), m: SI.svgs().map(s => s.querySelector('.tr-clock .c-m')), lbl: SI.lit.querySelector('.i-clk') }
+    SI.clockFor = S.story ? S.story.death : null
     SI.lens.style.setProperty('--lr', fx(SI.LR) + 'px')
-    SI.lit.style.width = W + 'px'
-    SI.lit.style.height = H + 'px'
+    // 放大镜里的现场只有镜片那么大：SVG 边长 2·LR/1.4、CSS 放大 1.4 倍，viewBox 每帧取光标周围那一块
+    // （原先是整张现场 SVG 放大 1.4 倍、比屏幕还大的合成层，只露出镜片那一圈）
+    SI.lit.style.width = SI.lit.style.height = fx((SI.LR * 2) / 1.4) + 'px'
     SI.rim.style.width = SI.rim.style.height = fx(SI.LR * 2) + 'px'
     if (SI.lens._cy) SI.lens._cy = null
-    if (SI.lit._cy) SI.lit._cy = null
+    SI.lit._cya = null
     SI.lastRem = -1
     SI.lastStage = ''
     SI.order = []
     // 已找到的痕迹保留
     for (const id of SI.found) { const i = T.findIndex(t => t.id === id); if (i >= 0) SI.mark(i, true) }
     SI.applyBody()
+  }
+  SI.svgs = () => [SI.base, SI.lit]
+  // 停住的钟：与 SI.layout 里同样的算法
+  SI.setClock = function () {
+    const E = SI.clkEls, K = SI.clk
+    if (!E || !K) return
+    const c = K.c, r = K.r
+    const tm = (S.story ? Math.floor(S.story.death) + S.story.drift : T_MANDATE) % 720
+    const ha = (tm / 720) * TAU, ma = ((tm % 60) / 60) * TAU
+    const dh = `M${fx(c[0])} ${fx(c[1])}L${fx(c[0] + Math.sin(ha) * r * 0.5)} ${fx(c[1] - Math.cos(ha) * r * 0.5)}`
+    const dm = `M${fx(c[0])} ${fx(c[1])}L${fx(c[0] + Math.sin(ma) * r * 0.74)} ${fx(c[1] - Math.cos(ma) * r * 0.74)}`
+    for (const n of E.h) if (n) n.setAttribute('d', dh)
+    for (const n of E.m) if (n) n.setAttribute('d', dm)
+    if (E.lbl) E.lbl.textContent = tm ? pad2(Math.floor(tm / 60) || 12) + ':' + pad2(tm % 60) : '12:00'
   }
   SI.mark = function (i, quiet) {
     const t = SI.traces[i]
@@ -1142,8 +1323,8 @@
     SI.lastRem = -1
     SI.lastStage = ''
     SI.lx = S.cur.rx; SI.ly = S.cur.ry
-    // 钟的读数随死亡时刻变化
-    if (SI.clockFor !== S.story.death) { SI.clockFor = S.story.death; SI.layout() }
+    // 钟的读数随死亡时刻变化：只改两根指针与读数（原先整个现场的两张 SVG 推倒重建，几百个节点重算样式）
+    if (SI.clockFor !== S.story.death) { SI.clockFor = S.story.death; SI.setClock() }
   }
   SI.leave = function () { SI.lens.classList.remove('is-on'); SI.rim.classList.remove('is-on') }
   SI.auto = function (t) {
@@ -1156,17 +1337,26 @@
   SI.update = function (lp, dt, t) {
     const e = eio(seg(0, 0.12, lp))
     put(SI.floor, 'transform', e >= 1 ? 'none' : `perspective(${fx(S.H * 1.5)}px) rotateX(${(56 * (1 - e)).toFixed(2)}deg) scale(${(1.3 - 0.3 * e).toFixed(4)})`)
+    put(SI.floor, 'willChange', e >= 1 ? 'auto' : 'transform') // 地面只在倾倒入场时是合成层，放平后画进舞台层
     put(SI.floor, 'opacity', (0.15 + 0.85 * seg(0, 0.05, lp)).toFixed(3))
-    const draw = eo3(seg(0, 0.11, lp))
+    // 圆环按 1/480 圈（0.75°）取整：平滑滚动收尾的那串极小的位移不再一帧帧重画圆环
+    const q480 = v => Math.round(v * 480) / 480
+    const draw = q480(eo3(seg(0, 0.11, lp)))
     const ef = seg(0.12, 0.92, lp)
     const minutes = Math.round(ef * 120)
     const rem = 120 - minutes
-    const remF = 1 - ef
-    const ha = -Math.PI / 2 + TAU * ef
+    const efq = q480(ef)
+    const remF = 1 - efq
+    const ha = -Math.PI / 2 + TAU * efq
+    // 亮弧 = [efq, efq + remF·draw]（圈），落到四段上各自的一截
+    const a0 = efq, a1 = efq + remF * draw
     for (const r of SI.rings) {
       put(r.track, 'strokeDasharray', `${draw.toFixed(4)} 1`)
-      put(r.arc, 'strokeDasharray', `${(remF * draw).toFixed(4)} 1`)
-      put(r.arc, 'strokeDashoffset', (-(1 - remF)).toFixed(4))
+      r.arcs.forEach((n, k) => {
+        const q0 = k / 4, s0 = Math.max(a0, q0), e0 = Math.min(a1, q0 + 0.25)
+        put(n, 'strokeDasharray', e0 > s0 ? `${((e0 - s0) * 4).toFixed(4)} 1` : '0 1')
+        put(n, 'strokeDashoffset', e0 > s0 ? (-(s0 - q0) * 4).toFixed(4) : '0')
+      })
       putAttr(r.hand, 'cx', fx(SI.C[0] + Math.cos(ha) * SI.R))
       putAttr(r.hand, 'cy', fx(SI.C[1] + Math.sin(ha) * SI.R))
     }
@@ -1190,8 +1380,9 @@
       SI.ly = lerp(SI.ly, S.cur.ry, 0.3)
       // 放大镜：圆形小窗跟着光标平移，窗里的现场放大 1.4 倍、反向平移（都是合成层，不重画）
       const lx = +fx(SI.lx), ly = +fx(SI.ly)
+      const vw = SI.LR / 1.4
       put(SI.lens, 'transform', `translate3d(${lx}px, ${ly}px, 0)`)
-      put(SI.lit, 'transform', `translate3d(${fx(SI.LR - 1.4 * lx)}px, ${fx(SI.LR - 1.4 * ly)}px, 0) scale(1.4)`)
+      putAttr(SI.lit, 'viewBox', `${fx(lx - vw)} ${fx(ly - vw)} ${fx(vw * 2)} ${fx(vw * 2)}`)
       put(SI.rim, 'transform', `translate3d(${fx(lx - SI.LR)}px, ${fx(ly - SI.LR)}px, 0)`)
       const rr = (SI.LR / 1.4) * 0.82
       SI.traces.forEach((tr, i) => {
@@ -1238,7 +1429,8 @@
       s.id = id
       s.root.classList.toggle('is-empty', !id)
       s.root.classList.toggle('is-dead', !!id && id === c.V.id)
-      if (id && id !== c.V.id) s.medal.appendChild(App.portrait(id, { mono: true }))
+      // 席位上的小肖像不随光标偏转（直径几十像素，偏转不过一两像素）：省掉每帧量位置、写样式，也不必各自成合成层
+      if (id && id !== c.V.id) s.medal.appendChild(App.portrait(id, { mono: true, track: false }))
     }
     SC.speakers = c.living.slice()
     SC.di = -2
@@ -1271,12 +1463,13 @@
     SC.table.setAttribute('viewBox', `0 0 ${W} ${H}`)
     SC.table.innerHTML = `<circle class="t-top" cx="${fx(C[0])}" cy="${fx(C[1])}" r="${fx(SC.Rt)}"/>` +
       `<circle class="t-rim" cx="${fx(C[0])}" cy="${fx(C[1])}" r="${fx(SC.Rt)}"/>` +
-      `<circle class="t-in" cx="${fx(C[0])}" cy="${fx(C[1])}" r="${fx(SC.Rt * 0.9)}"/>` +
+      `<g class="t-inner"><circle class="t-in" cx="${fx(C[0])}" cy="${fx(C[1])}" r="${fx(SC.Rt * 0.9)}"/>` +
       `<circle class="t-dash" cx="${fx(C[0])}" cy="${fx(C[1])}" r="${fx(SC.Rt * 0.6)}"/>` +
       `<path class="t-rose" d="${rose}"/>` +
-      `<circle class="t-hub" cx="${fx(C[0])}" cy="${fx(C[1])}" r="${fx(SC.Rt * 0.06)}"/>`
+      `<circle class="t-hub" cx="${fx(C[0])}" cy="${fx(C[1])}" r="${fx(SC.Rt * 0.06)}"/></g>`
     SC.tRim = SC.table.querySelector('.t-rim')
     SC.tTop = SC.table.querySelector('.t-top')
+    SC.tInner = SC.table.querySelector('.t-inner')
     SC.center.style.left = fx(C[0]) + 'px'
     SC.center.style.top = fx(C[1]) + 'px'
     SC.center.style.width = SC.center.style.height = fx(SC.Rt * 1.6) + 'px'
@@ -1352,7 +1545,7 @@
     SC.who.textContent = nameOf(p.id)
     if (!S.fast && prev !== -2) {
       App.audio.sfx('tick', { volume: 0.32, pitch: 0.8 + (p.seat / 15) * 0.6, pan: Math.sin(((p.seat - 1) / 15) * TAU) * 0.7 })
-      gsap.fromTo(SC.ghost, { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'power2.out' })
+      gsap.fromTo(SC.ghost, { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'power2.out', ...lift(SC.ghost, 'transform, opacity') })
     }
   }
   SC.auto = function (t) { return [S.W * (0.5 + 0.34 * Math.sin(t * 0.8)), S.H * 0.5] }
@@ -1361,10 +1554,13 @@
     const r = lerp(SI.R || SC.Rt, SC.Rt, mo)
     const cx = lerp(SI.C ? SI.C[0] : SC.C[0], SC.C[0], mo), cy = lerp(SI.C ? SI.C[1] : SC.C[1], SC.C[1], mo)
     for (const n of [SC.tRim, SC.tTop]) { putAttr(n, 'r', fx(r)); putAttr(n, 'cx', fx(cx)); putAttr(n, 'cy', fx(cy)) }
-    putVar(SC.table, '--tin', mo.toFixed(3))
+    // 直接写不透明度/变换（原先写继承的 --tin、--pop，整组子元素跟着重算样式）
+    put(SC.tInner, 'opacity', mo.toFixed(3))
     for (let k = 1; k <= 15; k++) {
       const s = eo3(seg(0.015 + k * 0.0042, 0.06 + k * 0.0042, lp))
-      putVar(SC.seats[k].root, '--pop', s.toFixed(3))
+      const root = SC.seats[k].root
+      put(root, 'opacity', s.toFixed(3))
+      put(root, 'transform', `scale(${(0.4 + s * 0.6).toFixed(3)})`)
     }
     // 辩论：自一号席起，每人发言一次
     const n = SC.speakers.length
@@ -1452,21 +1648,22 @@
   const SV = { key: 'verdict', split: 0.5, splitT: null, tls: [] }
   /* 两个结局之间的斜切线随光标左右。原先每帧改两边的 clip-path、--d、--cx，两块满屏背景、
      两幅人像、两组大字每帧整张重画。现在：
-     · 每一边是「窗」(.cycle-v-side，斜边的 clip-path 固定不变) 套「景」(.cycle-v-in)，
-       分界移动时窗平移 +x、景平移 -x（整像素），两层都是合成层，只改 transform；
-     · 背景的明暗（原 filter: brightness）改为盖一层黑（.cycle-v-dim，只改 opacity，数学上等价）；
+     · 右边是「窗」(.cycle-v-r，斜边的 clip-path 固定不变) 套「景」(.cycle-v-in)，分界移动时窗平移 +x、
+       景平移 -x（整像素），两层都是合成层，只改 transform；左边整屏铺开、不动，被盖在上面的右窗挡住
+       （右边背景不透明），所以左边不需要窗，少两个满屏合成层；完全被挡住时整个藏起来；
+     · 背景的明暗（原 filter: brightness）写在景层（合成层）的 filter 上，不重画，也不再多盖一层满屏的黑；
      · 跟着人走的光晕（原 radial-gradient at var(--cx)）是独立的一层 .cycle-v-glow，只平移；
+       粉点网放在光晕下面（同色半透明两层，上下次序互换颜色不变），不必再被逼成合成层；
      · 人像、大字的居中与缩放直接写 transform / opacity；分界线是一条转动、平移的细条。 */
   function vSide(k, head) {
     const fig = el('div.cycle-v-fig')
     const dead = el('div.cycle-v-dead', null, [el('div.cycle-v-deadp'), el('i.cycle-v-x')])
     const name = el('b.cycle-v-name')
     const glow = el('i.cycle-v-glow')
-    const dim = el('i.cycle-v-dim')
     const txt = el('div.cycle-v-txt', null, [el('h3.cycle-v-head', { text: head }), name])
-    const inner = el('div.cycle-v-in', null, [el('div.cycle-v-bg', null, [glow, el('i.cycle-v-dots'), dim]), fig, dead, txt])
-    const root = el('div.cycle-v-side.cycle-v-' + k, null, [inner])
-    return { root, inner, fig, dead, deadp: dead.firstChild, name, glow, dim, txt }
+    const inner = el('div.cycle-v-in', null, [el('div.cycle-v-bg', null, [el('i.cycle-v-dots'), glow])])
+    const root = el('div.cycle-v-side.cycle-v-' + k, null, [inner, fig, dead, txt])
+    return { k, root, inner, fig, dead, deadp: dead.firstChild, name, glow, txt, shadow: false }
   }
   SV.build = function () {
     SV.L = vSide('l', '判定正确。')
@@ -1477,16 +1674,17 @@
     SV.eyes = el('div.cycle-v-eyes')
     SV.dark = el('div.cycle-v-dark', null, [SV.eyes])
     SV.el = el('div.cycle-shot.cycle-v', null, [SV.L.root, SV.R.root, SV.div, SV.beam, SV.tally, SV.dark])
-    gsap.set(SV.beam, { rotation: 24, opacity: 0 })
+    gsap.set(SV.beam, { rotation: 24, autoAlpha: 0 })
     return SV.el
   }
   SV.setCast = function () {
     const c = S.cast
     SV.L.fig.textContent = ''
     SV.R.fig.textContent = ''
-    SV.L.figK = App.portrait(c.K.id, { className: 'cycle-v-p' })
-    SV.R.figW = App.portrait(c.W.id, { className: 'cycle-v-p' })
-    SV.R.figW2 = App.portrait(c.W2.id, { className: 'cycle-v-p is-alt' })
+    // 随光标偏转的肖像只在本镜头放映时追踪（见 SV.enter / SV.leave）
+    SV.L.figK = App.portrait(c.K.id, { className: 'cycle-v-p', track: false })
+    SV.R.figW = App.portrait(c.W.id, { className: 'cycle-v-p', track: false })
+    SV.R.figW2 = App.portrait(c.W2.id, { className: 'cycle-v-p is-alt', track: false })
     SV.L.fig.append(SV.L.figK)
     SV.R.fig.append(SV.R.figW, SV.R.figW2)
     SV.L.deadp.textContent = ''
@@ -1499,17 +1697,36 @@
     SV.R.name.textContent = nameOf(c.W.id)
     SV.eyes.textContent = ''
     // 黑暗里：几乎看不见的轮廓 + 发光的眼（位图肖像只留眼睛那一道窄带）
-    SV.eyes.append(
-      App.portrait(c.K.id, { silhouette: true, track: false, className: 'cycle-v-shade' }),
-      App.portrait(c.K.id, { className: 'cycle-eyes', eyeRange: 9 }),
-    )
+    SV.eyesP = App.portrait(c.K.id, { className: 'cycle-eyes', eyeRange: 9, track: false })
+    SV.eyes.append(App.portrait(c.K.id, { silhouette: true, track: false, className: 'cycle-v-shade' }), SV.eyesP)
+    SV.trk = [[SV.L.figK], [SV.R.figW], [SV.R.figW2]] // 黑暗里的眼睛只在黑暗出现时追踪（见判定的最后一拍）
+    if (S.idx === 5) SV.track(true)
     warm(SV.el)
+  }
+  // 位图肖像随光标的偏转并进人像层的 transform（见 SV.gaze）；只有退回矢量占位的（位图缺失）才用 App.trackEyes 转眼珠
+  SV.track = function (on) {
+    for (const [w, o] of SV.trk || []) track(w, on && !w.classList.contains('is-photo'), o)
+    for (const s of [SV.L, SV.R]) { s.photo = !!s.fig.querySelector('.portrait.is-photo'); s.gx = s.gy = 0 }
+  }
+  /* 画像向光标微微偏转：与 App.trackEyes 同一算法（眼睛约在肖像 (50%, 41%)，偏移 ±1.4% / ±1%），
+     但不写到 img 的 --pvx/--pvy 上——那样 img 是 3D 变换的独立合成层、外面的遮罩也得再单独成一层；
+     改为并进人像这一层（本来就每帧写 transform 的合成层）的 transform 末尾 */
+  SV.gaze = function (s, cx, sc) {
+    const m = App.mouse
+    const fw = (SV.figW || 400) * sc, fh = fw * 4 / 3
+    const dx = (m.sx - S.rect.left) - cx, dy = (m.sy - S.rect.top) - (S.H - fh * 0.59)
+    const d = Math.hypot(dx, dy) || 1
+    const k = Math.min(1, d / (fw * 1.2))
+    s.gx = lerp(s.gx || 0, (dx / d) * k, 0.2)
+    s.gy = lerp(s.gy || 0, (dy / d) * 0.7 * k, 0.2)
+    return ` translate(${(Math.round(s.gx * 100) * 0.014).toFixed(3)}%, ${(Math.round(s.gy * 100) * 0.01).toFixed(2)}%)`
   }
   SV.layout = function () {
     const W = S.W, H = S.H, s = (S.mob ? 0.12 : 0.085) * W
-    // 窗的斜边固定在各自的局部坐标里：左窗的右边过 (W, H/2)，右窗的左边过 (0, H/2)；另一侧放得足够远
-    SV.L.root.style.clipPath = `polygon(${fx(-2 * W)}px 0, ${fx(W + s)}px 0, ${fx(W - s)}px ${fx(H)}px, ${fx(-2 * W)}px ${fx(H)}px)`
+    // 右窗的斜边固定在局部坐标里：左边过 (0, H/2)，右侧放得足够远（左边不需要窗，见上）
     SV.R.root.style.clipPath = `polygon(${fx(s)}px 0, ${fx(3 * W)}px 0, ${fx(3 * W)}px ${fx(H)}px, ${fx(-s)}px ${fx(H)}px)`
+    SV.sx = s
+    SV.figW = S.mob ? W * 0.74 : Math.min(H * 0.66, W * 0.46) // = CSS 的 .cycle-v-fig 宽度
     const len = Math.hypot(2 * s + 1.2, H + 8) + 2
     SV.div.style.height = fx(len) + 'px'
     SV.div.style.marginTop = fx(-len / 2) + 'px'
@@ -1524,13 +1741,15 @@
     if (SV.splitT) { SV.splitT.kill(); SV.splitT = null }
     for (const s of [SV.L, SV.R]) {
       s.root.classList.remove('is-shadow', 'is-gone')
+      s.shadow = false
       gsap.killTweensOf(s.fig)
       s.fig.style.setProperty('--cut', '0')
     }
-    gsap.set(SV.beam, { opacity: 0 })
+    gsap.set(SV.beam, { autoAlpha: 0 })
     SV.setAlt(false)
     SV.tally.className = 'cycle-v-tally'
-    SV.dark.classList.remove('is-on')
+    SV.dark.classList.remove('is-on', 'is-out')
+    track(SV.eyesP, false)
     SV.el.classList.remove('is-locked', 'is-ok', 'is-ng')
   }
   SV.enter = function (dir) {
@@ -1539,10 +1758,13 @@
     SV.reset()
     if (dir > 0) { S.branch = null; SV.split = 0.5 }
     setPhaseLine('', true)
+    SV.track(true)
   }
   SV.leave = function (dir) {
     if (dir < 0) S.branch = null
     hush()
+    SV.track(false)
+    track(SV.eyesP, false)
   }
   SV.skip = function (dir) {
     if (dir > 0 && !S.branch) S.branch = S.cur.nx <= 0.5 ? 'ok' : 'ng'
@@ -1563,28 +1785,33 @@
     const sl = S.mob ? 0.12 : 0.085
     // 分界线的中点（整像素：窗与景一正一反地平移，景在屏幕上的位置不变、不重新采样）
     const xc = Math.round(sp * W)
-    put(SV.L.root, 'transform', `translate3d(${xc - W}px, 0, 0)`)
-    put(SV.L.inner, 'transform', `translate3d(${W - xc}px, 0, 0)`)
     put(SV.R.root, 'transform', `translate3d(${xc}px, 0, 0)`)
     put(SV.R.inner, 'transform', `translate3d(${-xc}px, 0, 0)`)
+    // 判定落定后有一边完全看不见：整边藏起来（左边被右窗整个盖住 / 右窗整个移出屏幕）
+    const s = SV.sx || 0
+    put(SV.L.root, 'visibility', xc + s <= 0 ? 'hidden' : '')
+    put(SV.R.root, 'visibility', xc - s >= W ? 'hidden' : '')
     const dl = sstep(0.3, 0.7, sp)
-    // 人物居中于各自的区域
+    // 人物居中于各自的区域（右边的人像在窗里，窗平移了 xc，所以减去它）
     const lc = clamp(sp, 0, 1) * 0.5, rc = 0.5 + clamp(sp, 0, 1) * 0.5
-    SV.side(SV.L, +dl.toFixed(3), clamp(lc, 0.2, 0.5) * W)
-    SV.side(SV.R, +(1 - dl).toFixed(3), clamp(rc, 0.5, 0.8) * W)
+    SV.side(SV.L, +dl.toFixed(3), clamp(lc, 0.2, 0.5) * W, 0)
+    SV.side(SV.R, +(1 - dl).toFixed(3), clamp(rc, 0.5, 0.8) * W, xc)
     // 分界线：中点在 xc，随时间微微颤动（只改转角）
     const wob = App.reduced ? 0 : Math.sin(t * 7) * 0.6
     const ang = Math.atan2(2 * sl * W + 2 * wob, H + 8)
     put(SV.div, 'transform', `translate3d(${xc}px, 0, 0) rotate(${ang.toFixed(4)}rad)`)
     put(SV.div, 'opacity', sp > -0.1 && sp < 1.1 ? '1' : '0')
   }
-  // 一边的明暗（d：0 暗 → 1 亮）与人物中心 cx（舞台坐标）
-  SV.side = function (s, d, cx) {
-    const x = `translate3d(${fx(cx)}px, 0, 0)`
-    put(s.dim, 'opacity', (0.58 * (1 - d)).toFixed(3)) // = 原 filter: brightness(.42 + d * .58)
-    put(s.glow, 'transform', x)
-    const tf = `${x} translateX(-50%) scale(${(0.88 + d * 0.12).toFixed(4)})`
-    put(s.fig, 'transform', tf)
+  // 一边的明暗（d：0 暗 → 1 亮）与人物中心 cx（舞台坐标）；off：人像所在的窗平移了多少
+  SV.side = function (s, d, cx, off) {
+    // 背景明暗：brightness(.42 + d × .58)，写在景层（合成层）上；处刑时（is-shadow）由 CSS 接管背景的滤镜
+    const b = 0.42 + d * 0.58
+    put(s.inner, 'filter', s.shadow || b > 0.999 ? '' : `brightness(${b.toFixed(3)})`)
+    put(s.glow, 'transform', `translate3d(${fx(cx)}px, 0, 0)`)
+    const x = `translate3d(${fx(cx - off)}px, 0, 0)`
+    const sc = 0.88 + d * 0.12
+    const tf = `${x} translateX(-50%) scale(${sc.toFixed(4)})`
+    put(s.fig, 'transform', s.photo ? tf + SV.gaze(s, cx, sc) : tf)
     put(s.dead, 'transform', tf)
     put(s.txt, 'transform', `${x} translateX(-50%) scale(${(0.58 + d * 0.42).toFixed(4)})`)
     put(s.txt, 'opacity', (0.3 + d * 0.7).toFixed(3))
@@ -1609,6 +1836,7 @@
   }
   SV.execute = function (side, q) {
     side.root.classList.add('is-shadow')
+    side.shadow = true
     gsap.killTweensOf(side.fig)
     if (q || App.reduced) {
       side.fig.style.setProperty('--cut', '1')
@@ -1619,23 +1847,24 @@
     side.fig.style.setProperty('--cut', '0')
     side.root.classList.remove('is-gone')
     const tl = gsap.timeline()
-    tl.fromTo(SV.beam, { x: -S.W * 0.85, opacity: 1 }, { x: S.W * 0.85, duration: 0.8, ease: 'power3.inOut' }, 0)
+    tl.fromTo(SV.beam, { x: -S.W * 0.85, autoAlpha: 1 }, { x: S.W * 0.85, duration: 0.8, ease: 'power3.inOut' }, 0)
       .to(side.fig, { '--cut': 1, duration: 0.46, ease: 'power2.in' }, 0.2)
       .add(() => {
         App.flash(App.color.blood, { opacity: 0.55, duration: 0.8 })
         App.audio.sfx('execute')
-        App.shake(undefined, 9, 0.45)
+        shake(9, 0.45)
         App.bg.pulse(0.9, 1.4)
       }, 0.32)
       .add(() => side.root.classList.add('is-gone'), 0.66)
-      .set(SV.beam, { opacity: 0 }, 0.82)
+      .set(SV.beam, { autoAlpha: 0 }, 0.82)
     SV.tls.push(tl)
   }
   SV.unexecute = function (side) {
     gsap.killTweensOf(side.fig)
     side.root.classList.remove('is-shadow', 'is-gone')
+    side.shadow = false
     side.fig.style.setProperty('--cut', '0')
-    gsap.set(SV.beam, { opacity: 0 })
+    gsap.set(SV.beam, { autoAlpha: 0 })
   }
   const isOk = () => S.branch === 'ok'
   const isNg = () => S.branch === 'ng'
@@ -1672,8 +1901,16 @@
     // 真凶逃过审判：黑暗里只剩他的眼睛
     {
       at: 0.93,
-      on(q) { if (isNg()) { hush(); SV.dark.classList.add('is-on'); if (!q) App.audio.sfx('heartbeat', { volume: 0.9 }) } },
-      off() { SV.dark.classList.remove('is-on'); if (isNg() && S.lp >= 0.82) say(bcSegs('误判', vNames(S.cast.W2, '二')), { instant: true }) },
+      on(q) { if (isNg()) { hush(); SV.dark.classList.add('is-on'); track(SV.eyesP, true, { eyeRange: 9 }); if (!q) App.audio.sfx('heartbeat', { volume: 0.9 }) } },
+      off() {
+        // 淡出的 1.4 秒里保留里面的眼睛（is-out），之后整块不再渲染
+        if (SV.dark.classList.contains('is-on')) {
+          SV.dark.classList.replace('is-on', 'is-out')
+          clearTimeout(SV.outT)
+          SV.outT = setTimeout(() => { SV.dark.classList.remove('is-out'); if (!SV.dark.classList.contains('is-on')) track(SV.eyesP, false) }, 1450)
+        }
+        if (isNg() && S.lp >= 0.82) say(bcSegs('误判', vNames(S.cast.W2, '二')), { instant: true })
+      },
     },
   ]
 
@@ -1688,7 +1925,12 @@
     SA.loop.innerHTML = '<defs><linearGradient id="cycleLoopG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2c48c"/><stop offset=".55" stop-color="#c29a5b"/><stop offset="1" stop-color="#ff2e7e"/></linearGradient></defs><path class="l-glow" pathLength="1"/><path class="l-line" pathLength="1"/><circle class="l-head" r="4"/>'
     SA.loopP = Array.from(SA.loop.querySelectorAll('path'))
     SA.loopHead = SA.loop.querySelector('.l-head')
-    SA.world = el('div.cycle-a-world', null, [SA.cv, SA.loop])
+    // 光标附近的暖光：原先每帧画在画布上（光标一动整张画布重画），改为一层只平移的小圆
+    SA.light = el('i.cycle-a-light')
+    SA.world = el('div.cycle-a-world', null, [SA.cv, SA.light, SA.loop])
+    // 不动的部分（椅背、桌面、席号、死者的叉）预先画在离屏画布上，重画时整块拷过去
+    SA.base = document.createElement('canvas')
+    SA.bctx = SA.base.getContext('2d')
     SA.flare = el('i.cycle-a-flare')
     SA.rSeat = el('span.cycle-m-seat')
     const seal = el('div.cycle-m-seal', null, [el('i.l'), el('i.r')])
@@ -1701,11 +1943,11 @@
   }
   SA.layout = function () {
     const W = S.W, H = S.H
-    const k = Math.min(S.q >= 2 ? 2 : S.q === 1 ? 1.25 : 1, window.devicePixelRatio || 1) // 画质降级时降低分辨率
+    const k = Math.min(S.q >= 2 ? 1.5 : S.q === 1 ? 1.25 : 1, window.devicePixelRatio || 1) // 画质降级时降低分辨率（全画质也最多 1.5 倍）
     SA.k = k
-    SA.key = ''
-    SA.cv.width = Math.round(W * k)
-    SA.cv.height = Math.round(H * k)
+    SA.full = true
+    SA.baseDirty = true
+    for (const c of [SA.cv, SA.base]) { c.width = Math.round(W * k); c.height = Math.round(H * k) }
     // 桌子避开左侧竖排的阶段名（桌面），手机上阶段名在顶上，桌子用满宽度
     const fNo = S.mob ? 1.3 : 1.32
     const cx = S.mob ? W * 0.5 : W * 0.535, cy = H * (S.mob ? 0.55 : 0.56)
@@ -1724,6 +1966,8 @@
     }
     SA.G = { cx, cy, rx, ry, seats, r: clamp(rx * 0.034, 7, 14) }
     SA.sprite = coinSprite(SA.G.r * 1.25, k)
+    SA.light.style.width = SA.light.style.height = fx(rx) + 'px'
+    SA.light._cy = null
     SA.world.style.transformOrigin = `${fx(cx)}px ${fx(cy)}px`
     SA.loop.setAttribute('viewBox', `0 0 ${W} ${H}`)
     const lrx = rx * 1.07, lry = ry * 1.13
@@ -1757,7 +2001,7 @@
     SA.coins = []
     SA.roller = null
     SA.desk = 0
-    SA.key = ''
+    SA.full = SA.baseDirty = true
     PH.root.classList.remove('is-rewind')
     setPhase(6, { quiet: true })
   }
@@ -1787,13 +2031,14 @@
         SA.coins.push(c)
       }
     }
+    SA.full = true
     if (!q) {
       App.audio.sfx('coins', { volume: 0.9 })
       later(() => App.audio.sfx('coins', { volume: 0.7, pan: -0.4 }), 420)
       later(() => App.audio.sfx('coins', { volume: 0.6, pan: 0.4 }), 860)
     }
   }
-  SA.unrain = function (batch) { SA.coins = SA.coins.filter(c => Math.floor(c.j / 5) < batch) }
+  SA.unrain = function (batch) { SA.coins = SA.coins.filter(c => Math.floor(c.j / 5) < batch); SA.full = true }
   SA.roll = function (q) {
     const G = SA.G
     const goRight = S.cur.nx < 0.5
@@ -1804,6 +2049,7 @@
     const to = [goRight ? S.W - r * 0.55 : r * 0.55, S.H * (S.mob ? 0.86 : 0.9)]
     SA.roller = { x, y, r, h: q ? 0 : y + 260, vh: 0, phi: 0, om: 13, state: q ? 'rest' : 'fall', from: [x, y], to, u: q ? 1 : 0, spin: q ? 1 : 0, dir: goRight ? 1 : -1, tick: 0 }
     if (q) { SA.roller.x = to[0]; SA.roller.y = to[1] }
+    SA.full = true
   }
   SA.step = function (dt) {
     const g = 2400
@@ -1890,12 +2136,14 @@
       }
     }
   }
-  SA.draw = function (t) {
-    const c = SA.ctx, G = SA.G, k = SA.k
+  // 不动的部分：远处的椅背、桌面、席号、死者的叉（进入镜头、重排、字体到位时重画一次）
+  SA.drawBase = function () {
+    SA.baseDirty = false
+    const c = SA.bctx, G = SA.G, k = SA.k
     if (!G) return
+    c.setTransform(1, 0, 0, 1, 0, 0)
+    c.clearRect(0, 0, SA.base.width, SA.base.height)
     c.setTransform(k, 0, 0, k, 0, 0)
-    c.clearRect(0, 0, S.W, S.H)
-    const B = App.color
     const dead = SA.deadSeats || new Set()
     const occupied = new Set((S.cast ? S.cast.ppl : []).map(p => p.seat))
     // 远处的椅背
@@ -1949,12 +2197,33 @@
         c.beginPath(); c.moveTo(x - d, y - d * 0.5); c.lineTo(x + d, y + d * 0.5); c.moveTo(x + d, y - d * 0.5); c.lineTo(x - d, y + d * 0.5); c.stroke()
       }
     }
-    // 光标附近的暖光
+  }
+  /* 重画：rect 为空时整张，否则只重画这一块（裁剪后从离屏画布拷回桌子，再按原次序画金币、滚走的一枚、书桌）。
+     静止时一笔不画；光标移动只重画光标附近（金币的高光、抖动）与书桌那一块。 */
+  SA.draw = function (t, rect) {
+    const c = SA.ctx, G = SA.G, k = SA.k
+    if (!G) return
+    if (SA.baseDirty) SA.drawBase()
+    const cw = SA.cv.width, ch = SA.cv.height
+    c.setTransform(1, 0, 0, 1, 0, 0)
+    let X0 = 0, Y0 = 0, w = cw, h = ch
+    if (rect) {
+      X0 = Math.max(0, Math.floor(rect[0] * k)); Y0 = Math.max(0, Math.floor(rect[1] * k))
+      const X1 = Math.min(cw, Math.ceil((rect[0] + rect[2]) * k)), Y1 = Math.min(ch, Math.ceil((rect[1] + rect[3]) * k))
+      w = X1 - X0; h = Y1 - Y0
+      if (w <= 0 || h <= 0) return
+      c.save()
+      c.beginPath(); c.rect(X0, Y0, w, h); c.clip()
+    }
+    c.clearRect(X0, Y0, w, h)
+    c.drawImage(SA.base, X0, Y0, w, h, X0, Y0, w, h)
+    c.setTransform(k, 0, 0, k, 0, 0)
+    SA.drawDyn(c, t)
+    if (rect) c.restore()
+  }
+  SA.drawDyn = function (c, t) {
+    const G = SA.G
     const mx = S.cur.x, my = S.cur.y
-    const lg = c.createRadialGradient(mx, my, 0, mx, my, G.rx * 0.5)
-    lg.addColorStop(0, 'rgba(226,196,140,.08)'); lg.addColorStop(1, 'rgba(226,196,140,0)')
-    c.fillStyle = lg
-    c.fillRect(mx - G.rx * 0.5, my - G.rx * 0.5, G.rx, G.rx)
     // 金币（先远后近，先低后高）
     const sp = SA.sprite
     const rest = SA.coins.filter(x => x.state === 'rest').sort((a, b) => a.y - b.y || a.j - b.j)
@@ -2005,15 +2274,23 @@
     // 凶手套房的书桌：十枚，不广播，只在光标靠近时看得见
     if (SA.desk > 0) SA.drawDesk(c, t)
   }
-  SA.drawDesk = function (c, t) {
+  SA.deskGeo = function () {
     const W = S.W, H = S.H
     const w = Math.min(W * (S.mob ? 0.34 : 0.15), 230), h = w * 0.42
     const x = W - w / 2 - (S.mob ? 18 : W * 0.07), y = H * (S.mob ? 0.2 : 0.24)
-    const d = Math.hypot(S.cur.x - x, S.cur.y - y)
-    // 光标靠近才看得见；没有光标（触屏 / 自动演示）时像烛光一样时隐时现
+    return { w, h, x, y }
+  }
+  // 光标靠近才看得见；没有光标（触屏 / 自动演示）时像烛光一样时隐时现
+  SA.deskAlpha = function (t, g) {
+    const d = Math.hypot(S.cur.x - g.x, S.cur.y - g.y)
     const near = S.cur.auto ? 0 : clamp(1 - (d - 70) / 260)
-    let a = S.cur.auto || !App.finePointer ? Math.max(near, 0.3 + 0.3 * Math.sin(t * 0.9)) : near
-    a *= SA.deskT
+    const a = S.cur.auto || !App.finePointer ? Math.max(near, 0.3 + 0.3 * Math.sin(t * 0.9)) : near
+    return a * SA.deskT
+  }
+  SA.drawDesk = function (c, t) {
+    const g = SA.deskGeo()
+    const { w, h, x, y } = g
+    const a = SA.deskAlpha(t, g)
     if (a < 0.01) return
     c.save()
     c.globalAlpha = a
@@ -2045,6 +2322,7 @@
     const shrink = eio(seg(0.66, 0.86, lp))
     for (const p of SA.loopP) put(p, 'strokeDashoffset', (1 - ring).toFixed(4))
     put(SA.loop, 'opacity', ring > 0.001 ? '1' : '0')
+    put(SA.loop, 'visibility', ring > 0.001 ? 'visible' : 'hidden')
     if (ring > 0.001) {
       const E = SA.loopE
       const a = ring * TAU
@@ -2057,13 +2335,16 @@
     put(SA.world, 'filter', shrink > 0.02 ? `brightness(${(1 + shrink * 1.4).toFixed(3)})` : '')
     const fl = seg(0.78, 0.88, lp) * (1 - seg(0.9, 0.96, lp))
     put(SA.flare, 'opacity', fl.toFixed(3))
+    put(SA.flare, 'visibility', fl > 0 ? 'visible' : 'hidden')
     put(SA.flare, 'transform', `translate(-50%, -50%) scale(${(0.2 + seg(0.78, 0.9, lp) * 1.8).toFixed(3)})`)
     const rv = eo3(seg(0.87, 0.94, lp))
     put(SA.reset, 'opacity', rv.toFixed(3))
+    put(SA.reset, 'visibility', rv > 0 ? 'visible' : 'hidden')
     put(SA.reset, 'transform', `translate(-50%, -50%) scale(${(0.4 + rv * 0.6).toFixed(4)})`)
     SA.reset.classList.toggle('is-on', rv > 0.5)
     const so = sstep(0.66, 0.7, lp) * (1 - sstep(0.84, 0.88, lp))
     put(SA.scan, 'opacity', so.toFixed(3))
+    put(SA.scan, 'visibility', so > 0.001 ? 'visible' : 'hidden')
     SA.scan.classList.toggle('is-run', so > 0.001) // 扫描线的无限动画只在看得见时跑
 
     // 阶段名倒放：余波 → 判定 → … → 受命
@@ -2091,26 +2372,76 @@
       applyPalette(back ? SHOTS[0].pal : SHOTS[6].pal, 1.2)
       setTension(back ? 0.28 : SHOTS[6].tension)
     }
-    // 画布只在有东西在动（金币下落/滚动、书桌烛光、光标移动或快速晃动）时重画；静止时一笔不画
     if (lp < 0.9) {
-      const R = SA.roller
-      const live = (R && R.state !== 'rest') || (SA.desk > 0 && (SA.deskT < 1 || S.cur.auto || !App.finePointer)) ||
-        S.cur.speed > 6 || SA.coins.some(c => c.state !== 'rest')
-      const key = fx(S.cur.x) + ',' + fx(S.cur.y) + ',' + SA.coins.length + ',' + (R ? R.state : '-') + ',' + SA.desk
-      if (live || key !== SA.key) { SA.key = key; SA.draw(t) }
+      const mx = S.cur.x, my = S.cur.y
+      const rl = SA.G.rx * 0.5
+      put(SA.light, 'transform', `translate3d(${fx(mx - rl)}px, ${fx(my - rl)}px, 0)`)
+      SA.paint(t)
     }
   }
+  /* 画布只在有东西在动时重画；静止时一笔不画：
+     · 金币在落、那一枚在滚 → 整张重画（几秒钟）；
+     · 光标移动 / 快速晃动 → 只重画光标旧、新位置附近有金币的那一块（高光与抖动只在 120px 以内）；
+     · 书桌的明暗变了 → 只重画书桌那一块。 */
+  // 正在动的金币（下落的、滚走的那一枚）这一帧占的范围（CSS 像素）
+  SA.movingBox = function () {
+    const b = [Infinity, Infinity, -Infinity, -Infinity]
+    const add = (x, y, r) => { if (x - r < b[0]) b[0] = x - r; if (y - r < b[1]) b[1] = y - r; if (x + r > b[2]) b[2] = x + r; if (y + r > b[3]) b[3] = y + r }
+    for (const c of SA.coins) if (c.state === 'fall') add(c.x, c.y - c.h, c.r * 1.4 + 6) // 含落地后静止的那枚贴图
+    const R = SA.roller
+    if (R && R.state !== 'rest') {
+      const r = R.r * (1 + 0.9 * clamp((R.y - R.from[1]) / Math.max(1, R.to[1] - R.from[1]))) + 6
+      add(R.x, R.y - (R.state === 'fall' ? R.h : r), r * 1.6)
+    }
+    return b[0] < b[2] ? b : null
+  }
+  SA.paint = function (t) {
+    if (SA.full) {
+      SA.full = false
+      SA.draw(t)
+      SA.pmx = S.cur.x; SA.pmy = S.cur.y; SA.pfast = S.cur.speed > 6
+      SA.pbox = SA.movingBox()
+      if (SA.desk > 0) SA.pDeskA = SA.deskAlpha(t, SA.deskGeo())
+      return
+    }
+    // 下落、滚动：只重画这一帧与上一帧它们占的范围（落地的那一帧由上一帧的范围盖住）
+    const box = SA.movingBox(), pb = SA.pbox
+    SA.pbox = box
+    if (box || pb) {
+      const u = box && pb ? [Math.min(box[0], pb[0]), Math.min(box[1], pb[1]), Math.max(box[2], pb[2]), Math.max(box[3], pb[3])] : (box || pb)
+      SA.draw(t, [u[0], u[1], u[2] - u[0], u[3] - u[1]])
+    }
+    const mx = S.cur.x, my = S.cur.y, fast = S.cur.speed > 6
+    const RR = 175 // 高光半径 120 + 金币大小与叠高
+    const near = (x, y) => { for (const c of SA.coins) if (c.state === 'rest' && Math.abs(c.x - x) < 130 && Math.abs(c.y - y) < 130) return true; return false }
+    if (fast || mx !== SA.pmx || my !== SA.pmy || fast !== SA.pfast) {
+      if (SA.pmx != null && near(SA.pmx, SA.pmy)) SA.draw(t, [SA.pmx - RR, SA.pmy - RR, RR * 2, RR * 2])
+      if (near(mx, my)) SA.draw(t, [mx - RR, my - RR, RR * 2, RR * 2])
+      SA.pmx = mx; SA.pmy = my; SA.pfast = fast
+    }
+    if (SA.desk > 0) {
+      const g = SA.deskGeo()
+      const a = SA.deskAlpha(t, g)
+      const av = a < 0.01 ? 0 : a
+      if (Math.abs(av - (SA.pDeskA || 0)) > 0.003 || (av === 0) !== ((SA.pDeskA || 0) === 0)) {
+        SA.pDeskA = av
+        SA.draw(t, [g.x - g.w - 2, g.y - g.w - 2, g.w * 2 + 4, g.w * 2 + 4])
+      }
+    }
+  }
+  // 离开很远时释放画布（回来时整张重画）
+  SA.release = function () { SA.cv.width = SA.cv.height = SA.base.width = SA.base.height = 1; SA.full = SA.baseDirty = true }
   SA.beats = [
     { at: 0.05, on(q) { SA.rain(0, q) }, off() { SA.unrain(0) } },
     {
       at: 0.21,
       on(q) {
         if (S.branch === 'ok') SA.rain(1, q)
-        else { SA.desk = 1; SA.deskT = q ? 1 : 0 }
+        else { SA.desk = 1; SA.deskT = q ? 1 : 0; SA.full = true }
       },
-      off() { SA.unrain(1); SA.desk = 0; SA.deskT = 0 },
+      off() { SA.unrain(1); SA.desk = 0; SA.deskT = 0; SA.full = true },
     },
-    { at: 0.34, on(q) { SA.roll(q) }, off() { SA.roller = null } },
+    { at: 0.34, on(q) { SA.roll(q) }, off() { SA.roller = null; SA.full = true } },
     { at: 0.5, on(q) { if (!q) App.audio.sfx('whoosh', { volume: 0.5, pitch: 0.6 }) } },
     {
       at: 0.68,
@@ -2143,6 +2474,14 @@
     if (App.state.section === 'cycle') App.audio.setMood({ tension: v })
   }
 
+  /* 各镜头的强调色。原先写在 .cycle-stage[data-shot] 上：每次切镜头，舞台里几百个元素都跟着重算样式；
+     现在只写到真正用它的那几个元素上（阶段编号、广播、硬切、循环环、受命的提示线）。 */
+  const ACC = { mandate: '#c3243f', murder: '#d1145a', discover: 'var(--blood)', inv: '#9fb0c2', court: 'var(--brass)', verdict: '#ff2e5e', after: '#d8b273' }
+  function setAcc(key) {
+    const v = ACC[key]
+    for (const n of [PH.no, BC.root, CUT.root, NAV.root, SM.hint]) if (n) putVar(n, '--acc', v)
+  }
+
   function switchTo(i, lp) {
     const from = S.idx
     const dir = from < 0 ? 1 : i > from ? 1 : -1
@@ -2163,7 +2502,8 @@
     S.idx = i
     const n = SH[i]
     n.el.classList.add('is-on')
-    S.stage.dataset.shot = SHOTS[i].key
+    S.stage.dataset.shot = SHOTS[i].key // 只作标记（样式表不再按它取色）
+    setAcc(SHOTS[i].key)
     for (const b of n.beats) b.fired = false
     if (i !== 0) setPhase(i, { quiet })
     try { if (n.enter) n.enter(dir, quiet) } catch (e) { console.error('[cycle]', e) }
@@ -2220,12 +2560,23 @@
   }
 
   function frame(time) {
-    if (!S.ready || !S.visible) { setOn(false); return }
+    // 离视口半屏以外：舞台锁住（不算样式、不画、动画不跑）；半屏以内先解锁，进场的第一帧不会是空的。
+    // 「近」以 IntersectionObserver 为准；它晚一帧才报，所以再按上次量到的板块位置与当前 scrollY 估一下（不读排版）
+    if (!S.ready) return
+    let near = S.near
+    if (!near && S.secTop != null) {
+      const sy = window.scrollY, vh0 = window.innerHeight || S.H
+      near = sy + vh0 * 1.6 > S.secTop && sy - vh0 * 0.6 < S.secTop + S.secH
+    }
+    if (!near) { setLock(true); return }
+    setLock(false)
+    if (S.restore) { S.restore = false; try { SA.layout(); if (S.idx === 2) SD.place() } catch (e) { console.error('[cycle]', e) } }
+    if (!S.visible) return
     // 按板块的实际位置判断：IntersectionObserver 在板块恰好贴着视口边缘时也算「相交」
     const sr = S.sec.getBoundingClientRect()
     const vh = window.innerHeight || S.H
-    if (!(sr.bottom > 1 && sr.top < vh - 1)) { setOn(false); return }
-    setOn(true)
+    S.secTop = sr.top + window.scrollY; S.secH = sr.height
+    if (!(sr.bottom > 1 && sr.top < vh - 1)) return
     const dt = clamp(time - (S.tPrev || time), 0, 0.1)
     S.tPrev = time
     try {
@@ -2253,9 +2604,11 @@
       SH[i].update(lp, dt, time)
       S.qEntry = false
       S.qFrame = false
-      // 遮幅（--lbk 写在舞台上会让整棵子树重算样式，所以只在变了时写）
+      // 遮幅：直接缩放上下两条（原先写舞台上的 --lbk，整棵子树重算样式、两条重排）
       const lb = sstep(0, 0.015, p) * (1 - sstep(0.985, 1, p))
-      putVar(S.stage, '--lbk', lb.toFixed(3))
+      const lbt = `scaleY(${lb.toFixed(3)})`
+      put(S.lbT, 'transform', lbt)
+      put(S.lbB, 'transform', lbt)
       // 循环环
       let pr = p
       if (i === 6) pr = ((SHOTS[6].a + Math.min(lp, 0.68) * SHOTS[6].w) / TOTAL) * (1 - eio(seg(0.68, 0.86, lp)))
@@ -2284,9 +2637,10 @@
     for (const sh of SH) S.stage.appendChild(sh.build())
     // 画布的位图尺寸随舞台走，但它们的盒子永远是 100% × 100%，不参与撑高
     for (const cv of S.stage.querySelectorAll('canvas')) Object.assign(cv.style, { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%' })
+    S.lbT = el('i.t'); S.lbB = el('i.b')
     S.stage.append(
       buildPhase(), buildBC(),
-      el('div.cycle-lb', { 'aria-hidden': 'true' }, [el('i.t'), el('i.b')]),
+      el('div.cycle-lb', { 'aria-hidden': 'true' }, [S.lbT, S.lbB]),
       buildNav(), buildCut(),
     )
     // 位图肖像的“眼睛”滤镜：亮度 → 血粉
@@ -2316,6 +2670,12 @@
       if (!v) { clearLater(); hush() }
     }, { rootMargin: '0px' })
     S.visible = (() => { const r = sec.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight })()
+    // 「近」：离视口半屏多一点以内（决定舞台锁不锁）
+    App.onVisible(sec, v => { S.near = v }, { rootMargin: '60% 0px' })
+    S.near = (() => { const r = sec.getBoundingClientRect(), h = window.innerHeight; return r.bottom > -0.6 * h && r.top < 1.6 * h })()
+    // 离视口很远（scroll.js 的 is-far）：释放可以重画出来的画布（余波的金币画布、发现镜头的走廊画布），回来时重画
+    App.bus.on('section:far', id => { if (id === 'cycle' && !S.far) { S.far = true; S.restore = false; SA.release(); SD.release() } })
+    App.bus.on('section:near', id => { if (id === 'cycle' && S.far) { S.far = false; S.restore = true } })
 
     const onTouch = e => {
       const p = e.touches ? e.touches[0] : e

@@ -24,8 +24,8 @@
   transition: -webkit-text-stroke-color 1s var(--ease-out);
   will-change: transform; /* 随光标漂移：只动合成层，不重画舞台 */
 }
-.identities-bgword span { display: block; transition: transform 1.4s var(--ease-out); will-change: opacity; }
-/* 闪一下时叠在上面的亮色字（见 identities.js bgFlick）：只切换 opacity，不重画巨字 */
+.identities-bgword span { display: block; transition: transform 1.4s var(--ease-out); }
+/* 闪一下时叠在上面的亮色字（见 identities.js bgFlick）：平时 opacity 0 不画；淡出时由浏览器临时提升为合成层 */
 .identities-bgword .identities-bgword-f { position: absolute; left: 0; top: 0; opacity: 0; -webkit-text-stroke-color: rgba(235, 227, 214, .34); }
 .identities-stage.is-rev .identities-bgword { -webkit-text-stroke-color: rgba(255, 46, 126, .3); }
 .identities-stage.is-rev .identities-bgword span { transform: rotate(180deg); }
@@ -33,19 +33,20 @@
 .identities-stage.is-focus.is-rev .identities-bgword { -webkit-text-stroke-color: rgba(255, 46, 126, .34); }
 
 /* ---------- 圆桌（俯视；扇面绕桌心转动） ---------- */
+/* 只取桌沿以下、视口以内的一段（见 identities.js layoutTable）：--tc 桌心坐标，--tr 桌子半径 */
 .identities-table {
-  position: absolute; left: 0; top: 0; z-index: 2; border-radius: 50%; pointer-events: none;
+  position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none;
   opacity: var(--in, 1);
   background:
-    radial-gradient(closest-side, rgba(8, 6, 8, .2) 0%, rgba(8, 6, 8, .5) 78%, rgba(10, 7, 9, .74) 97.5%, rgba(10, 7, 9, 0) 100%);
+    radial-gradient(circle var(--tr, 1000px) at var(--tc, 50% 100%), rgba(8, 6, 8, .2) 0%, rgba(8, 6, 8, .5) 78%, rgba(10, 7, 9, .74) 97.5%, rgba(10, 7, 9, 0) 100%);
   transition: opacity 1s var(--ease-out);
-  will-change: opacity;
 }
 .identities-table-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-/* 席位记号随扇面转动：整张 SVG 作为合成层旋转（桌沿双线、虚线圈另在一张静止的 SVG 里） */
-.identities-table-rot { will-change: transform; }
+/* 席位记号随扇面转动：整张 SVG 作为合成层绕桌心旋转（桌沿双线、虚线圈另在一张静止的 SVG 里）。
+   SVG 本身是桌心的一个 2px 小点，记号画在盒子外面（见 identities.js layoutTable） */
+.identities-table-rot { position: absolute; left: 0; top: 0; width: 2px; height: 2px; overflow: visible; will-change: transform; }
 /* 桌面灯光：圆桌裁切内一个固定的光斑，跟随光标只平移（不改大面积渐变） */
-.identities-table-light { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; }
+.identities-table-light { position: absolute; left: 0; top: 0; border-radius: 50%; overflow: hidden; }
 .identities-table-spot {
   position: absolute; left: 0; top: 0; width: 605px; height: 605px; margin: -302.5px 0 0 -302.5px;
   background: radial-gradient(closest-side, rgba(214, 170, 104, .13), rgba(214, 170, 104, .04) 62.5%, rgba(214, 170, 104, 0));
@@ -60,7 +61,6 @@
   transform: translate(-50%, calc((1 - var(--in, 1)) * 18px)); opacity: var(--in, 1);
   text-align: center; pointer-events: none;
   transition: opacity .5s var(--ease-out), transform .7s var(--ease-out);
-  will-change: transform, opacity;
 }
 .identities-plate-num {
   font-family: var(--f-latin); font-weight: 700; font-size: 12px; letter-spacing: .55em; padding-left: .55em;
@@ -86,7 +86,6 @@
   display: flex; justify-content: center; align-items: baseline; gap: 30px;
   font-family: var(--f-mono); font-size: 11px; letter-spacing: .32em; color: var(--ash);
   pointer-events: none; opacity: var(--in, 1); transition: opacity .5s var(--ease-out);
-  will-change: opacity;
 }
 .identities-foot-mm { color: rgba(194, 154, 91, .55); letter-spacing: .2em; }
 .identities-stage.is-focus .identities-foot { opacity: 0; }
@@ -96,12 +95,11 @@
    ========================================================== */
 .identities-cards { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 .identities-veil {
-  position: absolute; inset: 0; z-index: 80; pointer-events: none; opacity: 0;
+  position: absolute; inset: 0; z-index: 80; pointer-events: none; opacity: 0; visibility: hidden;
   background: radial-gradient(ellipse 46% 62% at 50% var(--fcy), rgba(6, 4, 6, .2), rgba(6, 4, 6, .62));
-  transition: opacity .8s var(--ease-out);
-  will-change: opacity;
+  transition: opacity .8s var(--ease-out), visibility 0s linear .8s;
 }
-.identities-stage.is-focus .identities-veil { opacity: 1; }
+.identities-stage.is-focus .identities-veil { opacity: 1; visibility: visible; transition: opacity .8s var(--ease-out), visibility 0s; }
 .identities-hit { position: absolute; inset: 0; z-index: 90; pointer-events: auto; }
 
 .identities-slot {
@@ -116,14 +114,20 @@
   position: absolute; left: 3%; right: 3%; top: 4%; bottom: -3%; border-radius: 9%;
   background: radial-gradient(closest-side, rgba(0, 0, 0, .78), rgba(0, 0, 0, .38) 62%, rgba(0, 0, 0, 0));
   transform-origin: 50% 50%; opacity: .55;
-  will-change: transform, opacity; /* 抬起时只改 transform / opacity，不重画整张牌 */
 }
-.identities-glitch { position: absolute; inset: 0; perspective: calc(var(--mm) * 230); }
-.identities-card { position: absolute; inset: 0; transform-style: preserve-3d; }
+/* 立体时（抬起、倾斜、拿在手里）影子随光标移动：只改 transform / opacity，单独成层，不重画整张牌 */
+.identities-slot.is-3d .identities-shadow { will-change: transform, opacity; }
+.identities-glitch { position: absolute; inset: 0; }
+.identities-slot.is-3d .identities-glitch { perspective: calc(var(--mm) * 230); }
+.identities-card { position: absolute; inset: 0; }
+/* 平放的牌只画朝上的那一面（另一面 opacity:0：浏览器不画、不成层；opacity 不继承，换面时只重算这一个元素的样式）；
+   立体时才保留 3D 结构 */
+.identities-card.is-front > .identities-face--back, .identities-card.is-back > .identities-face--front { opacity: 0; }
+.identities-slot.is-3d .identities-card { transform-style: preserve-3d; }
 
 /* 厚而硬挺：三层鎏金的牌边，只在倾斜、翻转时出现 */
-.identities-edge { position: absolute; inset: 0; transform-style: preserve-3d; display: none; }
-.identities-card.is-3d .identities-edge { display: block; }
+.identities-edge { position: absolute; inset: 0; display: none; }
+.identities-slot.is-3d .identities-edge { display: block; transform-style: preserve-3d; }
 .identities-edge i {
   position: absolute; inset: 0; border-radius: calc(var(--mm) * 3.2);
   background: linear-gradient(135deg, #5f421c, #cfaa63 28%, #7f5c2c 50%, #e2c27f 74%, #634520);
@@ -131,15 +135,24 @@
 .identities-edge i:nth-child(1) { transform: translateZ(calc(var(--mm) * -.27)); }
 .identities-edge i:nth-child(2) { transform: translateZ(0); }
 .identities-edge i:nth-child(3) { transform: translateZ(calc(var(--mm) * .27)); }
+/* 只是倾斜（还没翻到侧立）时，露出来的金边只是最深那一层的边缘（另两层被它和牌面盖住），只留那一层 */
+.identities-card.is-front .identities-edge i:nth-child(n+2), .identities-card.is-back .identities-edge i:nth-child(-n+2) { display: none; }
 
 /* ---------- 面 ---------- */
 .identities-face {
   position: absolute; inset: 0; overflow: hidden;
   border-radius: calc(var(--mm) * 3.2);
+}
+/* 平放的牌箔光亮着时（见 identities.js render）：牌面做成 3D 场景的叶子、自成渲染面（与原先一直是 3D 时相同），
+   箔光只与这一面混合；牌面圆角对箔光的裁切在这一面自己的坐标里，牌位每帧微转时不必逐帧重画裁切遮罩。
+   （下面立体时的规则写在后面，同等权重时覆盖这里） */
+.identities-card.identities-lit { transform-style: preserve-3d; }
+.identities-card.identities-lit.is-front > .identities-face--front, .identities-card.identities-lit.is-back > .identities-face--back { transform: translateZ(.1px); }
+.identities-slot.is-3d .identities-face {
   backface-visibility: hidden; -webkit-backface-visibility: hidden;
   transform: translateZ(calc(var(--mm) * .4));
 }
-.identities-face--back { transform: rotateY(180deg) translateZ(calc(var(--mm) * .4)); }
+.identities-slot.is-3d .identities-face--back { transform: rotateY(180deg) translateZ(calc(var(--mm) * .4)); }
 .identities-face.is-pos { background-color: #e8dfcf; color: #2a2023; }
 .identities-face.is-neg { background-color: #0e0a0b; color: #b8ad9e; }
 .identities-paper { position: absolute; inset: 0; }
@@ -159,8 +172,8 @@
     #0e0a0b;
   box-shadow: inset 0 0 0 calc(var(--mm) * .22) rgba(255, 220, 220, .07);
 }
-.identities-frame { position: absolute; inset: 0; pointer-events: none; }
-.identities-frame svg { display: block; width: 100%; height: 100%; }
+.identities-frame { position: absolute; inset: 0; pointer-events: none; background: var(--idn-frame-pos) 0 0 / 100% 100% no-repeat; }
+.identities-face.is-neg > .identities-frame { background-image: var(--idn-frame-neg); }
 
 /* 编号 */
 .identities-num {
@@ -289,36 +302,34 @@
 /* 金箔反光 / 漆面高光 / 暗化
    都是牌面上方各自独立的合成层：随光标移动只改它们的 transform（平移一条固定的渐变带 / 一个固定的光斑）
    和 opacity（强度），牌面的纸、烫金、墨字都不重画。
-   反光只在「亮着」的那一面出现（.is-lit，由脚本给光标附近、确实在动的那几张牌加上）。
+   反光只在「亮着」的那一面出现（.identities-on，由脚本给光标附近、确实在动的那几张牌加上）。
    几何与原先的写法等价：原先是 260% 大小、118° 的渐变按 --fx/--fy 移动 background-position；
    现在把其中有颜色的那一段（32%–66%）做成一条 28° 倾斜的带，沿渐变方向平移。单位 --mm，牌 63×88 mm。 */
 .identities-sheen, .identities-glare {
   position: absolute; left: 50%; top: 50%; pointer-events: none;
-  display: none; opacity: 0; will-change: transform, opacity;
+  display: none; opacity: 0;
 }
-.identities-face.is-lit .identities-sheen, .identities-face.is-lit .identities-glare { display: block; }
+.identities-sheen.identities-on, .identities-glare.identities-on { display: block; will-change: transform, opacity; }
 .identities-sheen {
   width: calc(var(--mm) * 85.69); height: calc(var(--mm) * 108);
   margin: calc(var(--mm) * -54) 0 0 calc(var(--mm) * -42.845);
   background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 228, 164, .62) 32.35%, rgba(255, 128, 180, .44) 50%, rgba(122, 214, 255, .38) 67.65%, rgba(255, 255, 255, 0) 100%);
-  mix-blend-mode: color-dodge;
 }
+.identities-sheen.identities-on { mix-blend-mode: color-dodge; }
 .identities-glare {
   width: calc(var(--mm) * 78); height: calc(var(--mm) * 78);
   margin: calc(var(--mm) * -39) 0 0 calc(var(--mm) * -39);
   border-radius: 50%;
   background: radial-gradient(closest-side, rgba(255, 250, 236, .62), rgba(255, 250, 236, 0));
-  mix-blend-mode: soft-light;
 }
+.identities-glare.identities-on { mix-blend-mode: soft-light; }
 .identities-face.is-neg .identities-sheen {
-  mix-blend-mode: screen;
   background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 17.65%, rgba(255, 255, 255, .1) 41.18%, rgba(255, 46, 126, .2) 52.94%, rgba(255, 255, 255, .06) 61.76%, rgba(255, 255, 255, 0) 82.35%);
 }
-.identities-face.is-neg .identities-glare { mix-blend-mode: screen; }
+.identities-face.is-neg .identities-sheen.identities-on, .identities-face.is-neg .identities-glare.identities-on { mix-blend-mode: screen; }
 .identities-stage.is-q0 .identities-sheen, .identities-stage.is-q0 .identities-glare { display: none; }
-/* 墨字（名字、誓词、原文、共同说明）固定在自己的层里：反光层出现 / 消失时不牵动牌面重画 */
-.identities-ink { position: absolute; inset: 0; will-change: opacity; }
-.identities-dim { position: absolute; inset: 0; pointer-events: none; background: #050304; opacity: 0; will-change: opacity; }
+/* 墨字（名字、誓词、原文、共同说明）：压在箔光之上（箔光亮着时浏览器自动把它们分到箔光上面的层里） */
+.identities-ink { position: absolute; inset: 0; }
 
 /* 字尚未确定：空白的牌面，翻开时墨迹浮出 */
 .identities-face .identities-num, .identities-face .identities-sig, .identities-face .identities-name,
@@ -335,10 +346,10 @@
 .identities-face .identities-oath { transition: opacity .9s var(--ease-out) .2s, top .5s var(--ease-out); }
 .identities-face.is-instant, .identities-face.is-instant * { transition: none !important; }
 /* 收拢成一叠后扣过去：背面的字隐去，只剩黑漆与边框 */
-.identities-stage.is-hush .identities-face--back .identities-num, .identities-stage.is-hush .identities-face--back .identities-sig,
-.identities-stage.is-hush .identities-face--back .identities-name, .identities-stage.is-hush .identities-face--back .identities-div,
-.identities-stage.is-hush .identities-face--back .identities-oath, .identities-stage.is-hush .identities-face--back .identities-text,
-.identities-stage.is-hush .identities-face--back .identities-fine { opacity: 0; }
+.identities-face--back.is-hush .identities-num, .identities-face--back.is-hush .identities-sig,
+.identities-face--back.is-hush .identities-name, .identities-face--back.is-hush .identities-div,
+.identities-face--back.is-hush .identities-oath, .identities-face--back.is-hush .identities-text,
+.identities-face--back.is-hush .identities-fine { opacity: 0; }
 
 /* 焚名 */
 .identities-burn, .identities-burn-glow { position: absolute; pointer-events: none; }
@@ -445,8 +456,9 @@
 /* ---------- 按住进度环 ---------- */
 .identities-ring {
   position: absolute; left: -40px; top: -40px; width: 80px; height: 80px; z-index: 130;
-  pointer-events: none; opacity: 0; transition: opacity .2s; will-change: transform, opacity;
+  pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .2s, visibility 0s linear .2s;
 }
+.identities-ring.is-on, .identities-ring.is-burst { visibility: visible; transition: opacity .2s, visibility 0s; }
 .identities-ring.is-on { opacity: 1; }
 .identities-ring svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
 .identities-ring-t { fill: none; stroke: rgba(235, 227, 214, .2); stroke-width: 1.2; }
@@ -459,7 +471,8 @@
 @keyframes identities-burst { 0% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 2.4; } }
 
 /* ---------- 特效层 ---------- */
-.identities-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 120; pointer-events: none; }
+.identities-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 120; pointer-events: none; visibility: hidden; }
+.identities-fx.is-on { visibility: visible; }
 
 /* ==========================================================
    手机

@@ -10,6 +10,8 @@
    光标：靠近的席位抬起、号牌发亮；桌面与墨玉地盘的反光随光标移动；徽章排像船坞一样在光标下放大。
    每次变化写入 App.state.seats（长度 15，角色 id 或 null）、App.store('seats')，并发出 cast:change。
    另收 cast:seat / cast:unseat（卡池档案里的「入座 / 离席」）。
+   渲染：静态的桌、椅、徽章不成合成层；只有光标附近正在抬起的席位、正在放大的徽章临时成层（动完就撤）。
+   帧循环只把 transform / opacity 写给真正用它的元素（不在席位、按钮上写继承型 CSS 变量），滚动中不读布局。
    ========================================================== */
 (function () {
   'use strict'
@@ -42,7 +44,7 @@
     seats: Array(NS).fill(null),
     sel: null, // { kind: 'badge', id } | { kind: 'seat', i }
     drag: null, busy: false, justDragged: 0, hover: null, full: false,
-    mx: -1e4, my: -1e4,
+    mx: -1e4, my: -1e4, docTop: 0, docLeft: 0,
   }
   let sec, stage, svg, svgMid, svgTop, gTable, gFront, gBack, gRing, threadSvg, threadPath, threadPin
   // 反光：椭圆裁切（.table-sheen）里一块独立合成的光斑（.table-sheen-spot），跟着光标只改 transform
@@ -134,6 +136,14 @@
     placeSeats()
     placeTray()
     placeUI()
+    measureDoc()
+  }
+  // 舞台在文档里的位置（帧循环里由 scrollY 推出屏幕坐标，不再每帧 getBoundingClientRect）
+  function measureDoc() {
+    if (!stage) return
+    const r = stage.getBoundingClientRect()
+    S.docTop = r.top + window.scrollY
+    S.docLeft = r.left + window.scrollX
   }
 
   /* =====================================================================
@@ -179,8 +189,7 @@
     const W = S.W, H = S.H
     for (const v of [svg, svgMid, svgTop]) {
       v.setAttribute('viewBox', `0 0 ${W} ${H}`)
-      v.style.width = W + 'px'
-      v.style.height = H + 'px'
+      Object.assign(v.style, { left: '0px', top: '0px', width: W + 'px', height: H + 'px' })
     }
     const fl = ellipseFull(G.floor, 0)
     const top = ellipseFull(G.table, G.top)
@@ -265,6 +274,18 @@
     }
     gTop.appendChild(gRing)
     threadSvg.setAttribute('viewBox', `0 0 ${W} ${H}`)
+    // 三张 SVG 只框住真正画了东西的范围（+描边与发光的余量）：它们各自是一个合成层，不必盖满整个舞台
+    fitSVG(svg, 2)
+    fitSVG(svgMid, 4)
+    fitSVG(svgTop, 10)
+  }
+  function fitSVG(v, pad) {
+    let b
+    try { b = v.getBBox() } catch (e) { return }
+    if (!b || !b.width || !b.height) return
+    const x = Math.floor(b.x - pad), y = Math.floor(b.y - pad), w = Math.ceil(b.width + 2 * pad), h = Math.ceil(b.height + 2 * pad)
+    v.setAttribute('viewBox', `${x} ${y} ${w} ${h}`)
+    Object.assign(v.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' })
   }
 
   /* =====================================================================
@@ -294,14 +315,19 @@
     const cols = S.trayCols, bd = S.bd, gap = S.trayGap
     const total = cols * bd + (cols - 1) * gap
     const x0 = (S.W - total) / 2
+    const rowGap = S.mob ? gap + 4 : gap
+    const rows = Math.ceil(CH.length / cols)
+    // 徽章区的盒子只框住徽章（留出放大的余量），不再盖满整个舞台
+    const m = Math.round(bd * 0.45)
+    const tx = Math.floor(x0 - m), ty = Math.floor(S.trayY - m)
+    Object.assign(trayEl.style, { left: tx + 'px', top: ty + 'px', width: Math.ceil(total + 2 * m) + 'px', height: Math.ceil(rows * bd + (rows - 1) * rowGap + 2 * m) + 'px' })
     CH.forEach((c, n) => {
       const b = badges[c.id]
       const col = n % cols, row = Math.floor(n / cols)
-      const rowGap = S.mob ? gap + 4 : gap
       b.x = x0 + col * (bd + gap) + bd / 2
       b.y = S.trayY + row * (bd + rowGap) + bd / 2
-      b.el.style.left = f1(b.x) + 'px'
-      b.el.style.top = f1(b.y) + 'px'
+      b.el.style.left = f1(b.x - tx) + 'px'
+      b.el.style.top = f1(b.y - ty) + 'px'
       b.el.style.width = b.el.style.height = bd + 'px'
       b.el.style.marginLeft = b.el.style.marginTop = -bd / 2 + 'px'
     })
@@ -330,10 +356,14 @@
     p.style.setProperty('--fy', fy.toFixed(3))
     return p
   }
+  // 席上的头像随光标偏转：视线由本板块自己算，直接写给那张图的 transform（原来经 App.trackEyes 写继承型变量 --pvx/--pvy）
   function headEl(id) {
     if (heads[id]) return heads[id]
     const h = el('div.head')
-    h.appendChild(portraitFor(id, { eyeRange: 8 }))
+    const p = portraitFor(id, { track: false })
+    h.appendChild(p)
+    h._g = { ox: 0, oy: 0, w: '' }
+    h._img = () => p.querySelector('img')
     heads[id] = h
     return h
   }
@@ -359,7 +389,7 @@
     s.el.setAttribute('aria-label', two(i + 1) + (id ? ' ' + App.char(id).name : ''))
     if (id) {
       const h = headEl(id)
-      if (h.parentNode !== s.disc) { s.disc.querySelectorAll('.table-head').forEach(n => { if (n !== h) n.remove() }); s.disc.appendChild(h) }
+      if (h.parentNode !== s.disc) { s.disc.querySelectorAll('.table-head').forEach(n => { if (n !== h) n.remove() }); s.disc.insertBefore(h, s.shade) }
       s.el.style.setProperty('--accent', (App.char(id).art && App.char(id).art.accent) || App.color.blood)
     } else {
       s.disc.querySelectorAll('.table-head').forEach(n => n.remove())
@@ -760,7 +790,7 @@
         s.el.classList.add('is-reel')
         const h = cloneHead(U.pick(ids))
         s.disc.querySelectorAll('.table-head').forEach(x => x.remove())
-        s.disc.appendChild(h)
+        s.disc.insertBefore(h, s.shade)
         if (!RM) gsap.fromTo(h, { yPercent: -55 }, { yPercent: 0, duration: step / 1000, ease: 'none' })
       }
       if (live && n % 2 === 0) App.audio.sfx('tick', { volume: 0.4, pitch: 0.9 + Math.random() * 0.3 })
@@ -835,12 +865,13 @@
       const flash = el('i.flash')
       const ring = el('i.rim')
       const glow = el('i.glow')
-      const disc = el('div.disc')
+      const shade = el('i.shade') // 席上头像的内阴影与压暗：光标靠近时退去（只改它自己的 opacity）
+      const disc = el('div.disc', null, shade)
       const x = el('button.x', { type: 'button', 'aria-label': '离席', 'data-cursor': '离席', 'data-cursor-tone': 'blood' })
       elx.append(flash, ring, glow, disc, x)
       const num = el('span.num', { text: String(i + 1), 'data-n': String(i + 1), 'aria-hidden': 'true' })
       stage.append(num, elx)
-      const s = { el: elx, disc, num, x, i, lift: 0, near: 0 }
+      const s = { el: elx, disc, shade, glow, num, x, i, lift: 0, near: 0, nw: 0 }
       seatEls.push(s)
       elx.addEventListener('click', e => { if (e.target.closest('.table-x')) return; clickSeat(i) })
       elx.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clickSeat(i) } })
@@ -907,10 +938,10 @@
   function frame(t, dt) {
     if (!S.visible || !S.built) return
     const m = App.mouse
-    const r = stage.getBoundingClientRect()
+    const top = S.docTop - window.scrollY // 舞台的屏幕位置：由缓存的文档坐标推出（不读布局）
     const fine = App.finePointer && m.active
-    const mx = fine ? m.sx - r.left : -1e4
-    const my = fine ? m.sy - r.top : -1e4
+    const mx = fine ? m.sx - S.docLeft : -1e4
+    const my = fine ? m.sy - top : -1e4
     // 桌面与地盘的反光：只移动两块合成层（最省画质时整个关掉）
     if (sheen.top && Q() > 0) {
       const tx = fine ? mx : S.cx + Math.sin(t * 0.3) * S.Rx * 0.4
@@ -922,20 +953,29 @@
       moveSheen(sheen.top, sx, sy)
       moveSheen(sheen.floor, sx, sy + S.Ry * 0.2)
     }
-    // 席位
+    // 席位：靠近的抬起、号牌发亮、席上的人被照亮。数值直接写给用它的元素（抬起写席位的 translate/scale，
+    // 光圈与压暗各写自己的 opacity，号牌只写自己的 --near）；动着的席位才临时成层（.is-near）
     const dragging = !!S.drag
     for (let i = 0; i < NS; i++) {
       const s = seatEls[i]
       const d = Math.hypot(mx - s.x, (my - s.y) * 1.3)
       const near = fine ? smooth(S.d * 2.6, S.d * 0.4, d) : 0
       s.near = approach(s.near, near, 0.18, dt)
-      if (Math.abs(s.near - (s.nw || 0)) > 0.004) {
-        s.nw = s.near
-        s.el.style.setProperty('--near', s.near.toFixed(3))
-        s.num.style.setProperty('--near', s.near.toFixed(3))
+      if (near === 0 && s.near < 0.003) s.near = 0
+      const q = Math.round(s.near * 200) / 200
+      if (q !== s.nw) {
+        s.nw = q
+        const on = q > 0
+        if (on !== !!s.lifted) { s.lifted = on; s.el.classList.toggle('is-near', on) }
+        const st = s.el.style
+        st.translate = on ? `0 ${(-7 * q).toFixed(2)}px` : ''
+        st.scale = on ? (1 + 0.07 * q).toFixed(4) : ''
+        s.glow.style.opacity = q
+        s.shade.style.opacity = (1 - 0.65 * q).toFixed(3)
+        s.num.style.setProperty('--near', q)
       }
     }
-    // 徽章：船坞式放大
+    // 徽章：船坞式放大（写 scale 属性；放大着的才临时成层）
     if (!S.mob) {
       const inTray = fine && my > S.trayY - S.bd * 1.2 && my < S.trayY + S.bd * 3.4
       for (const c of CH) {
@@ -947,7 +987,38 @@
           k = 1 + g * 0.32
         }
         b.k = approach(b.k, k, 0.2, dt)
-        if (Math.abs(b.k - (b.kw || 1)) > 0.002) { b.kw = b.k; b.el.style.setProperty('--k', b.k.toFixed(3)) }
+        const q = Math.abs(b.k - 1) < 0.002 ? 1 : Math.round(b.k * 500) / 500
+        if (q !== (b.kw || 1)) {
+          const on = q !== 1
+          if (on !== !!b.dock) { b.dock = on; b.el.classList.toggle('is-dock', on) }
+          b.kw = q
+          b.el.style.scale = on ? q : ''
+        }
+      }
+    }
+    // 席上头像的视线（原 App.trackEyes 的算法，eyeRange 8；眼睛约在徽章中心略偏上）
+    const gk = 1 - Math.pow(0.8, dt)
+    const tx = m.sx - S.docLeft, ty = m.sy - top
+    for (let i = 0; i < NS; i++) {
+      const id = S.seats[i]
+      const h = id && heads[id]
+      const s = seatEls[i]
+      if (!h || h.parentNode !== s.disc || !h._g) continue
+      const g = h._g
+      const dx = tx - s.x, dy = ty - (s.y - s.size * 0.03)
+      const dd = Math.hypot(dx, dy) || 1
+      const k = Math.min(1, dd / (s.size * 1.86 * 1.2))
+      g.ox += ((dx / dd) * 8 * k - g.ox) * gk
+      g.oy += ((dy / dd) * 8 * 0.7 * k - g.oy) * gk
+      const px = Math.round(g.ox / 8 * 20) / 20, py = Math.round(g.oy / 8 * 20) / 20
+      const img = h._img()
+      if (img) {
+        const tw = `translate(${(px * 2.4).toFixed(2)}%,${(py * 1.8).toFixed(2)}%) scale(1.035)`
+        if (tw !== g.w) { g.w = tw; img.style.transform = tw }
+      } else {
+        // 位图缺失时的剪影占位：只移动虹膜（同原来的 App.trackEyes）
+        const tw = `translate(${(px * 8).toFixed(1)} ${(py * 8).toFixed(1)})`
+        if (tw !== g.w) { g.w = tw; h.querySelectorAll('.p-iris').forEach(n => n.setAttribute('transform', tw)) }
       }
     }
   }
@@ -984,7 +1055,8 @@
       build(node)
       layout()
       renderAll()
-      App.onVisible(stage, v => { S.visible = v; sec.classList.toggle('is-paused', !v) }, { rootMargin: '0px' })
+      App.onVisible(stage, v => { S.visible = v; if (v) measureDoc(); sec.classList.toggle('is-paused', !v) }, { rootMargin: '0px' })
+      ScrollTrigger.addEventListener('refresh', measureDoc)
       App.tick(frame)
       App.bus.on('cast:seat', onSeatReq)
       App.bus.on('cast:unseat', onUnseatReq)
@@ -998,9 +1070,13 @@
           scrollTrigger: { trigger: sec, start: 'top 55%', toggleActions: 'play none none none' },
         })
         gsap.fromTo(seatEls.map(s => s.num), { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.05, clearProps: 'opacity', scrollTrigger: { trigger: sec, start: 'top 55%', toggleActions: 'play none none none' } })
-        gsap.fromTo(trayEl.children, { opacity: 0, y: 20 }, {
+        // 入场期间关掉徽章自带的 opacity 过渡：否则每一帧的 opacity 都会再起一段 CSS 过渡，38 枚徽章各自成层
+        const tray = Array.from(trayEl.children)
+        gsap.fromTo(tray, { opacity: 0, y: 20 }, {
           opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: { each: 0.015, from: 'center' }, clearProps: 'opacity,y',
           scrollTrigger: { trigger: sec, start: 'top 40%', toggleActions: 'play none none none' },
+          onStart: () => { for (const n of tray) n.style.transition = 'none' },
+          onComplete: () => { for (const n of tray) n.style.transition = '' },
         })
       }
       let rw = 0, lastW = window.innerWidth

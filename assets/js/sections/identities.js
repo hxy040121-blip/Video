@@ -165,9 +165,11 @@
       `<circle cx="90" cy="6" r="1.6" fill="${dot}" stroke="none"/><circle cx="6" cy="90" r="1.6" fill="${dot}" stroke="none"/>` +
       '<path d="M96 6H128M6 96V128" stroke-width=".8"/>'
   }
-  function frameSVG(kind, uid) {
+  // 边框画成一张独立的 SVG 图（金 / 红各一张），所有牌共用，作为 .identities-frame 的背景图。
+  // 原先每张牌面里各有一棵近九十个节点的 SVG（三十面共两千六百多个节点），整块样式重算（如板块远近切换）时都要走一遍。
+  function frameSVG(kind) {
     const neg = kind === 'neg'
-    const g = `${PX}g${uid}`
+    const g = 'g'
     const stops = neg
       ? '<stop offset="0" stop-color="#5b1010"/><stop offset=".3" stop-color="#9a1f22"/><stop offset=".5" stop-color="#6a1214"/><stop offset=".72" stop-color="#a8262a"/><stop offset="1" stop-color="#5b1010"/>'
       : '<stop offset="0" stop-color="#7a5627"/><stop offset=".2" stop-color="#c49a55"/><stop offset=".36" stop-color="#86622f"/><stop offset=".52" stop-color="#e0bc76"/><stop offset=".68" stop-color="#8f6a36"/><stop offset=".84" stop-color="#c79e5a"/><stop offset="1" stop-color="#76532a"/>'
@@ -179,7 +181,7 @@
     const mid = [[46, 440, 1], [584, 440, -1]].map(([x, y, s]) =>
       `<path d="M${x} ${y - 13}L${x + 6 * s} ${y}L${x} ${y + 13}L${x - 6 * s} ${y}Z" fill="${dot}" stroke="none"/>` +
       `<path d="M${x + 13 * s} ${y - 34}Q${x + 22 * s} ${y} ${x + 13 * s} ${y + 34}" stroke-width=".8"/>`).join('')
-    return `<svg viewBox="0 0 630 880" preserveAspectRatio="none" aria-hidden="true">
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 630 880" preserveAspectRatio="none">
 <defs><linearGradient id="${g}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="420" y2="560" spreadMethod="reflect">${stops}</linearGradient></defs>
 <g fill="none" stroke="${line}" stroke-linecap="round" stroke-linejoin="round">
 <rect x="22" y="22" width="586" height="836" rx="15" stroke-width="5"/>
@@ -250,7 +252,7 @@ ${corners}${mid}
     face.style.setProperty('--tx-x', Math.round(U.rand(0, 100)) + '%')
     face.style.setProperty('--tx-y', Math.round(U.rand(0, 100)) + '%')
     const paper = el('div.paper')
-    const frame = el('div.frame', { html: frameSVG(neg ? 'neg' : 'pos', `${c.i}${side[0]}`) })
+    const frame = el('div.frame')
     const num = el('div.num', {}, [el('span', { text: U.roman(d.no) })])
     const sig = el('div.sig')
     sig.appendChild(App.sigil(name))
@@ -262,17 +264,17 @@ ${corners}${mid}
     for (const p of paras) tx.appendChild(U.el('p', { text: p }))
     const text = el('div.text', {}, [tx])
     const fine = el('div.fine', { html: fineSVG() })
-    // 叠放：纸 → 金色烫印（边框、编号、纹章、分隔）→ 箔光 → 墨字 → 暗化。
+    // 叠放：纸 → 金色烫印（边框、编号、纹章、分隔）→ 箔光 → 墨字。暗化是整张牌（.identities-slot）上的 brightness 滤镜。
     // 箔光是 color-dodge / soft-light 混合层，只能压在纸和烫金上；放在墨字之上会把黑字染成紫红。
-    // 箔光、墨字、暗化各是一个独立的合成层：光标移动时只改箔光与暗化层的 transform / opacity，牌面不重画。
+    // 箔光亮着时是独立的合成层：光标移动时只改它的 transform / opacity，牌面不重画。
     let oathEl = null
     if (oath) oathEl = el('div.oath', {}, [el('span', { text: oath })])
     const ink = el('div.ink', {}, [nameEl, oathEl, text, fine])
-    const sheen = el('div.sheen'), glare = el('div.glare'), dimEl = el('div.dim')
-    for (const k of [paper, frame, num, sig, div, sheen, glare, ink, dimEl]) face.appendChild(k)
+    const sheen = el('div.sheen'), glare = el('div.glare')
+    for (const k of [paper, frame, num, sig, div, sheen, glare, ink]) face.appendChild(k)
     return {
       el: face, side, neg, name, nameEl, nameT, sig, div, text, tx, num, oath: oathEl, fine, tf: 1.6, tfr: 1.9, inked: false,
-      sheen, glare, dimEl, lit: false, _st: '', _so: '', _gt: '', _go: '',
+      sheen, glare, lit: false, _st: '', _so: '', _gt: '', _go: '',
     }
   }
   function setNameSize(nameEl, name) {
@@ -367,6 +369,7 @@ ${corners}${mid}
     const paper = paperTexture(), lacquer = lacquerTexture()
     if (paper) stage.style.setProperty('--idn-paper', `url(${paper})`)
     if (lacquer) stage.style.setProperty('--idn-lacquer', `url(${lacquer})`)
+    for (const k of ['pos', 'neg']) stage.style.setProperty('--idn-frame-' + k, `url("data:image/svg+xml,${encodeURIComponent(frameSVG(k))}")`)
 
     // 背景大字：正 / 逆
     // 另有两层预先写好的「逆」「正」（亮色）叠在上面，闪一下时只切换 opacity，不重画
@@ -376,9 +379,11 @@ ${corners}${mid}
 
     // 圆桌（俯视，只看得见桌沿的一段）
     S.table = el('div.table', { 'aria-hidden': 'true' })
-    // 桌沿双线、虚线圈静止；十五个席位记号在另一张 SVG 里，整张随扇面旋转（合成层，不重画）
-    S.tableSvg = U.svg('svg', { viewBox: '-1000 -1000 2000 2000', class: PX + 'table-svg' })
-    S.tableRot = U.svg('svg', { viewBox: '-1000 -1000 2000 2000', class: PX + 'table-svg ' + PX + 'table-rot' })
+    // 桌沿双线、虚线圈静止；十五个席位记号在另一张 SVG 里，整张随扇面旋转（合成层，不重画）。
+    // 记号层只有几个小菱形：SVG 本身只是桌心的一个点（1 单位 = 1px），记号画在盒子外（overflow 可见）。
+    // 画面与原先 2000×2000 视框、铺满整张桌子的写法相同；只是不再有一个两千多像素见方、几乎全透明的盒子。
+    S.tableSvg = U.svg('svg', { viewBox: '-1000 -1000 2000 2000', preserveAspectRatio: 'none', class: PX + 'table-svg' })
+    S.tableRot = U.svg('svg', { viewBox: '-1 -1 2 2', class: PX + 'table-rot' })
     S.table.append(S.tableSvg, S.tableRot)
     // 桌面灯光：圆桌裁切内一个光斑，跟随光标平移
     S.tableLight = el('div.table-light')
@@ -511,7 +516,7 @@ ${corners}${mid}
 
   // 特效画布（低画质时按 1 倍像素）
   function sizeFx() {
-    const dpr = Math.min(S.q >= 2 ? 2 : 1, window.devicePixelRatio || 1)
+    const dpr = Math.min(S.q >= 2 ? 1.5 : 1, window.devicePixelRatio || 1)
     const w = Math.round(S.vw * dpr), h = Math.round(S.vh * dpr)
     if (S.fx.width !== w || S.fx.height !== h) { S.fx.width = w; S.fx.height = h; S.fxDirty = false }
     S.fxDpr = dpr
@@ -529,12 +534,25 @@ ${corners}${mid}
     if (S.mode !== 'desk') { S.table.style.display = 'none'; return }
     const g = S.geo
     S.table.style.display = ''
-    const D = g.rt * 2
-    S.table.style.width = S.table.style.height = D.toFixed(0) + 'px'
-    S.table.style.transform = `translate(${(g.cx - g.rt).toFixed(1)}px, ${(g.cy - g.rt).toFixed(1)}px)`
+    // 圆桌直径两千多像素，画面里只露出桌沿以下、视口以内的一段：元素只取这一段（视口宽 × 桌沿最高点到视口底），
+    // 桌面渐变、桌沿圆圈按桌心坐标画在里面，画面与整张圆桌相同，图层却小得多
+    const u = g.rt / 1000 // 原视框里 1 单位的像素数（半径 1000 = 桌子半径 g.rt）
+    const y0 = Math.max(0, Math.floor(g.cy - g.rt))
+    const h = Math.max(1, Math.ceil(S.vh - y0))
+    const tcx = g.cx, tcy = g.cy - y0 // 桌心在这一段里的坐标
+    S.table.style.width = S.vw.toFixed(0) + 'px'
+    S.table.style.height = h + 'px'
+    S.table.style.transform = `translate(0px, ${y0}px)`
+    S.table.style.setProperty('--tr', g.rt.toFixed(1) + 'px')
+    S.table.style.setProperty('--tc', `${tcx.toFixed(1)}px ${tcy.toFixed(1)}px`)
+    // 灯光的圆形裁切仍是整张圆桌（不成层，只裁光斑）
+    Object.assign(S.tableLight.style, { left: (tcx - g.rt).toFixed(1) + 'px', top: (tcy - g.rt).toFixed(1) + 'px', width: (g.rt * 2).toFixed(1) + 'px', height: (g.rt * 2).toFixed(1) + 'px' })
+    S.tableRot.style.left = (tcx - 1).toFixed(1) + 'px'
+    S.tableRot.style.top = (tcy - 1).toFixed(1) + 'px'
     // 桌沿（viewBox 半径 1000）：双线、十五个席位记号
     const ns = 'http://www.w3.org/2000/svg'
     const svg = S.tableSvg
+    svg.setAttribute('viewBox', `${(-tcx / u).toFixed(3)} ${(-tcy / u).toFixed(3)} ${(S.vw / u).toFixed(3)} ${(h / u).toFixed(3)}`)
     svg.innerHTML = ''
     S.tableRot.innerHTML = ''
     S._tm = ''; S._lt = ''
@@ -552,15 +570,17 @@ ${corners}${mid}
     ring(inner, 0.8, 0.13, '2 9')
     const marks = document.createElementNS(ns, 'g')
     marks.setAttribute('class', PX + 'table-marks')
+    // 原视框里的坐标换算成像素
+    const f = v => +(v * u).toFixed(2)
     for (let k = 0; k < 15; k++) {
       const a = k * 24
       const p = document.createElementNS(ns, 'path')
-      p.setAttribute('d', 'M0 -1010L7 -993L0 -976L-7 -993Z')
+      p.setAttribute('d', `M0 ${f(-1010)}L${f(7)} ${f(-993)}L0 ${f(-976)}L${f(-7)} ${f(-993)}Z`)
       p.setAttribute('transform', `rotate(${a})`)
       p.setAttribute('fill', '#c29a5b'); p.setAttribute('fill-opacity', '.55')
       marks.appendChild(p)
       const t = document.createElementNS(ns, 'path')
-      t.setAttribute('d', 'M0 -970V-950')
+      t.setAttribute('d', `M0 ${f(-970)}V${f(-950)}`)
       t.setAttribute('transform', `rotate(${a})`)
       t.setAttribute('stroke', '#c29a5b'); t.setAttribute('stroke-opacity', '.3'); t.setAttribute('vector-effect', 'non-scaling-stroke')
       marks.appendChild(t)
@@ -697,7 +717,7 @@ ${corners}${mid}
     const hush = S.gather > 0.56
     if (hush !== S.hush) {
       S.hush = hush
-      S.stage.classList.toggle('is-hush', hush)
+      for (const c of S.cards) c.back.el.classList.toggle('is-hush', hush)
       if (S.awake) for (let k = 0; k < 5; k++) App.audio.sfx('flip', { delay: k * 0.08, pitch: (hush ? 0.78 : 0.95) + k * 0.04, volume: 0.22 })
     }
 
@@ -795,6 +815,13 @@ ${corners}${mid}
     render(c)
   }
 
+  // 一张牌在画面上的三种画法：
+  //   平放（扇面里静止的牌，绝大多数时候）：不做 3D，只画朝上的那一面，整张牌（连同影子）只占一个合成层；
+  //   整张转（发牌时飞进来的倾斜、收拢后逐张扣过去）：仍是那一个合成层，把透视与转角接在牌位的 transform 上，
+  //     不建 3D 结构、不重画（只在翻过 90° 换面时重画一次）。这两段都是一闪而过的，牌在扇面尺寸，看不出牌边厚度；
+  //   立体（抬起、倾斜、拿在手里、飞去 / 飞回、发牌后的翻面浪、拿起后翻面）：原来的 3D 结构（两面 backface-visibility、三层牌边、影子单独成层）。
+  // 几种画法画面一致：rotateY(180°) 的牌 × rotateY(180°) 的背面 = 不转的背面；
+  // 牌位 scale 之后的 perspective(230mm) 与原先 .identities-glitch 上的 perspective 等价（都以牌心为原点，单位是牌自身的像素）。
   function render(c) {
     const p = c.cur
     // 收拢成一叠之后，牌由下往上逐张扣过去（牌背朝上，字隐去）
@@ -802,33 +829,54 @@ ${corners}${mid}
     const bump = Math.sin(Math.PI * gk)
     const s = p.s * (1 + (c.flipLift + bump * 0.8) * 0.06)
     const lift = bump * S.fanW * 0.1
-    const t = `translate3d(${(p.x - S.W / 2).toFixed(2)}px,${(p.y - S.H / 2 - lift).toFixed(2)}px,0) rotate(${p.r.toFixed(3)}deg) scale(${s.toFixed(4)})`
-    if (t !== c._t) { c.slot.style.transform = t; c._t = t }
     const fl = c.flip + (c.peek ? 180 : 0) + gk * 180
-    const ct = `rotateX(${(c.tx + c.swing).toFixed(2)}deg) rotateY(${(fl + c.ty).toFixed(2)}deg)`
+    const dealFly = c.mode === 'fly' && c.fly.deal
+    const deep = (c.mode !== 'fan' && !dealFly) || c.lift > 0.04 || c.flipLift > 0.001 || Math.abs(c.tx) + Math.abs(c.ty) > 0.6
+    const whole = !deep && (dealFly || (gk > 0.001 && gk < 0.999) || Math.abs(c.swing) > 0.01)
+    let t = `translate3d(${(p.x - S.W / 2).toFixed(2)}px,${(p.y - S.H / 2 - lift).toFixed(2)}px,0) rotate(${p.r.toFixed(3)}deg) scale(${s.toFixed(4)})`
+    if (whole) {
+      const res = fl - 180 * Math.round(fl / 180) // 朝上那一面自身的转角（-90°–90°）
+      t += ` perspective(${(S.mm * 230).toFixed(1)}px) rotateX(${c.swing.toFixed(2)}deg) rotateY(${res.toFixed(2)}deg)`
+    }
+    if (t !== c._t) { c.slot.style.transform = t; c._t = t }
+    if (deep !== c._deep) { c._deep = deep; c.slot.classList.toggle('is-3d', deep) }
+    const ct = deep ? `rotateX(${(c.tx + c.swing).toFixed(2)}deg) rotateY(${(fl + c.ty).toFixed(2)}deg)` : 'none'
     if (ct !== c._c) { c.card.style.transform = ct; c._c = ct }
+    // 朝向观者的那一面；另一面不画（翻到一半、两面都可能露出来时才都画，由 backface-visibility 决定显示哪面）
+    const ry = fl + (deep ? c.ty : 0)
+    const vis = Math.cos(ry * DEG) < 0 ? c.back : c.front
+    const edgeOn = deep && Math.abs(Math.sin(ry * DEG)) > 0.85
+    const show = edgeOn ? 'both' : vis === c.back ? 'back' : 'front'
+    if (show !== c._show) {
+      c._show = show
+      c.card.classList.toggle('is-front', show === 'front')
+      c.card.classList.toggle('is-back', show === 'back')
+    }
     // 叠放次序
     const z = S.focus === c.i ? 100 : c.mode === 'fly' ? (c.fly.to === 'focus' ? 99 : 90) : c.i === S.hover ? 60 : c.i + 1
     if (z !== c._z) { c.slot.style.zIndex = z; c._z = z }
-    // 影子、暗化、箔光：都只写独立合成层的 transform / opacity，且数值没变就不写
-    const L = Math.max(c.lift, S.focus === c.i ? 1 : 0)
-    const sh = `translate(${(-c.ty * 0.6).toFixed(1)}px, ${(10 + L * 28).toFixed(1)}px) scale(${(1 + L * 0.05).toFixed(3)})`
+    // 影子、暗化、箔光：数值没变就不写。平放时影子固定不动（与牌同在一个合成层里）
+    const L = deep ? Math.max(c.lift, S.focus === c.i ? 1 : 0) : 0
+    const sh = `translate(${(deep ? -c.ty * 0.6 : 0).toFixed(1)}px, ${(10 + L * 28).toFixed(1)}px) scale(${(1 + L * 0.05).toFixed(3)})`
     if (sh !== c._sh) { c.shadow.style.transform = sh; c._sh = sh }
     const sho = (0.55 - L * 0.12).toFixed(3)
     if (sho !== c._sho) { c.shadow.style.opacity = sho; c._sho = sho }
-    const d = c.dim.toFixed(3)
-    if (d !== c._d) { c.front.dimEl.style.opacity = d; c.back.dimEl.style.opacity = d; c._d = d }
+    // 暗化：整张牌的 brightness 滤镜（与原先压在牌面上、opacity = d 的近黑色层等价）。
+    // 滤镜加在已经是合成层的牌位上，数值变化由合成器直接套用，牌面不重画，也不多出图层
+    const d = c.dim > 0.0005 ? `brightness(${(1 - c.dim).toFixed(3)})` : ''
+    if (d !== c._d) { c.slot.style.filter = d; c._d = d }
     // 箔光只亮在朝向观者的那一面
-    const vis = Math.cos((fl + c.ty) * DEG) < 0 ? c.back : c.front
     const thr = c.front.lit || c.back.lit ? 0.012 : 0.02
     const lit = S.q > 0 && c.foil > thr
+    // 箔光亮着时，牌面做成一个小小的 3D 场景的叶子（自成渲染面）：箔光只与这一面混合，
+    // 牌面圆角对箔光的裁切也在这一面自己的坐标里，牌位每帧微转时浏览器不必逐帧重画裁切遮罩
+    // （类名带板块前缀：别的板块的 CSS 里有 .is-lit path 之类的写法，同名类一切换，浏览器会把牌里所有 path / circle 都重算一遍）
+    if (lit !== c._lit) { c._lit = lit; c.card.classList.toggle(PX + 'lit', lit) }
     for (const f of [c.front, c.back]) {
       const on = lit && f === vis
-      if (on !== f.lit) { f.lit = on; f.el.classList.toggle('is-lit', on); f._st = f._so = f._gt = f._go = '' }
+      if (on !== f.lit) { f.lit = on; f.sheen.classList.toggle(PX + 'on', on); f.glare.classList.toggle(PX + 'on', on); f._st = f._so = f._gt = f._go = '' }
     }
     if (lit) renderFoil(c, vis)
-    const deep = c.mode !== 'fan' || c.lift > 0.04 || c.flipLift > 0.001 || (gk > 0.001 && gk < 0.999) || Math.abs(c.tx) + Math.abs(c.ty) > 0.6
-    if (deep !== c._deep) { c.card.classList.toggle('is-3d', deep); c._deep = deep }
   }
 
   // 金箔反光（与原先 260%、118° 渐变按 --fx/--fy 移动 background-position 的效果等价）：
@@ -916,7 +964,7 @@ ${corners}${mid}
       c.flip = 180
       c.slot.classList.add('is-dealt')
       c.mode = 'fly'
-      c.fly = { from, to: 'fan', k: 0, arc: RM ? 0 : U.rand(40, 90), spin: U.rand(-14, 14), pop: 0.12, tilt: RM ? 0 : -24 }
+      c.fly = { from, to: 'fan', k: 0, arc: RM ? 0 : U.rand(40, 90), spin: U.rand(-14, 14), pop: 0.12, tilt: RM ? 0 : -24, deal: true }
       tl.to(c.fly, {
         k: 1, duration: RM ? 0.5 : 0.82, ease: 'power3.out',
         onStart: () => {
@@ -1551,7 +1599,13 @@ ${corners}${mid}
   }
   function fxTick(dt) {
     const x = S.ctx
-    if (!parts.length) { if (S.fxDirty) { x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, S.fx.width, S.fx.height); S.fxDirty = false } return }
+    // 没有粒子时画布清空并整块隐藏：一张全屏的透明画布也是一个要合成的全屏图层
+    if (!parts.length) {
+      if (S.fxDirty) { x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, S.fx.width, S.fx.height); S.fxDirty = false }
+      if (S.fxOn) { S.fxOn = false; S.fx.classList.remove('is-on') }
+      return
+    }
+    if (!S.fxOn) { S.fxOn = true; S.fx.classList.add('is-on') }
     S.fxDirty = true
     x.setTransform(1, 0, 0, 1, 0, 0)
     x.clearRect(0, 0, S.fx.width, S.fx.height)

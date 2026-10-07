@@ -10,7 +10,9 @@
     radial-gradient(ellipse 60% 48% at 50% 46%, rgba(30,26,22,.5), rgba(10,8,9,0) 70%),
     linear-gradient(180deg, rgba(10,8,9,.6) 0%, rgba(10,8,9,0) 20%, rgba(10,8,9,0) 70%, rgba(10,8,9,.85) 100%);
 }
-.table.is-paused .table-stage * { animation-play-state: paused !important; }
+/* 离开视口时暂停自己的几个 CSS 动画（只点名这几个：通配的 .table-stage * 每次进出视口都要重算整块几百个元素） */
+.table.is-paused .table-core-pulse, .table.is-paused .table-glow, .table.is-paused .table-badge::after { animation-play-state: paused !important; }
+/* 三张 SVG 各自只框住画了东西的范围（table.js 的 fitSVG）：它们夹着两块反光，各是一个合成层，不必盖满舞台 */
 .table-svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 1; }
 /* 桌面与地盘的反光：椭圆裁切里一块独立合成的光斑，跟着光标只改 transform（不再每帧改 SVG 渐变而整张重画） */
 .table-sheen { position: absolute; z-index: 1; pointer-events: none; border-radius: 50%; overflow: hidden; }
@@ -55,6 +57,7 @@ html[data-q="0"] .table-sheen { display: none; }
 .table-stage.is-full .table-bignum { -webkit-text-stroke-color: rgba(255,46,126,.35); }
 
 /* ---------- 号牌 ---------- */
+/* 号牌：--near 只写在号牌自己身上（table.js），连同发亮的 ::after 只有两个元素重算；号牌很小，不成层，变化时重画这一小块 */
 .table-num {
   position: absolute; z-index: 5; transform: translate(-50%, -50%) translateY(calc(var(--near, 0) * -3px));
   font-family: var(--f-latin); font-weight: 700; font-size: 13px; line-height: 1; letter-spacing: 0;
@@ -63,23 +66,18 @@ html[data-q="0"] .table-sheen { display: none; }
   padding: 3px 6px 2px; pointer-events: none;
   background: linear-gradient(180deg, rgba(40,30,18,.85), rgba(14,10,6,.85));
   border: 1px solid rgba(194,154,91,.35);
-  will-change: transform;
 }
-/* 号牌发亮：亮版叠在上面，只随 --near 改 opacity（独立合成层），不重画 */
 .table-num::after {
   content: attr(data-n); position: absolute; left: -1px; top: -1px; right: -1px; bottom: -1px;
   padding: inherit; border: 1px solid rgba(194,154,91,.9);
   color: #ffe7b0; text-shadow: 0 0 14px rgba(255,210,140,.9), 0 1px 0 #000;
-  opacity: var(--near, 0); will-change: opacity; pointer-events: none;
+  opacity: var(--near, 0); pointer-events: none;
 }
 
 /* ---------- 席位 ---------- */
-.table-seat {
-  position: absolute; z-index: 10; border-radius: 50%; outline: none;
-  transform: translateY(calc(var(--near, 0) * -7px)) scale(calc(1 + var(--near, 0) * .07));
-  --near: 0;
-}
-.table:not(.is-mob) .table-seat { will-change: transform; } /* 抬起只走合成器（手机上没有光标，不必提层） */
+/* 席位：靠近光标时抬起——table.js 直接写它的 translate / scale 属性；正在抬起的那几席才临时成层（.is-near） */
+.table-seat { position: absolute; z-index: 10; border-radius: 50%; outline: none; }
+.table-seat.is-near { will-change: transform, translate, scale; }
 .table-rim, .table-glow, .table-flash { pointer-events: none; }
 .table-seat > .table-rim {
   position: absolute; inset: -5px; border-radius: 50%;
@@ -88,10 +86,11 @@ html[data-q="0"] .table-sheen { display: none; }
   transition: border-color .3s;
 }
 /* 靠近时的黄铜光圈：静态画好，只随 --near 改 opacity（独立合成层） */
+/* 靠近时的黄铜光圈：opacity 由 table.js 直接写（在席位自己的层里重画这一小块） */
 .table-seat > .table-glow {
   position: absolute; inset: -5px; border-radius: 50%;
   border: 1px solid #c29a5b; box-shadow: 0 0 18px rgba(194,154,91,.5);
-  opacity: var(--near, 0); will-change: opacity;
+  opacity: 0;
 }
 .table-seat > .table-disc {
   position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
@@ -120,7 +119,7 @@ html[data-q="0"] .table-sheen { display: none; }
 @keyframes table-breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 .table-seat.is-snap > .table-rim { border-color: #ffe7b0; border-style: solid; box-shadow: 0 0 24px rgba(255,220,150,.7), inset 0 0 0 3px rgba(10,8,9,.9); }
 .table-seat.is-sel > .table-rim { border-color: var(--blood); box-shadow: 0 0 0 2px rgba(255,46,126,.35), 0 0 20px rgba(255,46,126,.45); }
-.table-seat.is-snap > .table-glow, .table-seat.is-sel > .table-glow { opacity: 0; animation: none; }
+.table-seat.is-snap > .table-glow, .table-seat.is-sel > .table-glow { opacity: 0 !important; animation: none; }
 .table-seat.is-lifted > .table-disc { opacity: .35; }
 .table-seat.is-reel > .table-disc { box-shadow: inset 0 0 0 2px rgba(255,46,126,.5), inset 0 4px 10px rgba(0,0,0,.9); }
 .table-seat.is-reel .table-head { filter: blur(.6px) brightness(1.15); }
@@ -139,9 +138,15 @@ html[data-q="0"] .table-sheen { display: none; }
 .table-seat .table-por > svg { filter: drop-shadow(-1.5px -1px 0 rgba(236,198,128,.8)); }
 /* 位图：放大到只剩头，按两眼中点（--fx/--fy）对准圆心略偏上 */
 .table-por.is-photo { width: 186%; left: calc(50% - var(--fx, .5) * 186%); top: calc(47% - var(--fy, .41) * 248%); }
-.table-por.is-photo > img { transform: translate3d(calc(var(--pvx, 0) * 2.4%), calc(var(--pvy, 0) * 1.8%), 0) scale(1.035); }
-/* 席上（与拖动中）的头像随光标偏转：给它独立合成层，偏转不再重画整个席位 */
-.table-seat .table-por.is-photo > img, .table-ghost .table-por.is-photo > img { will-change: transform; }
+/* 二维变换：几十张头像都不因「三维变换」各自成层。席上头像的偏转由 table.js 直接写这张图的 transform（小块重画） */
+.table-por.is-photo > img { transform: translate(calc(var(--pvx, 0) * 2.4%), calc(var(--pvy, 0) * 1.8%)) scale(1.035); }
+/* 席上：内阴影与压暗是席位里单独的一层 .table-shade（opacity 由 table.js 直接写），头像自己的 ::after 不用 */
+.table-shade {
+  position: absolute; inset: 0; z-index: 1; display: none; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 50% 42%, rgba(10,6,5,0) 38%, rgba(10,6,5,.55) 78%, rgba(6,4,3,.85) 100%);
+}
+.table-seat.is-filled .table-shade, .table-seat.is-reel .table-shade { display: block; }
+.table-seat .table-head::after { display: none; }
 .table-head::after { /* 圆形徽章的内阴影与压暗层：悬停时退去，像被烛光照到 */
   content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle at 50% 42%, rgba(10,6,5,0) 38%, rgba(10,6,5,.55) 78%, rgba(6,4,3,.85) 100%);
@@ -149,14 +154,15 @@ html[data-q="0"] .table-sheen { display: none; }
 }
 
 /* ---------- 徽章区 ---------- */
-.table-tray { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+/* 徽章区：盒子只框住徽章（table.js 的 placeTray） */
+.table-tray { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 20; }
+/* 船坞式放大：table.js 直接写 scale 属性；正在放大的那几枚才临时成层（.is-dock） */
 .table-badge {
   position: absolute; pointer-events: auto; border-radius: 50%;
-  transform: scale(var(--k, 1)); transform-origin: 50% 60%;
+  transform-origin: 50% 60%;
   transition: opacity .4s;
-  --k: 1;
 }
-.table:not(.is-mob) .table-badge { will-change: transform; } /* 船坞式放大只走合成器 */
+.table-badge.is-dock { will-change: transform, scale; }
 .table-badge > .table-tag { transition: filter .4s; }
 .table-badge::after { /* 选中时的血粉外光：呼吸动 opacity */
   content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
@@ -169,7 +175,6 @@ html[data-q="0"] .table-sheen { display: none; }
   transition: box-shadow .3s, filter .4s;
 }
 .table-badge .table-por > svg { filter: grayscale(.55) brightness(.85); transition: filter .4s; }
-.table-seat .table-head::after { opacity: calc(1 - var(--near, 0) * .65); transition: none; will-change: opacity; } /* 光标靠近：席上的人被照亮（只动 opacity） */
 .table-badge .table-head::before { /* 默认沉在暗里一些 */
   content: ''; position: absolute; inset: 0; z-index: 1; border-radius: 50%; pointer-events: none;
   background: rgba(8,5,4,.32); transition: opacity .45s var(--ease-out);
