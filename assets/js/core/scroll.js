@@ -49,7 +49,7 @@
       start: 0,
       end: 'max',
       onUpdate: self => {
-        const minutes = 17 * 60 + self.progress * 24 * 60
+        const minutes = 17 * 60 + 5 + self.progress * (24 * 60 - 5) // 醒来时已是 17:05
         App.state.minutes = minutes
         App.bus.emit('time', minutes)
         if (App.bg) App.bg.setScroll(self.progress * 6)
