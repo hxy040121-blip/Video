@@ -690,7 +690,7 @@
 @keyframes trial-spark-rot { to { rotate: 360deg; } }
 @keyframes trial-spark-tw { from { opacity: .2; scale: .8; } to { opacity: 1; scale: 1.2; } }
 @keyframes trial-spark-sz { from { scale: .8; } to { scale: 1.2; } }
-.trial-inv.is-over .trial-spot { pointer-events: none; }
+.trial-inv.is-over .trial-spot, .trial-inv.is-auto .trial-spot { pointer-events: none; }
 
 .trial-inv-meta {
   position: absolute; left: var(--gutter); top: calc(var(--hud-h) + 64px); z-index: 4; width: min(230px, 18vw);

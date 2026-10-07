@@ -10,7 +10,7 @@
    光标：靠近的席位抬起、号牌发亮；桌面与墨玉地盘的反光随光标移动；徽章排像船坞一样在光标下放大。
    每次变化写入 App.state.seats（长度 15，角色 id 或 null）、App.store('seats')，并发出 cast:change。
    另收 cast:seat / cast:unseat（卡池档案里的「入座 / 离席」）。
-   渲染：静态的桌、椅、徽章不成合成层；只有光标附近正在抬起的席位、正在放大的徽章临时成层（动完就撤）。
+   渲染：静态的桌、椅、徽章不成合成层（只有十五个小席位常驻合成层）；徽章放大只重画光标附近的几枚。
    帧循环只把 transform / opacity 写给真正用它的元素（不在席位、按钮上写继承型 CSS 变量），滚动中不读布局。
    ========================================================== */
 (function () {
@@ -954,7 +954,7 @@
       moveSheen(sheen.floor, sx, sy + S.Ry * 0.2)
     }
     // 席位：靠近的抬起、号牌发亮、席上的人被照亮。数值直接写给用它的元素（抬起写席位的 translate/scale，
-    // 光圈与压暗各写自己的 opacity，号牌只写自己的 --near）；动着的席位才临时成层（.is-near）
+    // 光圈与压暗各写自己的 opacity，号牌只写自己的 --near）
     const dragging = !!S.drag
     for (let i = 0; i < NS; i++) {
       const s = seatEls[i]
@@ -966,7 +966,6 @@
       if (q !== s.nw) {
         s.nw = q
         const on = q > 0
-        if (on !== !!s.lifted) { s.lifted = on; s.el.classList.toggle('is-near', on) }
         const st = s.el.style
         st.translate = on ? `0 ${(-7 * q).toFixed(2)}px` : ''
         st.scale = on ? (1 + 0.07 * q).toFixed(4) : ''
@@ -975,7 +974,7 @@
         s.num.style.setProperty('--near', q)
       }
     }
-    // 徽章：船坞式放大（写 scale 属性；放大着的才临时成层）
+    // 徽章：船坞式放大（只写 scale 属性）
     if (!S.mob) {
       const inTray = fine && my > S.trayY - S.bd * 1.2 && my < S.trayY + S.bd * 3.4
       for (const c of CH) {
@@ -990,7 +989,6 @@
         const q = Math.abs(b.k - 1) < 0.002 ? 1 : Math.round(b.k * 500) / 500
         if (q !== (b.kw || 1)) {
           const on = q !== 1
-          if (on !== !!b.dock) { b.dock = on; b.el.classList.toggle('is-dock', on) }
           b.kw = q
           b.el.style.scale = on ? q : ''
         }

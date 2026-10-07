@@ -2634,7 +2634,8 @@
     /* --- 点热点 --- */
     // by：旁观时代为调查的人（缺省为玩家自己）
     async onSpot(sp, by) {
-      if (this.busy || sp.done || this.ended || S.paused) return
+      // 旁观时由在场的人轮流细查，点热点不起作用
+      if (this.busy || sp.done || this.ended || S.paused || (this.auto && !by)) return
       this.busy = true
       if (!App.finePointer || by) {
         // 触屏 / 旁观：点到哪里，手电就照到哪里
@@ -2849,6 +2850,7 @@
       Inv.bodyGone = false
       Inv.ended = false
       Inv.auto = !!(S.spectate || !meAlive())
+      E.inv.classList.toggle('is-auto', Inv.auto)
       Inv.setup(c)
       Inv.buildTicks(c.investMinutes)
       Inv.updateTimer()
@@ -2882,6 +2884,7 @@
         const [x, y] = Inv.P(sp.u, sp.v)
         Inv.light.tx = x; Inv.light.ty = y; Inv.light.tapAt = performance.now()
         await wait(420)
+        while (Inv.busy) await wait(100, false)
         await hold(tok)
         await Inv.onSpot(sp, crew[i++ % crew.length])
       }

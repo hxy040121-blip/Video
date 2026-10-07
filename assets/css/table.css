@@ -75,9 +75,10 @@ html[data-q="0"] .table-sheen { display: none; }
 }
 
 /* ---------- 席位 ---------- */
-/* 席位：靠近光标时抬起——table.js 直接写它的 translate / scale 属性；正在抬起的那几席才临时成层（.is-near） */
+/* 席位：靠近光标时抬起——table.js 直接写它的 translate / scale 属性。十五席在桌面端常驻合成层（很小）：
+   临时提层、撤层会让后面叠着的内容反复重新分层、整块重画，反而更费 */
 .table-seat { position: absolute; z-index: 10; border-radius: 50%; outline: none; }
-.table-seat.is-near { will-change: transform, translate, scale; }
+.table:not(.is-mob) .table-seat { will-change: transform, translate, scale; }
 .table-rim, .table-glow, .table-flash { pointer-events: none; }
 .table-seat > .table-rim {
   position: absolute; inset: -5px; border-radius: 50%;
@@ -156,13 +157,13 @@ html[data-q="0"] .table-sheen { display: none; }
 /* ---------- 徽章区 ---------- */
 /* 徽章区：盒子只框住徽章（table.js 的 placeTray） */
 .table-tray { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 20; }
-/* 船坞式放大：table.js 直接写 scale 属性；正在放大的那几枚才临时成层（.is-dock） */
+/* 船坞式放大：table.js 直接写 scale 属性。徽章不成层（38 枚各占一层太多；临时提层又会让徽章区反复重新分层），
+   放大时只重画光标附近那几枚的小方块 */
 .table-badge {
   position: absolute; pointer-events: auto; border-radius: 50%;
   transform-origin: 50% 60%;
   transition: opacity .4s;
 }
-.table-badge.is-dock { will-change: transform, scale; }
 .table-badge > .table-tag { transition: filter .4s; }
 .table-badge::after { /* 选中时的血粉外光：呼吸动 opacity */
   content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
