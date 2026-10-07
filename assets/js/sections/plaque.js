@@ -2703,7 +2703,7 @@
     syncTray()
     if (!S.self) {
       if (t === 'gain') S.rain += e.last.n
-      else { S.rain = 0; S.shown = S.coins; paintPurse(false) }
+      else if (t !== 'ask' && t !== 'me') { S.rain = 0; S.shown = S.coins; paintPurse(false) }
       if (t === 'pay' || t === 'exit') renderGoods()
       renderDock() // 本板块自己的兑换在交付时（金币落定之后）才更新
     }

@@ -164,3 +164,43 @@ App.section('mansion', {
 4. 光标驱动的效果存在且顺滑。
 5. 离开视口时动画循环暂停。
 6. 与相邻板块的衔接自然。
+
+## 9. 本局钱袋（`App.state.econ` · `App.econ`，core/app.js）
+
+依据：价目表 8.1–8.2、第 9 节；开局流程 2.2；主持人游戏 8。规则里没有「钱袋」这件东西——它只是界面上「你身上带着的金币」。
+
+- **一局一个。** 铜牌（plaque）与模拟庭审（trial）读写同一份；开新局整个换掉，**不跨局累积**，也不写进本地存储（刷新即无）。还没开过局时 `App.state.econ` 为 `null`：铜牌上第一次取币 / 兑换 / 问价时自动开一局「铜牌上的试玩」（盘里十五摞都在，你身上 0 枚）。
+- **变化就广播** `App.bus` 的 `'econ:change'`（参数是钱袋本身）；`econ.last` 说明这一次是什么变化，监听者据此决定怎么演。`App.state.coins` 同步为 `econ.coins`（旧代码兼容）。
+
+结构：
+
+| 字段 | 含义 |
+|---|---|
+| `game` | 局号，每开一局 +1 |
+| `source` | `'plaque'` 铜牌上的试玩 / `'trial'` 模拟庭审开的局 |
+| `me`, `seat` | 「你」的角色 id 与席位号 1–15（号牌 = 套房号，服务在这间套房兑现）；未定为 `null` / `0` |
+| `coins` | 你身上带着的枚数——只有这些能付账；没有账本、没有余额播报 |
+| `spent` | 这一局你付出去的枚数 |
+| `tray[15]` | 理币盘一列十五摞：`{ n 剩几枚, owner }`，owner：`null` 没人动过 / `'me'` 你的一摞 / `'other'` 别人的（你从中拿过）/ 角色 id（庭审开局各取一摞） |
+| `grabbed` | 你从别人的那一摞里拿的枚数（抢夺不受惩罚，只是看得见） |
+| `items[]` | 交付到你手边、还留着的东西：`{ name, pts 单价（分）, qty, kind: 'item' / 'service' / 'ticket', off 牌外? }` |
+| `repaired` | `{ 角色 id: true }`：修复过身体残疾的人（卡上写明的残疾全部修好） |
+| `asked` | `{ 牌外物品名: 分 }`：问过价的第 10 节物品（问了才知道，此后照这个价） |
+| `exited` | `null` / `{ at 局内分钟, seat }`：持退出券离馆——**不是死亡**；离馆者退出游戏和愿望争夺 |
+| `last` | `{ type, … }`，type：`new` / `take` / `gain` / `lose` / `pay` / `ask` / `me` / `exit` |
+
+接口（除 `settle` 外都会改钱袋并广播）：
+
+- `App.econ.newGame({ me, seats, source, taken, coins })`：开新局。庭审在 `startGame` 里调用 `App.econ.newGame({ me: S.me, seats: S.seats })`：`source` 默认 `'trial'`，模拟从规则宣告之后开始，有人坐的席位那一摞已被取走、你身上 10 枚，空席的那一摞还在盘里。
+- `App.econ.ensure()`：当前这一局；没有就开一局铜牌试玩。`App.econ.get()`：当前这一局或 `null`。
+- `App.econ.settle(list, econ?)`：**纯函数**，只检查不改。`list` 是名字或 `{ name, pts?, qty?, void?, repair? }` 的数组（名字查得到价时 `pts` 可省；`void` 是不成立类别的 key；`repair` 是修复的对象，省略时按名字「修复身体残疾」识别、修的是 `econ.me`）。返回 `{ ok, total 总价（分）, coins 要付几枚, reason, key, text, result, … }`，`reason`：`null` 成立 / `'empty'` / `'exited'` 已离馆 / `'void'` 不成立的请求 / `'repair'` 对象没有卡上写明的残疾（或已修过；`who` 为 `null` 表示还不知道「你」是谁）/ `'round'` 总价不是整百（`short` 还差几分）/ `'purse'` 身上的不够（`need` 还差几枚）。`text` 是 `WORLD.prices.void` 里对应的原文，`result` 是「不收金币……他只得知不成立」原句。检查顺序：离馆 → 不成立的请求 → 修复对象 → 整百 → 身上够不够（价目表 8.2：报价时就告知不成立的，不必凑整、不收钱）。
+- `App.econ.pay(list)`：结算并付款、交付。成立时扣金币、记进 `items`（修复记进 `repaired`），返回值多一个 `items`（这一次交付的）；不成立时什么都不改，返回 `settle` 的结果。
+- `App.econ.take(i)`：从理币盘第 i 摞取一枚，返回 `{ grab 是否别人的那一摞, left }`；第一次碰的那一摞是你的。
+- `App.econ.gain(n, why)` / `lose(n, why)`：你身上多了 / 少了几枚（余波发放、拾取死者的金币、交易、被抢）。
+- `App.econ.ask(name)`：问一件第 10 节物品的价（只对你报），记进 `asked`，返回分数；表上没有返回 `null`。
+- `App.econ.exit({ at })`：持退出券要求离馆（手边须有一张退出券），成功返回 `true` 并设 `exited`。
+- `App.econ.setMe(id)`：设定「你」是谁（铜牌上修复残疾时选人用；庭审开局由 `newGame` 带入）。
+- 查询：`disability(id)` 卡上写明保留的残疾原文（乔尼、格里菲斯、格斯、宇智波佐助、香克斯、斑目貘；其余 `null`）；`canWalk(id)` 卡上的 canWalk，修复过的按能走算；`price(name)` → `{ pts, off }`；`plaqueList()` / `offList()` 铜牌条目与牌外条目（火器拆成「…，一把」「…，弹药一发」两条）；`trayLeft()` 盘里还剩几枚；`stacksLeft()` 还剩几摞；`hasTicket()`。
+- 常量：`TOTAL` 150（开局全馆）、`TICKET` 500（一张退出券）、`BATCH` `[5, 10]`（每审结一批每人得 5–10 枚）、`VOID_ASKS` 几条典型的不成立请求 `{ label, key }`（谁是受命者 / 能打开正门的钥匙 / 能打出去的电话 / 买回被封住的本事）。
+
+谁在用：铜牌（取币、兑换、便笺凑整、默念问价、修复、退出券）；终章（`wish.js` 理币盘按 `stacksLeft()` 画摞数，还没有钱袋就是空盘）；庭审（开局 `newGame`、余波 `gain`、局内兑换 `pay`、离馆读 `exited`）。旧的 `'trial:coins'` 事件：庭审还没用钱袋时由铜牌代为记进钱袋；`econ.source` 是 `'trial'` 之后铜牌不再重复记。

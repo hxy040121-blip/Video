@@ -897,6 +897,10 @@ html[data-q="0"] .plaque-specbox { display: none; }
   .plaque-goods { gap: 9px 10px; padding: 14px 4px 22px; }
   .plaque-good { font-size: 12px; max-width: 100%; }
   .pq-ask-cols { columns: 1; }
+  .pq-who-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .pq-who-grid.is-names { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pq-who-p { width: 68px; }
+  .pq-who-n { font-size: 12px; }
   .pq-ask-i { font-size: 13.5px; }
 }
 

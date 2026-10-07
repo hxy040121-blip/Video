@@ -39,7 +39,9 @@
   const Q = () => (App.quality ? App.quality.level : 2) // 2 全效果 / 1 / 0 最省
 
   /* 位图肖像的虹膜位置（画面比例 0–1；从 assets/art/portraits/*.webp 的血粉虹膜量出）。
-     只露一只眼的（格斯、宇智波斑）只有一个点。十五席的圆形徽章也用它来对准脸。 */
+     只露一只眼的（格斯、宇智波斑、漩涡长门）只有一个点。十五席的圆形徽章也用它来对准脸。
+     量法：取 alpha 不透明、R 与 B 都明显高于 G 的像素（暗金单色里只有虹膜是这种粉），在画面中部按连通块求加权质心，
+     取最大的一块，再找同高（±0.07）、相距 0.07–0.26 的另一块配成一双；旧 38 人用同一方法复量，与下表相差不超过 0.002。 */
   const EYES = {
     aizen: [[0.421, 0.407], [0.58, 0.408]], akagi: [[0.443, 0.404], [0.558, 0.4]], armin: [[0.435, 0.407], [0.565, 0.408]],
     baku: [[0.432, 0.411], [0.571, 0.405]], battler: [[0.421, 0.421], [0.579, 0.4]], beatrice: [[0.424, 0.419], [0.58, 0.4]],
@@ -54,6 +56,12 @@
     shanks: [[0.426, 0.4], [0.571, 0.415]], sherlock: [[0.435, 0.411], [0.564, 0.409]], shinichi: [[0.41, 0.419], [0.552, 0.401]],
     shinobu: [[0.424, 0.404], [0.575, 0.422]], sukuna: [[0.408, 0.422], [0.491, 0.4]], thragg: [[0.42, 0.41], [0.581, 0.411]],
     valentine: [[0.456, 0.421], [0.598, 0.398]], yumeko: [[0.423, 0.381], [0.579, 0.436]],
+    // v4.71 新增 15 人
+    joseph2: [[0.42, 0.4], [0.58, 0.417]], joseph3: [[0.43, 0.415], [0.568, 0.407]], jotaro3: [[0.429, 0.421], [0.571, 0.401]],
+    jotaro6: [[0.421, 0.409], [0.577, 0.415]], pucci: [[0.43, 0.405], [0.568, 0.416]], diego: [[0.428, 0.413], [0.574, 0.405]],
+    naegi: [[0.427, 0.41], [0.574, 0.409]], kirigiri: [[0.425, 0.411], [0.575, 0.411]], kirei: [[0.413, 0.409], [0.587, 0.413]],
+    nagato: [[0.593, 0.41]], gintoki: [[0.423, 0.408], [0.576, 0.41]], tony: [[0.423, 0.418], [0.574, 0.401]],
+    hannibal: [[0.415, 0.41], [0.585, 0.412]], homelander: [[0.419, 0.413], [0.58, 0.408]], johan: [[0.403, 0.409], [0.597, 0.412]],
   }
   App.castEyes = EYES
   // 长廊里位图肖像的偏转幅度（与 cast.css 里 .cast-por.is-photo > img 的 transform 一致）
@@ -204,6 +212,7 @@
     S.trackW = Math.round(lastC + (S.mob ? S.vw * 0.62 : S.vw * 0.5))
     S.travel = Math.max(1, S.trackW - S.vw)
     S.k = S.mob ? 0.7 : 0.65 // 竖向滚动 1px → 横向推进 1/k px（38 幅时是 0.85 / 0.78）
+    S.farM = Math.max(1200, S.vw) // 离视口左右多远以外的画先不画（setFar）
     sec.style.height = Math.round(vh + S.travel * S.k) + 'px'
     wall.style.width = fore.style.width = S.trackW + 'px'
     for (const it of S.items) placeItem(it)
@@ -233,6 +242,12 @@
       th.setAttribute('viewBox', `${bx} ${by} ${bw} ${bh}`)
       Object.assign(th.style, { left: bx + 'px', top: by + 'px', width: bw + 'px', height: bh + 'px' })
       th.querySelector('path').setAttribute('d', `M${x0} ${y0}C${x0 + 60} ${y0 + vh * 0.5} ${x1 - 220} ${vh * 0.62} ${x1} ${y1b}`)
+    }
+    // 一进来就只画视口附近的（帧循环里再随滚动更新）
+    for (const it of S.items.concat([voidIt])) {
+      const sx = it.x + S.x
+      const far = sx > S.vw + S.farM || sx + it.w < -S.farM
+      if (far !== it.far) setFar(it, far)
     }
     S.measured = false
     measureSec()
@@ -372,6 +387,17 @@
     const t = `translate3d(${(px * TURN.x * it.pw).toFixed(2)}px,${(py * TURN.y * it.ph).toFixed(2)}px,0) perspective(900px) rotateY(${(px * 5).toFixed(2)}deg)`
     if (t !== it.tw) { it.tw = t; it.turn.style.transform = t }
   }
+  /* 长廊比合成器的「绘制范围」长：墙这一层只录视口左右各约 4000px 以内的内容（cull rect），
+     53 幅时两头的画落在范围外，长廊一动，范围一变，墙就成片重画（滚动时每屏 20MP 以上）。
+     所以离视口远的画先藏起来（visibility，不重排），留下的都在范围里；只有透明的点击区还在（Tab 照样能走到）。
+     眼睛的光点在前景层里，同样处理；尽头的红线跟着空框。 */
+  function setFar(it, far) {
+    it.far = far
+    it.node.classList.toggle('is-far', far)
+    it.eyesBox.classList.toggle('is-far', far)
+    if (it.void) { const th = wall.querySelector('.cast-thread'); if (th) th.classList.toggle('is-far', far) }
+  }
+
   // 回到墙里：停在当时的姿态（二维平移，不再成层）
   function freeze(it) {
     if (!it.photo) { it.turn.style.transform = ''; return }
@@ -422,7 +448,7 @@
      ===================================================================== */
   function makeItem(i, c) {
     const isVoid = !c
-    const it = { i, k: isVoid ? 'v' : i, c, lit: 0, heat: 0, pf: 0, on: false, live: false, warm: false, sway: null, decoded: false, void: isVoid, gaze: { x: 0, y: 0 }, fixed: false, ox: 0, oy: 0, halos: [] }
+    const it = { i, k: isVoid ? 'v' : i, c, lit: 0, heat: 0, pf: 0, on: false, live: false, warm: false, sway: null, decoded: false, void: isVoid, gaze: { x: 0, y: 0 }, fixed: false, ox: 0, oy: 0, halos: [], far: false }
     const node = el('div.item' + (isVoid ? '.item--void' : ''), { 'data-i': i })
     if (c) node.style.setProperty('--accent', (c.art && c.art.accent) || App.color.blood)
     // —— 静态版（墙里画一次）——
@@ -833,6 +859,10 @@
     for (let i = 0; i <= all.length; i++) {
       const it = i < all.length ? all[i] : voidIt
       const sx = it.x + x
+      // 远处的画先不画（见 setFar）：滞回 200px，免得在门槛上来回切
+      const fm = S.farM + (it.far ? -200 : 0)
+      const far = sx > vw + fm || sx + it.w < -fm
+      if (far !== it.far) setFar(it, far)
       if (sx > vw + 260 || sx + it.w < -260) {
         if (it.live && hot !== it) demote(it)
         it.on = false

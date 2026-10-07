@@ -163,7 +163,7 @@
        tray[15]  理币盘，一列十五摞：{ n 这一摞还剩几枚, owner 这一摞是谁的 }
                  owner：null 没人动过 / 'me' 你的一摞 / 'other' 别人的（你从中拿过）/ 角色 id（庭审开局各取一摞）
        grabbed   你从别人的那一摞里拿的枚数（抢夺不受惩罚，只是人人看得见）
-       items[]   交付到你手边、还留着的东西：{ name, pts 单价（分）, qty, kind, off, at }
+       items[]   交付到你手边、还留着的东西：{ name, pts 单价（分）, qty, kind, off }
                  kind：'item' 物品 / 'service' 服务（在你绑定的套房兑现）/ 'ticket' 退出券；off：牌外（第 10 节）的东西
        repaired  { 角色 id: true }：修复过身体残疾的人（卡上写明保留的残疾全部修好；乔尼、格里菲斯此后能走）
        asked     { 牌外物品名: 分 }：问过价的牌外物品（第 10 节问了才知道；此后照这个价）
@@ -302,13 +302,14 @@
       // 你身上多了 / 少了几枚（余波发放、拾取、交易、被抢……）；why 只是给监听者看的标签
       gain(n, why) {
         n = Math.floor(+n || 0)
+        if (n <= 0) return st()
         const e = E.ensure()
-        if (n <= 0) return e
         e.coins += n
         return emit(e, { type: 'gain', n, why: why || null })
       },
       lose(n, why) {
-        const e = E.ensure()
+        const e = st()
+        if (!e) return null
         n = Math.min(e.coins, Math.floor(+n || 0))
         if (n <= 0) return e
         e.coins -= n
@@ -345,9 +346,10 @@
       },
       // 结算并付款、交付：成立时扣金币、把东西记进 items（修复记进 repaired）；不成立时什么都不改。返回 settle 的结果（成立时多 items：这一次交付的）
       pay(list) {
+        const r0 = E.settle(list, st())
+        if (!r0.ok) return r0 // 不成立：什么都不改（也不为此开局）
         const e = E.ensure()
-        const r = E.settle(list, e)
-        if (!r.ok) return r
+        const r = r0
         const got = []
         e.coins -= r.coins
         e.spent += r.coins
@@ -362,7 +364,7 @@
           const off = !!it.off || (!plaqueList().some(x => x.name === it.name) && offList().some(x => x.name === it.name))
           const have = kind !== 'ticket' && e.items.find(x => x.name === it.name && x.kind === kind)
           if (have) have.qty += it.qty
-          else e.items.push({ name: it.name, pts: it.pts, qty: it.qty, kind, off, at: e.items.length })
+          else e.items.push({ name: it.name, pts: it.pts, qty: it.qty, kind, off })
           got.push({ name: it.name, pts: it.pts, qty: it.qty, kind, off })
         }
         r.items = got
