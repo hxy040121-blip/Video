@@ -60,13 +60,20 @@
       App.store.set('muted', m)
       setMutedUI(m)
     })
-    const lv = bars.map(() => 0.15)
+    // 电平条：最多每秒 30 次，数值变化明显才写（静音或安静时完全不写）
+    const lv = bars.map(() => 0.15), drawn = bars.map(() => -1)
+    let lastBar = 0
     App.tick(() => {
+      const now = performance.now()
+      if (now - lastBar < 32) return
+      lastBar = now
       const level = App.audio.muted ? 0 : App.audio.level()
       bars.forEach((b, i) => {
-        const target = 0.15 + level * (0.6 + 0.4 * Math.sin(performance.now() / (140 + i * 37) + i * 1.7)) * 0.95
-        lv[i] = U.lerp(lv[i], target, 0.3)
-        b.style.transform = `scaleY(${lv[i].toFixed(3)})`
+        const target = 0.15 + level * (0.6 + 0.4 * Math.sin(now / (140 + i * 37) + i * 1.7)) * 0.95
+        lv[i] = U.lerp(lv[i], target, 0.45)
+        if (Math.abs(lv[i] - drawn[i]) < 0.02) return
+        drawn[i] = lv[i]
+        b.style.transform = `scaleY(${lv[i].toFixed(2)})`
       })
     })
   }

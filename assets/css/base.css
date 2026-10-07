@@ -89,6 +89,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sec { position: relative; min-height: 100vh; }
 /* 远离视口的板块整块不画（scroll.js 用 IntersectionObserver 加 .is-far；不影响排版与滚动位置） */
 .sec.is-far, .sec.is-far * { visibility: hidden !important; }
+/* 远处板块里的无限 CSS 动画也停下（visibility 藏不住动画，样式仍会每帧重算） */
+.sec.is-far *, .sec.is-far *::before, .sec.is-far *::after { animation-play-state: paused !important; }
 
 /* ---------- 文字工具 ---------- */
 .t-display { font-family: var(--f-display); font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
