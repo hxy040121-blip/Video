@@ -1606,6 +1606,20 @@ ${corners}${mid}
       parts.push({ k: 'dust', x, y, vx: (x - p.x) * 0.012 + U.rand(-0.3, 0.3), vy: (y - p.y) * 0.01 + U.rand(-0.3, 0.1), life: 0, max: U.rand(40, 70), r: U.rand(6, 14) })
     }
   }
+  // 灰尘的柔光点：中心 rgba(214,200,180,1) 线性淡到边缘全透明（乘上 globalAlpha 即原先的渐变）
+  let dustImg = null
+  function dustSprite() {
+    if (dustImg) return dustImg
+    const n = 128, c = document.createElement('canvas')
+    c.width = c.height = n
+    const x = c.getContext('2d')
+    const g = x.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2)
+    g.addColorStop(0, 'rgba(214,200,180,1)')
+    g.addColorStop(1, 'rgba(214,200,180,0)')
+    x.fillStyle = g
+    x.fillRect(0, 0, n, n)
+    return (dustImg = c)
+  }
   function fxTick(dt) {
     const x = S.ctx
     // 没有粒子时画布清空并整块隐藏：一张全屏的透明画布也是一个要合成的全屏图层
@@ -1642,11 +1656,10 @@ ${corners}${mid}
         p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.97; p.vy *= 0.97
         x.globalCompositeOperation = 'source-over'
         const r = p.r * (0.6 + t * 1.2)
-        const g = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, r)
-        g.addColorStop(0, `rgba(214,200,180,${0.09 * (1 - t)})`)
-        g.addColorStop(1, 'rgba(214,200,180,0)')
-        x.fillStyle = g
-        x.fillRect(p.x - r, p.y - r, r * 2, r * 2)
+        // 灰尘：同一张预先画好的柔光点按大小、透明度贴上去（与逐个新建径向渐变的画法相同，不必每帧每粒重建渐变）
+        x.globalAlpha = 0.09 * (1 - t)
+        x.drawImage(dustSprite(), p.x - r, p.y - r, r * 2, r * 2)
+        x.globalAlpha = 1
       }
     }
     x.globalCompositeOperation = 'source-over'
