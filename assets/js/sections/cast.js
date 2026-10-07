@@ -30,6 +30,28 @@
   const two = n => String(n).padStart(2, '0')
   const typo = s => String(s || '').replace(/'([^'\n]*)'/g, '‘$1’').replace(/"([^"\n]*)"/g, '“$1”')
 
+  /* 位图肖像的虹膜位置（画面比例 0–1；从 assets/art/portraits/*.webp 的血粉虹膜量出）。
+     只露一只眼的（格斯、宇智波斑）只有一个点。十五席的圆形徽章也用它来对准脸。 */
+  const EYES = {
+    aizen: [[0.421, 0.407], [0.58, 0.408]], akagi: [[0.443, 0.404], [0.558, 0.4]], armin: [[0.435, 0.407], [0.565, 0.408]],
+    baku: [[0.432, 0.411], [0.571, 0.405]], battler: [[0.421, 0.421], [0.579, 0.4]], beatrice: [[0.424, 0.419], [0.58, 0.4]],
+    dio: [[0.437, 0.413], [0.563, 0.406]], eren: [[0.342, 0.409], [0.47, 0.414]], frieren: [[0.403, 0.404], [0.597, 0.404]],
+    gilgamesh: [[0.418, 0.414], [0.581, 0.405]], griffith: [[0.396, 0.417], [0.605, 0.408]], guts: [[0.578, 0.412]],
+    haruaki: [[0.412, 0.403], [0.587, 0.42]], higuruma: [[0.42, 0.391], [0.582, 0.403]], itachi: [[0.416, 0.409], [0.587, 0.408]],
+    johnny: [[0.426, 0.415], [0.574, 0.404]], junko: [[0.425, 0.404], [0.574, 0.406]], kaiji: [[0.431, 0.415], [0.579, 0.396]],
+    kiritsugu: [[0.412, 0.413], [0.589, 0.413]], kurisu: [[0.417, 0.407], [0.579, 0.405]], l: [[0.435, 0.429], [0.567, 0.395]],
+    light: [[0.412, 0.405], [0.589, 0.407]], madara: [[0.583, 0.41]], makima: [[0.468, 0.393], [0.601, 0.423]],
+    mikasa: [[0.417, 0.411], [0.58, 0.412]], muzan: [[0.42, 0.414], [0.575, 0.402]], naruhodo: [[0.418, 0.411], [0.582, 0.408]],
+    obito: [[0.42, 0.412], [0.577, 0.406]], saber: [[0.414, 0.404], [0.603, 0.414]], sasuke: [[0.418, 0.411], [0.58, 0.41]],
+    shanks: [[0.426, 0.4], [0.571, 0.415]], sherlock: [[0.435, 0.411], [0.564, 0.409]], shinichi: [[0.41, 0.419], [0.552, 0.401]],
+    shinobu: [[0.424, 0.404], [0.575, 0.422]], sukuna: [[0.408, 0.422], [0.491, 0.4]], thragg: [[0.42, 0.41], [0.581, 0.411]],
+    valentine: [[0.456, 0.421], [0.598, 0.398]], yumeko: [[0.423, 0.381], [0.579, 0.436]],
+  }
+  App.castEyes = EYES
+  // 长廊里位图肖像的偏转幅度（与 cast.css 里 .cast-por.is-photo > img 的 transform 一致）
+  const TURN = { x: 0.032, y: 0.022, s: 1.07 }
+  const isPhoto = por => !!(por && por.classList.contains('is-photo'))
+
   /* =====================================================================
      画框：一套四型
      ===================================================================== */
@@ -199,7 +221,7 @@
     it.por.style.left = it.pl + 'px'
     it.por.style.top = it.pt + 'px'
     if (it.eyesBox) {
-      it.eyesBox.style.setProperty('--hs', Math.round(U.clamp(pw * 0.085, 11, 24)) + 'px')
+      it.eyesBox.style.setProperty('--hs', Math.round(U.clamp(pw * (isPhoto(it.por) ? 0.078 : 0.085), 10, 24)) + 'px')
       it.eyesBox.style.width = pw + 'px'
       it.eyesBox.style.height = ph + 'px'
       it.eyesBox.style.transform = `translate3d(${(it.x + it.pl).toFixed(1)}px,${(it.y + it.pt).toFixed(1)}px,0)`
@@ -257,9 +279,12 @@
     const back = el('div.back')
     const hotg = el('div.hotglow')
     const por = App.portrait(c.id, { className: 'cast-por', eyeRange: 10 })
+    const floor = el('div.floor')
+    const lamp = el('div.lamp')
     const veil = el('div.veil')
     const dim = el('div.dim')
-    win.append(back, hotg, por, veil, dim)
+    const glint = el('div.glint')
+    win.append(back, hotg, por, floor, lamp, veil, dim, glint)
     const border = sv('svg', { class: 'cast-border', 'aria-hidden': 'true' })
     swing.append(shadow, win, border)
     const name = el('span.name', { text: c.name })
@@ -267,8 +292,12 @@
     const seat = el('span.seatno', { 'aria-hidden': 'true' })
     const plate = el('div.plate', null, [el('i.rivet'), name, epi, seat, el('i.rivet')])
     node.append(wire, swing, plate)
-    Object.assign(it, { node, wire, swing, shadow, shadowIn: shadow.firstChild, win, back, hotg, por, veil, dim, border, plate, epi, seat, svg: por.querySelector('svg') })
-    it.eyes = por._eyes || null
+    Object.assign(it, { node, wire, swing, shadow, shadowIn: shadow.firstChild, win, back, hotg, por, lamp, veil, dim, glint, border, plate, epi, seat, svg: por.querySelector('svg') })
+    it.blinkAt = performance.now() + 2000 + Math.random() * 9000
+    Object.defineProperty(it, 'eyes', { get: () => por._eyes || null })
+    // 位图缺失（只拿到代码仓库时）核心会换成剪影占位：重新量眼睛
+    const pimg = por.querySelector('img')
+    if (pimg) pimg.addEventListener('error', () => { it.svg = por.querySelector('svg'); it.rim = null; S.measured = false }, { once: true })
     // 凝视方向（移开视线时看哪里）：多数顺着长廊望向东头
     const rnd = U.seeded(97 + i * 31)
     const a = rnd() < 0.68 ? U.lerp(-0.35, 0.75, rnd()) : Math.PI + U.lerp(-0.6, 0.5, rnd())
@@ -309,7 +338,8 @@
     const plate = el('div.plate', null, [el('i.rivet'), el('span.name', { text: '？？？' }), epi, el('i.rivet')])
     node.append(wire, swing, plate)
     Object.assign(it, { node, wire, swing, shadow, shadowIn: shadow.firstChild, win, back, por, veil, border, plate, epi, svg: por.querySelector('svg') })
-    it.eyes = por._eyes || null
+    it.blinkAt = 1e15
+    Object.defineProperty(it, 'eyes', { get: () => por._eyes || null })
     it.gdx = -1; it.gdy = 0.1
     let busy = false
     const poke = () => {
@@ -390,17 +420,24 @@
       const box = it.eyesBox
       box.innerHTML = ''
       it.halos = []
-      it.eyeEls = Array.from(it.por.querySelectorAll('.p-eye'))
-      const pr = it.por.getBoundingClientRect()
-      if (!pr.width) continue
-      const sc = Array.from(it.por.querySelectorAll('.p-sclera'))
+      it.photo = isPhoto(it.por)
+      box.classList.toggle('is-photo', it.photo)
+      it.eyeEls = it.photo ? [] : Array.from(it.por.querySelectorAll('.p-eye'))
       const pts = []
-      for (const s of sc) {
-        const r = s.getBoundingClientRect()
-        if (!r.width && !r.height) continue
-        pts.push({ x: (r.left + r.width / 2 - pr.left) / pr.width, y: (r.top + r.height / 2 - pr.top) / pr.height, w: r.width / pr.width })
+      if (it.photo) {
+        // 位图：用量好的虹膜位置，按 CSS 里的放大量换算
+        const list = (it.c && EYES[it.c.id]) || [[0.42, 0.41], [0.58, 0.41]]
+        for (const [x, y] of list) pts.push({ x: 0.5 + (x - 0.5) * TURN.s, y: 0.5 + (y - 0.5) * TURN.s })
+      } else {
+        const pr = it.por.getBoundingClientRect()
+        if (!pr.width) continue
+        for (const s of Array.from(it.por.querySelectorAll('.p-sclera'))) {
+          const r = s.getBoundingClientRect()
+          if (!r.width && !r.height) continue
+          pts.push({ x: (r.left + r.width / 2 - pr.left) / pr.width, y: (r.top + r.height / 2 - pr.top) / pr.height })
+        }
+        if (!pts.length) pts.push({ x: 0.42, y: 0.41 }, { x: 0.58, y: 0.41 })
       }
-      if (!pts.length) pts.push({ x: 0.42, y: 0.41, w: 0.07 }, { x: 0.58, y: 0.41, w: 0.07 })
       for (const p of pts.slice(0, 3)) {
         const h = el('i.halo')
         h.style.left = (p.x * 100).toFixed(2) + '%'
@@ -427,6 +464,17 @@
     it.node.classList.add('is-hot')
     gsap.to(it, { heat: 1, duration: 0.55, ease: 'power2.out' })
     sway(it, App.mouse.vx)
+    App.audio.sfx('hover', { pan: U.clamp(((it.x + S.x + it.w / 2) / S.vw - 0.5) * 1.6, -1, 1) })
+    // 轮廓光：同一幅画的暖金剪影垫在后面，朝烛光一侧露出一道金边（第一次悬停时才建）
+    if (!it.rim && isPhoto(it.por)) {
+      const src = it.por.querySelector('img')
+      if (src) {
+        it.rim = U.el('img', { class: 'cast-rim', src: src.getAttribute('src'), alt: '', decoding: 'async', draggable: 'false' })
+        it.por.insertBefore(it.rim, src)
+      }
+    }
+    // 画框玻璃上掠过一道反光
+    if (it.glint && !RM) gsap.fromTo(it.glint, { xPercent: -60, opacity: 1 }, { xPercent: 60, opacity: 0, duration: 1.2, ease: 'power2.inOut', overwrite: true })
     if (!it.decoded) {
       it.decoded = true
       App.text.scramble(it.epi, it.c.epithet, { duration: 0.9 })
@@ -564,36 +612,73 @@
           it.gx = gx; it.gy = gy
         }
       }
-      // 悬停：烛光点亮轮廓光与眼睛
-      if (it.heat > 0.004 && it.svg) {
-        const h = it.heat
+      // 悬停：烛光把这一幅照亮——正面的暖光跟着烛火在画上移动，背后垫一道金色轮廓光（朝向烛光的一侧）
+      const h = it.heat
+      if (h > 0.004 && it.photo) {
+        const ux = -dx / d, uy = -dy / d
+        const ps = it.por.style
+        ps.setProperty('--rx', (-ux * 3.2 * h).toFixed(2) + 'px')
+        ps.setProperty('--ry', (U.clamp(-uy, -0.4, 0.4) * 2.4 * h).toFixed(2) + 'px') // 竖直方向收着点：有几张原图顶上是直边
+        ps.setProperty('--rim', h.toFixed(3))
+        const ls = it.lamp.style
+        ls.setProperty('--lx', U.clamp(((S.cx - sx) / it.w) * 100, -30, 130).toFixed(1) + '%')
+        ls.setProperty('--ly', U.clamp(((S.cy - it.y) / it.h) * 100, -30, 130).toFixed(1) + '%')
+        ls.opacity = h.toFixed(3)
+        it.filtered = true
+      } else if (h > 0.004 && it.svg) {
         const ux = -dx / d, uy = -dy / d
         const rx = (ux * 2.6 * h).toFixed(2), ry = (uy * 2.2 * h).toFixed(2)
-        it.svg.style.filter = `grayscale(${(0.85 * (1 - h)).toFixed(3)}) brightness(${(0.78 + 0.32 * h).toFixed(3)}) drop-shadow(${rx}px ${ry}px 0 rgba(236,198,128,${(0.95 * h).toFixed(3)})) drop-shadow(0 0 ${(10 * h).toFixed(1)}px rgba(194,154,91,${(0.4 * h).toFixed(3)}))`
+        it.svg.style.filter = `grayscale(${(0.85 * (1 - h)).toFixed(3)}) brightness(${(0.78 + 0.32 * h).toFixed(3)}) drop-shadow(${rx}px ${ry}px 0 rgba(236,198,128,${(0.95 * h).toFixed(3)}))`
         it.filtered = true
-      } else if (it.filtered) { it.svg.style.filter = ''; it.filtered = false }
+      } else if (it.filtered) {
+        it.filtered = false
+        if (it.svg) it.svg.style.filter = ''
+        if (it.lamp) it.lamp.style.opacity = '0'
+        it.por.style.setProperty('--rim', '0')
+      }
       // 凝视目标（移开视线时）
       it.gaze.x = fx + it.gdx * 900
       it.gaze.y = fy + st + it.gdy * 900
-      // 眼睛的光：跟随虹膜、跟着眨眼
+      // 眼睛的光：浮在黑暗之上，跟着画像偏转、偶尔眨一下
       if (it.halos.length) {
         const w = it.eyes
-        const s = it.pw / 600
-        const ox = w ? w.ox * s : 0, oy = w ? w.oy * s : 0
+        let ox = 0, oy = 0
+        if (w && it.photo) { ox = (w.ox / w.range) * TURN.x * it.pw; oy = (w.oy / w.range) * TURN.y * it.ph }
+        else if (w) { const s = it.pw / 600; ox = w.ox * s; oy = w.oy * s }
         let blink = 1
-        const e0 = it.eyeEls && it.eyeEls[0]
-        if (e0) {
-          const ta = e0.getAttribute('transform') || e0.style.transform || ''
-          const mm = /matrix\(\s*[-\d.e]+[ ,]+[-\d.e]+[ ,]+[-\d.e]+[ ,]+([-\d.e]+)/.exec(ta) || /scale\(\s*[-\d.e]+\s*,\s*([-\d.e]+)/.exec(ta)
-          if (mm) blink = U.clamp(parseFloat(mm[1]), 0, 1)
+        if (it.photo) {
+          if (!RM && now > it.blinkAt) {
+            const bt = (now - it.blinkAt) / 170
+            if (bt >= 1) it.blinkAt = now + 2600 + Math.random() * 8000
+            else blink = 1 - Math.sin(bt * Math.PI) * 0.95
+          }
+        } else {
+          const e0 = it.eyeEls && it.eyeEls[0]
+          if (e0) {
+            const ta = e0.getAttribute('transform') || e0.style.transform || ''
+            const mm = /matrix\(\s*[-\d.e]+[ ,]+[-\d.e]+[ ,]+[-\d.e]+[ ,]+([-\d.e]+)/.exec(ta) || /scale\(\s*[-\d.e]+\s*,\s*([-\d.e]+)/.exec(ta)
+            if (mm) blink = U.clamp(parseFloat(mm[1]), 0, 1)
+          }
         }
-        let op
-        if (it.void) op = (1 - smooth(0.05, 0.55, it.lit)) * (S.away ? 0.55 : 1)
-        else op = (0.55 + 0.45 * Math.max(S.flare, it.heat)) * (1 - 0.72 * it.lit * (1 - it.heat)) * Math.max(S.watchK, it.heat)
-        op *= blink
-        const sc = 1 + S.flare * 0.6 + it.heat * 0.35
+        let op, sc
+        if (it.void) { op = (1 - smooth(0.05, 0.55, it.lit)) * (S.away ? 0.55 : 1); sc = 1 + S.flare * 0.6 }
+        else if (it.photo) {
+          // 黑里：一双双血粉的眼；被烛光照到：画上的虹膜自己看得见，光点退去；悬停：虹膜微微发亮
+          const darkK = 1 - smooth(0.15, 0.85, it.lit)
+          op = Math.max((0.1 + 0.85 * darkK) * S.watchK, S.flare * (0.6 + 0.35 * darkK))
+          op = op * (1 - h) + 0.62 * h
+          sc = 1 + S.flare * (0.35 + 0.55 * darkK) + darkK * 0.15 - h * 0.3
+        } else {
+          op = (0.55 + 0.45 * Math.max(S.flare, h)) * (1 - 0.72 * it.lit * (1 - h)) * Math.max(S.watchK, h)
+          sc = 1 + S.flare * 0.6 + h * 0.35
+        }
+        op *= blink > 0.3 ? 1 : 0.4 + blink * 2
         const ht = `translate3d(${ox.toFixed(2)}px,${oy.toFixed(2)}px,0) scale(${sc.toFixed(3)},${(sc * Math.max(0.05, blink)).toFixed(3)})`
-        for (const hl of it.halos) { hl.style.transform = ht; hl.style.opacity = op.toFixed(3) }
+        const os = op.toFixed(3)
+        if (ht !== it.htw || os !== it.how) {
+          it.htw = ht; it.how = os
+          for (const hl of it.halos) { hl.style.transform = ht; hl.style.opacity = os }
+        }
       }
       if (it.void) {
         // 空框：近了是空的，远了里面有人
@@ -719,15 +804,27 @@
     const [r, g, b] = U.hexToRgb(acc)
     const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
     const reddish = r > 140 && g < 90 && b < 110
-    const page = el('article.dos-page' + (lum > 0.62 ? '.is-light' : '') + (reddish ? '.is-red' : ''), { 'aria-label': c.name })
+    const page = el('article.dos-page' + (reddish ? '.is-red' : ''), { 'aria-label': c.name })
     page.style.setProperty('--accent', acc)
     page.style.setProperty('--accent-rgb', `${r},${g},${b}`)
+    // 签名色压进墨色里：暗金单色的肖像落在一块深色的签名色斜块上，块心被烛光照暖
+    const mix = (k, base) => [r, g, b].map((v, j) => Math.round(v * k + base[j] * (1 - k)))
+    const deep = mix(0.42, [16, 9, 8]), mid = mix(0.66, [34, 20, 14]), hi = mix(0.6, [255, 236, 200])
+    page.style.setProperty('--slab', `rgb(${deep})`)
+    page.style.setProperty('--slab-mid', `rgb(${mid})`)
+    page.style.setProperty('--accent-hi', `rgb(${lum < 0.32 ? hi : [r, g, b]})`)
 
     const block = el('div.dos-block', null, [el('i.dos-halftone'), el('i.dos-light')])
     const stripe = el('div.dos-stripe')
     const big = el('div.dos-bignum', { text: two(i + 1), 'aria-hidden': 'true' })
     const fig = el('div.dos-fig')
     const por = App.portrait(c.id, { className: 'cast-dos-por', eyeRange: 8 })
+    const pimg = por.querySelector('img')
+    if (pimg) {
+      // 弹丸论破式的硬描边：同一幅画的剪影错开几像素垫在后面
+      const rim = U.el('img', { class: 'cast-dos-rim', src: pimg.getAttribute('src'), alt: '', decoding: 'async', draggable: 'false' })
+      por.insertBefore(rim, pimg)
+    }
     fig.appendChild(por)
     const nameLen = Array.from(c.name).length
     const name = el('h3.dos-name', { 'aria-label': c.name })
@@ -795,8 +892,8 @@
       .fromTo([P.epi, P.work, P.metaEl], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.07, ease: 'expo.out' }, 0.3)
       .fromTo([P.see, P.dream], { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.8, stagger: 0.1, ease: 'expo.out' }, 0.75)
       .fromTo(P.stats.querySelectorAll('.cast-dos-sk'), { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.2 }, 0.3)
-      .fromTo(P.tags.children, { opacity: 0, y: 8, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.06, ease: 'back.out(2)' }, 1.1)
       .fromTo(P.orig, { opacity: 0 }, { opacity: 0, duration: 0.01 }, 0)
+    if (P.tags.children.length) tl.fromTo(Array.from(P.tags.children), { opacity: 0, y: 8, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.06, ease: 'back.out(2)' }, 1.1)
     P.rd.play(d + 0.35)
     App.text.scramble(P.epi, P.c.epithet, { duration: 0.8, delay: d + 0.3 })
     const q = (P.c.quote && P.c.quote.zh) || ''

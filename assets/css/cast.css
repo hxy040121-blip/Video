@@ -67,6 +67,29 @@
 .cast-item.is-hot .cast-hotglow { opacity: 1; }
 .cast-por { position: absolute; }
 .cast-por > svg { filter: grayscale(.85) brightness(.78); }
+/* 位图肖像：在长廊里偏转得更明显（像整幅画在转头看你）。只动 transform，不做逐帧滤镜 */
+.cast-por.is-photo > img {
+  position: relative;
+  transform: translate3d(calc(var(--pvx, 0) * 3.2%), calc(var(--pvy, 0) * 2.2%), 0) perspective(900px) rotateY(calc(var(--pvx, 0) * 5deg)) scale(1.07);
+  transition: none;
+}
+/* 轮廓光：同一幅画的暖金剪影，朝烛光一侧错开几像素（--rx/--ry/--rim 由 cast.js 写在悬停的那一幅上） */
+.cast-por.is-photo > img.cast-rim {
+  position: absolute; left: 0; top: 0;
+  transform: translate3d(calc(var(--pvx, 0) * 3.2% + var(--rx, 0px)), calc(var(--pvy, 0) * 2.2% + var(--ry, 0px)), 0) perspective(900px) rotateY(calc(var(--pvx, 0) * 5deg)) scale(1.07);
+  filter: brightness(0) invert(.86) sepia(1) saturate(3) hue-rotate(-10deg);
+  opacity: var(--rim, 0);
+}
+.cast-floor { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(8,5,6,0) 60%, rgba(8,5,6,.5) 84%, rgba(8,5,6,.86) 100%); }
+/* 烛光落在画上：暖光的位置跟着烛火（--lx/--ly） */
+.cast-lamp {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0; mix-blend-mode: soft-light;
+  background: radial-gradient(circle at var(--lx, 50%) var(--ly, 40%), rgba(255,222,160,.95), rgba(255,186,110,.45) 32%, rgba(255,170,90,0) 64%);
+}
+.cast-glint {
+  position: absolute; top: -10%; bottom: -10%; left: -40%; right: -40%; pointer-events: none; opacity: 0; mix-blend-mode: screen;
+  background: linear-gradient(104deg, transparent 40%, rgba(255,236,200,.1) 46%, rgba(255,246,226,.34) 50%, rgba(255,236,200,.08) 54%, transparent 60%);
+}
 .cast-veil { position: absolute; inset: 0; background: #050304; opacity: calc(.62 - var(--lit) * .62); pointer-events: none; }
 .cast-dim { position: absolute; inset: 0; background: #050304; opacity: 0; transition: opacity .7s var(--ease-out); pointer-events: none; }
 .cast.is-focus .cast-item:not(.is-hot) .cast-dim { opacity: .62; }
@@ -153,6 +176,11 @@
   background: radial-gradient(circle, rgba(255,246,226,.95) 0 9%, var(--accent, #ff2e7e) 18%, rgba(255,46,126,0) 70%);
   mix-blend-mode: screen;
 }
+/* 位图：只有虹膜是血粉——黑暗里亮着的就是它们 */
+.cast-eyes.is-photo .cast-halo {
+  opacity: 0;
+  background: radial-gradient(circle, rgba(255,240,246,.96) 0 7%, rgba(255,74,144,.95) 19%, rgba(255,46,126,.42) 38%, rgba(255,46,126,0) 68%);
+}
 .cast-eyes.is-void .cast-halo { background: radial-gradient(circle, #fff 0 8%, var(--blood) 20%, transparent 70%); }
 
 /* ---------- 进度 ---------- */
@@ -191,7 +219,7 @@
 }
 .cast-dos-block {
   position: absolute; left: 0; top: 0; bottom: 0; width: 42vw; z-index: 1;
-  background: var(--accent);
+  background: radial-gradient(ellipse 62% 48% at 42% 38%, var(--slab-mid, var(--accent)), var(--slab, var(--accent)) 72%), var(--slab, var(--accent));
   clip-path: polygon(0 0, 100% 0, 72% 100%, 0 100%);
   overflow: hidden;
 }
@@ -205,11 +233,10 @@
 .cast-dos-light {
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse 40% 34% at 44% 40%, rgba(255,250,236,.55), rgba(255,250,236,0) 70%),
-    linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.45) 100%);
-  mix-blend-mode: soft-light;
+    radial-gradient(ellipse 46% 36% at 44% 38%, rgba(255,214,150,.5), rgba(255,190,120,0) 72%),
+    linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.5) 100%);
+  mix-blend-mode: screen;
 }
-.cast-dos-page.is-light .cast-dos-light { background: radial-gradient(ellipse 40% 34% at 44% 40%, rgba(255,255,255,.5), rgba(255,255,255,0) 70%), linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.35) 100%); }
 .cast-dos-stripe {
   position: absolute; left: 0; top: 0; bottom: 0; width: 44.4vw; z-index: 0;
   background: var(--blood);
@@ -228,7 +255,15 @@
 }
 .cast-dos-por { width: 100%; height: 100%; }
 .cast-dos-por > svg { filter: drop-shadow(-3px -2px 0 rgba(236,198,128,.85)) drop-shadow(0 30px 40px rgba(0,0,0,.6)); }
-.cast-dos-page.is-light .cast-dos-por > svg { filter: drop-shadow(-3px -2px 0 rgba(10,8,9,.9)) drop-shadow(0 30px 40px rgba(0,0,0,.45)); }
+/* 位图：硬描边——同一幅画的骨白剪影向左上错开 */
+.cast-dos-por.is-photo { overflow: visible; }
+.cast-dos-por.is-photo > img { position: relative; }
+.cast-dos-por.is-photo > img.cast-dos-rim {
+  position: absolute; left: 0; top: 0;
+  transform: translate3d(calc(var(--pvx, 0) * 1.4% - 8px), calc(var(--pvy, 0) * 1% - 2px), 0) scale(1.035);
+  filter: brightness(0) invert(.9) sepia(.75) saturate(1.9);
+  opacity: .92;
+}
 
 .cast-dos-name {
   position: absolute; left: 36vw; top: 9vh; z-index: 3;
@@ -243,7 +278,7 @@
 .cast-dos-name.is-latin { text-orientation: mixed; letter-spacing: .02em; }
 .cast-dos-name--ghost {
   z-index: 1; left: calc(36vw + 1.1vh); top: calc(9vh + 1.1vh);
-  color: transparent; -webkit-text-stroke: 1px rgba(var(--accent-rgb), .85); text-shadow: none;
+  color: transparent; -webkit-text-stroke: 1px var(--accent-hi, var(--accent)); text-shadow: none;
 }
 .cast-dos-page.is-red .cast-dos-name--ghost { -webkit-text-stroke-color: rgba(255,46,126,.9); }
 
@@ -251,15 +286,19 @@
   position: absolute; left: 47.5vw; top: 11vh; bottom: 13vh; width: 22.5vw; z-index: 3;
   display: flex; flex-direction: column; gap: 3vh;
 }
-.cast-dos-see { margin-top: auto; }
+.cast-dos-see { margin-top: 0; }
 .cast-dos-head { display: flex; flex-direction: column; gap: 8px; }
 .cast-dos-epi { font-family: var(--f-display); font-weight: 900; font-size: clamp(22px, 2.3vw, 34px); line-height: 1.15; color: var(--brass); letter-spacing: .04em; }
 .cast-dos-work { font-family: var(--f-serif); font-size: 15px; color: var(--bone); letter-spacing: .1em; }
 .cast-dos-meta { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .12em; color: var(--bone-dim); line-height: 1.7; }
-.cast-dos-quote { position: relative; margin: 2vh 0 0; padding: 2px 0 2px 20px; border: 0; }
+.cast-dos-quote { position: relative; margin: auto 0; padding: 2px 0 2px 22px; border: 0; }
+.cast-dos-quote::after {
+  content: '「'; position: absolute; left: -.08em; top: -.62em; z-index: -1; pointer-events: none;
+  font-family: var(--f-display); font-weight: 900; font-size: clamp(110px, 11vw, 170px); line-height: 1;
+  color: rgba(194,154,91,.1);
+}
 .cast-dos-quote::before { content: ''; position: absolute; left: 0; top: .35em; bottom: .3em; width: 3px; background: var(--accent); }
-.cast-dos-page.is-light .cast-dos-quote::before { background: var(--blood); }
-.cast-dos-zh { font-family: var(--f-serif); font-size: clamp(20px, 1.95vw, 30px); line-height: 1.5; color: var(--bone); min-height: 1.5em; }
+.cast-dos-zh { font-family: var(--f-serif); font-size: clamp(22px, min(2.35vw, 4vh), 36px); line-height: 1.45; letter-spacing: .02em; color: var(--bone); min-height: 1.45em; }
 .cast-dos-orig { margin-top: 10px; font-family: var(--f-serif); font-size: 12.5px; line-height: 1.6; color: var(--bone-dim); letter-spacing: .04em; opacity: 0; }
 .cast-dos-line { display: grid; grid-template-columns: 4.6em 1fr; gap: 14px; align-items: baseline; padding-top: 12px; border-top: 1px solid rgba(111,85,50,.45); }
 .cast-dos-k { font-family: var(--f-sans); font-size: 10.5px; letter-spacing: .3em; color: var(--brass); white-space: nowrap; }

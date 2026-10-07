@@ -107,7 +107,7 @@
       const rows = Math.ceil(CH.length / cols)
       S.H = Math.round(S.trayY + rows * S.bd + (rows - 1) * (gap + 4) + 40)
     } else {
-      S.H = Math.max(vh, 760)
+      S.H = Math.max(vh, 660)
       S.Rx = Math.min(vw * 0.3, 470, (S.H - 330) * 1.04)
       S.Ry = S.Rx * 0.37
       S.Rz = S.Rx * 0.93
@@ -285,12 +285,25 @@
   }
 
   /* =====================================================================
-     头像
+     头像：圆形遮罩里只取头部。位图按两眼的中点对准（虹膜位置由 cast.js 量好放在 App.castEyes）
      ===================================================================== */
+  function faceOf(id) {
+    const E = (App.castEyes || {})[id]
+    if (!E || !E.length) return [0.5, 0.41]
+    if (E.length === 1) return [0.5, E[0][1]]
+    return [U.clamp((E[0][0] + E[1][0]) / 2, 0.38, 0.62), (E[0][1] + E[1][1]) / 2]
+  }
+  function portraitFor(id, opts) {
+    const p = App.portrait(id, Object.assign({ className: 'table-por' }, opts))
+    const [fx, fy] = faceOf(id)
+    p.style.setProperty('--fx', fx.toFixed(3))
+    p.style.setProperty('--fy', fy.toFixed(3))
+    return p
+  }
   function headEl(id) {
     if (heads[id]) return heads[id]
     const h = el('div.head')
-    h.appendChild(App.portrait(id, { className: 'table-por', eyeRange: 8 }))
+    h.appendChild(portraitFor(id, { eyeRange: 8 }))
     heads[id] = h
     return h
   }
@@ -804,7 +817,7 @@
     for (const c of CH) {
       const b = el('button.badge', { type: 'button', 'aria-label': c.name, 'data-cursor': '', 'data-id': c.id })
       const disc = el('span.disc')
-      const por = App.portrait(c.id, { className: 'table-por' })
+      const por = portraitFor(c.id, { track: false })
       const h = el('span.head')
       h.appendChild(por)
       disc.appendChild(h)
