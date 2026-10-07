@@ -21,6 +21,14 @@
   color: var(--bone);
 }
 
+/* 板块底部沉进墨色，与下一板块自然相接 */
+.plaque-root::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; z-index: 25;
+  height: clamp(80px, 14vh, 160px);
+  background: linear-gradient(180deg, rgba(10, 8, 9, 0), var(--ink));
+  pointer-events: none;
+}
+
 /* ---------- 视口层（sticky）：飞行的金币、熔光、墨字、退出之门 ---------- */
 .plaque-fx {
   position: sticky; top: 0; z-index: 20;
@@ -41,6 +49,14 @@
   text-shadow: 0 0 1px rgba(255, 238, 205, .5), 0 0 12px rgba(255, 222, 160, .7), 0 0 30px rgba(255, 196, 110, .45), 0 0 60px rgba(255, 170, 80, .25);
 }
 .plaque-ink span { display: inline-block; transform-origin: 50% 100%; will-change: transform, opacity, filter; }
+/* 东西出现的地方亮起一团暖光，把墨字从身后的刻字里托出来 */
+.plaque-ink::before {
+  content: ''; position: absolute; z-index: -1; left: -38%; right: -38%; top: -70%; bottom: -70%;
+  background: radial-gradient(closest-side, rgba(255, 232, 186, .62), rgba(255, 206, 136, .3) 52%, rgba(255, 190, 110, 0));
+  filter: blur(6px);
+  animation: pq-ink-glow 1.1s var(--ease-out) both;
+}
+@keyframes pq-ink-glow { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: none; } }
 
 /* ---------- 场景 ---------- */
 .plaque-scene { position: relative; z-index: 1; }
@@ -391,7 +407,7 @@
 .plaque-table {
   position: relative;
   width: min(1320px, calc(100% - 2 * var(--gutter)));
-  margin: clamp(10px, 4vh, 60px) auto 0;
+  margin: clamp(-90px, -7vh, -20px) auto 0;
 }
 .plaque-traywrap { position: relative; width: 100%; aspect-ratio: 3.9 / 1; }
 .plaque-tray-cv { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -437,6 +453,12 @@
   color: var(--bone); font-variant-numeric: lining-nums tabular-nums;
   transition: color .3s;
 }
+.plaque-purse-ico::after {
+  content: ''; position: absolute; inset: -2px; border-radius: 50%;
+  border: 1px solid rgba(255, 214, 140, .9); opacity: 0; pointer-events: none;
+}
+.plaque-purse.is-gain .plaque-purse-ico::after { animation: pq-gain .65s var(--ease-out); }
+@keyframes pq-gain { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(2.1); } }
 .plaque-purse.is-empty .plaque-purse-ico { background: none; box-shadow: inset 0 0 0 1px rgba(194, 154, 91, .55); }
 .plaque-purse.is-empty .plaque-purse-ico i { color: rgba(194, 154, 91, .55); text-shadow: none; }
 .plaque-purse.is-empty .plaque-purse-n { color: var(--ash); }
@@ -451,7 +473,8 @@
 .plaque-root.is-armed .plaque-cap { opacity: 0; }
 .plaque-root.is-armed .plaque-exit::before,
 .plaque-root.is-armed .plaque-exit::after { transform: scaleX(0); }
-.plaque-exit.is-in::before, .plaque-exit.is-in::after { transform: scaleX(1); transition: transform 1.4s var(--ease-out); }
+.plaque-root.is-armed .plaque-exit.is-in::before,
+.plaque-root.is-armed .plaque-exit.is-in::after { transform: scaleX(1); transition: transform 1.4s var(--ease-out); }
 
 /* ---------- 中屏：两栏 ---------- */
 @media (max-width: 1180px) {

@@ -233,7 +233,7 @@
   function itemEl(it, exit) {
     const b = U.el('button.plaque-item' + (exit ? '.plaque-exit-item' : '.plaque-reveal'), {
       type: 'button',
-      'data-cursor': exit ? '离场' : '',
+      'data-cursor': '',
       'data-cursor-tone': exit ? 'blood' : null,
       'aria-label': it.name + '　' + fmt(it.pts),
     })
@@ -669,7 +669,10 @@
       E.exit.classList.remove('is-dead')
       void E.exit.offsetWidth
       E.exit.classList.add('is-relight')
-      setTimeout(() => E.exit.classList.remove('is-relight'), 1200)
+      setTimeout(() => {
+        E.exit.classList.remove('is-relight')
+        if (FX.door && FX.door.on) E.exit.classList.add('is-hot')
+      }, 1200)
     }, 1500)
     if (FX.door) FX.door.jolt = 1
     purseShort()
@@ -1191,7 +1194,7 @@
         const phi = phiR + Math.PI + (k / 8) * Math.PI
         const nx = Math.cos(phi), ny = Math.sin(phi)
         lit(x + nx * r, y + ny * r, zm, nx, ny, 0, 28)
-        const I = 0.12 + LT.d * 0.72 + LT.s * (1.5 + sp) + I0
+        const I = 0.17 + LT.d * 0.72 + LT.s * (1.5 + sp) + I0
         gr.addColorStop((1 - Math.cos((k / 8) * Math.PI)) / 2, rgba(ramp(GOLD, I)))
       }
       ctx.fillStyle = gr
@@ -1216,7 +1219,7 @@
     for (let k = 0; k < 28; k++) { E(ct, at, bt, (k / 28) * TAU, q); k ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y) }
     ctx.closePath()
     lit(x, y, z1, 0, 0, 1, 40)
-    const It = 0.16 + LT.d * 0.62 + I0
+    const It = 0.22 + LT.d * 0.62 + I0
     const far = { x: ct.x + bt.x, y: ct.y + bt.y }, near = { x: ct.x - bt.x, y: ct.y - bt.y }
     const tg = ctx.createLinearGradient(far.x, far.y, near.x, near.y)
     tg.addColorStop(0, rgba(ramp(GOLD, It * 0.8)))
@@ -1340,6 +1343,8 @@
     setCoins(S.coins + k)
     S.shown = Math.min(S.coins, S.shown + k)
     paintPurse(true)
+    ring()
+    if (S.quoted) renderNeed(S.quoted._it) // 报价跟着钱袋更新：空心的币被一枚枚填上
     App.audio.sfx('coin', { volume: 0.42, pitch: 1.42 + Math.random() * 0.2, pan: 0.7 })
     melt(purseC, { gold: true, dur: 0.55 })
   }
@@ -1784,6 +1789,15 @@
     E.purse.classList.toggle('is-empty', S.shown <= 0)
     if (pop && !S.reduced) gsap.fromTo(E.purseIco, { scale: 1.35, rotate: -16 }, { scale: 1, rotate: 0, duration: 0.55, ease: 'back.out(3)', overwrite: true })
   }
+  // 钱袋收到金币：一圈金光从币上漾开
+  function ring() {
+    const P = S.E.purse
+    P.classList.remove('is-gain')
+    void P.offsetWidth
+    P.classList.add('is-gain')
+    clearTimeout(S.gainT)
+    S.gainT = setTimeout(() => P.classList.remove('is-gain'), 700)
+  }
   // 庭审赢得的金币：从上方（庭审那一边）落进钱袋
   function rainIn() {
     const n = S.rain
@@ -1800,6 +1814,7 @@
           S.shown = Math.min(S.coins, S.shown + (tgt - got))
           got = tgt
           paintPurse(true)
+          ring()
           if (k % 3 === 0) App.audio.sfx('coin', { volume: 0.35, pitch: 1.3 + Math.random() * 0.3 })
         },
       })
