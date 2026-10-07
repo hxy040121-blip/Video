@@ -124,7 +124,6 @@
 .trial-line-dot.is-void { fill: var(--ash); }
 .trial-line-dot.is-thread { fill: #ff8db8; }
 .trial-line-dot.is-reflect { fill: var(--brass); }
-.trial-bullet { stroke: var(--bone); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 8px var(--blood)); }
 
 /* ---------- 席位 ---------- */
 .trial-seat {
@@ -255,12 +254,6 @@
 
 .trial-seat-hit { position: absolute; inset: -4px; z-index: 8; border-radius: 40% 40% 6px 6px / 26% 26% 6px 6px; cursor: default; }
 .trial-seat-hit:focus-visible { outline: 1px solid var(--brass); outline-offset: 2px; }
-
-.trial-hitmark {
-  position: absolute; left: 50%; top: 45%; z-index: 9; width: 70px; height: 70px; margin: -35px 0 0 -35px;
-  border-radius: 50%; border: 3px solid var(--blood); pointer-events: none;
-}
-.trial-hitmark.is-no { border-color: var(--bone-dim); border-style: dashed; }
 
 /* 小尺寸的位图肖像（席位、名单、终局一排、通知）：光标视差只有 1px 上下，去掉 3D 变换，
    不再每张各占一个合成层（连带压在它上面的渐隐、名字、标记也不必各自成层） */
