@@ -136,10 +136,10 @@
         const g = cv.getContext('2d')
         const img = g.createImageData(N, N), d = img.data
         const row = new Float32Array(N)
-        for (let y = 0; y < N; y++) row[y] = (rnd() + rnd() + rnd() - 1.5) * 0.34
+        for (let y = 0; y < N; y++) row[y] = (rnd() + rnd() + rnd() - 1.5) * 0.17
         const v = new Float32Array(N * N)
         for (let k = 0; k < 1700; k++) {
-          const y = (rnd() * N) | 0, x0 = (rnd() * N) | 0, len = 20 + ((rnd() * 380) | 0), amp = (rnd() - 0.5) * 0.62
+          const y = (rnd() * N) | 0, x0 = (rnd() * N) | 0, len = 20 + ((rnd() * 380) | 0), amp = (rnd() - 0.5) * 0.4
           const base = y * N
           for (let i = 0; i < len; i++) v[base + ((x0 + i) % N)] += amp * Math.sin((Math.PI * i) / len)
         }
@@ -148,7 +148,7 @@
           const rb = row[y] * 0.6 + (row[(y + 1) % N] + row[(y + N - 1) % N]) * 0.2
           for (let x = 0; x < N; x++) {
             const i = y * N + x, o = i * 4
-            const t = rb + v[i] + (rnd() - 0.5) * 0.07 + (low[i] - 0.5) * 0.22
+            const t = rb + v[i] + (rnd() - 0.5) * 0.1 + (low[i] - 0.5) * 0.26
             d[o] = 63 * (1 + t * 0.55); d[o + 1] = 46 * (1 + t * 0.55); d[o + 2] = 31 * (1 + t * 0.5); d[o + 3] = 255
           }
         }
@@ -480,11 +480,12 @@
       E.need.appendChild(U.el('b.plaque-need-n', { text: '×' + n }))
     }
   }
+  // 报价落在这一行的点线上，紧挨着分数（不遮别的行）
   function placeNeed(b) {
     const E = S.E
-    const wr = E.wall.getBoundingClientRect(), pr = b._pts.getBoundingClientRect(), br = b.getBoundingClientRect()
-    E.need.style.left = (pr.right - wr.left + 4).toFixed(1) + 'px'
-    E.need.style.top = (br.top - wr.top + 3).toFixed(1) + 'px'
+    const wr = E.wall.getBoundingClientRect(), pr = b._pts.getBoundingClientRect()
+    E.need.style.left = (pr.left - wr.left - 5).toFixed(1) + 'px'
+    E.need.style.top = (pr.top + pr.height * 0.5 - wr.top).toFixed(1) + 'px'
   }
   function quote(b, sticky) {
     const E = S.E

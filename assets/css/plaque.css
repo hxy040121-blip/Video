@@ -315,20 +315,17 @@
 }
 .plaque-pts.is-cool { transition: color 1.6s ease-out, text-shadow 1.6s ease-out; }
 
-/* 报价：需要几枚 */
+/* 报价：需要几枚——金币摆在这一行的点线上，紧挨着分数 */
 .plaque-need {
   position: absolute; left: 0; top: 0; z-index: 8;
-  display: flex; align-items: center; gap: 4px;
-  padding: 6px 9px 6px 8px;
-  transform: translate(-100%, -100%);
-  background: rgba(9, 7, 6, .82);
-  border: 1px solid rgba(194, 154, 91, .3); border-radius: 2px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+  display: flex; align-items: center; gap: 3px;
+  padding: 4px 10px 4px 14px;
+  transform: translate(-100%, -50%);
+  background: linear-gradient(90deg, rgba(14, 9, 6, 0), rgba(14, 9, 6, .88) 14px, rgba(14, 9, 6, .88) calc(100% - 6px), rgba(14, 9, 6, 0));
   pointer-events: none; opacity: 0; visibility: hidden;
   transition: opacity .2s, visibility 0s .2s;
 }
 .plaque-need.is-on { opacity: 1; visibility: visible; transition: opacity .15s; }
-.plaque-need.is-short { border-color: rgba(255, 46, 126, .45); }
 .plaque-need-n {
   margin-left: 4px;
   font-family: var(--f-latin); font-weight: 700; font-size: 14px; letter-spacing: .04em; line-height: 1;
