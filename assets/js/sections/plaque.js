@@ -423,10 +423,11 @@
      现在把牌面上的刻字整体复制几份（同样的排版，字本身透明，只留一道定色的模糊影），
      垫在原字下面；每一行的副本是独立的合成层，光源移动时只改它的 transform / opacity——
      位移即阴阳边的偏移，不透明度即阴阳边的浓淡，与原来的 text-shadow 逐项对应，牌面不再重画。
-     由下到上：血粉光（离场一条）→ 亮边 → 第二道深影（标题、离场）→ 暗边 → 原字。 */
+     由下到上：血粉光（离场一条）→ 亮边 → 第二道深影（标题、离场）→ 暗边 → 原字。
+     光的微微闪烁（L.f）乘在亮边、血粉光两份副本的整体 opacity 上：光标不动时每一行都不必再写样式。 */
   const PASSES = [
-    { cls: 'pq-g-gl', kinds: 'x', mul: () => 0, a: (sa, sd) => sa * 0.3 },
-    { cls: 'pq-g-r', kinds: 'ntxs', mul: () => 1, a: sa => sa },
+    { cls: 'pq-g-gl', kinds: 'x', lf: true, mul: () => 0, a: (sa, sd) => sa * 0.3 },
+    { cls: 'pq-g-r', kinds: 'ntxs', lf: true, mul: () => 1, a: sa => sa },
     { cls: 'pq-g-d0', kinds: 'tx', mul: k => (k === 't' ? -0.45 : -0.5), a: (sa, sd, k) => sd * (k === 't' ? 0.7 : 0.75) },
     { cls: 'pq-g-d', kinds: 'ntxs', mul: () => -1, a: (sa, sd) => sd },
   ]
@@ -435,6 +436,7 @@
     if (!E.body) return
     for (const g of E.ghosts || []) g.remove()
     E.ghosts = []
+    E.ghostLf = []
     S.rv = {}
     for (const e of S.eng) { e.tw = []; e.sx = e.sy = e.sa = e.sd = null; e.lv = e.lsc = -1 }
     if (!S.live) return
@@ -455,6 +457,7 @@
       for (const n of body.querySelectorAll('[data-pr]')) (S.rv[n.getAttribute('data-pr')] || (S.rv[n.getAttribute('data-pr')] = [])).push(n)
       E.face.insertBefore(wrap, E.body)
       E.ghosts.push(wrap)
+      if (P.lf) E.ghostLf.push(wrap)
     }
   }
   // 原件上的状态变化同步到影子副本
@@ -492,6 +495,7 @@
     // 每一行刻字：亮边在背光一侧，暗边在向光一侧；越掠射，阴阳边越宽
     // （低画质：刻字的阴阳边固定为顶光，不随光标变化，见 plaque.css 的默认值）
     if (!S.live) return
+    for (const g of E.ghostLf) put(g, 'opacity', L.f.toFixed(2))
     const H = 140, R2 = 470 * 470
     const top = -fr.top - 60, bot = vh - fr.top + 60
     for (const e of S.eng) {
@@ -502,7 +506,7 @@
       const o = (0.42 + 1.18 * g) * e.k
       const sx = Math.round((ddx / r) * o * 10) / 10
       const sy = Math.round((ddy / r) * o * 10) / 10
-      let sa = (0.1 + 0.86 * Math.exp(-(r * r) / R2)) * L.f + e.boost
+      let sa = 0.1 + 0.86 * Math.exp(-(r * r) / R2) + e.boost // × L.f 在副本整体上
       if (e.title) sa += S.titleBoost
       sa = Math.round(clamp(sa) * 40) / 40
       const sd = Math.round((0.46 + 0.42 * g) * 20) / 20

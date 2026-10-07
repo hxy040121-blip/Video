@@ -437,8 +437,8 @@
     for (let y = 0; y <= 36; y += 4) { const p = view.P(-1.5, y); htx(txRuler, view, p[0], p[1], 0.52, y, 'mz-ruler-num', { anchor: view.rot ? 'm' : 'e' }) }
 
     // —— 灯（暖）与窗光（冷）——
-    // 按种类分组、整组设不透明度（各元素互不重叠，与逐个设等价）。窗光几组单独合成（will-change），
-    // 拖表盘经过晨昏时只改合成层的不透明度，不重画楼板；暖灯铺满全层，不单独合成（省显存），只在十五分钟的明暗交界里变。
+    // 按种类分组、整组设不透明度（各元素互不重叠，与逐个设等价）；只在明暗交界的时段里变。
+    // 不单独合成：底图中间若夹着合成层，其后的线条与文字都得另起整层，显存与栅格成倍。
     const gLight = mk('g', { class: 'mz-light' }, base)
     fl.gLampO = mk('g', { class: 'mz-lamps' }, gLight)
     fl.gLampW = mk('g', { class: 'mz-lamps' }, gLight)
@@ -474,9 +474,8 @@
       sd += 'M' + view.pt(12.0, 13.4) + 'L' + view.pt(12.0, 27.6)
       for (const y of [10.8, 13.2]) sd += 'M' + view.pt(0, y) + 'L' + view.pt(10.4, y)
       for (const y of [15.6, 18.0, 20.4, 22.8, 25.2]) sd += 'M' + view.pt(0, y) + 'L' + view.pt(14.2, y)
-      fl.sky = mk('path', { d: sd, class: 'mz-sky mz-cg' }, gLight)
+      fl.sky = mk('path', { d: sd, class: 'mz-sky' }, gLight)
     }
-    for (const g of [fl.gWinFill, fl.gSpill]) if (g.firstChild) g.classList.add('mz-cg')
 
     // —— 墙线与陈设 ——
     let wd = '', jd = '', leaf = ''
@@ -504,8 +503,8 @@
     mk('path', { d: wd + jd, class: 'mz-walls-dim' }, base)
     mk('path', { d: xd, class: 'mz-ext' }, base)
     const gWin = mk('g', { class: 'mz-wins' }, base)
-    fl.gGlow = mk('g', { class: 'mz-glows' + (winLines.length ? ' mz-cg' : '') }, gWin)
-    fl.gWinLine = mk('g', { class: 'mz-winlines' + (winLines.length ? ' mz-cg' : '') }, gWin)
+    fl.gGlow = mk('g', { class: 'mz-glows' }, gWin)
+    fl.gWinLine = mk('g', { class: 'mz-winlines' }, gWin)
     for (const d of winLines) { mk('path', { d, class: 'mz-win-glow' }, fl.gGlow); mk('path', { d, class: 'mz-win' }, fl.gWinLine) }
 
     // 灯照层（静态，靠圆窗显出）
@@ -518,13 +517,17 @@
 
     // —— 钟、钥匙、铜牌 ——
     const gSp = mk('g', { class: 'mz-special' }, base)
+    const hands = CLOCKS[fid].length ? newSvg('mz-hands', { 'aria-hidden': 'true' }) : null
+    if (hands) fl.svgs.push(hands)
+    fl.hands = hands
     for (const [cx, cy, grand] of CLOCKS[fid]) {
       const c = view.P(cx, cy), r = grand ? 0.3 : 0.24
       const g = mk('g', { class: 'mz-clock' }, gSp)
       mk('circle', { cx: r3(c[0]), cy: r3(c[1]), r }, g)
-      // 指针各自合成，按 CSS 变换转动：走时只动合成层，不重画楼板
-      const hh = mk('line', { class: 'mz-hand', x1: r3(c[0]), y1: r3(c[1]), x2: r3(c[0]), y2: r3(c[1] - r * 0.55) }, g)
-      const mm = mk('line', { class: 'mz-hand', x1: r3(c[0]), y1: r3(c[1]), x2: r3(c[0]), y2: r3(c[1] - r * 0.85) }, g)
+      // 指针各自合成、按 CSS 变换转动（走时只动合成层，不重画楼板）；放在底图层最后的一张小 SVG 里，免得把底图劈成几层
+      const gh = mk('g', { class: 'mz-clock' }, hands)
+      const hh = mk('line', { class: 'mz-hand', x1: r3(c[0]), y1: r3(c[1]), x2: r3(c[0]), y2: r3(c[1] - r * 0.55) }, gh)
+      const mm = mk('line', { class: 'mz-hand', x1: r3(c[0]), y1: r3(c[1]), x2: r3(c[0]), y2: r3(c[1] - r * 0.85) }, gh)
       fl.clocks.push({ hh, mm, c, pre: `translate(${r3(c[0])}px, ${r3(c[1])}px) rotate(`, post: `deg) translate(${r3(-c[0])}px, ${r3(-c[1])}px)` })
     }
     const gNo = U.el('div.mz-g-seat')
@@ -580,9 +583,8 @@
       }
     }
 
-    // —— 动效层：刻度游标、黑钻石封墙、悬停框、聚光、证物锚点 ——
-    fl.markX = mk('path', { class: 'mz-ruler-mark', d: view.rot ? 'M0.45 -0.3L0 0L0.45 0.3Z' : 'M-0.3 -0.45L0 0L0.3 -0.45Z' }, fx)
-    fl.markY = mk('path', { class: 'mz-ruler-mark', d: view.rot ? 'M-0.3 -0.45L0 0L0.3 -0.45Z' : 'M-0.45 -0.3L0 0L-0.45 0.3Z' }, fx)
+    // —— 动效层：黑钻石封墙、聚光、证物锚点、命中；最后是各自合成的悬停底色、悬停框、刻度游标 ——
+    // （合成的小件放在最后：夹在中间会把其后的内容劈成新的整层）
     if (fid === '1F') { // 黑钻石封墙：正门外侧（中心 x=26，净宽 2.4）
       const gSeal = mk('g', { class: 'mz-seal' }, fx)
       const dias = []
@@ -592,28 +594,32 @@
         for (let x = 23.6 + 0.2 + off; x <= 28.4 - 0.2 + 1e-6; x += 0.4) {
           const d = 'M' + view.pt(x, y + 0.19) + 'L' + view.pt(x + 0.2, y) + 'L' + view.pt(x, y - 0.19) + 'L' + view.pt(x - 0.2, y) + 'Z'
           const p = view.P(x, y)
-          dias.push({ el: mk('path', { d, class: 'mz-dia' }, gSeal), x: p[0], y: p[1], ph: Math.random() * 6.28, sp: U.rand(0.6, 1.8), lastO: '', lastF: '' })
+          // transform 常驻（静止时为 0 位移）：震动时只改数值；临时增删 transform 会改动绘制结构，整层动效重画
+          dias.push({ el: mk('path', { d, class: 'mz-dia', transform: 'translate(0 0)' }, gSeal), x: p[0], y: p[1], ph: Math.random() * 6.28, sp: U.rand(0.6, 1.8), lastO: '', lastF: '' })
         }
       }
       const sc = view.P(26, -1.05)
       fl.seal = { dias, cx: sc[0], cy: sc[1], hit: mk('rect', rectAttrs(view.rect(23.5, -1.75, 28.5, -0.4), { class: 'mz-seal-hit', 'data-cursor': '封死', 'data-cursor-tone': 'blood' })), heat: 0 }
     }
-    // 悬停框：四只角各自合成，滑行时只改平移；整组的淡入淡出也在合成层上
-    fl.hl = mk('g', { class: 'mz-hl' }, fx)
-    fl.hlC = { k: -1, c: [0, 1, 2, 3].map(() => mk('path', { class: 'mz-hlc' }, fl.hl)), t: [] }
     fl.spot = mk('path', { class: 'mz-spot', d: '', 'fill-rule': 'evenodd' }, fx)
     fl.focus = mk('path', { class: 'mz-focus', d: '' }, fx)
     fl.gZoom = mk('g', { class: 'mz-zoomg' }, fx)
-    // 悬停房间的底色：三块轮换的合成矩形（换房时只重画新房间那一块一次，淡入淡出不重画）
-    const gFill = mk('g', { class: 'mz-hfills' }, fx)
-    fl.hf = [0, 1, 2].map(() => mk('rect', { class: 'mz-hfill', x: 0, y: 0, width: 1, height: 1 }, gFill))
-    fl.hfi = 0
     const gHit = mk('g', { class: 'mz-hit' }, fx)
     for (const r of rooms) {
       const rr = view.rect(r.x0, r.y0, r.x1, r.y1)
       fl.roomEls[r.key] = { hit: mk('rect', rectAttrs(rr, { 'data-room': r.key, 'data-cursor': '' }), gHit), rr }
     }
     if (fl.seal) gHit.appendChild(fl.seal.hit)
+    // 悬停房间的底色：三块轮换的合成矩形（换房时只重画新房间那一块一次，淡入淡出不重画）
+    const gFill = mk('g', { class: 'mz-hfills' }, fx)
+    fl.hf = [0, 1, 2].map(() => mk('rect', { class: 'mz-hfill', x: 0, y: 0, width: 1, height: 1 }, gFill))
+    fl.hfi = 0
+    // 悬停框：四只角各自合成，滑行时只改平移；整组的淡入淡出也在合成层上
+    fl.hl = mk('g', { class: 'mz-hl' }, fx)
+    fl.hlC = { k: -1, c: [0, 1, 2, 3].map(() => mk('path', { class: 'mz-hlc' }, fl.hl)), t: [] }
+    // 刻度尺游标（合成层上平移）
+    fl.markX = mk('path', { class: 'mz-ruler-mark', d: view.rot ? 'M0.45 -0.3L0 0L0.45 0.3Z' : 'M-0.3 -0.45L0 0L0.3 -0.45Z' }, fx)
+    fl.markY = mk('path', { class: 'mz-ruler-mark', d: view.rot ? 'M-0.3 -0.45L0 0L0.3 -0.45Z' : 'M-0.45 -0.3L0 0L-0.45 0.3Z' }, fx)
 
     // —— HTML 层 ——
     const el = U.el('div.mz-floor', { 'data-floor': fid })
@@ -625,6 +631,7 @@
     lens.appendChild(U.el('div.mz-masker', {}, [litWrap]))
     // 底图 + 底图文字：悬停楼层时整块提亮（filter 落在合成层上，不重画）
     const under = U.el('div.mz-under', {}, [base, txBase])
+    if (fl.hands) under.appendChild(fl.hands)
     el.append(under, pool)
     if (fid === '1F') {
       fl.domeEl = U.el('div.mz-dome', { 'aria-hidden': 'true' }, [U.el('i.d'), U.el('i.r'), U.el('i.r.r2')])
@@ -1487,7 +1494,7 @@
           dm.el.setAttribute('transform', `translate(${U.rand(-j, j).toFixed(3)} ${U.rand(-j, j).toFixed(3)})`)
           dm.jit = true
         }
-      } else if (dm.jit) { dm.el.removeAttribute('transform'); dm.jit = false }
+      } else if (dm.jit) { dm.el.setAttribute('transform', 'translate(0 0)'); dm.jit = false }
     }
   }
   function stillSeal(s) {
@@ -1495,7 +1502,7 @@
     s.still = true
     for (const dm of s.dias) {
       dm.el.style.strokeOpacity = ''; dm.el.style.fill = ''; dm.lastO = dm.lastF = ''
-      if (dm.jit) { dm.el.removeAttribute('transform'); dm.jit = false }
+      if (dm.jit) { dm.el.setAttribute('transform', 'translate(0 0)'); dm.jit = false }
     }
   }
 

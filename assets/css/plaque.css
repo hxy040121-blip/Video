@@ -1,7 +1,8 @@
 /* ==========================================================
    铜牌 · plaque —— 价目铜牌与 150 枚金币
    墙（暗色石）→ 古沉香窄框 → 羊脂白玉细边 → 深烟褐青铜牌面（凹刻嵌铂金）
-   光照：.plaque-dodge（颜色减淡，跟随光标）+ .plaque-spec（拉丝高光）+ 每行刻字的 --sx/--sy/--sa/--sd
+   光照：.plaque-dodge（颜色减淡，跟随光标）+ .plaque-spec（拉丝高光）+ 每行刻字的阴阳边
+   （全效果：牌面下的影子副本 .pq-ghost，只改 transform/opacity；最省画质：固定顶光的 text-shadow）
    ========================================================== */
 
 .plaque-root {
@@ -485,6 +486,7 @@
   visibility: hidden; pointer-events: none;
 }
 .plaque-root:not(.pq-live) .pq-ghost { display: none; }
+.pq-g-r, .pq-g-gl { will-change: opacity; } /* 光的闪烁乘在整份副本上 */
 .pq-ghost *, .pq-ghost *::before, .pq-ghost *::after { animation: none !important; transition: none !important; }
 .pq-ghost .pq-on { visibility: visible; color: transparent; will-change: transform, opacity; }
 .pq-ghost .pq-on::before, .pq-ghost .pq-on::after,
@@ -513,9 +515,11 @@
 .pq-g-d .plaque-seal.pq-on .plaque-seal-n { text-shadow: 0 0 .5px rgb(5, 3, 2); }
 .pq-g-r .plaque-seal.pq-on .plaque-seal-n { text-shadow: 0 0 .3px rgb(var(--pq-rim)); }
 
-/* 板块不在视口里：无限循环的动画停下 */
+/* 板块不在视口里：无限循环的动画停下；影子副本不绘制（几百个合成层不留在页面里拖累别的板块），
+   排版结果保留，回到视口时不用重新排 */
 .plaque-root.is-off .plaque-exit::before,
 .plaque-root.is-off .plaque-exit::after { animation-play-state: paused; }
+.plaque-root.is-off .pq-ghost { content-visibility: hidden; }
 
 /* 最省画质：关掉两层混合模式的光（墙上的暖光池、拉丝高光） */
 html[data-q="0"] .plaque-wpool,

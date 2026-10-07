@@ -51,7 +51,7 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mz-floor.is-clip::after { opacity: 1; }
 
 /* 每层的叠层：底图 / 暖光池 / 穹顶脉冲 / 灯照圆窗 / 动效与命中 */
-.mz-floor > .mz-under, .mz-under > .mz-base, .mz-floor > .mz-fx { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.mz-floor > .mz-under, .mz-under > .mz-base, .mz-under > .mz-hands, .mz-floor > .mz-fx { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .mz-pool, .mz-lens { position: absolute; left: 0; top: 0; border-radius: 50%; transform-origin: 0 0; pointer-events: none; will-change: transform; }
 .mz-pool {
   background: radial-gradient(closest-side, rgba(255, 216, 160, .2), rgba(220, 176, 108, .075) 50%, rgba(194, 154, 91, 0) 100%);
@@ -88,11 +88,10 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mz-svg path, .mz-svg rect, .mz-svg circle, .mz-svg line { vector-effect: non-scaling-stroke; }
 .mz-slab-fill { fill: #0c0a0a; fill-opacity: .82; stroke: #8b6a3f; stroke-opacity: .4; stroke-width: 1; }
 .mansion-mfloor .mz-slab-fill { fill-opacity: .6; }
-/* 灯与窗光按组设不透明度（JS）；.mz-cg 的几组单独合成，变亮变暗不重画 */
+/* 灯与窗光按组设不透明度（JS） */
 .mz-lamp { fill: #dcae66; }
 .mz-lamps, .mz-winfills, .mz-spills, .mz-glows { opacity: 0; }
 .mz-winfill { fill: #f2e9d6; }
-.mz-cg { will-change: opacity; }
 .mz-sky { fill: none; stroke: #f2e9d6; stroke-width: 1; opacity: .1; }
 .mz-walls-dim { fill: none; stroke: #9a7646; stroke-width: 1; stroke-opacity: calc(.3 * var(--mz-dim, 1)); }
 .mz-ext { fill: none; stroke: #c29a5b; stroke-width: 1.7; stroke-opacity: calc(.5 * var(--mz-dim, 1)); }
@@ -111,6 +110,8 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mz-key { fill: #e6c07c; }
 .mz-plaque { fill: #c29a5b; stroke: #e6c07c; stroke-width: .8; }
 .mz-dia { fill: #060505; stroke: #f0d6a2; stroke-width: .7; stroke-opacity: .12; stroke-linejoin: miter; }
+/* 封墙菱形单独合成：闪烁/震动只重画这一小块，不连带整张动效层 */
+.mz-seal { will-change: opacity; }
 
 /* 平面上的常驻文字（HTML，1em = 1 m；见 JS 的 txLayer） */
 .mz-tx { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
@@ -120,11 +121,11 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mz-t.is-v { white-space: pre; text-align: center; }
 .mz-name { font-family: var(--f-serif); color: #f7e6c4; }
 .mz-seatno { font-family: var(--f-latin); color: #f7e6c4; }
-.mz-suite { font-family: var(--f-latin); font-weight: 700; color: #c29a5b; }
-.mz-suite.mz-suite-lit { color: #f0cf8e; }
-.mz-g-suite { opacity: .42; transition: opacity .4s; }
-.mz-g-suite.is-lit { opacity: .95; }
-.mansion-floor.is-stack .mz-g-suite { opacity: .75; }
+/* 文字的深浅用颜色的 alpha（不用分组 opacity：分组透明度会让每组文字各自另起合成层） */
+.mz-suite { font-family: var(--f-latin); font-weight: 700; color: rgba(194, 154, 91, .42); transition: color .4s; }
+.mz-suite.mz-suite-lit { color: rgba(240, 207, 142, .95); }
+.mansion-floor.is-stack .mz-suite { color: rgba(194, 154, 91, .75); }
+.mansion-floor.is-stack .mz-suite.mz-suite-lit { color: rgba(240, 207, 142, .75); }
 
 .mz-hl { fill: none; stroke: #ffe8bd; stroke-width: 1.5; opacity: 0; transition: opacity .3s; will-change: opacity; }
 .mz-hl.is-on { opacity: 1; }
@@ -137,12 +138,13 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mansion-floor.is-flat .mz-hit rect, .mansion-mfloor .mz-hit rect, .mansion-floor.is-flat .mz-seal-hit, .mansion-mfloor .mz-seal-hit { pointer-events: all; }
 .mansion-floor.is-flat .mz-fx, .mansion-mfloor .mz-fx { pointer-events: auto; }
 .mz-seal-hit { fill: transparent; fill-opacity: 0; }
-.mz-ruler, .mz-tx-ruler { opacity: 0; transition: opacity .8s; }
-.mz-ruler { will-change: opacity; }
-.mansion-floor.is-flat .mz-ruler, .mansion-mfloor .mz-ruler, .mansion-floor.is-flat .mz-tx-ruler, .mansion-mfloor .mz-tx-ruler { opacity: 1; }
-.mansion-sticky.is-zoom .mz-ruler, .mansion-mfloor.is-clip .mz-ruler, .mansion-sticky.is-zoom .mz-tx-ruler, .mansion-mfloor.is-clip .mz-tx-ruler { opacity: 0; transition-duration: .3s; }
+.mz-ruler { opacity: 0; transition: opacity .8s; }
+.mansion-floor.is-flat .mz-ruler, .mansion-mfloor .mz-ruler { opacity: 1; }
+.mansion-sticky.is-zoom .mz-ruler, .mansion-mfloor.is-clip .mz-ruler { opacity: 0; transition-duration: .3s; }
 .mz-ruler-ticks { fill: none; stroke: #6f5532; stroke-width: .8; }
-.mz-ruler-num { color: #7d6342; font-family: var(--f-mono); }
+.mz-ruler-num { color: rgba(125, 99, 66, 0); font-family: var(--f-mono); transition: color .8s; }
+.mansion-floor.is-flat .mz-ruler-num, .mansion-mfloor .mz-ruler-num { color: #7d6342; }
+.mansion-sticky.is-zoom .mz-ruler-num, .mansion-mfloor.is-clip .mz-ruler-num { color: rgba(125, 99, 66, 0); transition-duration: .3s; }
 .mz-ruler-mark { fill: #ff2e7e; will-change: transform; }
 .mz-dim path { fill: none; stroke: #c29a5b; stroke-width: 1; }
 .mz-dim text { fill: #d9b57a; font-family: var(--f-mono); text-anchor: middle; dominant-baseline: central; letter-spacing: .05em; }
@@ -154,7 +156,8 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mz-anchor.is-weapon .c, .mz-anchor.is-weapon .n { fill: #ff2e7e; }
 .mz-anchor.is-hot circle, .mz-anchor.is-hot path { stroke: #ff2e7e; stroke-width: 2; }
 .mz-anchor.is-hot .c, .mz-anchor.is-hot .n { fill: #ff2e7e; }
-.mansion-sticky.is-zoom .mz-g-suite { opacity: .2; }
+.mansion-sticky.is-zoom .mz-suite { color: rgba(194, 154, 91, .2); }
+.mansion-sticky.is-zoom .mz-suite.mz-suite-lit { color: rgba(240, 207, 142, .2); }
 
 /* ---------- 地下一层：岩体实墙，比楼上更沉更暗，但轮廓始终读得出（夜间低亮也一样） ---------- */
 .mz-floor[data-floor="B1"] { --mz-b1: calc(.55 + .45 * var(--mz-dim, 1)); }
@@ -169,12 +172,12 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mz-floor[data-floor="B1"] .mz-walls-lit { stroke: #ffe9c2; stroke-width: 1.8; }
 .mz-floor[data-floor="B1"] .mz-furn-lit { stroke: #f6d8a0; opacity: 1; }
 .mz-floor[data-floor="B1"] .mz-pool { background: radial-gradient(closest-side, rgba(255, 220, 166, .34), rgba(226, 180, 112, .13) 52%, rgba(194, 154, 91, 0) 100%); }
-.mz-bname { font-family: var(--f-serif); font-weight: 600; color: #c9a265; }
+.mz-bname { font-family: var(--f-serif); font-weight: 600; color: rgb(201 162 101 / calc(.62 * var(--mz-b1, 1))); transition: color .4s; }
 .mz-bname.mz-bname-lit { color: #ffeccb; }
-.mz-g-bname { opacity: calc(.62 * var(--mz-b1, 1)); transition: opacity .4s; }
-.mz-g-bname.is-lit { opacity: 1; }
-.mansion-sticky.is-zoom .mz-g-bname { opacity: .2; }
-.mansion-floor.is-stack .mz-g-bname { opacity: .5; }
+.mansion-sticky.is-zoom .mz-bname { color: rgba(201, 162, 101, .2); }
+.mansion-sticky.is-zoom .mz-bname.mz-bname-lit { color: rgba(255, 236, 203, .2); }
+.mansion-floor.is-stack .mz-bname { color: rgba(201, 162, 101, .5); }
+.mansion-floor.is-stack .mz-bname.mz-bname-lit { color: rgba(255, 236, 203, .5); }
 /* 低亮时段：灯照半径缩到三米，但三米之内要真的亮 */
 .mansion-sticky.is-low .mz-masker, .mansion-mob.is-low .mz-masker {
   -webkit-mask-image: radial-gradient(closest-side, #000 36%, rgba(0, 0, 0, .74) 62%, rgba(0, 0, 0, .22) 85%, transparent 100%);
