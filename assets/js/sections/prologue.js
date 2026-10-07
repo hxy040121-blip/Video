@@ -2094,7 +2094,8 @@
     // 条件当场量位置（P.p 只在板块可见时更新，可能过期）
     if (P.vis && P.el && P.el.getBoundingClientRect().top > -40) { App.state.minutes = 17 * 60 + m; App.bus.emit('time', 17 * 60 + m) }
     const E = P.E
-    if (instant || App.reduced) { E.time.textContent = t; return }
+    // 醒来的几秒里就跳走了：板块看不见时只换数字，不再播动画
+    if (instant || App.reduced || !P.vis) { E.time.textContent = t; return }
     App.text.scramble(E.time, t, { duration: 0.5, chars: '0123456789', revealDelay: 0.1 })
     gsap.fromTo(E.tick, { scaleX: 1, opacity: 0.9 }, { scaleX: 0, opacity: 0, duration: 1.2, ease: 'expo.out' })
     gsap.fromTo(E.clock, { x: -3 }, { x: 0, duration: 0.4, ease: 'expo.out' })
