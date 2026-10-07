@@ -338,7 +338,7 @@
     const lampO = 1 - 0.7 * lowK
     const lampW = lampO * (1 - offK)
     const day = h >= 7 && h < 17
-    return { h, win, low, day, lampO, lampW, dim: 1 - 0.5 * lowK }
+    return { h, win, low, day, lampO, lampW, dim: 1 - 0.34 * lowK }
   }
   const LAN_R = { normal: 7.5, low: 3.0, stack: 9.5 }
 
@@ -479,11 +479,13 @@
     // —— 名签与套房编号 ——
     const gLab = mk('g', { class: 'mz-labels' }, lit)
     const gNum = mk('g', { class: 'mz-suites' }, base)
+    const gNumLit = mk('g', { class: 'mz-suites-lit' }, lit)
     for (const r of rooms) {
       const rr = view.rect(r.x0, r.y0, r.x1, r.y1)
       if (r.suite) {
         const c = view.P(r.cx, r.cy)
         txt(gNum, c[0], c[1], Math.min(rr.w, rr.h) * 0.3, r.suite, { class: 'mz-suite' })
+        txt(gNumLit, c[0], c[1], Math.min(rr.w, rr.h) * 0.3, r.suite, { class: 'mz-suite mz-suite-lit' }) // 灯照过时编号的黄铜发亮
         continue
       }
       const at = LABEL_AT[r.key] || [r.cx, r.cy]
@@ -1234,7 +1236,7 @@
       } else {
         lx = Math.max(L.g * 0.5, left[0] - (S.mini > 0.5 ? 26 : 70))
         ly = left[1]
-        o = f.k * (1 - flat * 2)
+        o = f.k * Math.max(0, 1 - flat * 4) * (1 - (S.end || 0))
       }
       const tx = `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px)`
       if (tx !== lab._tx) { lab.style.transform = tx; lab._tx = tx }
@@ -1416,11 +1418,12 @@
     if (shut !== W.shut) {
       W.shut = shut
       S.root.classList.toggle('is-shut', shut)
-      if (shut && S.visible && W.k > 0) {
+      if (shut && S.visible && W.k > 0.2) {
         App.audio.sfx('door', { volume: 0.8 })
         if (!App.reduced) App.shake(S.stage, 5, 0.32)
         gsap.fromTo(W.seam, { opacity: 1, scaleX: 9 }, { opacity: 0.8, scaleX: 1, duration: 0.9, ease: 'expo.out', overwrite: true })
-      } else if (!shut) gsap.to(W.seam, { opacity: 0, duration: 0.3, overwrite: true })
+      } else if (shut) gsap.to(W.seam, { opacity: 0.8, scaleX: 1, duration: 0.6, overwrite: true }) // 直接跳到终幕：不补那一声
+      else gsap.to(W.seam, { opacity: 0, duration: 0.3, overwrite: true })
     }
     W.k = e
   }
@@ -1612,7 +1615,9 @@
   function anchorsFor(room, n) {
     const rnd = U.seeded(hash(room.key))
     const pts = []
-    const cols = n > 2 ? 2 : n
+    // 狭长的房间（廊、休息厅）锚点排成一列/一行，免得编号挤在一起
+    const tall = room.h > room.w * 2.2, wide = room.w > room.h * 2.2
+    const cols = tall ? 1 : wide ? n : (n > 2 ? 2 : n)
     for (let i = 0; i < n; i++) {
       const cx = (i % cols + 0.5) / cols, cy = (Math.floor(i / cols) + 0.5) / Math.ceil(n / cols)
       const fx = U.clamp(cx + (rnd() - 0.5) * 0.22, 0.14, 0.86), fy = U.clamp(cy + (rnd() - 0.5) * 0.22, 0.16, 0.84)
@@ -1657,6 +1662,9 @@
     const room = roomByKey[key]
     if (!fl || !room || S.zoom) return
     setHoverRoom(null)
+    // 滚动若还在惯性滑行，就地刹住（否则页面继续滑走，房间刚打开又被收起）
+    const ln = App.scroll && App.scroll.lenis
+    if (ln && ln.isScrolling) ln.scrollTo(ln.scroll, { immediate: true, force: true })
     const rr = fl.view.rect(room.x0, room.y0, room.x1, room.y1)
     const target = zoomTargetVB(fl, rr, 0.36, 0.54)
     const pxPerUnit = (S.L.flatW) / target.w
@@ -1742,6 +1750,11 @@
         const pin = side === 'r' ? [x + 16, y + th / 2] : [x + tw - 16, y + th / 2]
         const str = mk('path', { class: 'mz-w-string' + (weapon ? ' is-weapon' : '') }, S.wire.strings)
         tags.push({ el, i, pin, str, side })
+        // 光标落在证物牌上：牌子浮起，红线绷紧，锚点发亮
+        const mark = marks[i]
+        el.setAttribute('data-cursor', '') // 光标只放大不写字，不挡牌上的字（悬停声由光标统一发出）
+        el.addEventListener('pointerenter', () => { el.classList.add('is-hot'); str.classList.add('is-hot'); mark.g.classList.add('is-hot') })
+        el.addEventListener('pointerleave', () => { el.classList.remove('is-hot'); str.classList.remove('is-hot'); mark.g.classList.remove('is-hot') })
         const from = pts[i]
         gsap.fromTo(el, { x: from[0] - x - tw / 2, y: from[1] - y - th / 2, scale: 0.2, opacity: 0, rotate: rot * 4 },
           { x: 0, y: 0, scale: 1, opacity: 1, rotate: rot, duration: 0.95, ease: 'expo.out', delay: 0.08 * tags.length })
@@ -1824,9 +1837,43 @@
     S.mtags = tagsBox
     const dialRow = U.el('div.mansion-mdial')
     dialRow.appendChild(buildDial())
+    // 终幕：两扇黑钻石封墙随滚动合拢
     const outro = U.el('p.mansion-mout', { text: atmos('没有通向室外', '没有通向室外的路') })
-    root.append(head, tabs, plan, cap, tagsBox, dialRow, outro)
+    const mend = U.el('div.mansion-mend', { 'data-cursor': '' })
+    const mh = [U.el('div.mansion-seal-half.mansion-mend-half.is-l', {}, [U.el('b.mansion-seal-edge')]), U.el('div.mansion-seal-half.mansion-mend-half.is-r', {}, [U.el('b.mansion-seal-edge')])]
+    const rnd = U.seeded(7)
+    mh.forEach((h, side) => {
+      for (let i = 0; i < 5; i++) {
+        const g = U.el('i.mansion-glint')
+        g.style.transform = `translate3d(${Math.round(rnd() * 7 + (side ? 0 : 1)) * 24}px, ${Math.round(rnd() * 6) * 28}px, 0)`
+        g.style.animationDelay = (-rnd() * 3.3).toFixed(2) + 's'
+        if (i === 2) g.classList.add('is-blood')
+        h.appendChild(g)
+      }
+    })
+    const mseam = U.el('i.mansion-seal-seam')
+    mend.append(mh[0], mh[1], mseam, outro)
+    root.append(head, tabs, plan, cap, tagsBox, dialRow, mend)
     sec.appendChild(root)
+    let mshut = false
+    const stEnd = ScrollTrigger.create({
+      trigger: mend, start: 'top 96%', end: 'center 56%', scrub: true,
+      onUpdate: self => {
+        const k = sstep(0, 1, self.progress)
+        gsap.set(mh[0], { xPercent: -100 * (1 - k) })
+        gsap.set(mh[1], { xPercent: 100 * (1 - k) })
+        root.classList.toggle('is-end', k > 0.01)
+        const shut = k > 0.985
+        if (shut !== mshut) {
+          mshut = shut
+          if (shut) { App.audio.sfx('door', { volume: 0.7 }); gsap.fromTo(mseam, { opacity: 1, scaleX: 7 }, { opacity: 0.85, scaleX: 1, duration: 0.9, ease: 'expo.out', overwrite: true }) }
+          else gsap.to(mseam, { opacity: 0, duration: 0.3, overwrite: true })
+        }
+      },
+    })
+    gsap.set(mh[0], { xPercent: -100 }); gsap.set(mh[1], { xPercent: 100 })
+    S.cleanup.push(() => stEnd.kill())
+    mend.addEventListener('click', () => { App.glitch(outro, 0.4); App.audio.sfx('glitch', { volume: 0.6 }) })
 
     plan.addEventListener('click', e => onMobTap(e))
     const off = App.tick(tickMob)
@@ -1997,6 +2044,8 @@
     S.hoverRoom = null
     S.lightKey = ''
     S.lastActive = undefined
+    // 重建（桌面⇄手机）后这些「上一帧」缓存必须作废，否则新节点拿不到对应的类名与样式
+    S.sealWall = null; S._isEnd = undefined; S.end = 0; S._ok = undefined; S._isMini = undefined; S._lastFlat = undefined; S._bt = S._tipT = undefined
     if (S.el) { S.el.innerHTML = ''; S.el.classList.remove('is-desk', 'is-mob', 'is-pinned') }
   }
 

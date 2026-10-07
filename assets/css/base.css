@@ -52,6 +52,7 @@ body {
   font-size: 16px;
   line-height: 1.7;
   overflow-x: hidden;
+  overflow-x: clip; /* clip 不会让 body 变成滚动容器：浮层停下 Lenis 时 sticky 板块不会跳走 */
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
