@@ -697,15 +697,19 @@
     if (!t) return
     t.style.fontSize = ''
     t.style.lineHeight = ''
+    card.style.removeProperty('--ch')
     card.classList.remove('is-tight')
     if (t.scrollHeight <= t.clientHeight + 1) return
     card.classList.add('is-tight')
     let fs = parseFloat(getComputedStyle(t).fontSize) || 11
-    while (t.scrollHeight > t.clientHeight + 1 && fs > 9) {
+    while (t.scrollHeight > t.clientHeight + 1 && fs > 9.5) {
       fs -= 0.5
       t.style.fontSize = fs + 'px'
       t.style.lineHeight = '1.5'
     }
+    // 最后一招：卡身加高到放下全文
+    const over = t.scrollHeight - t.clientHeight
+    if (over > 1) card.style.setProperty('--ch', Math.ceil(card.offsetHeight + over + 4) + 'px')
   }
   // 当前可用的能力
   function myAbility() {
