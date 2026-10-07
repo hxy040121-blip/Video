@@ -278,7 +278,17 @@
    ========================================================= */
 .cycle-k { background: radial-gradient(ellipse 70% 70% at 50% 46%, rgba(26, 6, 10, .3), rgba(4, 2, 3, .93) 78%); }
 .cycle-k-scene { position: absolute; inset: 0; }
+/* 走廊整层：随视线偏移只平移（cycle.js 写 transform），走廊本身只在布局时画一次 */
+.cycle-k-move { position: absolute; inset: 0; will-change: transform; }
 .cycle-k-lines { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+/* 光标处照亮的一圈：固定的圆形遮罩小窗跟着光标平移，窗里的亮线反向平移 */
+.cycle-k-litwrap {
+  position: absolute; left: 0; top: 0; width: 520px; height: 520px; margin: -260px 0 0 -260px;
+  -webkit-mask-image: radial-gradient(circle 260px at 50% 50%, #000 0, rgba(0, 0, 0, .55) 40%, transparent 100%);
+  mask-image: radial-gradient(circle 260px at 50% 50%, #000 0, rgba(0, 0, 0, .55) 40%, transparent 100%);
+  pointer-events: none; will-change: transform;
+}
+.cycle-k-litwrap > .cycle-k-lines { will-change: transform; }
 .cycle-k-lines path { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .cycle-k-lines .k-joint { stroke: rgba(111, 85, 50, .16); stroke-width: 1; }
 .cycle-k-lines .k-run { stroke: rgba(125, 22, 22, .5); stroke-width: 1.2; }
@@ -288,11 +298,6 @@
 .cycle-k-lines .k-far { stroke: rgba(150, 118, 74, .45); stroke-width: 1; }
 .cycle-k-lines .k-doorway { fill: #010000; stroke: rgba(194, 154, 91, .35); stroke-width: 1; transition: fill 1.6s, stroke 1.6s; }
 .cycle-k.is-dead .cycle-k-lines .k-doorway { fill: rgba(70, 4, 22, .9); stroke: rgba(255, 46, 126, .55); }
-.cycle-k-lines.is-lit {
-  --lx: 50%; --ly: 50%;
-  -webkit-mask-image: radial-gradient(circle 260px at var(--lx) var(--ly), #000 0, rgba(0, 0, 0, .55) 40%, transparent 100%);
-  mask-image: radial-gradient(circle 260px at var(--lx) var(--ly), #000 0, rgba(0, 0, 0, .55) 40%, transparent 100%);
-}
 .cycle-k-lines.is-lit path { fill: none; stroke: rgba(240, 214, 170, .85); }
 .cycle-k-lines.is-lit .k-run { stroke: rgba(255, 46, 126, .8); }
 .cycle-k-lines.is-lit .k-joint { stroke: rgba(240, 214, 170, .4); }
@@ -356,8 +361,7 @@
 .cycle-d { background: radial-gradient(ellipse 80% 70% at var(--bx, 50%) var(--by, 60%), rgba(60, 6, 28, .4), rgba(5, 2, 3, .94) 72%); }
 .cycle-d-scene {
   position: absolute; inset: 0;
-  translate: var(--dx, 0) var(--dy, 0);
-  opacity: var(--fade, 1);
+  will-change: transform; /* 光标视差：cycle.js 直接写 transform / opacity，整层平移，不重画 */
 }
 .cycle-d.is-hit .cycle-d-scene { animation: cycle-d-hit .9s cubic-bezier(.16, 1, .3, 1); }
 @keyframes cycle-d-hit {
@@ -386,7 +390,7 @@
     radial-gradient(ellipse 30% 22% at 38% 40%, rgba(255, 120, 160, .22), transparent 70%),
     radial-gradient(closest-side, rgba(62, 2, 16, .97), rgba(88, 6, 26, .85) 50%, rgba(80, 8, 20, 0));
   filter: blur(1.5px);
-  transform-origin: 32% 50%; scale: var(--pg, 1);
+  transform-origin: 32% 50%; /* 随滚动漫开的 scale 由 cycle.js 写进 transform 最外层 */
 }
 .cycle-d-body { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; filter: drop-shadow(0 0 10px rgba(255, 46, 126, .55)); }
 .cycle-d-body svg { width: 100%; height: 100%; overflow: visible; }
@@ -483,16 +487,18 @@
 .cycle-i-scene .i-mk.is-pop > * { animation: cycle-mk .55s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes cycle-mk { from { transform: scale(0) translateY(-10px); } to { transform: none; } }
 
-/* 放大镜 */
+/* 放大镜：以光标为圆心的小窗（圆形 clip-path 固定在窗里），cycle.js 平移窗、反向平移放大 1.4 倍的现场 */
 .cycle-i-lens {
-  position: absolute; inset: 0; pointer-events: none;
-  --lx: 50%; --ly: 50%; --lr: 100px;
-  clip-path: circle(calc(var(--lr) * var(--cycle-lk)) at var(--lx) var(--ly));
+  position: absolute; left: 0; top: 0; pointer-events: none;
+  --lr: 100px;
+  width: calc(var(--lr) * 2); height: calc(var(--lr) * 2); margin: calc(var(--lr) * -1) 0 0 calc(var(--lr) * -1);
+  clip-path: circle(calc(var(--lr) * var(--cycle-lk)) at 50% 50%);
   transition: --cycle-lk .5s var(--ease-out);
+  will-change: transform;
 }
 .cycle-i-lens.is-on { --cycle-lk: 1; }
-.cycle-i-lens > svg { transform-origin: var(--lx) var(--ly); transform: scale(1.4); }
-.cycle-i-rim { position: absolute; left: 0; top: 0; pointer-events: none; }
+.cycle-i-lens > svg { transform-origin: 0 0; transform: scale(1.4); will-change: transform; }
+.cycle-i-rim { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform; }
 .cycle-i-rim i {
   position: absolute; inset: 0; border-radius: 50%;
   border: 1.5px solid rgba(220, 230, 240, .75);
@@ -605,24 +611,26 @@
    镜头 6 · 判定
    ========================================================= */
 .cycle-v { background: #050304; }
-.cycle-v-side { position: absolute; inset: 0; overflow: hidden; --d: .5; --cx: 50%; }
-.cycle-v-bg { position: absolute; inset: 0; filter: brightness(calc(.42 + var(--d) * .58)); transition: filter .3s; }
-.cycle-v-l .cycle-v-bg {
-  background:
-    radial-gradient(rgba(194, 154, 91, .2) 1px, transparent 1.6px) 0 0 / 9px 9px,
-    radial-gradient(ellipse 60% 70% at var(--cx) 62%, rgba(194, 154, 91, .3), transparent 70%),
-    linear-gradient(200deg, #221a10, #0b0806 70%);
-}
-.cycle-v-r .cycle-v-bg {
-  background:
-    radial-gradient(rgba(255, 46, 126, .28) 1px, transparent 1.6px) 0 0 / 9px 9px,
-    radial-gradient(ellipse 60% 70% at var(--cx) 62%, rgba(255, 46, 126, .38), transparent 70%),
-    linear-gradient(160deg, #3d0618, #120208 70%);
-}
+/* 窗（斜边 clip-path 固定，cycle.js 只平移它）套景（反向平移，屏幕上不动）——见 cycle.js 的 SV */
+.cycle-v-side { position: absolute; inset: 0; will-change: transform; }
+.cycle-v-in { position: absolute; inset: 0; overflow: hidden; will-change: transform; }
+.cycle-v-bg { position: absolute; inset: 0; overflow: hidden; transition: filter .3s; }
+.cycle-v-l .cycle-v-bg { background: linear-gradient(200deg, #221a10, #0b0806 70%); }
+.cycle-v-r .cycle-v-bg { background: linear-gradient(160deg, #3d0618, #120208 70%); }
+/* 跟着人走的光晕：原 radial-gradient(ellipse 60% 70% at var(--cx) 62%, c, transparent 70%) 的同形状独立一层 */
+.cycle-v-glow { position: absolute; left: -42%; top: 13%; width: 84%; height: 98%; will-change: transform; }
+.cycle-v-l .cycle-v-glow { background: radial-gradient(closest-side, rgba(194, 154, 91, .3), transparent); }
+.cycle-v-r .cycle-v-glow { background: radial-gradient(closest-side, rgba(255, 46, 126, .38), transparent); }
+.cycle-v-dots { position: absolute; inset: 0; }
+.cycle-v-l .cycle-v-dots { background: radial-gradient(rgba(194, 154, 91, .2) 1px, transparent 1.6px) 0 0 / 9px 9px; }
+.cycle-v-r .cycle-v-dots { background: radial-gradient(rgba(255, 46, 126, .28) 1px, transparent 1.6px) 0 0 / 9px 9px; }
+/* 明暗：一层黑，opacity = .58 × (1 − d)，等价于原 filter: brightness(.42 + d × .58) */
+.cycle-v-dim { position: absolute; inset: 0; background: #000; opacity: .29; will-change: opacity; }
 .cycle-v-side.is-shadow .cycle-v-bg { filter: brightness(.35) saturate(.6); }
+.cycle-v-side.is-shadow .cycle-v-dim { opacity: 0 !important; transition: opacity .3s; }
 .cycle-v-fig, .cycle-v-dead {
-  position: absolute; bottom: 0; left: var(--cx); width: min(66vh, 46vw); aspect-ratio: 3 / 4;
-  transform: translateX(-50%) scale(calc(.88 + var(--d) * .12)); transform-origin: 50% 100%;
+  position: absolute; bottom: 0; left: 0; width: min(66vh, 46vw); aspect-ratio: 3 / 4;
+  transform: translateX(-50%) scale(.94); transform-origin: 50% 100%; will-change: transform;
 }
 .cycle-v-fig { --cut: 0; }
 .cycle-v-fig > .portrait, .cycle-v-dead .portrait { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -666,10 +674,13 @@
 @keyframes cycle-x1 { to { transform: rotate(45deg) scaleX(1); } }
 @keyframes cycle-x2 { to { transform: rotate(-45deg) scaleX(1); } }
 .cycle-v-txt {
-  position: absolute; z-index: 2; top: calc(var(--hud-h) + 6vh); left: var(--cx);
-  transform: translateX(-50%) scale(calc(.58 + var(--d) * .42)); transform-origin: 50% 0;
+  position: absolute; z-index: 2; top: calc(var(--hud-h) + 6vh); left: 0;
+  transform: translateX(-50%) scale(.79); transform-origin: 50% 0;
   display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
-  opacity: calc(.3 + var(--d) * .7);
+  opacity: .65;
+  /* 只声明 opacity：will-change: transform 的层会一直沿用第一次栅格化时的缩放，放大后字发虚；
+     这样缩放变了 Chrome 会按新比例重新栅格化（不需要主线程重画） */
+  will-change: opacity;
 }
 .cycle-v-head {
   font-family: var(--f-display); font-weight: 900; font-size: clamp(34px, 6.2vw, 98px); line-height: 1; letter-spacing: -.02em;
@@ -680,9 +691,14 @@
 .cycle-v-name { font-family: var(--f-serif); font-weight: 400; font-size: clamp(14px, 1.3vw, 19px); letter-spacing: .4em; padding-left: .4em; color: var(--bone-dim); }
 .cycle-v-r .cycle-v-name { color: #ffb3cc; }
 .cycle-v-side.is-gone .cycle-v-name { text-decoration: line-through; text-decoration-color: var(--blood); text-decoration-thickness: 2px; }
-.cycle-v-div { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
-.cycle-v-div line { stroke: var(--bone); stroke-width: 2; }
-.cycle-v-div line.g { stroke: var(--blood); stroke-width: 12; opacity: .3; }
+/* 分界线：2px 骨白线上压一道 12px、.3 透明度的血粉光（与原 SVG 两条线同一叠放顺序）；只转动、平移 */
+.cycle-v-divl {
+  position: absolute; z-index: 3; left: -6px; top: 50%; width: 12px; height: 110%; margin-top: -55%;
+  background:
+    linear-gradient(rgba(255, 46, 126, .3), rgba(255, 46, 126, .3)),
+    linear-gradient(90deg, transparent 5px, var(--bone) 5px, var(--bone) 7px, transparent 7px);
+  pointer-events: none; will-change: transform;
+}
 .cycle-v-beam {
   position: absolute; z-index: 4; left: 50%; top: -40%; height: 180%; width: 16vw; margin-left: -8vw;
   background: linear-gradient(90deg, transparent, rgba(255, 46, 126, .55) 35%, rgba(255, 225, 238, .95) 50%, rgba(255, 46, 126, .55) 65%, transparent);
@@ -748,8 +764,8 @@
   background:
     linear-gradient(180deg, transparent 0 46%, rgba(235, 227, 214, .07) 46% 54%, transparent 54%) 0 0 / 100% 100%,
     repeating-linear-gradient(180deg, rgba(0, 0, 0, .45) 0 2px, transparent 2px 4px);
-  animation: cycle-scan .7s linear infinite;
 }
+.cycle-a-scan.is-run { animation: cycle-scan .7s linear infinite; }
 @keyframes cycle-scan { from { background-position: 0 -100vh, 0 0; } to { background-position: 0 100vh, 0 0; } }
 
 /* =========================================================
@@ -778,3 +794,24 @@
 .cycle-stage.is-mob .cycle-v-tally i { width: 34px; height: 34px; font-size: 12px; }
 .cycle-stage.is-mob .cycle-c-no { font-size: 8px; margin-top: 3px; }
 .cycle-stage.is-mob .cycle-c-n { min-width: 18px; height: 18px; font-size: 11px; }
+
+/* =========================================================
+   性能：看不见的不动
+   ========================================================= */
+/* 板块不在视口里（cycle.js 加 is-off）：所有循环动画暂停；当前没在放的镜头里的循环动画也暂停 */
+.cycle.is-off *, .cycle.is-off *::before, .cycle.is-off *::after { animation-play-state: paused !important; }
+.cycle-shot:not(.is-on) .cycle-k-lamp,
+.cycle-shot:not(.is-on) .cycle-d-rays,
+.cycle-shot:not(.is-on) .cycle-d-stamp i,
+.cycle-shot:not(.is-on) .cycle-m-hint i,
+.cycle-shot:not(.is-on) .cycle-v-eyes { animation-play-state: paused; }
+
+/* 最省画质（html[data-q="0"]）：去掉大面积的发光滤镜与模糊 */
+html[data-q="0"] .cycle-v-l:not(.is-shadow) .cycle-v-fig > .portrait > svg,
+html[data-q="0"] .cycle-v-l:not(.is-shadow) .cycle-v-fig > .portrait > img,
+html[data-q="0"] .cycle-v-r:not(.is-shadow) .cycle-v-fig > .portrait > svg { filter: none; }
+html[data-q="0"] .cycle-v-r:not(.is-shadow) .cycle-v-fig > .portrait.is-photo > img { filter: sepia(.5) hue-rotate(-30deg) saturate(1.6); }
+html[data-q="0"] .cycle-c-lines,
+html[data-q="0"] .cycle-a-loop,
+html[data-q="0"] .cycle-d-body,
+html[data-q="0"] .cycle-d-pool { filter: none; }

@@ -211,15 +211,14 @@
     const clip = `path('${SHAPES[type](0, 0, w, h)}')`
     it.win.style.clipPath = clip
     it.win.style.webkitClipPath = clip
-    // 投影：画框形状的黑影，模糊（σ = 9px，同原来的 blur(9px)）直接画进 SVG——只栅格化一次，之后只动 transform
+    // 投影：画框形状的黑影，模糊（σ = 9px，同原来的 blur(9px)）预先烘焙成一张图（同形同尺寸的画框共用）——
+    // 不再有逐帧的 CSS 滤镜，随烛光移动只改 transform
     const SW = w + 2 * b, SH = h + 2 * b, sp = 30
     const sh = it.shadowIn
-    sh.setAttribute('viewBox', `0 0 ${SW + 2 * sp} ${SH + 2 * sp}`)
     sh.style.width = SW + 2 * sp + 'px'
     sh.style.height = SH + 2 * sp + 'px'
     sh.style.left = sh.style.top = -sp + 'px'
-    sh.innerHTML = `<defs><filter id="cast-sh${it.k}" filterUnits="userSpaceOnUse" x="0" y="0" width="${SW + 2 * sp}" height="${SH + 2 * sp}" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="9"/></filter></defs>` +
-      `<path d="${SHAPES[type](sp, sp, SW, SH)}" fill="#000" filter="url(#cast-sh${it.k})"/>`
+    sh.style.backgroundImage = shadowImage(type, SW, SH, sp)
     it.shadow.style.left = it.shadow.style.top = -b + 'px'
     it.shw = ''
     // 肖像：头部落在窗口约 46% 高处
@@ -284,6 +283,24 @@
     }
   }
 
+  // 投影图：画框形状用 canvas 的 shadowBlur（= 2σ）模糊一次，转成图片缓存；形状画在画布外，只让影子落进来
+  const shadowCache = {}
+  function shadowImage(type, SW, SH, sp) {
+    const key = `${type}:${SW}x${SH}`
+    if (shadowCache[key]) return shadowCache[key]
+    const c = document.createElement('canvas')
+    c.width = SW + 2 * sp
+    c.height = SH + 2 * sp
+    const g = c.getContext('2d')
+    const off = c.width + 40
+    g.shadowColor = '#000'
+    g.shadowBlur = 18
+    g.shadowOffsetX = off
+    g.translate(sp - off, sp)
+    g.fill(new Path2D(SHAPES[type](0, 0, SW, SH)))
+    return (shadowCache[key] = `url("${c.toDataURL()}")`)
+  }
+
   // 画框：静态的黄铜框 SVG + 以线条为遮罩的反光光斑（独立合成层），整组随 --lit 改 opacity
   function makeFrame() {
     const frame = el('div.frame', { 'aria-hidden': 'true' })
@@ -309,7 +326,7 @@
     node.style.setProperty('--accent', acc)
     const wire = sv('svg', { class: 'cast-wire', 'aria-hidden': 'true' })
     const swing = el('div.swing')
-    const shadow = el('div.shadow', { 'aria-hidden': 'true' }, sv('svg', { 'aria-hidden': 'true' }))
+    const shadow = el('div.shadow', { 'aria-hidden': 'true' }, el('i'))
     const win = el('div.win', {
       role: 'button', tabindex: '0', 'aria-label': c.name, 'data-cursor': '',
     })
@@ -362,7 +379,7 @@
     const node = el('div.item.item--void')
     const wire = sv('svg', { class: 'cast-wire', 'aria-hidden': 'true' })
     const swing = el('div.swing')
-    const shadow = el('div.shadow', { 'aria-hidden': 'true' }, sv('svg', { 'aria-hidden': 'true' }))
+    const shadow = el('div.shadow', { 'aria-hidden': 'true' }, el('i'))
     const win = el('div.win', { role: 'button', tabindex: '0', 'aria-label': '？', 'data-cursor': '', 'data-cursor-tone': 'blood' })
     const back = el('div.back')
     const glass = el('div.glass')

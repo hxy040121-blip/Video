@@ -56,6 +56,7 @@
     titleBoost: 0,
     lastSweep: 0,
     doorT: 0,
+    q: 2, live: undefined, on: undefined, rv: {}, // 画质、刻字阴阳边是否随光（影子副本）、板块是否真在视口里
     reduced: !!App.reduced,
     fine: !!App.finePointer,
   }
@@ -206,8 +207,10 @@
   /* =====================================================================
      DOM
      ===================================================================== */
+  // kind：n 普通刻字 / t 标题大字（多一道深影）/ x 离场一条（多一道深影和一圈血粉光）/ s 落款圆章
   function reg(el, k, opts) {
-    S.eng.push(Object.assign({ el, k, cx: 0, cy: 0, sx: null, sy: null, sa: null, sd: null, boost: 0 }, opts || {}))
+    el.setAttribute('data-pq', S.eng.length)
+    S.eng.push(Object.assign({ el, k, kind: 'n', cx: 0, cy: 0, sx: null, sy: null, sa: null, sd: null, boost: 0, vis: 1, sc: 1, lv: -1, lsc: -1, tw: [] }, opts || {}))
     return el
   }
 
@@ -242,8 +245,8 @@
     const lead = U.el('span.plaque-lead', { 'aria-hidden': 'true' })
     const pts = U.el('span.plaque-pts.plaque-eng', { text: fmt(it.pts) })
     b.append(name, lead, pts)
-    reg(name, exit ? 1.9 : 1)
-    reg(pts, exit ? 1.9 : 1)
+    reg(name, exit ? 1.9 : 1, exit ? { kind: 'x' } : null)
+    reg(pts, exit ? 1.9 : 1, exit ? { kind: 'x' } : null)
     b._it = it
     b._pts = pts
     b._eng = S.eng.slice(-2)
@@ -255,7 +258,7 @@
     const box = U.el('div.plaque-blk')
     box.appendChild(reg(U.el('h3.plaque-h.plaque-eng.plaque-reveal', { text: ch.title }), 1.3))
     for (const it of ch.items) {
-      if (it.sub) box.appendChild(reg(U.el('h4.plaque-sub.plaque-eng.plaque-reveal', {}, [U.el('span', { text: it.sub })]), 1))
+      if (it.sub) { const sp = U.el('span', { text: it.sub }); reg(sp, 1); box.appendChild(U.el('h4.plaque-sub.plaque-eng.plaque-reveal', {}, [sp])) }
       else box.appendChild(itemEl(it, false))
     }
     return box
@@ -296,7 +299,7 @@
     for (const ch of '价目') {
       const s = U.el('span.plaque-tch.plaque-eng', { text: ch, 'aria-hidden': 'true' })
       title.appendChild(s)
-      reg(s, 2.3, { title: true })
+      reg(s, 2.3, { title: true, kind: 't', vis: S.reduced ? 1 : 0 })
       E.tch.push(s)
     }
     E.orn = U.el('div.plaque-orn', { 'aria-hidden': 'true' }, [U.el('i'), U.el('b'), U.el('i')])
@@ -310,7 +313,7 @@
     S.blocks = blocks
     E.cols = U.el('div.plaque-cols')
     // 落款：一枚凹刻的圆章——十五个点围着「100」（十五摞金币、一枚一百分）。放在最矮的那一栏底部
-    E.seal = reg(U.el('div.plaque-seal', { 'aria-hidden': 'true' }), 1.4)
+    E.seal = reg(U.el('div.plaque-seal', { 'aria-hidden': 'true' }), 1.4, { kind: 's' })
     const ring = U.el('i.plaque-seal-ring')
     for (let i = 0; i < NST; i++) {
       const a = (i / NST) * TAU - Math.PI / 2
@@ -409,6 +412,58 @@
     return [m.x, m.y]
   }
 
+  // 只在值变了时才写样式（光标停住、光源收敛后不再触发样式计算）
+  function put(el, k, v) {
+    const c = el._pq || (el._pq = {})
+    if (c[k] !== v) { c[k] = v; el.style[k] = v }
+  }
+
+  /* ---------- 刻字的阴阳边：每一行的暗边 / 亮边各是一层「影子副本」 ----------
+     原先每帧改每一行的 text-shadow（--sx/--sy/--sa/--sd），整块牌面（约 950×1400）跟着整张重画。
+     现在把牌面上的刻字整体复制几份（同样的排版，字本身透明，只留一道定色的模糊影），
+     垫在原字下面；每一行的副本是独立的合成层，光源移动时只改它的 transform / opacity——
+     位移即阴阳边的偏移，不透明度即阴阳边的浓淡，与原来的 text-shadow 逐项对应，牌面不再重画。
+     由下到上：血粉光（离场一条）→ 亮边 → 第二道深影（标题、离场）→ 暗边 → 原字。 */
+  const PASSES = [
+    { cls: 'pq-g-gl', kinds: 'x', mul: () => 0, a: (sa, sd) => sa * 0.3 },
+    { cls: 'pq-g-r', kinds: 'ntxs', mul: () => 1, a: sa => sa },
+    { cls: 'pq-g-d0', kinds: 'tx', mul: k => (k === 't' ? -0.45 : -0.5), a: (sa, sd, k) => sd * (k === 't' ? 0.7 : 0.75) },
+    { cls: 'pq-g-d', kinds: 'ntxs', mul: () => -1, a: (sa, sd) => sd },
+  ]
+  function buildGhosts() {
+    const E = S.E
+    if (!E.body) return
+    for (const g of E.ghosts || []) g.remove()
+    E.ghosts = []
+    S.rv = {}
+    for (const e of S.eng) { e.tw = []; e.sx = e.sy = e.sa = e.sd = null; e.lv = e.lsc = -1 }
+    if (!S.live) return
+    E.body.querySelectorAll('.plaque-reveal').forEach((n, i) => n.setAttribute('data-pr', i))
+    for (const P of PASSES) {
+      const body = E.body.cloneNode(true)
+      const wrap = U.el('div.pq-ghost.' + P.cls, { 'aria-hidden': 'true', inert: '' }, [body])
+      for (const n of body.querySelectorAll('[data-pq]')) {
+        const e = S.eng[+n.getAttribute('data-pq')]
+        if (!e || P.kinds.indexOf(e.kind) < 0) continue
+        n.classList.add('pq-on')
+        // 复制时原件身上可能正挂着入场动画的内联样式（模糊、缩放），副本不要带上；clip-path（逐行刻出）保留同步
+        n.style.removeProperty('filter')
+        n.style.removeProperty('transform')
+        n.style.opacity = '0'
+        e.tw.push({ el: n, m: P.mul(e.kind), a: P.a, tr: '', o: '0' })
+      }
+      for (const n of body.querySelectorAll('[data-pr]')) (S.rv[n.getAttribute('data-pr')] || (S.rv[n.getAttribute('data-pr')] = [])).push(n)
+      E.face.insertBefore(wrap, E.body)
+      E.ghosts.push(wrap)
+    }
+  }
+  // 原件上的状态变化同步到影子副本
+  const twinsOf = el => {
+    const e = S.eng[+el.getAttribute('data-pq')]
+    return e ? e.tw.map(t => t.el) : []
+  }
+  const revealTwins = el => (S.rv && S.rv[el.getAttribute('data-pr')]) || []
+
   function plaqueLight(vw, vh) {
     const E = S.E
     const wr = E.wall.getBoundingClientRect()
@@ -416,25 +471,27 @@
     const fr = E.face.getBoundingClientRect()
     const lx = L.x - fr.left, ly = L.y - fr.top
     const tw = 'translate3d(' + (L.x - wr.left).toFixed(1) + 'px,' + (L.y - wr.top).toFixed(1) + 'px,0)'
-    E.dodge.style.transform = tw
-    E.wpool.style.transform = tw
-    E.dodge.style.opacity = (0.92 * L.f).toFixed(3)
+    put(E.dodge, 'transform', tw)
+    put(E.wpool, 'transform', tw)
+    put(E.dodge, 'opacity', (0.92 * L.f).toFixed(2))
     // 镜面反射点：落在光源与视点（屏幕中心）的连线上、靠近光源一侧
     const ex = vw * 0.5 - fr.left, ey = vh * 0.5 - fr.top
-    E.spec.style.transform = 'translate3d(' + (lx + (ex - lx) * 0.14).toFixed(1) + 'px,' + (ly + (ey - ly) * 0.14).toFixed(1) + 'px,0)'
-    E.spec.style.opacity = L.f.toFixed(3)
+    put(E.spec, 'transform', 'translate3d(' + (lx + (ex - lx) * 0.14).toFixed(1) + 'px,' + (ly + (ey - ly) * 0.14).toFixed(1) + 'px,0)')
+    put(E.spec, 'opacity', L.f.toFixed(2))
     // 框的投影（与光反向）、唇口投在牌面上的影（靠光的一侧）
     let dx = fr.width / 2 - lx, dy = fr.height / 2 - ly
     const dn = Math.hypot(dx, dy) || 1
     dx /= dn; dy /= dn
     const off = clamp(9 + dn * 0.018, 9, 26)
-    E.cast.style.transform = 'translate3d(' + (dx * off).toFixed(1) + 'px,' + (dy * off).toFixed(1) + 'px,0)'
+    put(E.cast, 'transform', 'translate3d(' + (dx * off).toFixed(1) + 'px,' + (dy * off).toFixed(1) + 'px,0)')
     const lk = clamp(dn / (fr.height * 0.5), 0.3, 1)
-    E.lips[0].style.opacity = (clamp(dy) * lk).toFixed(2)
-    E.lips[2].style.opacity = (clamp(-dy) * lk).toFixed(2)
-    E.lips[3].style.opacity = (clamp(dx) * lk).toFixed(2)
-    E.lips[1].style.opacity = (clamp(-dx) * lk).toFixed(2)
+    put(E.lips[0], 'opacity', (clamp(dy) * lk).toFixed(2))
+    put(E.lips[2], 'opacity', (clamp(-dy) * lk).toFixed(2))
+    put(E.lips[3], 'opacity', (clamp(dx) * lk).toFixed(2))
+    put(E.lips[1], 'opacity', (clamp(-dx) * lk).toFixed(2))
     // 每一行刻字：亮边在背光一侧，暗边在向光一侧；越掠射，阴阳边越宽
+    // （低画质：刻字的阴阳边固定为顶光，不随光标变化，见 plaque.css 的默认值）
+    if (!S.live) return
     const H = 140, R2 = 470 * 470
     const top = -fr.top - 60, bot = vh - fr.top + 60
     for (const e of S.eng) {
@@ -449,11 +506,15 @@
       if (e.title) sa += S.titleBoost
       sa = Math.round(clamp(sa) * 40) / 40
       const sd = Math.round((0.46 + 0.42 * g) * 20) / 20
-      const st = e.el.style
-      if (sx !== e.sx) { st.setProperty('--sx', sx + 'px'); e.sx = sx }
-      if (sy !== e.sy) { st.setProperty('--sy', sy + 'px'); e.sy = sy }
-      if (sa !== e.sa) { st.setProperty('--sa', sa); e.sa = sa }
-      if (sd !== e.sd) { st.setProperty('--sd', sd); e.sd = sd }
+      if (sx === e.sx && sy === e.sy && sa === e.sa && sd === e.sd && e.vis === e.lv && e.sc === e.lsc) continue
+      e.sx = sx; e.sy = sy; e.sa = sa; e.sd = sd; e.lv = e.vis; e.lsc = e.sc
+      const sc = e.sc !== 1 ? ' scale(' + e.sc.toFixed(3) + ')' : ''
+      for (const t of e.tw) {
+        const tr = 'translate3d(' + (sx * t.m).toFixed(2) + 'px,' + (sy * t.m).toFixed(2) + 'px,0)' + sc
+        if (tr !== t.tr) { t.tr = tr; t.el.style.transform = tr }
+        const op = (Math.round(clamp(t.a(sa, sd, e.kind) * e.vis) * 100) / 100).toString()
+        if (op !== t.o) { t.o = op; t.el.style.opacity = op }
+      }
     }
   }
 
@@ -575,8 +636,12 @@
     const p = b._pts
     p.classList.remove('is-cool')
     p.classList.add('is-hot')
+    for (const t of twinsOf(p)) t.classList.add('is-hot') // 烧红时刻字的阴阳边让位给光晕
     clearTimeout(p._ht)
-    p._ht = setTimeout(() => { p.classList.add('is-cool'); p.classList.remove('is-hot') }, 520)
+    p._ht = setTimeout(() => {
+      p.classList.add('is-cool'); p.classList.remove('is-hot')
+      for (const t of twinsOf(p)) t.classList.remove('is-hot')
+    }, 520)
   }
   function lightRow(b) {
     b.classList.remove('is-lit')
@@ -590,8 +655,10 @@
 
   function refuse(b) {
     App.audio.sfx('wrong', { volume: 0.7 })
-    gsap.killTweensOf(b, 'x')
-    if (!S.reduced) gsap.fromTo(b, { x: 0 }, { keyframes: { x: [0, -6, 5, -4, 3, -1.5, 0] }, duration: 0.42, ease: 'none', clearProps: 'transform' })
+    // 这一行连同它的阴阳边（影子副本里的同一行）一起抖
+    const rows = [b].concat(twinsOf(b._pts).map(t => t.parentElement).filter(Boolean))
+    gsap.killTweensOf(rows, 'x')
+    if (!S.reduced) gsap.fromTo(rows, { x: 0 }, { keyframes: { x: [0, -6, 5, -4, 3, -1.5, 0] }, duration: 0.42, ease: 'none', clearProps: 'transform' })
     purseShort()
     quote(b, S.ptr === 'touch')
     if (trayLeft() > 0) trayHint()
@@ -891,7 +958,7 @@
     const W = wrap.clientWidth, H = wrap.clientHeight
     if (!W || !H) return
     T.mob = H > W * 0.8
-    T.dpr = Math.min(window.devicePixelRatio || 1, 2)
+    T.dpr = Math.min(window.devicePixelRatio || 1, S.q >= 2 ? 2 : S.q === 1 ? 1.25 : 1)
     T.W = W; T.H = H
     T.cv.width = Math.round(W * T.dpr)
     T.cv.height = Math.round(H * T.dpr)
@@ -1367,18 +1434,24 @@
     FX.cv = S.E.fxCv
     FX.ctx = FX.cv.getContext('2d')
     fxResize()
-    FX.dust = []
-    if (S.fine && !S.reduced) {
-      for (let i = 0; i < 150; i++) FX.dust.push({ x: Math.random(), y: Math.random(), vx: U.rand(-0.006, 0.006), vy: U.rand(-0.016, -0.003), r: U.rand(0.4, 1.4), ph: U.rand(0, TAU), z: U.rand(0.35, 1) })
-    }
+    fxDust()
+  }
+  // 光里的浮尘：全效果 150 粒，降一级 70 粒，最省时不要
+  function fxDust() {
+    const n = S.fine && !S.reduced ? (S.q >= 2 ? 150 : S.q === 1 ? 70 : 0) : 0
+    if (FX.dust.length > n) FX.dust.length = n
+    while (FX.dust.length < n) FX.dust.push({ x: Math.random(), y: Math.random(), vx: U.rand(-0.006, 0.006), vy: U.rand(-0.016, -0.003), r: U.rand(0.4, 1.4), ph: U.rand(0, TAU), z: U.rand(0.35, 1) })
   }
   function fxResize() {
     const w = FX.cv.clientWidth, h = FX.cv.clientHeight
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.75)
+    // 画质降级时画布分辨率随之降到 1 倍
+    const dpr = Math.min(window.devicePixelRatio || 1, S.q >= 2 ? 1.75 : 1)
     if (!w || !h || (w === FX.w && h === FX.h && dpr === FX.dpr)) return
     FX.w = w; FX.h = h; FX.dpr = dpr
     FX.cv.width = Math.round(w * dpr)
     FX.cv.height = Math.round(h * dpr)
+    FX.sprites = {}
+    FX.dirty = true
   }
   function purseC() {
     if (FX.pc && FX.pc.f === FX.frame) return FX.pc
@@ -1437,9 +1510,12 @@
     const busy = FX.fl.length || FX.melts.length || FX.pools.length || FX.door
     const dust = FX.dust.length > 0
     if (!busy && !dust) { if (FX.dirty) fxClear(); return }
-    fxResize()
     const r = FX.cv.getBoundingClientRect()
     FX.ox = r.left; FX.oy = r.top
+    if (dust) stepDust(dt)
+    // 只有浮尘、而光圈附近一粒也没亮着：画布保持原样（已清空就不再动它）
+    if (!busy && !dustLit()) { if (FX.dirty) fxClear(); return }
+    fxResize()
     FX.frame++
     const ctx = FX.ctx
     ctx.setTransform(FX.dpr, 0, 0, FX.dpr, 0, 0)
@@ -1447,7 +1523,7 @@
     ctx.globalAlpha = 1
     ctx.clearRect(0, 0, FX.w, FX.h)
     if (FX.door) drawDoor(ctx, now, dt)
-    if (dust) drawDust(ctx, dt)
+    if (dust) drawDust(ctx)
     if (FX.pools.length) drawPools(ctx, dt)
     if (FX.fl.length) { stepFlights(dt); drawFlights(ctx) }
     if (FX.melts.length) drawMelts(ctx, dt)
@@ -1592,15 +1668,27 @@
       }
     }
   }
-  function drawDust(ctx, dt) {
-    const lx = L.x - FX.ox, ly = L.y - FX.oy
-    const R = 210, R2 = R * R
-    ctx.globalCompositeOperation = 'lighter'
+  function stepDust(dt) {
     for (const d of FX.dust) {
       d.x += d.vx * dt; d.y += d.vy * dt; d.ph += dt * 1.2
       if (d.y < -0.02) d.y += 1.04
       if (d.x < -0.02) d.x += 1.04
       else if (d.x > 1.02) d.x -= 1.04
+    }
+  }
+  function dustLit() {
+    const lx = L.x - FX.ox, ly = L.y - FX.oy, R2x4 = 210 * 210 * 4
+    for (const d of FX.dust) {
+      const px = d.x * FX.w + Math.sin(d.ph) * 7, py = d.y * FX.h
+      if ((px - lx) * (px - lx) + (py - ly) * (py - ly) < R2x4) return true
+    }
+    return false
+  }
+  function drawDust(ctx) {
+    const lx = L.x - FX.ox, ly = L.y - FX.oy
+    const R = 210, R2 = R * R
+    ctx.globalCompositeOperation = 'lighter'
+    for (const d of FX.dust) {
       const px = d.x * FX.w + Math.sin(d.ph) * 7, py = d.y * FX.h
       const dd = (px - lx) * (px - lx) + (py - ly) * (py - ly)
       if (dd > R2 * 4) continue
@@ -1826,6 +1914,8 @@
      ===================================================================== */
   function intro() {
     const E = S.E, root = S.el
+    const titles = S.eng.filter(e => e.kind === 't')
+    if (!window.ScrollTrigger || S.reduced) for (const e of titles) e.vis = 1
     if (!window.ScrollTrigger) return
     if (S.reduced) {
       ScrollTrigger.create({ trigger: E.table, start: 'top 85%', once: true, onEnter: traySweep })
@@ -1837,13 +1927,26 @@
       onEnter: () => {
         gsap.to(E.cap, { opacity: 1, duration: 1.4, ease: 'power2.out' })
         gsap.fromTo(E.tch, { opacity: 0, scale: 1.16, filter: 'blur(16px)' }, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 1.7, stagger: 0.2, ease: 'expo.out', clearProps: 'filter,transform' })
+        // 标题的阴阳边（影子副本）跟着字一起浮现、一起缩回原大
+        gsap.fromTo(titles, { vis: 0, sc: 1.16 }, { vis: 1, sc: 1, duration: 1.7, stagger: 0.2, ease: 'expo.out' })
         gsap.fromTo(S, { titleBoost: 1 }, { titleBoost: 0, duration: 2.6, ease: 'power2.out', delay: 0.5 })
         gsap.to(E.orn, { opacity: 1, duration: 1.4, delay: 0.6 })
       },
     })
+    // 逐行刻出：原字与它的影子副本同一节奏；刻完后撤掉 clip-path（免得合成层的影子副本一直挂着裁切遮罩）
+    const reveal = (els, stagger) => gsap.to(els, {
+      clipPath: 'inset(-40% -3% -40% -3%)', duration: 1, stagger, ease: 'power3.out',
+      onComplete: () => gsap.set(els, { clipPath: 'none' }),
+    })
     ScrollTrigger.batch(E.body.querySelectorAll('.plaque-reveal'), {
       start: 'top 94%', once: true, interval: 0.07, batchMax: 16,
-      onEnter: batch => gsap.to(batch, { clipPath: 'inset(-40% -3% -40% -3%)', duration: 1, stagger: 0.04, ease: 'power3.out' }),
+      onEnter: batch => {
+        reveal(batch, 0.04)
+        for (let p = 0; p < (E.ghosts || []).length; p++) {
+          const tw = batch.map(b => revealTwins(b)[p]).filter(Boolean)
+          if (tw.length) reveal(tw, 0.04)
+        }
+      },
     })
     ScrollTrigger.create({ trigger: E.exit, start: 'top 92%', once: true, onEnter: () => E.exit.classList.add('is-in') })
     ScrollTrigger.create({
@@ -1859,10 +1962,15 @@
      帧循环
      ===================================================================== */
   function tick(time, dtf) {
-    if (!S.visible) { if (FX.dirty) fxClear(); return }
+    const vw = window.innerWidth, vh = window.innerHeight
+    // 按板块的实际位置判断：IntersectionObserver 在板块恰好贴着视口下沿时也算「相交」，
+    // 那时（还在庭审里）特效画布会白白每帧重画
+    let on = S.visible
+    if (on) { const r = S.el.getBoundingClientRect(); on = r.bottom > 1 && r.top < vh - 1 }
+    if (on !== S.on) { S.on = on; S.el.classList.toggle('is-off', !on); if (on) { T.dirty = true; measure() } }
+    if (!on) { if (FX.dirty) fxClear(); return }
     const now = performance.now()
     const dt = Math.min(0.064, dtf * 0.016667)
-    const vw = window.innerWidth, vh = window.innerHeight
     const tgt = lightTarget(now)
     const k = 1 - Math.pow(1 - 0.16, dtf)
     L.x += (tgt[0] - L.x) * k
@@ -1888,24 +1996,41 @@
     }
   }
 
+  // 画质：2 全效果；1 画布降到 1–1.25 倍、浮尘减半；0 再关掉随光变化的刻字阴阳边、浮尘与两层混合光
+  function applyQuality() {
+    const q = App.quality && typeof App.quality.level === 'number' ? App.quality.level : 2
+    S.q = q
+    const live = q >= 1
+    if (live !== S.live) {
+      S.live = live
+      S.el.classList.toggle('pq-live', live)
+      buildGhosts()
+    }
+    fxDust()
+    if (FX.cv) fxResize()
+    if (T.cv) trayResize()
+  }
+
   function mount(el) {
     S.el = el
     S.coins = S.shown = typeof App.state.coins === 'number' ? Math.max(0, Math.floor(App.state.coins)) : 0
     App.state.coins = S.coins
+    S.q = App.quality && typeof App.quality.level === 'number' ? App.quality.level : 2
     build(el)
     paintPurse(false)
     genTextures(el)
     trayInit()
     fxInit()
+    applyQuality()
     intro()
     requestAnimationFrame(measure)
     if (window.ScrollTrigger) ScrollTrigger.addEventListener('refresh', () => { measure(); trayResize(); fxResize() })
-    window.addEventListener('resize', U.debounce(() => { layoutCols(); measure(); trayResize(); fxResize(); if (S.quoted) placeNeed(S.quoted) }, 160))
+    window.addEventListener('resize', U.debounce(() => { if (layoutCols()) buildGhosts(); measure(); trayResize(); fxResize(); if (S.quoted) placeNeed(S.quoted) }, 160))
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); T.dirty = true })
+    App.bus.on('quality', applyQuality)
     App.onVisible(el, v => {
       S.visible = v
       if (!v) { hideDoor(true); unquote(); S.hov = -1 }
-      else { T.dirty = true; measure() }
     }, { rootMargin: '0px' })
     // 指针类型：触摸时第一下报价、第二下同意；光跟随手指，停手后慢慢游移
     window.addEventListener('pointerdown', e => {

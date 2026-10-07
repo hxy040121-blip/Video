@@ -305,8 +305,10 @@
 }
 .plaque-item::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: .1em; height: 1px;
-  background: linear-gradient(90deg, rgba(255, 214, 150, 0), rgba(255, 214, 150, .5) 18%, rgba(255, 214, 150, .5) 82%, rgba(255, 214, 150, 0));
-  transform: scaleX(0); transform-origin: left; transition: transform .55s var(--ease-out);
+  /* 从左向右划出：用 background-size 而不是 transform——transform 过渡会让这条线临时升成合成层，
+     牌面上的字随之重新分层、整块重画；background-size 只重画这一条 1px 的线 */
+  background: linear-gradient(90deg, rgba(255, 214, 150, 0), rgba(255, 214, 150, .5) 18%, rgba(255, 214, 150, .5) 82%, rgba(255, 214, 150, 0)) 0 0 / 0% 100% no-repeat;
+  transition: background-size .55s var(--ease-out);
   pointer-events: none;
 }
 .plaque-item::before {
@@ -319,7 +321,7 @@
   .plaque-item:hover .plaque-eng { color: #cfc8ba; }
 }
 .plaque-item.is-quoted .plaque-eng { color: #d9d2c4; }
-.plaque-item:hover::after, .plaque-item.is-quoted::after { transform: scaleX(1); }
+.plaque-item:hover::after, .plaque-item.is-quoted::after { background-size: 100% 100%; }
 .plaque-item:active { transform: translateY(.5px); }
 .plaque-item.is-lit .plaque-eng { color: var(--pq-plat-hi); transition: color 0s; }
 .plaque-item.is-lit::before { animation: pq-sweep .75s var(--ease-out) both; }
@@ -340,6 +342,7 @@
   background: linear-gradient(90deg, rgba(14, 9, 6, 0), rgba(14, 9, 6, .88) 14px, rgba(14, 9, 6, .88) calc(100% - 6px), rgba(14, 9, 6, 0));
   pointer-events: none; opacity: 0; visibility: hidden;
   transition: opacity .2s, visibility 0s .2s;
+  will-change: opacity; /* 常驻合成层：淡入淡出时不改变墙上的分层 */
 }
 .plaque-need.is-on { opacity: 1; visibility: visible; transition: opacity .15s; }
 .plaque-need-n {
@@ -401,7 +404,7 @@
     var(--sx, 0px) var(--sy, 2px) .4px rgba(var(--pq-rim), var(--sa, .3)),
     0 0 10px rgba(255, 46, 126, calc(var(--sa, .3) * .3));
 }
-.plaque-exit-item::after { background: linear-gradient(90deg, rgba(255, 46, 126, 0), rgba(255, 70, 140, .55) 18%, rgba(255, 70, 140, .55) 82%, rgba(255, 46, 126, 0)); }
+.plaque-exit-item::after { background-image: linear-gradient(90deg, rgba(255, 46, 126, 0), rgba(255, 70, 140, .55) 18%, rgba(255, 70, 140, .55) 82%, rgba(255, 46, 126, 0)); }
 
 /* ---------- 收纳台 · 理币盘 ---------- */
 .plaque-table {
@@ -465,6 +468,58 @@
 .plaque-purse.is-short { border-color: var(--blood); box-shadow: 0 0 0 1px rgba(255, 46, 126, .35), 0 0 26px rgba(255, 46, 126, .4), 0 12px 34px rgba(0, 0, 0, .55); transition: none; }
 .plaque-purse.is-short .plaque-purse-n { color: var(--blood); transition: none; }
 .plaque-purse.is-short .plaque-purse-ico { box-shadow: inset 0 0 0 1px rgba(255, 46, 126, .8), 0 0 14px rgba(255, 46, 126, .5); }
+
+/* ---------- 刻字的阴阳边：影子副本（plaque.js 的 buildGhosts） ----------
+   全效果时（.pq-live），原字不再带随光变化的 text-shadow；牌面下垫着几份同样排版的副本，
+   每一行在副本里是独立的合成层，只改 transform（偏移）与 opacity（浓淡），牌面不必重画。 */
+.pq-live .plaque-face > .plaque-body .plaque-eng,
+.pq-live .plaque-face > .plaque-body .plaque-tch { text-shadow: none; }
+.pq-live .plaque-face > .plaque-body .plaque-pts.is-hot { text-shadow: 0 0 2px rgba(255, 196, 110, .95), 0 0 9px rgba(255, 130, 40, .8); }
+.pq-live .plaque-face > .plaque-body .plaque-seal-ring::before,
+.pq-live .plaque-face > .plaque-body .plaque-seal-ring::after { display: none; }
+.pq-live .plaque-face > .plaque-body .plaque-seal-ring b,
+.pq-live .plaque-face > .plaque-body .plaque-seal-in { box-shadow: none; }
+
+.pq-ghost {
+  position: absolute; inset: 0; z-index: 0; padding: inherit;
+  visibility: hidden; pointer-events: none;
+}
+.plaque-root:not(.pq-live) .pq-ghost { display: none; }
+.pq-ghost *, .pq-ghost *::before, .pq-ghost *::after { animation: none !important; transition: none !important; }
+.pq-ghost .pq-on { visibility: visible; color: transparent; will-change: transform, opacity; }
+.pq-ghost .pq-on::before, .pq-ghost .pq-on::after,
+.pq-ghost .plaque-seal-ring::before, .pq-ghost .plaque-seal-ring::after { visibility: hidden; }
+.pq-ghost .pq-on.is-hot { visibility: hidden; }
+/* 亮边（原 text-shadow 的 +sx/+sy 那一道） */
+.pq-g-r .pq-on { text-shadow: 0 0 .3px rgb(var(--pq-rim)); }
+.pq-g-r .plaque-tch.pq-on { text-shadow: 0 0 .6px rgb(var(--pq-rim)); }
+.pq-g-r .plaque-exit-item .pq-on { text-shadow: 0 0 .4px rgb(var(--pq-rim)); }
+/* 暗边（-sx/-sy） */
+.pq-g-d .pq-on { text-shadow: 0 0 .5px rgb(5, 3, 2); }
+.pq-g-d .plaque-tch.pq-on,
+.pq-g-d .plaque-exit-item .pq-on { text-shadow: 0 0 1px rgb(4, 2, 1); }
+/* 标题与离场多一道不模糊的深影（-0.45 / -0.5 倍偏移） */
+.pq-g-d0 .pq-on { color: rgb(4, 2, 1); text-shadow: none; }
+/* 离场一条的血粉光 */
+.pq-g-gl .pq-on { text-shadow: 0 0 10px rgb(255, 46, 126); }
+/* 落款圆章：圈、十五点、内圈、数字整体作为一层 */
+.pq-g-d .plaque-seal.pq-on .plaque-seal-ring { border-color: rgb(5, 3, 2); }
+.pq-g-d .plaque-seal.pq-on .plaque-seal-ring b { background: rgb(5, 3, 2); box-shadow: none; }
+.pq-g-d .plaque-seal.pq-on .plaque-seal-in { border-color: rgb(5, 3, 2); box-shadow: none; }
+.pq-g-r .plaque-seal.pq-on .plaque-seal-ring { border-color: rgb(var(--pq-rim)); }
+.pq-g-r .plaque-seal.pq-on .plaque-seal-ring b { background: rgb(var(--pq-rim)); box-shadow: none; }
+.pq-g-r .plaque-seal.pq-on .plaque-seal-in { border-color: rgb(var(--pq-rim)); box-shadow: none; opacity: .8; }
+.pq-ghost .plaque-seal.pq-on .plaque-seal-n { color: transparent; }
+.pq-g-d .plaque-seal.pq-on .plaque-seal-n { text-shadow: 0 0 .5px rgb(5, 3, 2); }
+.pq-g-r .plaque-seal.pq-on .plaque-seal-n { text-shadow: 0 0 .3px rgb(var(--pq-rim)); }
+
+/* 板块不在视口里：无限循环的动画停下 */
+.plaque-root.is-off .plaque-exit::before,
+.plaque-root.is-off .plaque-exit::after { animation-play-state: paused; }
+
+/* 最省画质：关掉两层混合模式的光（墙上的暖光池、拉丝高光） */
+html[data-q="0"] .plaque-wpool,
+html[data-q="0"] .plaque-specbox { display: none; }
 
 /* ---------- 入场 ---------- */
 .plaque-root.is-armed .plaque-reveal { clip-path: inset(-40% 101% -40% -3%); }

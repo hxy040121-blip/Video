@@ -46,9 +46,9 @@
 .cast-item { position: absolute; --lit: 0; }
 .cast-wire { position: absolute; left: 0; overflow: visible; pointer-events: none; }
 .cast-swing { position: absolute; inset: 0; will-change: transform; }
-/* 投影：模糊画进 SVG（只栅格化一次），随烛光移动只改 transform；不再用 CSS blur 滤镜逐帧在 GPU 上糊 */
+/* 投影：模糊预先烘焙成图（cast.js 的 shadowImage），随烛光移动只改 transform；不再用 CSS blur 滤镜逐帧在 GPU 上糊 */
 .cast-shadow { position: absolute; opacity: calc(.35 + var(--lit) * .45); pointer-events: none; will-change: transform; }
-.cast-shadow > svg { position: absolute; display: block; overflow: visible; }
+.cast-shadow > i { position: absolute; display: block; background: no-repeat 0 0 / 100% 100%; }
 .cast-win {
   position: absolute; inset: 0; overflow: hidden; outline: none;
   background: #0b0708;
@@ -112,7 +112,7 @@
 .cast-frame { position: absolute; pointer-events: none; opacity: calc(.42 + var(--lit) * .58); }
 /* 逐帧变化的变量（--lit/--pf 在 .cast-item 上，--pvx/--rim 等在肖像上）会继承进 SVG：SVG 一重算样式，里面的渐变、滤镜资源就失效、
    整张重画。在 SVG 根上把它们钉成常量，变化就传不进去 */
-.cast-border, .cast-shadow > svg, .cast-wire, .cast-por > svg { --lit: 0; --pf: 0; --pvx: 0; --pvy: 0; --rx: 0; --ry: 0; --rim: 0; }
+.cast-border, .cast-wire, .cast-por > svg { --lit: 0; --pf: 0; --pvx: 0; --pvy: 0; --rx: 0; --ry: 0; --rim: 0; }
 .cast-border { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
 .cast-mould { opacity: .96; }
 /* 黄铜反光：画框线条做遮罩，里面一块光斑跟着烛光只改 transform（原来是每帧改 SVG 渐变中心而整框重画） */

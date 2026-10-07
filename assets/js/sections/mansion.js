@@ -619,9 +619,10 @@
     const el = U.el('div.mz-floor', { 'data-floor': fid })
     const pool = U.el('div.mz-pool', { 'aria-hidden': 'true' })
     const lens = U.el('div.mz-lens', { 'aria-hidden': 'true' })
-    // 灯照层（SVG + 文字）装进同一个反向平移的盒子：手提灯移动只改这个合成层的 transform
+    // 灯照层（SVG + 文字）装进同一个反向平移的盒子：手提灯移动只改这个合成层的 transform。
+    // 软边遮罩放在圆窗里一层不动的盒子上（.mz-masker）：遮罩若直接挂在移动的圆窗上，Chrome 会随移动反复重画遮罩
     const litWrap = U.el('div.mz-litwrap', {}, [lit, txLit])
-    lens.appendChild(litWrap)
+    lens.appendChild(U.el('div.mz-masker', {}, [litWrap]))
     // 底图 + 底图文字：悬停楼层时整块提亮（filter 落在合成层上，不重画）
     const under = U.el('div.mz-under', {}, [base, txBase])
     el.append(under, pool)
@@ -997,7 +998,7 @@
       const half = U.el('div.mansion-seal-half.is-' + side)
       // 灯照圆窗：窗口跟着光标平移，里面的亮纹反向平移（对齐墙面纹样）——两层都只改 transform
       const pat = U.el('i.mansion-seal-pat')
-      const lens = U.el('i.mansion-seal-lens', {}, [pat])
+      const lens = U.el('i.mansion-seal-lens', {}, [U.el('i.mansion-seal-mask', {}, [pat])])
       half.append(lens, U.el('b.mansion-seal-edge'))
       const glints = []
       for (let i = 0; i < 9; i++) {
