@@ -200,7 +200,7 @@
     const callCount = {}
     for (const id of order) { const cn = callNameRaw(charMap[id]); if (cn) callCount[cn] = (callCount[cn] || 0) + 1 }
     g.dupCalls = Object.keys(callCount).filter(k => callCount[k] > 1)
-    // 身份：十五组洗牌，每人一组（主持人游戏 一、五；运行规则 0）
+    // 身份：十五组洗牌，每人一组（主持人游戏 1、5；运行规则 0）
     const groups = shuffle(r, data.identities)
     order.forEach((id, i) => {
       const grp = (opts.assign && opts.assign[id] && data.identities.find(x => x.front === opts.assign[id])) || groups[i % groups.length]
@@ -323,7 +323,7 @@
     const deadline = g.mandateAt + 1440
     const victims = living.filter(id => id !== m && id !== g.player)
     if (!victims.length) {
-      // 受命者逾期：公开受命者身份并处死；帮凶一同处死（主持人游戏 二、五·11）
+      // 受命者逾期：公开受命者身份并处死；帮凶一同处死（主持人游戏 2、5.11）
       g.minutes = Math.max(g.minutes, deadline)
       const executed = [m]
       const acc = accompliceOf(g, m)
@@ -1156,7 +1156,7 @@
   function request(T, act) { T.queue.push(act) }
 
   /* ==========================================================
-     投票（主持人游戏 三：辩论与投票、平票、误判与结束）
+     投票（主持人游戏 3.2—3.3：辩论与投票、平票、误判与结束）
      ========================================================== */
   function beginVote(g, T, kind = 'normal', extra = {}) {
     const living = livingIds(g)
@@ -1388,7 +1388,7 @@
     return { correct, pending, executed, misjudge: T.misjudge, ended: T.ended }
   }
 
-  /* ---------- 审判结束：金币（主持人游戏 八） ---------- */
+  /* ---------- 审判结束：金币（主持人游戏 8） ---------- */
   function closeTrial(g, T) {
     T.ended = true
     T.phase = 'ended'

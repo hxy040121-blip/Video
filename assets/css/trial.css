@@ -679,8 +679,8 @@
 .trial-spot.is-done { pointer-events: none; }
 /* 灯亮着：看得见的热点都有一点微光（按钮自己的合成器动画：慢慢转、一明一暗）；要侧光才看得见的，扫到之前什么也没有 */
 .trial-spot::before {
-  content: ''; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px;
-  background: rgba(255, 244, 222, .3);
+  content: ''; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+  background: rgba(255, 244, 222, .45);
   clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
   pointer-events: none;
   animation: trial-spark-rot 10.5s linear infinite, trial-spark-tw .435s ease-in-out infinite alternate;
@@ -1149,8 +1149,6 @@
 .trial-note-face .portrait { width: 100%; }
 .trial-note.is-death { border-color: var(--blood); }
 .trial-note.is-death .trial-note-ico { color: var(--blood); }
-.trial-note.is-known { border-color: var(--brass); }
-.trial-note.is-known .trial-note-ico { color: var(--brass); }
 .trial-note.is-lover { border-color: #ff8db8; }
 .trial-note.is-lover .trial-note-ico { color: #ff8db8; }
 .trial-note.is-accomplice { border-color: var(--rust); }
@@ -1274,7 +1272,8 @@
 /* 看不见的特征（医护、现场观察、年代）：图标外一圈虚线 */
 .trial-card-dim.is-unseen { color: var(--bone-dim); }
 .trial-card-dim.is-unseen::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 1px dashed rgba(235, 227, 214, .35); }
-.trial-card.is-fact { background: linear-gradient(110deg, #13161a, #0c0d0f); }
+.trial-card.is-fact { width: 124px; background: linear-gradient(110deg, #13161a, #0c0d0f); }
+.trial-card.is-fact .trial-card-label { font-size: 11px; color: var(--bone-dim); }
 .trial-card.is-fact::before { background: rgba(141, 152, 166, .7); }
 .trial-card.is-fact .trial-card-ico { color: rgba(176, 196, 216, .9); }
 .trial-card.is-fact .trial-card-no { color: rgba(141, 152, 166, .9); }
@@ -1430,7 +1429,7 @@
   box-shadow: inset 0 0 0 1px rgba(255, 46, 126, .35), 0 0 18px rgba(255, 46, 126, .25);
 }
 /* 线索 → 凶手的特征 */
-.trial-rp-clue { display: grid; grid-template-columns: minmax(0, 1fr) 32px 34px minmax(0, auto); align-items: center; gap: 8px; }
+.trial-rp-clue { display: grid; grid-template-columns: minmax(150px, max-content) 30px 40px minmax(0, max-content); justify-content: start; align-items: center; gap: 8px; }
 .trial-rp-k {
   display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 12px 8px 10px;
   background: linear-gradient(110deg, #1c1517, #0f0c0d); border-left: 3px solid var(--blood);
@@ -1626,7 +1625,8 @@
   .trial-rp-card { width: 104px; }
   .trial-rp-name { font-size: 24px; }
   .trial-rp-plan { height: 230px; }
-  .trial-rp-clue { grid-template-columns: minmax(0, 1fr) 24px 18px minmax(0, auto); gap: 6px; }
+  .trial-rp-clue { grid-template-columns: minmax(0, 1fr) 22px 16px minmax(0, max-content); gap: 6px; }
+  .trial-card.is-fact { width: 104px; }
   .trial-rp-f { max-width: 120px; font-size: 11px; padding: 4px 7px; }
   .trial-rp-k { padding: 7px 8px; }
   .trial-rp-k span { font-size: 11px; }

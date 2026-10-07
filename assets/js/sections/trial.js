@@ -1,7 +1,9 @@
 /* ==========================================================
    庭审（trial）：可以玩的模拟庭审
-   入局 → 发牌 → 受命与行凶（不可见）→ 发现 → 调查 → 庭审 → 处刑 → 余波 → 下一案 … → 终局
+   入局（默认八人）→ 发牌 → 受命与行凶（不可见）→ 发现 → 调查（灯亮着；按住压低侧光）→ 庭审（议事厅的门关上）
+   → 处刑 → 余波 → 结案对账（真相回放，可跳过）→ 下一案 … → 终局（一案一行的总表）
    规则全部在 TrialEngine（trial-engine.js）里；这里只负责画面、声音与交互。
+   称呼：广播、台词的 {X}{V}、证言卡用 callOf（馆里报的名字；同局重名或不报名时说「N号」）；名牌、档案用卡名。
    ========================================================== */
 (function () {
   'use strict'
@@ -155,11 +157,11 @@
   // 整句以（开头、）结尾的是动作描写（格里菲斯不能说话）：不加引号、斜体、无打字声
   const isAct = s => /^（[\s\S]*）$/.test(String(s || '').trim())
   const quoted = s => (isAct(s) || s === '……' ? s : '「' + s + '」')
-  const isFemaleName = n => !!(App.chars || []).find(c => c.name === n && c.gender === '女')
+  const isFemaleName = n => !!(App.chars || []).find(c => (c.name === n || c.callName === n) && c.gender === '女')
   function fitsLine(s, vars, ctx) {
     if (!holes(s).every(k => vars[k] != null && vars[k] !== '')) return false
     // 「{X}先生」只称呼男性（蝴蝶忍的旧句）
-    if (/\{X\}先生/.test(s) && isFemaleName(vars.X)) return false
+    if (/\{X\}先生/.test(s) && (isFemaleName(vars.X) || (ctx && ctx.female))) return false
     if (ctx) {
       // 对着说不出话的人（只做动作描写的格里菲斯）：不用「问、说、话」的句子
       if (ctx.mute && /问|说|话/.test(s)) return false
@@ -211,7 +213,7 @@
     if (!(id in muteCache)) { const p = linePool(id, 'defend'); muteCache[id] = p.length > 0 && p.every(isAct) }
     return muteCache[id]
   }
-  const toX = id => ({ mute: isMute(id) })
+  const toX = id => ({ mute: isMute(id), female: charOf(id).gender === '女' })
 
   function face(id, opts = {}) {
     const w = App.portrait(id, Object.assign({}, opts, { track: false }))
@@ -1785,6 +1787,9 @@
       clearFaces(S.E.say.querySelector('.trial-say-face'))
       clearFaces(S.E.end.querySelector('.trial-end-face'))
       clearFaces(S.E.end.querySelector('.trial-end-row'))
+      const led = S.E.end.querySelector('.trial-end-ledger')
+      if (led) { clearFaces(led); led.remove() }
+      clearFaces(S.E.replay.querySelector('.trial-rp-head'))
       if (window.gsap) gsap.set(S.E.end.querySelector('.trial-end-face'), { clearProps: 'transform,opacity' })
       clearFaces(S.E.exec.querySelector('.trial-exec-who'))
       clearQuips()
@@ -2327,7 +2332,7 @@
         return
       }
       const box = mobile
-        ? { x: 14, y: 128, w: W - 28, h: H - 128 - 200 }
+        ? { x: 14, y: 166, w: W - 28, h: H - 166 - 196 }
         : { x: Math.max(250, W * 0.2), y: 128, w: W - 2 * Math.max(250, W * 0.2), h: H - 128 - 150 }
       const w = this.w, h = this.h
       const sA = Math.min(box.w / w, box.h / h), sB = Math.min(box.w / h, box.h / w)
@@ -2815,7 +2820,7 @@
         const age = (performance.now() - L.tapAt) / 1000
         R *= age < 0.2 ? 0.55 + age * 2.25 : 1
       }
-      const rx = R * (1 + 0.95 * p), ry = R * (1 - 0.74 * p)
+      const rx = R * (1 + 0.95 * p), ry = R * (1 - 0.66 * p)
       if (this.baseVer !== this.planVer || this.doneCount() !== this.nd) this.drawBase()
       // 小画布以光为中心，对齐设备像素
       const S2 = this.lv.width
@@ -3337,7 +3342,7 @@
     Inv.askBtn = null
     const tok = S.token
     if (S.spectate || !meAlive()) {
-      // 旁观：手电自己扫过现场，在场的人轮流细查（尸体、各条痕迹、一处陈设），边看边自言自语
+      // 旁观：侧光自己扫过现场，在场的人轮流细查（尸体、各条痕迹、一处陈设），边看边自言自语
       const body = Inv.spots.filter(x => x.kind === 'body')
       const clues = U.shuffle(Inv.spots.filter(x => x.kind === 'clue'))
       const decoys = Inv.spots.filter(x => x.kind === 'decoy').sort((a, b) => (b.herring ? 1 : 0) - (a.herring ? 1 : 0)).slice(0, 1)
@@ -4149,7 +4154,7 @@
       case 'medical': return st.medical || '—'
       case 'observation': return st.observation || '—'
       case 'era': return ch.knowsModernDevices ? '认得' : '没见过'
-      case 'items': return (ch.carried || []).find(i => /手套|烟斗|烟管/.test(i)) || '—'
+      case 'items': return (ch.carried || []).find(i => /手套|烟斗|烟管/.test(i)) || '无'
       default: return '—'
     }
   }
