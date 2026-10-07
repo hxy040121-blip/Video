@@ -763,7 +763,12 @@
 
 .trial-end.is-win { background: radial-gradient(ellipse at 50% 40%, rgba(40, 28, 16, .7), rgba(10, 8, 9, .9) 70%); }
 .trial-end.is-win .trial-end-line { font-family: var(--f-serif); color: #e2c48c; }
-.trial-end.is-dead { background: radial-gradient(ellipse 30% 20% at 50% 46%, rgba(150, 136, 120, .11), transparent 72%), #030202; }
+/* 胜者的画像四边都化进光里（位图的裁切边不露出来） */
+.trial-end.is-win .trial-end-face {
+  -webkit-mask-image: radial-gradient(ellipse 58% 64% at 50% 42%, #000 58%, transparent 100%);
+          mask-image: radial-gradient(ellipse 58% 64% at 50% 42%, #000 58%, transparent 100%);
+}
+.trial-end.is-dead { background: radial-gradient(ellipse 22% 9% at 50% 52%, rgba(170, 156, 140, .16), transparent 80%), radial-gradient(ellipse 30% 20% at 50% 46%, rgba(150, 136, 120, .1), transparent 72%), #030202; }
 .trial-end.is-dead .trial-end-halo { display: none; }
 .trial-end.is-dead .trial-end-face { transform-origin: 50% 100%; filter: grayscale(1) brightness(.72) drop-shadow(0 0 1px rgba(226, 214, 196, .3)); }
 .trial-end.is-dead .trial-end-name { color: var(--ash); text-decoration: line-through; text-decoration-color: var(--rust); text-decoration-thickness: 3px; }

@@ -74,7 +74,7 @@
   const GOLD = [[0, [24, 14, 4]], [0.22, [80, 50, 14]], [0.45, [152, 105, 34]], [0.7, [214, 164, 70]], [0.95, [247, 210, 124]], [1.25, [255, 239, 192]], [1.7, [255, 253, 244]]]
   const SILVER = [[0, [26, 26, 30]], [0.3, [90, 92, 98]], [0.6, [162, 166, 172]], [0.95, [220, 224, 230]], [1.3, [251, 252, 253]]]
   // 羊脂白玉：暗处是温润的灰褐，不是死黑；亮处是奶白
-  const JADE = [[0, [16, 13, 10]], [0.18, [52, 46, 38]], [0.42, [122, 114, 98]], [0.68, [192, 184, 164]], [0.92, [232, 226, 208]], [1.2, [250, 247, 238]]]
+  const JADE = [[0, [20, 16, 12]], [0.18, [64, 55, 42]], [0.42, [142, 129, 104]], [0.68, [210, 197, 168]], [0.92, [238, 230, 207]], [1.2, [252, 248, 236]]]
   const PLAT = [[0, [40, 40, 42]], [0.4, [122, 122, 126]], [0.8, [202, 204, 208]], [1.2, [252, 252, 253]]]
   const WOOD = [[0, [6, 4, 3]], [0.3, [26, 16, 10]], [0.7, [64, 40, 24]], [1.1, [120, 82, 52]]]
   function ramp(R, t) {
@@ -237,7 +237,8 @@
       'data-cursor-tone': exit ? 'blood' : null,
       'aria-label': it.name + '　' + fmt(it.pts),
     })
-    const name = U.el('span.plaque-name.plaque-eng', { text: it.name })
+    // 中文 keep-all 时只在标点处断行；再在「与/或/含」前补几个可断点，避免把「麻将」之类拆开
+    const name = U.el('span.plaque-name.plaque-eng', { text: it.name.replace(/([^，、（])(?=[与或含])/g, '$1\u200b') })
     const lead = U.el('span.plaque-lead', { 'aria-hidden': 'true' })
     const pts = U.el('span.plaque-pts.plaque-eng', { text: fmt(it.pts) })
     b.append(name, lead, pts)
@@ -306,9 +307,18 @@
     for (const t of HOW) how.appendChild(reg(U.el('p.plaque-p.plaque-eng.plaque-reveal', { text: t }), 1))
     const blocks = [{ el: how, h: 2.2 + HOW.reduce((a, t) => a + Math.ceil(Array.from(t).length / 16) * 1.05 + 0.35, 0) }]
     for (const ch of BODY) blocks.push({ el: chapterEl(ch), h: 2.2 + ch.items.reduce((a, it) => a + (it.sub ? 1.8 : 1), 0) })
-    const groups = partition(blocks, 3) || [blocks]
+    S.blocks = blocks
     E.cols = U.el('div.plaque-cols')
-    for (const g of groups) E.cols.appendChild(U.el('div.plaque-col', {}, g.map(b => b.el)))
+    // 落款：一枚凹刻的圆章——十五个点围着「100」（十五摞金币、一枚一百分）。放在最矮的那一栏底部
+    E.seal = reg(U.el('div.plaque-seal', { 'aria-hidden': 'true' }), 1.4)
+    const ring = U.el('i.plaque-seal-ring')
+    for (let i = 0; i < NST; i++) {
+      const a = (i / NST) * TAU - Math.PI / 2
+      ring.appendChild(U.el('b', { style: { left: (50 + 41 * Math.cos(a)).toFixed(2) + '%', top: (50 + 41 * Math.sin(a)).toFixed(2) + '%' } }))
+    }
+    E.seal.append(ring, U.el('i.plaque-seal-in'), U.el('span.plaque-seal-n.plaque-eng', { text: '100' }))
+    S.ncols = 0
+    layoutCols()
 
     // 六、离场
     E.exit = U.el('div.plaque-exit')
@@ -345,6 +355,25 @@
     E.purse = U.el('div.plaque-purse.is-empty', { role: 'status', 'aria-live': 'polite' }, [E.purseIco, E.purseN])
 
     el.append(E.fx, E.scene, E.inks, E.purse)
+  }
+
+  // 按屏宽分栏（三栏 / 两栏 / 单栏），章节不拆开，使最高的一栏尽量矮
+  function layoutCols() {
+    const E = S.E
+    const n = window.innerWidth > 1180 ? 3 : window.innerWidth > 760 ? 2 : 1
+    if (n === S.ncols) return false
+    S.ncols = n
+    const groups = n > 1 ? (partition(S.blocks, n) || [S.blocks]) : [S.blocks]
+    E.cols.textContent = ''
+    const cols = groups.map(g => U.el('div.plaque-col', {}, g.map(b => b.el)))
+    E.cols.append(...cols)
+    if (n > 1) {
+      const sum = g => g.reduce((a, b) => a + b.h, 0)
+      let k = 0
+      groups.forEach((g, i) => { if (sum(g) < sum(groups[k])) k = i })
+      cols[k].appendChild(E.seal)
+    } else E.seal.remove()
+    return true
   }
 
   function stackLabel(i) { return (i + 1) + ' · ' + S.stacks[i] }
@@ -807,6 +836,42 @@
     return o
   }
 
+  // 玉里的云絮：一张小纹理，按透视近似（仿射）贴在盘面上
+  let JTEX = null
+  function jadeTex() {
+    if (JTEX) return JTEX
+    const W = 320, H = 60
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H
+    const g = cv.getContext('2d')
+    const rnd = U.seeded(9150)
+    const img = g.createImageData(W, H), d = img.data
+    const a = vnoise(W, 7, rnd), b = vnoise(W, 23, rnd), c = vnoise(W, 61, rnd)
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x, o = i * 4, k = (y % W) * W + x
+        const cloud = a[k] * 0.55 + b[k] * 0.3 + c[k] * 0.15
+        const vein = Math.max(0, 1 - Math.abs(b[k] - 0.5) * 16) * 0.5
+        if (cloud > 0.52) { d[o] = 255; d[o + 1] = 250; d[o + 2] = 232; d[o + 3] = Math.min(255, (cloud - 0.52) * 520) }
+        else { d[o] = 96; d[o + 1] = 84; d[o + 2] = 58; d[o + 3] = Math.min(255, (0.52 - cloud) * 300 + vein * 120) }
+      }
+    }
+    g.putImageData(img, 0, 0)
+    JTEX = cv
+    return cv
+  }
+  function jadeVeins(ctx, poly, z, alpha) {
+    if (poly.length < 3) return
+    const tex = jadeTex(), dpr = T.dpr
+    ctx.save()
+    path(ctx, poly)
+    ctx.clip()
+    const a = prj(-G.hw, -G.hh, z, P1), b = prj(G.hw, -G.hh, z, P2), c = prj(-G.hw, G.hh, z, P3)
+    ctx.setTransform(dpr * (b.x - a.x) / tex.width, dpr * (b.y - a.y) / tex.width, dpr * (c.x - a.x) / tex.height, dpr * (c.y - a.y) / tex.height, dpr * a.x, dpr * a.y)
+    ctx.globalAlpha = alpha
+    ctx.drawImage(tex, 0, 0)
+    ctx.restore()
+  }
+
   function trayInit() {
     T.cv = S.E.trayCv
     T.ctx = T.cv.getContext('2d')
@@ -974,8 +1039,10 @@
     }
     // 盘沿上面
     fillLit(ctx, prjPoly(OT), G.ht, 0.26, 0.92, JADE)
+    jadeVeins(ctx, prjPoly(OT), G.ht, 0.5)
     // 浅槽：开口里是槽底；再画朝向镜头的内壁
-    fillLit(ctx, prjPoly(IT), G.fl, 0.14, 0.7, JADE)
+    fillLit(ctx, prjPoly(IT), G.fl, 0.18, 0.78, JADE)
+    jadeVeins(ctx, prjPoly(IT), G.fl, 0.36)
     for (let i = 0; i < IT.length; i++) {
       const j = (i + 1) % IT.length
       const a = IT[i], b = IT[j]
@@ -1041,7 +1108,7 @@
     const sw = T.sweep, tm = T.time
     for (const i of order) {
       const n = S.stacks[i]
-      if (!n) continue
+      if (!n) { ghost(ctx, G.x0 + i * G.pitch); continue }
       const x = G.x0 + i * G.pitch
       const glow = T.glow[i]
       const hint = T.hint > 0 ? T.hint * (0.5 + 0.5 * Math.sin(tm * 9 - i * 0.55)) : 0
@@ -1066,6 +1133,23 @@
         cyl(ctx, x, zt - G.ct + lift, zt + lift, 1, I0 + 0.08, sp)
       } else cyl(ctx, x, zb, zt + lift, n, I0, sp)
     }
+  }
+
+  // 空了的位置：槽底留下一圈比别处更干净的玉色
+  function ghost(ctx, x) {
+    const dpr = T.dpr
+    const p = prj(x, 0, G.fl, P1), pa = prj(x + 1, 0, G.fl, P2), pb = prj(x, 1, G.fl, P3)
+    ctx.setTransform(dpr * (pa.x - p.x), dpr * (pa.y - p.y), dpr * (pb.x - p.x), dpr * (pb.y - p.y), dpr * p.x, dpr * p.y)
+    lit(x, 0, G.fl, 0, 0, 1, 8)
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, G.cr * 1.12)
+    const k = 0.1 + LT.d * 0.25
+    g.addColorStop(0, 'rgba(255,250,236,' + (k * 0.35).toFixed(3) + ')')
+    g.addColorStop(0.84, 'rgba(255,250,236,' + (k * 0.6).toFixed(3) + ')')
+    g.addColorStop(0.9, 'rgba(40,32,22,' + (k * 0.9).toFixed(3) + ')')
+    g.addColorStop(1, 'rgba(40,32,22,0)')
+    ctx.fillStyle = g
+    ctx.beginPath(); ctx.arc(0, 0, G.cr * 1.12, 0, TAU); ctx.fill()
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 
   const MP = {}
@@ -1795,7 +1879,7 @@
     intro()
     requestAnimationFrame(measure)
     if (window.ScrollTrigger) ScrollTrigger.addEventListener('refresh', () => { measure(); trayResize(); fxResize() })
-    window.addEventListener('resize', U.debounce(() => { measure(); trayResize(); fxResize(); if (S.quoted) placeNeed(S.quoted) }, 160))
+    window.addEventListener('resize', U.debounce(() => { layoutCols(); measure(); trayResize(); fxResize(); if (S.quoted) placeNeed(S.quoted) }, 160))
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); T.dirty = true })
     App.onVisible(el, v => {
       S.visible = v

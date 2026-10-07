@@ -350,30 +350,54 @@
     W.whispers = []
     const skip = new Set([W.H.seats[W.fk - 1].id, W.winner])
     const pool = U.shuffle(App.chars.filter(c => !skip.has(c.id) && c.lines && c.lines.wish))
-    const n = App.isMobile() ? 7 : 12
+    const n = App.isMobile() ? 8 : 12
     for (let i = 0; i < n && i < pool.length; i++) {
       const el = U.el('span.wish-w', { text: pool[i].lines.wish })
-      if (i % 3 === 1) el.classList.add('is-v')
       E.whis.appendChild(el)
-      W.whispers.push({ el, x: 0, y: 0, ph: Math.random() * TAU, o: 0, last: '' })
+      W.whispers.push({ el, x: 0, y: 0, ph: Math.random() * TAU, o: 0, last: '', v: false, on: true })
     }
     layoutWhispers()
   }
+  // 低语散在画面两侧：量出每句的实际尺寸（按读得清时的字距），避开中轴（圆桌与最后那个人）、名字与台词、
+  // 右侧竖排的那句话、左下的计数与顶端 HUD，彼此也不重叠；放不下的那句就不出现
   function layoutWhispers() {
     if (!W.H || !W.whispers.length) return
     const Wd = W.H.W, Hd = W.H.H, mob = App.isMobile()
-    const n = W.whispers.length
+    const rnd = U.seeded(W.fk * 131 + Math.round(Wd) * 7 + Math.round(Hd))
+    const m = mob ? 10 : 16
+    const busy = [
+      [0, 0, Wd, mob ? 64 : 84],                                                    // HUD
+      [0, Hd - (mob ? 110 : 190), mob ? 170 : 300, Hd],                              // 计数
+      [Wd - (mob ? 44 : Math.max(110, Wd * 0.024 + 120)), 0, Wd, Hd * 0.82],         // 竖排的那句话
+    ]
+    if (mob) busy.push([Wd * 0.2, 0, Wd * 0.8, Hd])                                   // 手机：中间整列留给人和圆桌
+    else {
+      busy.push([Wd * 0.33, 0, Wd * 0.67, Hd * 0.86])                                 // 中轴
+      busy.push([Wd * 0.33 - Math.min(416, Wd * 0.32) - 24, Hd * 0.36, Wd * 0.33, Hd * 0.7]) // 名字与愿望
+    }
+    const hit = r => busy.some(b => r[0] < b[2] + m && r[2] > b[0] - m && r[1] < b[3] + m && r[3] > b[1] - m)
     W.whispers.forEach((w, i) => {
-      // 左右两侧的扇区（避开正上方的那个人与正下方）
-      const side = i % 2 ? 1 : -1
-      const k = Math.floor(i / 2) / Math.max(1, Math.ceil(n / 2) - 1)
-      const a = mix(-1.05, 1.05, k) + (Math.random() - 0.5) * 0.25
-      const rx = Wd * (mob ? 0.3 : 0.37), ry = Hd * (mob ? 0.38 : 0.36)
-      const r = 0.82 + Math.random() * 0.28
-      w.x = U.clamp(Wd / 2 + side * Math.cos(a) * rx * r, mob ? 70 : 140, Wd - (mob ? 70 : 140))
-      w.y = U.clamp(Hd / 2 + Math.sin(a) * ry * r, 90, Hd - 70)
-      w.el.style.left = w.x.toFixed(0) + 'px'
-      w.el.style.top = w.y.toFixed(0) + 'px'
+      const el = w.el
+      w.v = mob || i % 3 === 1
+      el.classList.toggle('is-v', w.v)
+      el.style.letterSpacing = '0.22em' // 读得清时的字距
+      el.style.filter = 'none'
+      const ew = el.offsetWidth, eh = el.offsetHeight
+      w.last = ''
+      let ok = null
+      for (let t = 0; t < 40 && !ok; t++) {
+        const x = m + ew / 2 + rnd() * Math.max(1, Wd - 2 * m - ew)
+        const y = (mob ? 70 : 92) + eh / 2 + rnd() * Math.max(1, Hd - (mob ? 80 : 110) - eh)
+        const r = [x - ew / 2, y - eh / 2, x + ew / 2, y + eh / 2]
+        if (!hit(r)) ok = [x, y, r]
+      }
+      w.on = !!ok
+      el.style.display = ok ? '' : 'none'
+      if (!ok) return
+      busy.push(ok[2])
+      w.x = ok[0]; w.y = ok[1]
+      el.style.left = w.x.toFixed(0) + 'px'
+      el.style.top = w.y.toFixed(0) + 'px'
     })
   }
   function updWhispers(t, rdt) {
@@ -390,6 +414,7 @@
     }
     const R = W.mob ? 150 : 230
     for (const w of W.whispers) {
+      if (!w.on) continue
       const d = Math.hypot(w.x - mx, w.y - my)
       let k = clamp01(1 - d / R)
       k = k * k * (3 - 2 * k) * str
