@@ -136,6 +136,29 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mz-anchor.is-hot .c, .mz-anchor.is-hot .n { fill: #ff2e7e; }
 .mansion-sticky.is-zoom .mz-suite { fill-opacity: .2; }
 
+/* ---------- 地下一层：岩体实墙，比楼上更沉更暗，但轮廓始终读得出（夜间低亮也一样） ---------- */
+.mz-floor[data-floor="B1"] { --mz-b1: calc(.55 + .45 * var(--mz-dim, 1)); }
+.mz-floor[data-floor="B1"] .mz-slab-fill { fill: #070606; fill-opacity: .9; stroke: #a07a46; stroke-opacity: .55; }
+.mz-rock { fill: #7d6039; fill-opacity: calc(.46 * var(--mz-b1, 1)); }
+.mz-rock-lit { fill: #f0c681; fill-opacity: .62; }
+.mz-water { fill: #8fb3a3; fill-opacity: calc(.07 * var(--mz-b1, 1)); }
+.mz-water-lit { fill: #9fc4b4; fill-opacity: .09; }
+.mz-floor[data-floor="B1"] .mz-walls-dim { stroke: #cfa86a; stroke-width: 1; stroke-opacity: calc(.62 * var(--mz-b1, 1)); }
+.mz-floor[data-floor="B1"] .mz-ext { stroke: #d6b073; stroke-width: 2; stroke-opacity: calc(.8 * var(--mz-b1, 1)); }
+.mz-floor[data-floor="B1"] .mz-furn-dim { stroke: #b48f58; stroke-opacity: calc(.24 * var(--mz-b1, 1)); }
+.mz-floor[data-floor="B1"] .mz-walls-lit { stroke: #ffe9c2; stroke-width: 1.8; }
+.mz-floor[data-floor="B1"] .mz-furn-lit { stroke: #f6d8a0; opacity: 1; }
+.mz-floor[data-floor="B1"] .mz-pool { background: radial-gradient(closest-side, rgba(255, 220, 166, .34), rgba(226, 180, 112, .13) 52%, rgba(194, 154, 91, 0) 100%); }
+.mz-bname { font-family: var(--f-serif); font-weight: 600; text-anchor: middle; dominant-baseline: central; fill: #c9a265; fill-opacity: calc(.62 * var(--mz-b1, 1)); transition: fill-opacity .4s; }
+.mz-bname.mz-bname-lit { fill: #ffeccb; fill-opacity: 1; }
+.mansion-sticky.is-zoom .mz-bname { fill-opacity: .2; }
+.mansion-floor.is-stack .mz-bname { fill-opacity: .5; }
+/* 低亮时段：灯照半径缩到三米，但三米之内要真的亮 */
+.mansion-sticky.is-low .mz-lens, .mansion-mob.is-low .mz-lens {
+  -webkit-mask-image: radial-gradient(closest-side, #000 36%, rgba(0, 0, 0, .74) 62%, rgba(0, 0, 0, .22) 85%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 36%, rgba(0, 0, 0, .74) 62%, rgba(0, 0, 0, .22) 85%, transparent 100%);
+}
+
 /* ---------- 线框（屏幕空间） ---------- */
 .mansion-wire { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; overflow: visible; }
 .mz-w-stack { transition: opacity .5s var(--ease-out); }

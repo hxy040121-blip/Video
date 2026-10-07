@@ -73,6 +73,18 @@
     'B1/珍酿酒窖': [42.2, 21.3], 'B1/乒乓体育室': [23.4, 21.9], 'B1/体能训练室': [23.4, 30.8], 'B1/地下会客前厅': [29.3, 4.1],
     'B1/物资库': [41.4, 2.8], 'B1/洗衣布草室': [48.5, 34.6],
   }
+  // B1 没有套房编号：八间主厅的房名像套房编号一样常显（暗铜，灯照处发亮）。
+  // [x, y, 字号, 竖排]，位置避开陈设；d 桌面（北向上），m 手机（转 90°，横排沿南北向）
+  const B1_NAMES = {
+    玉石泳池厅: { d: [7.1, 10.2, 1.0], m: [12.15, 18, 1.2] },
+    双道保龄球馆: { d: [36.2, 9.58, 0.95], m: [36.2, 9.58, 1.1, 1] }, // 球道南侧的空带
+    珍酿酒窖: { d: [42.2, 23.3, 0.95, 1], m: [42.2, 23.3, 1.1] },
+    乒乓体育室: { d: [23.4, 22.0, 0.95], m: [19.7, 24.6, 1.1] },
+    体能训练室: { d: [25.3, 31.6, 0.9], m: [27.4, 32.4, 1.05] },
+    地下会客前厅: { d: [29.3, 4.1, 0.9], m: [26, 4.1, 1.05] },
+    物资库: { d: [41.4, 2.8, 0.8], m: [41.4, 2.8, 0.9] },
+    洗衣布草室: { d: [48.3, 29.6, 0.9], m: [50.7, 31.0, 1.0] },
+  }
 
   /* =====================================================================
      门：把房间表里有坐标的门汇成门洞，再在两侧的墙线上开缺口
@@ -340,7 +352,8 @@
     const day = h >= 7 && h < 17
     return { h, win, low, day, lampO, lampW, dim: 1 - 0.34 * lowK }
   }
-  const LAN_R = { normal: 7.5, low: 3.0, stack: 9.5 }
+  // 低亮：软边圆窗的半亮处约在三米（CSS 在低亮时段把圆窗的实心核放大）
+  const LAN_R = { normal: 7.5, low: 4.2, stack: 9.5 }
 
   /* =====================================================================
      建一层：底图（静态）+ 暖光池 + 灯照层（经由移动的软边圆窗显出）+ 动效层/命中层
@@ -370,6 +383,22 @@
 
     // —— 楼板：黑玻璃 ——
     mk('rect', rectAttrs(ext, { class: 'mz-slab-fill' }), base)
+    // 地下一层：墙是实心的岩体，房间从岩里掏出来（外框 − 房间 − 门洞，evenodd）
+    let rockD = ''
+    if (fid === 'B1') {
+      const rp = (x0, y0, x1, y1) => primD(view, Fr(x0, y0, x1, y1))
+      rockD = rp(-0.4, -0.4, 52.4, 36.4)
+      for (const r of rooms) if (!r.parent) rockD += rp(r.x0, r.y0, r.x1, r.y1)
+      for (const d of doors) {
+        if (d.exterior) continue
+        const t = (d.side === '西' || d.side === '南') ? [d.line - 0.2, d.line] : [d.line, d.line + 0.2]
+        rockD += d.o === 'v' ? rp(t[0], d.a, t[1], d.b) : rp(d.a, t[0], d.b, t[1])
+      }
+      mk('path', { d: rockD, class: 'mz-rock', 'fill-rule': 'evenodd' }, base)
+      // 水面：玉石泳池与冷热两池
+      fl.waterD = [[4.25, 12.15, 9.95, 23.85], [0.4, 28.6, 2.4, 30.4], [0.4, 32.8, 2.4, 34.6]].map(q => rp(...q)).join('')
+      mk('path', { d: fl.waterD, class: 'mz-water' }, base)
+    }
     mk('rect', rectAttrs(ext, { class: 'mz-slab-sheen', fill: url('sh') }), base)
 
     // —— 刻度尺 ——
@@ -446,6 +475,8 @@
     for (const w of fl.winLines) { gWin.appendChild(w.glow); gWin.appendChild(w.line) }
 
     // 灯照层（静态，靠圆窗显出）
+    if (rockD) mk('path', { d: rockD, class: 'mz-rock-lit', 'fill-rule': 'evenodd' }, lit)
+    if (fl.waterD) mk('path', { d: fl.waterD, class: 'mz-water-lit' }, lit)
     mk('path', { d: fd, class: 'mz-furn-lit' }, lit)
     mk('path', { d: leaf, class: 'mz-leaf' }, lit)
     mk('path', { d: wd + jd, class: 'mz-walls-lit' }, lit)
@@ -486,6 +517,19 @@
         const c = view.P(r.cx, r.cy)
         txt(gNum, c[0], c[1], Math.min(rr.w, rr.h) * 0.3, r.suite, { class: 'mz-suite' })
         txt(gNumLit, c[0], c[1], Math.min(rr.w, rr.h) * 0.3, r.suite, { class: 'mz-suite mz-suite-lit' }) // 灯照过时编号的黄铜发亮
+        continue
+      }
+      const big = fid === 'B1' && B1_NAMES[r.name]
+      if (big) { // 地下主厅：常显的暗铜房名 + 灯照时的亮字
+        const [bx, by, bfs, vert] = big[view.rot ? 'm' : 'd']
+        const p = view.P(bx, by)
+        for (const [g, cls] of [[gNum, 'mz-bname'], [gNumLit, 'mz-bname mz-bname-lit']]) {
+          if (vert) {
+            const chars = Array.from(r.name), n = chars.length
+            const t = txt(g, p[0], p[1], bfs, null, { class: cls })
+            chars.forEach((ch, i) => { const s = mk('tspan', { x: 0, y: r3((i - (n - 1) / 2) * bfs * 1.42 * TK) }, t); s.textContent = ch })
+          } else txt(g, p[0] + bfs * 0.09, p[1], bfs, r.name, { class: cls, 'letter-spacing': r3(bfs * 0.18 * TK) })
+        }
         continue
       }
       const at = LABEL_AT[r.key] || [r.cx, r.cy]
