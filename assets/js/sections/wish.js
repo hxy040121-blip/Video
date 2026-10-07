@@ -222,6 +222,14 @@
       if (img) {
         W.kind = 'photo'
         pt.appendChild(U.el('div.wish-sil', { 'aria-hidden': 'true' }, [U.el('img', { src: img.getAttribute('src'), alt: '', decoding: 'async', draggable: 'false' })]))
+        // 图片文件缺失：不用占位的蛋形剪影，改由画布里那团黑影当这个人
+        img.addEventListener('error', () => {
+          if (W.pt !== pt) return
+          W.kind = 'none'
+          E.faceWrap.classList.remove('is-photo')
+          E.faceWrap.classList.add('is-empty')
+          if (W.finaleOn) gsap.to(W.H.seats[W.fk - 1], { gone: 0, duration: 1.2, ease: 'power2.inOut', overwrite: 'auto' })
+        }, { once: true })
       }
       E.face.appendChild(pt)
       W.untrack = App.trackEyes(pt, { eyeRange: 9 })
@@ -370,9 +378,11 @@
       [0, Hd - (mob ? 110 : 190), mob ? 170 : 300, Hd],                              // 计数
       [Wd - (mob ? 44 : Math.max(110, Wd * 0.024 + 120)), 0, Wd, Hd * 0.82],         // 竖排的那句话
     ]
-    if (mob) busy.push([Wd * 0.2, 0, Wd * 0.8, Hd])                                   // 手机：中间整列留给人和圆桌
-    else {
-      busy.push([Wd * 0.33, 0, Wd * 0.67, Hd * 0.86])                                 // 中轴
+    if (mob) {
+      busy.push([Wd * 0.2, 0, Wd * 0.8, Hd])                                          // 手机：中间整列留给人和圆桌
+      busy.push([0, Hd * 0.46, Wd, Hd * 0.68])                                        // 名字与愿望那一行
+    } else {
+      busy.push([Wd * 0.33, 0, Wd * 0.67, Hd])                                        // 中轴
       busy.push([Wd * 0.33 - Math.min(416, Wd * 0.32) - 24, Hd * 0.36, Wd * 0.33, Hd * 0.7]) // 名字与愿望
     }
     const hit = r => busy.some(b => r[0] < b[2] + m && r[2] > b[0] - m && r[1] < b[3] + m && r[3] > b[1] - m)

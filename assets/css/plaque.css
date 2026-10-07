@@ -191,9 +191,9 @@
 .plaque-cols {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   column-gap: calc(var(--pq-fs) * 2.4); row-gap: calc(var(--pq-fs) * 2.2);
-  align-items: start;
+  align-items: stretch;
 }
-.plaque-col { position: relative; min-width: 0; }
+.plaque-col { position: relative; min-width: 0; display: flex; flex-direction: column; }
 .plaque-col + .plaque-col::before {
   content: ''; position: absolute; top: .4em; bottom: 0; left: calc(var(--pq-fs) * -1.2 - 1px); width: 2px;
   background: linear-gradient(90deg, rgba(0, 0, 0, .55) 0 1px, rgba(255, 222, 170, .1) 1px 2px);
@@ -234,6 +234,35 @@
   content: ''; position: absolute; left: .18em; top: .78em; width: .36em; height: .36em;
   transform: rotate(45deg);
   box-shadow: inset .5px .5px 0 rgba(0, 0, 0, .8), 0 0 0 1px rgba(150, 140, 125, .5);
+}
+
+/* 落款圆章：十五个点围着「100」，凹刻嵌铂金，阴阳边随光 */
+.plaque-seal {
+  position: relative; flex: none; align-self: center;
+  width: calc(var(--pq-fs) * 7.2); aspect-ratio: 1;
+  margin: auto 0 calc(var(--pq-fs) * .4); top: calc(var(--pq-fs) * -.2);
+  display: grid; place-items: center;
+}
+.plaque-seal-ring { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--pq-plat); }
+.plaque-seal-ring::before, .plaque-seal-ring::after {
+  content: ''; position: absolute; inset: -1.5px; border-radius: 50%; border: 1.5px solid; z-index: -1;
+}
+.plaque-seal-ring::before { border-color: rgba(5, 3, 2, var(--sd, .75)); transform: translate(calc(var(--sx, 0px) * -1), calc(var(--sy, 1px) * -1)); }
+.plaque-seal-ring::after { border-color: rgba(var(--pq-rim), var(--sa, .25)); transform: translate(var(--sx, 0px), var(--sy, 1px)); }
+.plaque-seal-ring b {
+  position: absolute; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%;
+  background: var(--pq-plat);
+  box-shadow: calc(var(--sx, 0px) * -1) calc(var(--sy, 1px) * -1) .5px rgba(5, 3, 2, var(--sd, .75)), var(--sx, 0px) var(--sy, 1px) .3px rgba(var(--pq-rim), var(--sa, .25));
+}
+.plaque-seal-in {
+  position: absolute; inset: 25%; border-radius: 50%;
+  border: 1px solid rgba(143, 138, 128, .7);
+  box-shadow: calc(var(--sx, 0px) * -1) calc(var(--sy, 1px) * -1) 0 rgba(5, 3, 2, var(--sd, .75)), var(--sx, 0px) var(--sy, 1px) 0 rgba(var(--pq-rim), calc(var(--sa, .25) * .8));
+}
+.plaque-seal-n {
+  position: relative;
+  font-family: var(--f-latin); font-weight: 700; font-size: calc(var(--pq-fs) * 1.32); letter-spacing: .06em; line-height: 1;
+  padding-left: .06em;
 }
 
 /* 条目：名 ……… 分 */
@@ -431,7 +460,6 @@
 @media (max-width: 1180px) {
   .plaque-root { --pq-w: min(900px, calc(100vw - 2 * var(--gutter) - 2 * var(--pq-fw) - 6px)); }
   .plaque-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .plaque-col:nth-child(3)::before { display: none; }
 }
 
 /* ---------- 手机：单栏 ---------- */

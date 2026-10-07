@@ -52,7 +52,7 @@
     eng: [], // 刻字：光照变量的载体
     quoted: null, quoteT: 0,
     hov: -1,
-    ptr: 'mouse', touchT: 0, tap: null,
+    ptr: 'mouse', touchT: 0, tap: null, tapT: 0, moveT: 0,
     titleBoost: 0,
     lastSweep: 0,
     doorT: 0,
@@ -396,6 +396,11 @@
 
   function lightTarget(now) {
     const m = App.mouse
+    // 触摸：光落在最近一次点按 / 拖动的位置；停手一会儿后自己慢慢游移
+    if (!S.fine && now - S.touchT <= 2600) {
+      if (S.tap && S.tapT >= S.moveT) return [S.tap.x, S.tap.y]
+      if (m.active) return [m.x, m.y]
+    }
     const idle = !m.active || (!S.fine && now - S.touchT > 2600)
     if (idle) {
       const s = now / 1000
@@ -492,7 +497,7 @@
     placeNeed(b)
     E.need.classList.add('is-on')
     clearTimeout(S.quoteT)
-    if (sticky) S.quoteT = setTimeout(() => unquote(b), 3800)
+    if (sticky) S.quoteT = setTimeout(() => unquote(b), 6000)
     if (!S.reduced) gsap.fromTo(E.need.children, { scale: 0.2, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.32, stagger: 0.022, ease: 'back.out(2.6)', overwrite: true })
   }
   function unquote(b) {
@@ -1889,10 +1894,10 @@
     // 指针类型：触摸时第一下报价、第二下同意；光跟随手指，停手后慢慢游移
     window.addEventListener('pointerdown', e => {
       S.ptr = e.pointerType || 'mouse'
-      if (e.pointerType === 'touch') { S.touchT = performance.now(); S.tap = { x: e.clientX, y: e.clientY } }
+      if (e.pointerType === 'touch') { S.touchT = S.tapT = performance.now(); S.tap = { x: e.clientX, y: e.clientY } }
     }, true)
     window.addEventListener('touchstart', () => { S.touchT = performance.now() }, { passive: true })
-    window.addEventListener('touchmove', () => { S.touchT = performance.now() }, { passive: true })
+    window.addEventListener('touchmove', () => { S.touchT = S.moveT = performance.now() }, { passive: true })
     window.addEventListener('keydown', e => { if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ') S.ptr = 'keyboard' }, true)
     // 模拟庭审赢得的金币
     App.bus.on('trial:coins', n => {
