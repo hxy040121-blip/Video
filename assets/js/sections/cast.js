@@ -995,6 +995,9 @@
     const P = buildPage(D.i)
     const put = () => {
       if (old) { dropPortrait(old.por); old.page.remove() }
+      // 手机上档案是长页：换人时回到顶上的肖像
+      const stage = D.root.parentNode
+      if (stage && stage.scrollTop) stage.scrollTop = 0
       D.root.insertBefore(P.page, D.nav)
       D.page = P
       updateNav()
@@ -1035,7 +1038,7 @@
     D.root.appendChild(D.nav)
     D.open = true
     D.page = null
-    App.overlay.open(D.root, {
+    const stage = App.overlay.open(D.root, {
       className: 'cast-ov',
       onClose: () => {
         D.open = false
@@ -1047,6 +1050,7 @@
         gsap.delayedCall(0.3, () => { if (S.visible) moment(true) })
       },
     })
+    if (stage) stage.addEventListener('scroll', () => D.root.classList.toggle('is-scrolled', stage.scrollTop > 24), { passive: true })
     lookAway(false)
     swapPage(i, 'open')
   }

@@ -407,8 +407,15 @@
   /* 底栏：上沿留一段渐隐，翻页数字下面是实底，滚过去的正文不会从箭头与数字后面透出来 */
   .cast-dos-nav {
     left: 0; right: 0; bottom: 0; padding: 30px 14px calc(12px + env(safe-area-inset-bottom)); gap: 6px; justify-content: space-between;
-    background: linear-gradient(180deg, rgba(5,3,4,0), rgba(5,3,4,.96) 26px);
+    background: linear-gradient(180deg, rgba(5,3,4,0), #050304 26px);
   }
+  /* 往下翻时顶上压一道暗，滚上去的字不从关闭键底下穿过 */
+  .cast-dos::after {
+    content: ''; position: fixed; left: 0; right: 0; top: 0; height: 84px; z-index: 3; pointer-events: none;
+    background: linear-gradient(180deg, #050304 0, rgba(5,3,4,.92) 52%, rgba(5,3,4,0));
+    opacity: 0; transition: opacity .35s;
+  }
+  .cast-dos.is-scrolled::after { opacity: 1; }
   .cast-dos-arrow { width: 52px; }
   .cast-dos-seat { margin-left: 0; padding: 0 14px; letter-spacing: .3em; }
 }
