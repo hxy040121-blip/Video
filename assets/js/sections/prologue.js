@@ -1693,7 +1693,8 @@
     const t = '17:0' + m
     P.H.clock = 17 * 60 + m
     // 让 HUD 的馆内时钟与大钟同步（只在板块顶端时；滚动后由核心按进度接管）
-    if (P.el && P.el.getBoundingClientRect().top > -40) { App.state.minutes = 17 * 60 + m; App.bus.emit('time', 17 * 60 + m) }
+    // 条件当场量位置（P.p 只在板块可见时更新，可能过期）
+    if (P.vis && P.el && P.el.getBoundingClientRect().top > -40) { App.state.minutes = 17 * 60 + m; App.bus.emit('time', 17 * 60 + m) }
     const E = P.E
     if (instant || App.reduced) { E.time.textContent = t; return }
     App.text.scramble(E.time, t, { duration: 0.5, chars: '0123456789', revealDelay: 0.1 })
