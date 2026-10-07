@@ -12,6 +12,14 @@
 }
 .table.is-paused .table-stage * { animation-play-state: paused !important; }
 .table-svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 1; }
+/* 桌面与地盘的反光：椭圆裁切里一块独立合成的光斑，跟着光标只改 transform（不再每帧改 SVG 渐变而整张重画） */
+.table-sheen { position: absolute; z-index: 1; pointer-events: none; border-radius: 50%; overflow: hidden; }
+.table-sheen-spot {
+  position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform;
+  background: radial-gradient(circle closest-side, rgba(233,220,194,.16), rgba(233,220,194,0));
+}
+.table-sheen--top .table-sheen-spot { background: radial-gradient(circle closest-side, rgba(244,240,228,.42), rgba(227,232,220,.1) 50%, rgba(227,232,220,0)); }
+html[data-q="0"] .table-sheen { display: none; }
 
 /* ---------- 桌、椅 ---------- */
 .table-chair-seat { fill: #0f0b0a; stroke: #6f5532; stroke-width: .8; stroke-opacity: .7; }
@@ -20,8 +28,11 @@
 .table-chair-arm { fill: none; stroke: #8a6c40; stroke-width: 2.2; stroke-linecap: round; stroke-opacity: .85; }
 .table-chair-leg { fill: none; stroke: #1c1412; stroke-width: 2.4; stroke-linecap: round; }
 .table-core { fill: #2a2420; stroke: #c29a5b; stroke-width: 1; transition: fill .6s; }
-.table-stage.is-full .table-core { fill: var(--blood); animation: table-core 1.6s ease-in-out infinite; }
-@keyframes table-core { 50% { fill: #ff7bab; } }
+.table-stage.is-full .table-core { fill: var(--blood); }
+/* 坐满时桌心的脉动：叠一层小色块只动 opacity（合成器动画），不再每帧重画 SVG 的 fill */
+.table-core-pulse { position: absolute; z-index: 1; pointer-events: none; border-radius: 50%; background: #ff7bab; opacity: 0; }
+.table-stage.is-full .table-core-pulse { animation: table-core 1.6s ease-in-out infinite; }
+@keyframes table-core { 50% { opacity: 1; } }
 .table-ring path { fill: none; stroke: #c29a5b; stroke-width: 1.4; stroke-opacity: .08; stroke-linecap: round; transition: stroke-opacity .6s, stroke-width .6s; }
 .table-ring path.is-on { stroke-opacity: .9; stroke-width: 2; filter: drop-shadow(0 0 4px rgba(194,154,91,.7)); }
 .table-stage.is-full .table-ring path { stroke: #ffd79a; }
@@ -47,11 +58,19 @@
 .table-num {
   position: absolute; z-index: 5; transform: translate(-50%, -50%) translateY(calc(var(--near, 0) * -3px));
   font-family: var(--f-latin); font-weight: 700; font-size: 13px; line-height: 1; letter-spacing: 0;
-  color: color-mix(in srgb, #ffe7b0 calc(var(--near, 0) * 100%), #a07c45);
-  text-shadow: 0 0 calc(var(--near, 0) * 14px) rgba(255,210,140,calc(var(--near, 0) * .9)), 0 1px 0 #000;
+  color: #a07c45;
+  text-shadow: 0 1px 0 #000;
   padding: 3px 6px 2px; pointer-events: none;
   background: linear-gradient(180deg, rgba(40,30,18,.85), rgba(14,10,6,.85));
-  border: 1px solid rgba(194,154,91,calc(.35 + var(--near, 0) * .55));
+  border: 1px solid rgba(194,154,91,.35);
+  will-change: transform;
+}
+/* 号牌发亮：亮版叠在上面，只随 --near 改 opacity（独立合成层），不重画 */
+.table-num::after {
+  content: attr(data-n); position: absolute; left: -1px; top: -1px; right: -1px; bottom: -1px;
+  padding: inherit; border: 1px solid rgba(194,154,91,.9);
+  color: #ffe7b0; text-shadow: 0 0 14px rgba(255,210,140,.9), 0 1px 0 #000;
+  opacity: var(--near, 0); will-change: opacity; pointer-events: none;
 }
 
 /* ---------- 席位 ---------- */
@@ -60,12 +79,19 @@
   transform: translateY(calc(var(--near, 0) * -7px)) scale(calc(1 + var(--near, 0) * .07));
   --near: 0;
 }
-.table-rim, .table-flash { pointer-events: none; }
+.table:not(.is-mob) .table-seat { will-change: transform; } /* 抬起只走合成器（手机上没有光标，不必提层） */
+.table-rim, .table-glow, .table-flash { pointer-events: none; }
 .table-seat > .table-rim {
   position: absolute; inset: -5px; border-radius: 50%;
-  border: 1px solid rgba(194,154,91,calc(.4 + var(--near) * .6));
-  box-shadow: 0 0 calc(var(--near) * 18px) rgba(194,154,91,calc(var(--near) * .5)), inset 0 0 0 3px rgba(10,8,9,.9), inset 0 0 0 4px rgba(111,85,50,.6);
+  border: 1px solid rgba(194,154,91,.4);
+  box-shadow: inset 0 0 0 3px rgba(10,8,9,.9), inset 0 0 0 4px rgba(111,85,50,.6);
   transition: border-color .3s;
+}
+/* 靠近时的黄铜光圈：静态画好，只随 --near 改 opacity（独立合成层） */
+.table-seat > .table-glow {
+  position: absolute; inset: -5px; border-radius: 50%;
+  border: 1px solid #c29a5b; box-shadow: 0 0 18px rgba(194,154,91,.5);
+  opacity: var(--near, 0); will-change: opacity;
 }
 .table-seat > .table-disc {
   position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
@@ -87,11 +113,14 @@
   background: rgba(194,154,91,.55); box-shadow: 0 0 0 4px rgba(194,154,91,.08); transition: opacity .3s;
 }
 .table-seat.is-filled::after, .table-seat.is-reel::after { opacity: 0; }
-.table-stage.is-picking .table-seat:not(.is-filled) > .table-rim { border-color: rgba(255,46,126,.75); animation: table-breathe 1.2s ease-in-out infinite; }
-.table-stage.is-dragging .table-seat:not(.is-filled) > .table-rim { border-style: dashed; }
-@keyframes table-breathe { 50% { box-shadow: 0 0 16px rgba(255,46,126,.5), inset 0 0 0 3px rgba(10,8,9,.9); } }
+.table-stage.is-picking .table-seat:not(.is-filled) > .table-rim { border-color: rgba(255,46,126,.75); }
+/* 待入座的空席：血粉光圈呼吸——动 opacity（合成器动画），不再逐帧重画 box-shadow */
+.table-stage.is-picking .table-seat:not(.is-filled) > .table-glow { border-color: transparent; box-shadow: 0 0 16px rgba(255,46,126,.5); animation: table-breathe 1.2s ease-in-out infinite; }
+.table-stage.is-dragging .table-seat:not(.is-filled) > .table-rim, .table-stage.is-dragging .table-seat:not(.is-filled) > .table-glow { border-style: dashed; }
+@keyframes table-breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 .table-seat.is-snap > .table-rim { border-color: #ffe7b0; border-style: solid; box-shadow: 0 0 24px rgba(255,220,150,.7), inset 0 0 0 3px rgba(10,8,9,.9); }
 .table-seat.is-sel > .table-rim { border-color: var(--blood); box-shadow: 0 0 0 2px rgba(255,46,126,.35), 0 0 20px rgba(255,46,126,.45); }
+.table-seat.is-snap > .table-glow, .table-seat.is-sel > .table-glow { opacity: 0; animation: none; }
 .table-seat.is-lifted > .table-disc { opacity: .35; }
 .table-seat.is-reel > .table-disc { box-shadow: inset 0 0 0 2px rgba(255,46,126,.5), inset 0 4px 10px rgba(0,0,0,.9); }
 .table-seat.is-reel .table-head { filter: blur(.6px) brightness(1.15); }
@@ -111,6 +140,8 @@
 /* 位图：放大到只剩头，按两眼中点（--fx/--fy）对准圆心略偏上 */
 .table-por.is-photo { width: 186%; left: calc(50% - var(--fx, .5) * 186%); top: calc(47% - var(--fy, .41) * 248%); }
 .table-por.is-photo > img { transform: translate3d(calc(var(--pvx, 0) * 2.4%), calc(var(--pvy, 0) * 1.8%), 0) scale(1.035); }
+/* 席上（与拖动中）的头像随光标偏转：给它独立合成层，偏转不再重画整个席位 */
+.table-seat .table-por.is-photo > img, .table-ghost .table-por.is-photo > img { will-change: transform; }
 .table-head::after { /* 圆形徽章的内阴影与压暗层：悬停时退去，像被烛光照到 */
   content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle at 50% 42%, rgba(10,6,5,0) 38%, rgba(10,6,5,.55) 78%, rgba(6,4,3,.85) 100%);
@@ -122,17 +153,23 @@
 .table-badge {
   position: absolute; pointer-events: auto; border-radius: 50%;
   transform: scale(var(--k, 1)); transform-origin: 50% 60%;
-  transition: opacity .4s, filter .4s;
+  transition: opacity .4s;
   --k: 1;
+}
+.table:not(.is-mob) .table-badge { will-change: transform; } /* 船坞式放大只走合成器 */
+.table-badge > .table-tag { transition: filter .4s; }
+.table-badge::after { /* 选中时的血粉外光：呼吸动 opacity */
+  content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  box-shadow: 0 0 22px rgba(255,46,126,.5); opacity: 0;
 }
 .table-badge > .table-disc {
   position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
   background: radial-gradient(circle at 50% 46%, rgba(236,186,116,.92) 0 26%, rgba(176,112,58,.5) 50%, rgba(40,20,12,.9) 72%, rgba(12,7,6,1) 86%), #100a08;
   box-shadow: 0 0 0 1px rgba(194,154,91,.45), inset 0 3px 8px rgba(0,0,0,.85);
-  transition: box-shadow .3s;
+  transition: box-shadow .3s, filter .4s;
 }
 .table-badge .table-por > svg { filter: grayscale(.55) brightness(.85); transition: filter .4s; }
-.table-seat .table-head::after { opacity: calc(1 - var(--near, 0) * .65); transition: none; } /* 光标靠近：席上的人被照亮 */
+.table-seat .table-head::after { opacity: calc(1 - var(--near, 0) * .65); transition: none; will-change: opacity; } /* 光标靠近：席上的人被照亮（只动 opacity） */
 .table-badge .table-head::before { /* 默认沉在暗里一些 */
   content: ''; position: absolute; inset: 0; z-index: 1; border-radius: 50%; pointer-events: none;
   background: rgba(8,5,4,.32); transition: opacity .45s var(--ease-out);
@@ -148,12 +185,14 @@
 .table-badge:hover .table-head::before, .table-badge.is-sel .table-head::before { opacity: 0; }
 .table-badge:hover .table-head::after { opacity: .55; }
 .table-badge:hover > .table-disc::after { opacity: 1; }
-.table-badge.is-seated { opacity: .28; filter: grayscale(1); }
+.table-badge.is-seated { opacity: .28; }
+.table-badge.is-seated > .table-disc, .table-badge.is-seated > .table-tag { filter: grayscale(1); } /* 滤镜放在静态的子元素上：画一次，不随放大重画 */
 .table-badge.is-seated:hover { opacity: .6; }
 .table-badge.is-dragging { opacity: .12; }
-.table-badge.is-sel > .table-disc { box-shadow: 0 0 0 2px var(--blood), 0 0 22px rgba(255,46,126,.5); animation: table-sel 1s ease-in-out infinite; }
+.table-badge.is-sel > .table-disc { box-shadow: 0 0 0 2px var(--blood); }
+.table-badge.is-sel::after { animation: table-sel 1s ease-in-out infinite; }
 .table-badge.is-sel .table-por > svg { filter: none; }
-@keyframes table-sel { 50% { box-shadow: 0 0 0 2px var(--blood), 0 0 8px rgba(255,46,126,.2); } }
+@keyframes table-sel { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 .table-tag {
   position: absolute; right: -4px; bottom: -4px; min-width: 18px; height: 18px; padding: 0 3px; border-radius: 9px;
   display: none; place-items: center;
@@ -162,7 +201,7 @@
 .table-badge.is-seated .table-tag { display: grid; }
 
 /* ---------- 拖动 ---------- */
-.table-ghost { position: absolute; left: 0; top: 0; z-index: 60; pointer-events: auto; border-radius: 50%; }
+.table-ghost { position: absolute; left: 0; top: 0; z-index: 60; pointer-events: auto; border-radius: 50%; will-change: transform; }
 .table-ghost-disc {
   position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
   background: radial-gradient(circle at 50% 46%, rgba(242,196,126,.95) 0 26%, rgba(180,114,58,.55) 50%, rgba(40,20,12,.92) 72%, #0c0706 86%), #120b08;

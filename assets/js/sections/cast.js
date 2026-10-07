@@ -31,6 +31,7 @@
   const approach = (cur, to, k, dt) => cur + (to - cur) * (1 - Math.pow(1 - k, dt))
   const two = n => String(n).padStart(2, '0')
   const typo = s => String(s || '').replace(/'([^'\n]*)'/g, '‘$1’').replace(/"([^"\n]*)"/g, '“$1”')
+  const Q = () => (App.quality ? App.quality.level : 2) // 2 全效果 / 1 / 0 最省
 
   /* 位图肖像的虹膜位置（画面比例 0–1；从 assets/art/portraits/*.webp 的血粉虹膜量出）。
      只露一只眼的（格斯、宇智波斑）只有一个点。十五席的圆形徽章也用它来对准脸。 */
@@ -210,10 +211,17 @@
     const clip = `path('${SHAPES[type](0, 0, w, h)}')`
     it.win.style.clipPath = clip
     it.win.style.webkitClipPath = clip
-    it.shadowIn.style.clipPath = `path('${SHAPES[type](0, 0, w + 2 * b, h + 2 * b)}')`
-    it.shadowIn.style.width = w + 2 * b + 'px'
-    it.shadowIn.style.height = h + 2 * b + 'px'
+    // 投影：画框形状的黑影，模糊（σ = 9px，同原来的 blur(9px)）直接画进 SVG——只栅格化一次，之后只动 transform
+    const SW = w + 2 * b, SH = h + 2 * b, sp = 30
+    const sh = it.shadowIn
+    sh.setAttribute('viewBox', `0 0 ${SW + 2 * sp} ${SH + 2 * sp}`)
+    sh.style.width = SW + 2 * sp + 'px'
+    sh.style.height = SH + 2 * sp + 'px'
+    sh.style.left = sh.style.top = -sp + 'px'
+    sh.innerHTML = `<defs><filter id="cast-sh${it.k}" filterUnits="userSpaceOnUse" x="0" y="0" width="${SW + 2 * sp}" height="${SH + 2 * sp}" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="9"/></filter></defs>` +
+      `<path d="${SHAPES[type](sp, sp, SW, SH)}" fill="#000" filter="url(#cast-sh${it.k})"/>`
     it.shadow.style.left = it.shadow.style.top = -b + 'px'
+    it.shw = ''
     // 肖像：头部落在窗口约 46% 高处
     const pw = Math.max(w * 1.06, h * 0.78), ph = pw * 4 / 3
     it.pw = pw; it.ph = ph
@@ -228,25 +236,38 @@
       it.eyesBox.style.height = ph + 'px'
       it.eyesBox.style.transform = `translate3d(${(it.x + it.pl).toFixed(1)}px,${(it.y + it.pt).toFixed(1)}px,0)`
     }
-    // 黄铜框
+    // 黄铜框：线条画成渐变最外圈的暗铜色（静态，只画一次）；烛光的反光是叠在上面、以线条为遮罩的一块光斑，
+    // 光斑的色标与原来随烛光移动的渐变一致（中心 #ffe7b0 → .28 #d4a85f → .62 #6f5532 → 1 渐隐到底色 #2a1d10），
+    // 跟着烛光只改 transform，画框本身不再每帧重画
     const W = w + 2 * P, H = h + 2 * P
     const gid = 'cast-g' + it.k
-    it.border.setAttribute('viewBox', `0 0 ${W} ${H}`)
-    it.border.style.width = W + 'px'
-    it.border.style.height = H + 'px'
-    it.border.style.left = it.border.style.top = -P + 'px'
-    it.border.innerHTML =
-      `<defs><radialGradient id="${gid}" gradientUnits="userSpaceOnUse" cx="${W / 2}" cy="${-H}" r="${Math.max(W, H) * 0.95}">` +
-      `<stop offset="0" stop-color="#ffe7b0"/><stop offset=".28" stop-color="#d4a85f"/><stop offset=".62" stop-color="#6f5532"/><stop offset="1" stop-color="#2a1d10"/></radialGradient>` +
-      `<linearGradient id="${gid}m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#21170e"/><stop offset=".5" stop-color="#0c0806"/><stop offset="1" stop-color="#1a120b"/></linearGradient></defs>` +
-      `<path class="cast-mould" d="${SHAPES[type](P - b, P - b, w + 2 * b, h + 2 * b)} ${SHAPES[type](P, P, w, h)}" fill="url(#${gid}m)" fill-rule="evenodd"/>` +
-      `<g fill="none" stroke="url(#${gid})">` +
+    const lines = c =>
+      `<g fill="none" stroke="${c}">` +
       `<path d="${SHAPES[type](P - b, P - b, w + 2 * b, h + 2 * b)}" stroke-width="1.6"/>` +
       `<path d="${SHAPES[type](P - b * 0.5, P - b * 0.5, w + b, h + b)}" stroke-width=".6" stroke-dasharray="1 3" opacity=".8"/>` +
       `<path d="${SHAPES[type](P, P, w, h)}" stroke-width="1"/></g>` +
-      `<g fill="url(#${gid})" stroke="url(#${gid})" stroke-width="1">${ornaments(type, P, w, h, b)}</g>`
-    it.grad = it.border.querySelector('radialGradient')
+      `<g fill="${c}" stroke="${c}" stroke-width="1">${ornaments(type, P, w, h, b)}</g>`
+    it.frame.style.width = W + 'px'
+    it.frame.style.height = H + 'px'
+    it.frame.style.left = it.frame.style.top = -P + 'px'
+    it.border.setAttribute('viewBox', `0 0 ${W} ${H}`)
+    it.border.style.width = W + 'px'
+    it.border.style.height = H + 'px'
+    it.border.innerHTML =
+      `<defs><linearGradient id="${gid}m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#21170e"/><stop offset=".5" stop-color="#0c0806"/><stop offset="1" stop-color="#1a120b"/></linearGradient></defs>` +
+      `<path class="cast-mould" d="${SHAPES[type](P - b, P - b, w + 2 * b, h + 2 * b)} ${SHAPES[type](P, P, w, h)}" fill="url(#${gid}m)" fill-rule="evenodd"/>` +
+      lines('#2a1d10')
+    const mask = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${lines('#fff')}</svg>`) + '")'
+    it.shine.style.webkitMaskImage = mask
+    it.shine.style.maskImage = mask
+    it.sr = Math.max(W, H) * 0.95
+    it.spot.style.width = it.spot.style.height = (2 * it.sr).toFixed(1) + 'px'
     it.gx = -1e9; it.gy = -1e9
+    moveShine(it, W / 2, -H) // 初始：光在画框正上方很远处（同原来渐变的初始中心）
+    // 烛光暖斑的基准半径（实际半径 = 到窗口最远角的距离，用 scale 换算）
+    it.lb = Math.hypot(w, h)
+    it.lamp.firstChild.style.width = it.lamp.firstChild.style.height = (2 * it.lb).toFixed(1) + 'px'
+    it.lmw = ''
     // 钉子与挂绳
     const nail = S.mob ? 20 : 26
     it.wire.setAttribute('viewBox', `0 0 ${w} ${nail + 30}`)
@@ -263,6 +284,20 @@
     }
   }
 
+  // 画框：静态的黄铜框 SVG + 以线条为遮罩的反光光斑（独立合成层），整组随 --lit 改 opacity
+  function makeFrame() {
+    const frame = el('div.frame', { 'aria-hidden': 'true' })
+    const border = sv('svg', { class: 'cast-border', 'aria-hidden': 'true' })
+    const spot = el('i.shine-spot')
+    const shine = el('div.shine', null, spot)
+    frame.append(border, shine)
+    return { frame, border, shine, spot }
+  }
+  function moveShine(it, gx, gy) {
+    it.gx = gx; it.gy = gy
+    it.spot.style.transform = `translate3d(${(gx - it.sr).toFixed(1)}px,${(gy - it.sr).toFixed(1)}px,0)`
+  }
+
   /* =====================================================================
      建 DOM
      ===================================================================== */
@@ -274,7 +309,7 @@
     node.style.setProperty('--accent', acc)
     const wire = sv('svg', { class: 'cast-wire', 'aria-hidden': 'true' })
     const swing = el('div.swing')
-    const shadow = el('div.shadow', { 'aria-hidden': 'true' }, el('i'))
+    const shadow = el('div.shadow', { 'aria-hidden': 'true' }, sv('svg', { 'aria-hidden': 'true' }))
     const win = el('div.win', {
       role: 'button', tabindex: '0', 'aria-label': c.name, 'data-cursor': '',
     })
@@ -282,19 +317,19 @@
     const hotg = el('div.hotglow')
     const por = App.portrait(c.id, { className: 'cast-por', eyeRange: 10 })
     const floor = el('div.floor')
-    const lamp = el('div.lamp')
+    const lamp = el('div.lamp', null, el('i.lamp-spot'))
     const veil = el('div.veil')
     const dim = el('div.dim')
     const glint = el('div.glint')
     win.append(back, hotg, por, floor, lamp, veil, dim, glint)
-    const border = sv('svg', { class: 'cast-border', 'aria-hidden': 'true' })
-    swing.append(shadow, win, border)
+    const { frame, border, shine, spot } = makeFrame()
+    swing.append(shadow, win, frame)
     const name = el('span.name', { text: c.name })
     const epi = el('span.epi', { text: '·'.repeat(Math.max(3, Array.from(c.epithet || '').length)) })
     const seat = el('span.seatno', { 'aria-hidden': 'true' })
     const plate = el('div.plate', null, [el('i.rivet'), name, epi, seat, el('i.rivet')])
     node.append(wire, swing, plate)
-    Object.assign(it, { node, wire, swing, shadow, shadowIn: shadow.firstChild, win, back, hotg, por, lamp, veil, dim, glint, border, plate, epi, seat, svg: por.querySelector('svg') })
+    Object.assign(it, { node, wire, swing, shadow, shadowIn: shadow.firstChild, win, back, hotg, por, lamp, veil, dim, glint, frame, border, shine, spot, plate, epi, seat, svg: por.querySelector('svg') })
     it.blinkAt = performance.now() + 2000 + Math.random() * 9000
     Object.defineProperty(it, 'eyes', { get: () => por._eyes || null })
     // 位图缺失（只拿到代码仓库时）核心会换成剪影占位：重新量眼睛
@@ -327,19 +362,20 @@
     const node = el('div.item.item--void')
     const wire = sv('svg', { class: 'cast-wire', 'aria-hidden': 'true' })
     const swing = el('div.swing')
-    const shadow = el('div.shadow', { 'aria-hidden': 'true' }, el('i'))
+    const shadow = el('div.shadow', { 'aria-hidden': 'true' }, sv('svg', { 'aria-hidden': 'true' }))
     const win = el('div.win', { role: 'button', tabindex: '0', 'aria-label': '？', 'data-cursor': '', 'data-cursor-tone': 'blood' })
     const back = el('div.back')
     const glass = el('div.glass')
     const por = App.portrait('__void', { className: 'cast-por', eyeRange: 10 })
     const veil = el('div.veil')
+    const lamp = el('div.lamp', null, el('i.lamp-spot')) // 空框不亮暖斑，只为排版统一
     win.append(back, glass, por, veil)
-    const border = sv('svg', { class: 'cast-border', 'aria-hidden': 'true' })
-    swing.append(shadow, win, border)
+    const { frame, border, shine, spot } = makeFrame()
+    swing.append(shadow, win, frame)
     const epi = el('span.epi', { text: '·····' })
     const plate = el('div.plate', null, [el('i.rivet'), el('span.name', { text: '？？？' }), epi, el('i.rivet')])
     node.append(wire, swing, plate)
-    Object.assign(it, { node, wire, swing, shadow, shadowIn: shadow.firstChild, win, back, por, veil, border, plate, epi, svg: por.querySelector('svg') })
+    Object.assign(it, { node, wire, swing, shadow, shadowIn: shadow.firstChild, win, back, por, veil, lamp, frame, border, shine, spot, plate, epi, svg: por.querySelector('svg') })
     it.blinkAt = 1e15
     Object.defineProperty(it, 'eyes', { get: () => por._eyes || null })
     it.gdx = -1; it.gdy = 0.1
@@ -476,7 +512,10 @@
       }
     }
     // 画框玻璃上掠过一道反光
-    if (it.glint && !RM) gsap.fromTo(it.glint, { xPercent: -60, opacity: 1 }, { xPercent: 60, opacity: 0, duration: 1.2, ease: 'power2.inOut', overwrite: true })
+    if (it.glint && !RM && Q() > 0) {
+      it.glint.style.willChange = 'transform, opacity' // 掠过的 1.2 秒里独立合成，不重画整幅画
+      gsap.fromTo(it.glint, { xPercent: -60, opacity: 1 }, { xPercent: 60, opacity: 0, duration: 1.2, ease: 'power2.inOut', overwrite: true, onComplete: () => { it.glint.style.willChange = '' } })
+    }
     if (!it.decoded) {
       it.decoded = true
       App.text.scramble(it.epi, it.c.epithet, { duration: 0.9 })
@@ -550,8 +589,7 @@
     const x = -S.p * S.travel
     S.x = x
     const tr = `translate3d(${x.toFixed(1)}px,0,0)`
-    wall.style.transform = tr
-    fore.style.transform = tr
+    if (tr !== S.trw) { S.trw = tr; wall.style.transform = tr; fore.style.transform = tr }
     const st = sticky.getBoundingClientRect().top
     S.stageTop = st
 
@@ -565,12 +603,17 @@
     S.cx = approach(S.cx, tx, 0.22, dt)
     S.cy = approach(S.cy, ty, 0.22, dt)
     // 火苗的抖动
-    const fl = RM ? 1 : 1 + Math.sin(t * 11.3) * 0.025 + Math.sin(t * 23.7 + 1.3) * 0.018 + (Math.random() - 0.5) * 0.025
+    const fl = RM || Q() === 0 ? 1 : 1 + Math.sin(t * 11.3) * 0.025 + Math.sin(t * 23.7 + 1.3) * 0.018 + (Math.random() - 0.5) * 0.025
     S.flick = fl * (1 - S.dip * 0.55)
     const R = (S.mob ? Math.max(250, vw * 0.8) : U.clamp(vw * 0.31, 300, 560)) * S.flick
-    dark.style.transform = `translate3d(${S.cx.toFixed(1)}px,${S.cy.toFixed(1)}px,0) scale(${(R / 520 * 3.2).toFixed(3)})`
-    glow.style.transform = `translate3d(${S.cx.toFixed(1)}px,${S.cy.toFixed(1)}px,0) scale(${(R / 520).toFixed(3)})`
-    glow.style.opacity = (0.75 + (fl - 1) * 4) * (1 - S.dip * 0.8)
+    const dkt = `translate3d(${S.cx.toFixed(1)}px,${S.cy.toFixed(1)}px,0) scale(${(R / 520 * 3.2).toFixed(3)})`
+    if (dkt !== S.dkw) {
+      S.dkw = dkt
+      dark.style.transform = dkt
+      glow.style.transform = `translate3d(${S.cx.toFixed(1)}px,${S.cy.toFixed(1)}px,0) scale(${(R / 520).toFixed(3)})`
+    }
+    const gop = ((0.75 + (fl - 1) * 4) * (1 - S.dip * 0.8)).toFixed(3)
+    if (gop !== S.gow) { S.gow = gop; glow.style.opacity = gop }
     S.flare = Math.max(0, S.flare - dt * 0.012)
     // 移开视线时眼里的光暗下去；转向你的那一刻同时亮起
     S.watchK = approach(S.watchK == null ? 1 : S.watchK, S.away ? 0.38 : 1, S.away ? 0.02 : 0.35, dt)
@@ -591,10 +634,10 @@
       const it = i < all.length ? all[i] : voidIt
       const sx = it.x + x
       if (sx > vw + 260 || sx + it.w < -260) {
-        if (it.on) { it.on = false }
+        if (it.on) { it.on = false; it.node.classList.remove('is-live') }
         continue
       }
-      it.on = true
+      if (!it.on) { it.on = true; it.node.classList.add('is-live') } // 视口附近：会动的部分各自独立合成（见 cast.css）
       const fx = sx + it.w / 2, fy = it.y + it.h * 0.45
       const dx = fx - S.cx, dy = (fy - S.cy) * 1.15
       const d = Math.hypot(dx, dy) || 1
@@ -602,30 +645,42 @@
       it.lit = approach(it.lit, lit, 0.3, dt)
       const L = Math.max(it.lit, it.heat)
       if (Math.abs(L - (it.lw || 0)) > 0.006) { it.node.style.setProperty('--lit', L.toFixed(3)); it.lw = L }
+      // 悬停一幅时其余沉暗（原来是 CSS 过渡；改成这里平滑，只改 opacity）
+      const pfT = S.hot && S.hot !== it ? 1 : 0
+      it.pf = approach(it.pf || 0, pfT, 0.085, dt)
+      if (Math.abs(it.pf - pfT) < 0.004) it.pf = pfT
+      if (it.pf !== it.pfw && (Math.abs(it.pf - (it.pfw || 0)) > 0.008 || it.pf === pfT)) { it.pfw = it.pf; it.node.style.setProperty('--pf', it.pf.toFixed(3)) }
       // 投影：背向烛光
       const k = U.clamp(d * 0.028, 3, 26)
       const shx = (dx / d) * k, shy = (dy / d) * k * 0.8 + 6
-      it.shadow.style.transform = `translate3d(${shx.toFixed(1)}px,${shy.toFixed(1)}px,0)`
-      // 黄铜反光：渐变中心 = 烛光在框坐标里的位置
-      if (it.grad && L > 0.02) {
+      const sht = `translate3d(${shx.toFixed(1)}px,${shy.toFixed(1)}px,0)`
+      if (sht !== it.shw) { it.shw = sht; it.shadow.style.transform = sht }
+      // 黄铜反光：光斑中心 = 烛光在框坐标里的位置（只改 transform）
+      if (it.spot && L > 0.02) {
         const gx = S.cx - sx + it.P, gy = S.cy - it.y + it.P
-        if (Math.abs(gx - it.gx) > 1.5 || Math.abs(gy - it.gy) > 1.5) {
-          it.grad.setAttribute('cx', gx.toFixed(0)); it.grad.setAttribute('cy', gy.toFixed(0))
-          it.gx = gx; it.gy = gy
-        }
+        if (Math.abs(gx - it.gx) > 0.4 || Math.abs(gy - it.gy) > 0.4) moveShine(it, gx, gy)
       }
       // 悬停：烛光把这一幅照亮——正面的暖光跟着烛火在画上移动，背后垫一道金色轮廓光（朝向烛光的一侧）
       const h = it.heat
       if (h > 0.004 && it.photo) {
+        if (!it.warm) { it.warm = true; it.node.classList.add('is-warm') } // 暖斑、轮廓光只在这时存在
         const ux = -dx / d, uy = -dy / d
         const ps = it.por.style
-        ps.setProperty('--rx', (-ux * 3.2 * h).toFixed(2) + 'px')
-        ps.setProperty('--ry', (U.clamp(-uy, -0.4, 0.4) * 2.4 * h).toFixed(2) + 'px') // 竖直方向收着点：有几张原图顶上是直边
-        ps.setProperty('--rim', h.toFixed(3))
-        const ls = it.lamp.style
-        ls.setProperty('--lx', U.clamp(((S.cx - sx) / it.w) * 100, -30, 130).toFixed(1) + '%')
-        ls.setProperty('--ly', U.clamp(((S.cy - it.y) / it.h) * 100, -30, 130).toFixed(1) + '%')
-        ls.opacity = h.toFixed(3)
+        const rx = (-ux * 3.2 * h).toFixed(2) + 'px'
+        const ry = (U.clamp(-uy, -0.4, 0.4) * 2.4 * h).toFixed(2) + 'px' // 竖直方向收着点：有几张原图顶上是直边
+        const rim = Q() > 0 ? h.toFixed(3) : '0'
+        if (rx !== it.rxw) { it.rxw = rx; ps.setProperty('--rx', rx) }
+        if (ry !== it.ryw) { it.ryw = ry; ps.setProperty('--ry', ry) }
+        if (rim !== it.rimw) { it.rimw = rim; ps.setProperty('--rim', rim) }
+        if (Q() > 1) {
+          // 暖斑：圆心跟着烛火（夹在窗口 -30%–130% 内），半径 = 到窗口最远角的距离（同原来 circle at x y 的 farthest-corner）
+          const lx = U.clamp(S.cx - sx, -0.3 * it.w, 1.3 * it.w), ly = U.clamp(S.cy - it.y, -0.3 * it.h, 1.3 * it.h)
+          const lr = Math.hypot(Math.max(lx, it.w - lx), Math.max(ly, it.h - ly))
+          const lmt = `translate3d(${(lx - it.lb).toFixed(1)}px,${(ly - it.lb).toFixed(1)}px,0) scale(${(lr / it.lb).toFixed(3)})`
+          if (lmt !== it.lmw) { it.lmw = lmt; it.lamp.firstChild.style.transform = lmt }
+          const lo = h.toFixed(3)
+          if (lo !== it.low) { it.low = lo; it.lamp.style.opacity = lo }
+        }
         it.filtered = true
       } else if (h > 0.004 && it.svg) {
         const ux = -dx / d, uy = -dy / d
@@ -635,8 +690,9 @@
       } else if (it.filtered) {
         it.filtered = false
         if (it.svg) it.svg.style.filter = ''
-        if (it.lamp) it.lamp.style.opacity = '0'
-        it.por.style.setProperty('--rim', '0')
+        if (it.lamp) { it.lamp.style.opacity = '0'; it.low = '0' }
+        it.por.style.setProperty('--rim', '0'); it.rimw = '0'
+        if (it.warm) { it.warm = false; it.node.classList.remove('is-warm') }
       }
       // 凝视目标（移开视线时）
       it.gaze.x = fx + it.gdx * 900
@@ -684,8 +740,8 @@
       }
       if (it.void) {
         // 空框：近了是空的，远了里面有人
-        const vis = 1 - smooth(0.04, 0.5, it.lit)
-        it.por.style.opacity = (vis * 0.95).toFixed(3)
+        const vis = ((1 - smooth(0.04, 0.5, it.lit)) * 0.95).toFixed(3)
+        if (vis !== it.visw) { it.visw = vis; it.por.style.opacity = vis }
       }
       if (!it.void) {
         const cd = Math.abs(fx - vw * 0.5)
@@ -699,7 +755,8 @@
       const ticks = hudTicks.children
       for (let j = 0; j < ticks.length; j++) ticks[j].classList.toggle('is-on', j <= nearest)
     }
-    hudBar.style.setProperty('--p', S.p.toFixed(4))
+    const pw = S.p.toFixed(4)
+    if (pw !== S.pw) { S.pw = pw; hudBar.style.setProperty('--p', pw) }
   }
 
   /* =====================================================================
@@ -1101,6 +1158,10 @@
         sec.classList.toggle('is-paused', !v)
       }, { rootMargin: '0px' })
       App.tick(frame)
+      // 画质：1 级起去掉暖斑的混合模式层；0 级再去掉轮廓光、玻璃反光与火苗抖动（见 frame / setHot）
+      const applyQ = () => { sec.classList.toggle('is-lowq', Q() < 2) }
+      applyQ()
+      App.bus.on('quality', applyQ)
       // 标题入场
       const intro = fore.querySelector('.cast-intro')
       const title = intro.querySelector('.cast-title')

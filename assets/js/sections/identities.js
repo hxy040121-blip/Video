@@ -41,10 +41,15 @@
     fire: { a: '#1d0d05', b: '#ff7b2e', glow: 0.68 },
   }
   const HOLD_MS = 1200
+  // 金箔反光带的方向：原先 118° 线性渐变的走向（屏幕坐标，y 向下）
+  const SDX = Math.sin(118 * DEG), SDY = -Math.cos(118 * DEG)
+  const GLARE_R = 39 // 高光光斑的基准半径（mm，与 CSS 中 .identities-glare 的尺寸一致）
   const RM = App.reduced
   const typo = s => String(s || '').replace(/"([^"\n]*)"/g, '“$1”')
   const smooth = (a, b, v) => { const t = U.clamp((v - a) / (b - a)); return t * t * (3 - 2 * t) }
   const approach = (cur, to, k, dt) => cur + (to - cur) * (1 - Math.pow(1 - k, dt))
+  // 同上，足够接近时直接落到目标值（之后数值不再变化，也就不再写样式）
+  const settle = (cur, to, k, dt, eps) => { const v = approach(cur, to, k, dt); return Math.abs(v - to) < eps ? to : v }
   const mod360 = a => ((a % 360) + 360) % 360
 
   const S = {
@@ -54,6 +59,7 @@
     psi: 0, psiV: 0, pin: 0, gather: 0, rowX: 0,
     dealt: false, ready: false, focus: null, busy: false, rev: false,
     fa: { v: 0 }, wheel: 0, hold: null, burning: false, lastPal: null, hush: false,
+    q: App.quality ? App.quality.level : 2,
   }
 
   /* =====================================================================
@@ -221,12 +227,16 @@ ${corners}${mid}
     const fine = el('div.fine', { html: fineSVG() })
     // 叠放：纸 → 金色烫印（边框、编号、纹章、分隔）→ 箔光 → 墨字 → 暗化。
     // 箔光是 color-dodge / soft-light 混合层，只能压在纸和烫金上；放在墨字之上会把黑字染成紫红。
-    const kids = [paper, frame, num, sig, div, el('div.sheen'), el('div.glare'), nameEl]
+    // 箔光、墨字、暗化各是一个独立的合成层：光标移动时只改箔光与暗化层的 transform / opacity，牌面不重画。
     let oathEl = null
-    if (oath) { oathEl = el('div.oath', {}, [el('span', { text: oath })]); kids.push(oathEl) }
-    kids.push(text, fine, el('div.dim'))
-    for (const k of kids) face.appendChild(k)
-    return { el: face, side, neg, name, nameEl, nameT, sig, div, text, tx, num, oath: oathEl, fine, tf: 1.6, tfr: 1.9, inked: false }
+    if (oath) oathEl = el('div.oath', {}, [el('span', { text: oath })])
+    const ink = el('div.ink', {}, [nameEl, oathEl, text, fine])
+    const sheen = el('div.sheen'), glare = el('div.glare'), dimEl = el('div.dim')
+    for (const k of [paper, frame, num, sig, div, sheen, glare, ink, dimEl]) face.appendChild(k)
+    return {
+      el: face, side, neg, name, nameEl, nameT, sig, div, text, tx, num, oath: oathEl, fine, tf: 1.6, tfr: 1.9, inked: false,
+      sheen, glare, dimEl, lit: false, _st: '', _so: '', _gt: '', _go: '',
+    }
   }
   function setNameSize(nameEl, name) {
     const n = Array.from(name).length
@@ -241,7 +251,7 @@ ${corners}${mid}
       i, def, name: def.front, burned: false,
       cur: { x: 0, y: 0, r: 0, s: 0.3 }, mode: 'deck', fly: null,
       flip: 180, flipLift: 0, tx: 0, ty: 0, swing: 0, lift: 0, foil: 0, dim: 0, heat: 0,
-      fx: 0.5, fy: 0.5, z: i + 1, jit: U.rand(-2.4, 2.4), _t: '', _c: '', _z: -1, _v: '',
+      fx: 0.5, fy: 0.5, z: i + 1, jit: U.rand(-2.4, 2.4), _t: '', _c: '', _z: -1, _d: '', _sh: '', _sho: '',
     }
     const slot = el('div.slot', {
       role: 'button', tabindex: '-1', 'data-i': i,
@@ -327,9 +337,14 @@ ${corners}${mid}
 
     // 圆桌（俯视，只看得见桌沿的一段）
     S.table = el('div.table', { 'aria-hidden': 'true' })
+    // 桌沿双线、虚线圈静止；十五个席位记号在另一张 SVG 里，整张随扇面旋转（合成层，不重画）
     S.tableSvg = U.svg('svg', { viewBox: '-1000 -1000 2000 2000', class: PX + 'table-svg' })
-    S.table.appendChild(S.tableSvg)
+    S.tableRot = U.svg('svg', { viewBox: '-1000 -1000 2000 2000', class: PX + 'table-svg ' + PX + 'table-rot' })
+    S.table.append(S.tableSvg, S.tableRot)
+    // 桌面灯光：圆桌裁切内一个光斑，跟随光标平移
     S.tableLight = el('div.table-light')
+    S.tableSpot = el('i.table-spot')
+    S.tableLight.appendChild(S.tableSpot)
     S.table.appendChild(S.tableLight)
 
     // 名牌
@@ -449,13 +464,26 @@ ${corners}${mid}
       S.rticks.style.top = (S.geo.rowY + fh * 0.5 + 44).toFixed(1) + 'px'
     }
     layoutTable()
-    // 特效画布
-    const dpr = Math.min(2, window.devicePixelRatio || 1)
-    S.fx.width = Math.round(vw * dpr); S.fx.height = Math.round(vh * dpr)
-    S.fxDpr = dpr
+    sizeFx()
     // 尚未发牌：牌停在画外
     if (!S.dealt) for (const c of S.cards) Object.assign(c.cur, deckPose(c))
     if (modeChanged && S.focus != null) closeFocus(true)
+  }
+
+  // 特效画布（低画质时按 1 倍像素）
+  function sizeFx() {
+    const dpr = Math.min(S.q >= 2 ? 2 : 1, window.devicePixelRatio || 1)
+    const w = Math.round(S.vw * dpr), h = Math.round(S.vh * dpr)
+    if (S.fx.width !== w || S.fx.height !== h) { S.fx.width = w; S.fx.height = h; S.fxDirty = false }
+    S.fxDpr = dpr
+  }
+
+  // 画质：2 全效果；1 不再有无人触碰时扫过整副牌的光、牌被盯久时的色差；0 再关掉箔光、灯光跟随与灰尘
+  function applyQuality(n) {
+    S.q = n
+    if (!S.built) return
+    S.stage.classList.toggle('is-q0', n === 0)
+    sizeFx()
   }
 
   function layoutTable() {
@@ -469,6 +497,8 @@ ${corners}${mid}
     const ns = 'http://www.w3.org/2000/svg'
     const svg = S.tableSvg
     svg.innerHTML = ''
+    S.tableRot.innerHTML = ''
+    S._tm = ''; S._lt = ''
     const ring = (r, w, o, dash) => {
       const c = document.createElementNS(ns, 'circle')
       c.setAttribute('r', r); c.setAttribute('fill', 'none')
@@ -496,7 +526,7 @@ ${corners}${mid}
       t.setAttribute('stroke', '#c29a5b'); t.setAttribute('stroke-opacity', '.3'); t.setAttribute('vector-effect', 'non-scaling-stroke')
       marks.appendChild(t)
     }
-    svg.appendChild(marks)
+    S.tableRot.appendChild(marks)
     S.tableMarks = marks
   }
 
@@ -656,7 +686,7 @@ ${corners}${mid}
       if (ri !== S._ri) { S._ri = ri; S.rtickEls.forEach((t, k) => t.classList.toggle('is-on', k === ri)) }
     }
 
-    S.idle = S.ready && !RM && S.focus == null && S.hover < 0 && S.gather < 0.2
+    S.idle = S.ready && !RM && S.q >= 2 && S.focus == null && S.hover < 0 && S.gather < 0.2
     S.wave = ((S.t * 0.0024) % 27) - 6
     for (const c of S.cards) updateCard(c, dt, mx, my)
     updateTable(mx, my, inStage)
@@ -668,7 +698,7 @@ ${corners}${mid}
   function updateCard(c, dt, mx, my) {
     if (c.mode === 'deck') return
     const isH = c.i === S.hover
-    c.lift = approach(c.lift, isH ? 1 : 0, 0.15, dt)
+    c.lift = settle(c.lift, isH ? 1 : 0, 0.15, dt, 0.001)
     const p = c.cur
     if (c.mode === 'fan') {
       const T = fanTarget(c)
@@ -716,12 +746,13 @@ ${corners}${mid}
       c.fx = approach(c.fx, U.clamp(0.5 - d * 0.32, 0, 1), 0.08, dt)
       c.fy = approach(c.fy, 0.3, 0.08, dt)
     }
+    if (S.q === 0) foilT = 0
     c.tx = approach(c.tx, ttx, 0.14, dt)
     c.ty = approach(c.ty, tty, 0.14, dt)
-    c.foil = approach(c.foil, foilT, 0.12, dt)
+    c.foil = settle(c.foil, foilT, 0.12, dt, 0.002)
     const hero = S.focus === c.i || (c.mode === 'fly' && c.fly.to === 'focus') || (S.focus == null && c.i === S.lastFocus)
     const hoverDim = (S.hover >= 0 && !isH && S.focus == null) ? 0.34 : 0
-    c.dim = Math.max(approach(c.dim, hoverDim, 0.1, dt), hero ? 0 : 0.74 * S.fa.v)
+    c.dim = Math.max(settle(c.dim, hoverDim, 0.1, dt, 0.002), hero ? 0 : 0.74 * S.fa.v)
     render(c)
   }
 
@@ -740,39 +771,62 @@ ${corners}${mid}
     // 叠放次序
     const z = S.focus === c.i ? 100 : c.mode === 'fly' ? (c.fly.to === 'focus' ? 99 : 90) : c.i === S.hover ? 60 : c.i + 1
     if (z !== c._z) { c.slot.style.zIndex = z; c._z = z }
-    const v = `${c.fx.toFixed(3)}|${c.fy.toFixed(3)}|${c.foil.toFixed(3)}|${c.dim.toFixed(3)}|${c.lift.toFixed(3)}`
-    if (v !== c._v) {
-      c._v = v
-      const st = c.card.style
-      st.setProperty('--fx', c.fx.toFixed(3))
-      st.setProperty('--fy', c.fy.toFixed(3))
-      st.setProperty('--foil', c.foil.toFixed(3))
-      st.setProperty('--dim', c.dim.toFixed(3))
-      const L = Math.max(c.lift, S.focus === c.i ? 1 : 0)
-      c.shadow.style.transform = `translate(${(-c.ty * 0.6).toFixed(1)}px, ${(10 + L * 28).toFixed(1)}px) scale(${(1 + L * 0.05).toFixed(3)})`
-      c.shadow.style.opacity = (0.55 - L * 0.12).toFixed(3)
+    // 影子、暗化、箔光：都只写独立合成层的 transform / opacity，且数值没变就不写
+    const L = Math.max(c.lift, S.focus === c.i ? 1 : 0)
+    const sh = `translate(${(-c.ty * 0.6).toFixed(1)}px, ${(10 + L * 28).toFixed(1)}px) scale(${(1 + L * 0.05).toFixed(3)})`
+    if (sh !== c._sh) { c.shadow.style.transform = sh; c._sh = sh }
+    const sho = (0.55 - L * 0.12).toFixed(3)
+    if (sho !== c._sho) { c.shadow.style.opacity = sho; c._sho = sho }
+    const d = c.dim.toFixed(3)
+    if (d !== c._d) { c.front.dimEl.style.opacity = d; c.back.dimEl.style.opacity = d; c._d = d }
+    // 箔光只亮在朝向观者的那一面
+    const vis = Math.cos((fl + c.ty) * DEG) < 0 ? c.back : c.front
+    const thr = c.front.lit || c.back.lit ? 0.012 : 0.02
+    const lit = S.q > 0 && c.foil > thr
+    for (const f of [c.front, c.back]) {
+      const on = lit && f === vis
+      if (on !== f.lit) { f.lit = on; f.el.classList.toggle('is-lit', on); f._st = f._so = f._gt = f._go = '' }
     }
+    if (lit) renderFoil(c, vis)
     const deep = c.mode !== 'fan' || c.lift > 0.04 || c.flipLift > 0.001 || (gk > 0.001 && gk < 0.999) || Math.abs(c.tx) + Math.abs(c.ty) > 0.6
     if (deep !== c._deep) { c.card.classList.toggle('is-3d', deep); c._deep = deep }
+  }
+
+  // 金箔反光（与原先 260%、118° 渐变按 --fx/--fy 移动 background-position 的效果等价）：
+  // 反光带沿渐变方向平移 s；高光光斑移到 (fx, fy)，半径 = 48% × 到最远角的距离
+  function renderFoil(c, f) {
+    const W = S.W, H = S.H, fx = c.fx, fy = c.fy
+    const s = 0.8 * W * (1 - 2 * fx) * SDX + 0.8 * H * (1 - 2 * fy) * SDY - 0.026 * (W * SDX + H * SDY)
+    const st = `rotate(28deg) translate3d(${s.toFixed(1)}px,0,0)`
+    if (st !== f._st) { f.sheen.style.transform = st; f._st = st }
+    const k = 0.48 * Math.hypot(Math.max(fx, 1 - fx) * W, Math.max(fy, 1 - fy) * H) / (GLARE_R * S.mm)
+    const gt = `translate3d(${((fx - 0.5) * W).toFixed(1)}px,${((fy - 0.5) * H).toFixed(1)}px,0) scale(${k.toFixed(3)})`
+    if (gt !== f._gt) { f.glare.style.transform = gt; f._gt = gt }
+    const so = (c.foil * (f.neg ? 0.7 : 1)).toFixed(3)
+    if (so !== f._so) { f.sheen.style.opacity = so; f._so = so }
+    const go = (c.foil * (f.neg ? 0.4 : 1)).toFixed(3)
+    if (go !== f._go) { f.glare.style.opacity = go; f._go = go }
   }
 
   function updateTable(mx, my, inStage) {
     if (S.mode !== 'desk' || !S.tableMarks) return
     const g = S.geo
     const rot = (S.psi / DEG) * 1
-    const t = `rotate(${rot.toFixed(3)})`
-    if (t !== S._tm) { S.tableMarks.setAttribute('transform', t); S._tm = t }
-    const lx = (inStage ? mx : S.vw / 2) - (g.cx - g.rt)
-    const ly = (inStage ? my : g.apexY) - (g.cy - g.rt)
-    S.table.style.setProperty('--lx', lx.toFixed(0) + 'px')
-    S.table.style.setProperty('--ly', ly.toFixed(0) + 'px')
+    const t = `rotate(${rot.toFixed(3)}deg)`
+    if (t !== S._tm) { S.tableRot.style.transform = t; S._tm = t }
+    const follow = inStage && S.q > 0
+    const lx = (follow ? mx : S.vw / 2) - (g.cx - g.rt)
+    const ly = (follow ? my : g.apexY) - (g.cy - g.rt)
+    const lt = `translate3d(${lx.toFixed(0)}px,${ly.toFixed(0)}px,0)`
+    if (lt !== S._lt) { S.tableSpot.style.transform = lt; S._lt = lt }
   }
   function updateBgword(mx, my, inStage) {
     const bx = inStage ? (mx / S.vw - 0.5) * -26 : 0
     const by = inStage ? (my / S.vh - 0.5) * -16 : 0
     S._bx = U.lerp(S._bx || 0, bx, 0.06)
     S._by = U.lerp(S._by || 0, by, 0.06)
-    S.bgword.style.transform = `translate(${S._bx.toFixed(1)}px, calc(-50% + ${S._by.toFixed(1)}px))`
+    const t = `translate(${S._bx.toFixed(1)}px, calc(-50% + ${S._by.toFixed(1)}px))`
+    if (t !== S._bt) { S.bgword.style.transform = t; S._bt = t }
   }
 
   // 牌在光标下停久了，会在一瞬间露出它的另一面（两帧的硬切 + 色差），然后若无其事地回来
@@ -780,7 +834,7 @@ ${corners}${mid}
     if (c.flipTw || c.mode !== 'fan') return
     const same = !!c.def.noReverse
     c.peek = 1
-    if (!same) App.glitch(c.glitch, 0.16)
+    if (!same && S.q >= 2) App.glitch(c.glitch, 0.16)
     App.audio.sfx(same ? 'heartbeat' : 'glitch', { volume: same ? 0.35 : 0.3, pitch: same ? 1.3 : 0.8 })
     const t = S.bgwordT
     if (!same && !S.rev) {
@@ -1040,7 +1094,8 @@ ${corners}${mid}
         if (!mid && o.p >= 0.5) {
           mid = true
           if (!noRev) {
-            App.glitch(c.glitch, 0.42)
+            if (S.q > 0) App.glitch(c.glitch, 0.42)
+            else App.audio.sfx('glitch')
             setRev(isBackAngle(goal))
           }
         }
@@ -1439,7 +1494,7 @@ ${corners}${mid}
     for (let k = 0; k < n; k++) spark(R.left - SR.left + U.rand(0.15, 0.85) * R.width, R.top - SR.top + U.rand(0.3, 0.8) * R.height)
   }
   function dust(c) {
-    if (RM || parts.length > 300) return
+    if (RM || S.q === 0 || parts.length > 300) return
     const p = c.cur
     const hw = S.W * p.s * 0.5, hh = S.H * p.s * 0.5
     const a = p.r * DEG
@@ -1647,6 +1702,8 @@ ${corners}${mid}
     mount(sec) {
       if (!N) return
       build(sec)
+      applyQuality(S.q)
+      App.bus.on('quality', applyQuality)
       layout()
       fitAll()
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitAll() })

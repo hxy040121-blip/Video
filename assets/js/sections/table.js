@@ -31,6 +31,7 @@
   const approach = (cur, to, k, dt) => cur + (to - cur) * (1 - Math.pow(1 - k, dt))
   const two = n => String(n).padStart(2, '0')
   const f1 = n => n.toFixed(1)
+  const Q = () => (App.quality ? App.quality.level : 2) // 2 全效果 / 1 / 0 最省
 
   /* 几何（单位：席位环半径 = 1；《洋馆物理层》：桌径 4.8 m、椅环半径约 2.98 m） */
   const G = { table: 0.805, top: 0.255, lip: 0.02, drum: 0.352, floor: 1.42, inlay: 0.64, rim: 0.73, seatZ: 0.15, backZ: 0.37, chairW: 0.104, chairD: 0.09, headZ: 0.27 }
@@ -43,7 +44,10 @@
     drag: null, busy: false, justDragged: 0, hover: null, full: false,
     mx: -1e4, my: -1e4,
   }
-  let sec, stage, svg, gTable, gFront, gBack, gRing, sheen, floorSheen, threadSvg, threadPath, threadPin
+  let sec, stage, svg, svgMid, svgTop, gTable, gFront, gBack, gRing, threadSvg, threadPath, threadPin
+  // 反光：椭圆裁切（.table-sheen）里一块独立合成的光斑（.table-sheen-spot），跟着光标只改 transform
+  const sheen = { top: null, floor: null }
+  let corePulse
   let trayEl, readName, readEpi, countEl, countBig, btnRand, btnClear
   const seatEls = [] // { el, disc, head, x, y, nx, ny, num, k, lift, x: btn }
   const badges = {} // id → { el, disc, por, x, y, k }
@@ -154,11 +158,30 @@
     return { seat, back, arms, legs: legP, faces }
   }
 
+  // 桌子分三层 SVG（地盘 / 椅背与桌身 / 镶嵌与前排椅），两块反光夹在中间：叠放次序与原来一张 SVG 时相同，
+  // 但反光是独立合成层，跟着光标移动时三张 SVG 都不重画。
+  function placeSheen(o, e, r) {
+    o.el.style.left = f1(e.cx - e.rx) + 'px'
+    o.el.style.top = f1(e.cy - e.ry) + 'px'
+    o.el.style.width = f1(2 * e.rx) + 'px'
+    o.el.style.height = f1(2 * e.ry) + 'px'
+    o.ox = e.cx - e.rx; o.oy = e.cy - e.ry; o.r = r
+    o.spot.style.width = o.spot.style.height = f1(2 * r) + 'px'
+    o.x = o.y = -1e9
+  }
+  function moveSheen(o, x, y) {
+    if (Math.abs(x - o.x) < 0.3 && Math.abs(y - o.y) < 0.3) return // 停住时不写
+    o.x = x; o.y = y
+    o.spot.style.transform = `translate3d(${(x - o.ox - o.r).toFixed(1)}px,${(y - o.oy - o.r).toFixed(1)}px,0)`
+  }
+
   function drawTable() {
     const W = S.W, H = S.H
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`)
-    svg.style.width = W + 'px'
-    svg.style.height = H + 'px'
+    for (const v of [svg, svgMid, svgTop]) {
+      v.setAttribute('viewBox', `0 0 ${W} ${H}`)
+      v.style.width = W + 'px'
+      v.style.height = H + 'px'
+    }
     const fl = ellipseFull(G.floor, 0)
     const top = ellipseFull(G.table, G.top)
     const lip = ellipseFull(G.table, G.top - G.lip)
@@ -168,19 +191,16 @@
     const inl2 = ellipseFull(G.inlay - 0.035, G.top)
     const cen = ellipseFull(0.12, G.top)
     const cen2 = ellipseFull(0.05, G.top)
-    let h = ''
-    h += `<defs>
-<radialGradient id="table-floor" cx="${f1(fl.cx)}" cy="${f1(fl.cy)}" r="${f1(fl.rx)}" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 ${f1(fl.cy)}) scale(1 ${(fl.ry / fl.rx).toFixed(4)}) translate(0 ${f1(-fl.cy)})"><stop offset="0" stop-color="#121816"/><stop offset=".7" stop-color="#0a0d0c"/><stop offset="1" stop-color="#050606"/></radialGradient>
-<radialGradient id="table-fsheen" gradientUnits="userSpaceOnUse" cx="${f1(fl.cx)}" cy="${f1(fl.cy)}" r="${f1(S.Rx * 0.55)}"><stop offset="0" stop-color="#e9dcc2" stop-opacity=".16"/><stop offset="1" stop-color="#e9dcc2" stop-opacity="0"/></radialGradient>
+    // 第一层：墨玉地盘
+    svg.innerHTML = `<defs><radialGradient id="table-floor" cx="${f1(fl.cx)}" cy="${f1(fl.cy)}" r="${f1(fl.rx)}" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 ${f1(fl.cy)}) scale(1 ${(fl.ry / fl.rx).toFixed(4)}) translate(0 ${f1(-fl.cy)})"><stop offset="0" stop-color="#121816"/><stop offset=".7" stop-color="#0a0d0c"/><stop offset="1" stop-color="#050606"/></radialGradient></defs>` +
+      `<ellipse class="table-floor" cx="${f1(fl.cx)}" cy="${f1(fl.cy)}" rx="${f1(fl.rx)}" ry="${f1(fl.ry)}" fill="url(#table-floor)"/>`
+    placeSheen(sheen.floor, fl, S.Rx * 0.55)
+    // 第二层：地盘上的环与放射线、后排椅、鼓座、桌沿、桌面
+    let h = `<defs>
 <linearGradient id="table-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6f7c73"/><stop offset=".45" stop-color="#48534c"/><stop offset="1" stop-color="#232a26"/></linearGradient>
-<radialGradient id="table-sheen" gradientUnits="userSpaceOnUse" cx="${f1(top.cx)}" cy="${f1(top.cy)}" r="${f1(S.Rx * 0.42)}"><stop offset="0" stop-color="#f4f0e4" stop-opacity=".42"/><stop offset=".5" stop-color="#e3e8dc" stop-opacity=".1"/><stop offset="1" stop-color="#e3e8dc" stop-opacity="0"/></radialGradient>
 <linearGradient id="table-lip" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1b211e"/><stop offset=".5" stop-color="#3c463f"/><stop offset="1" stop-color="#151a17"/></linearGradient>
 <linearGradient id="table-drum" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#170a07"/><stop offset=".45" stop-color="#3a1a12"/><stop offset="1" stop-color="#0f0605"/></linearGradient>
-<clipPath id="table-topclip"><ellipse cx="${f1(top.cx)}" cy="${f1(top.cy)}" rx="${f1(top.rx)}" ry="${f1(top.ry)}"/></clipPath>
 </defs>`
-    // 墨玉地盘
-    h += `<ellipse class="table-floor" cx="${f1(fl.cx)}" cy="${f1(fl.cy)}" rx="${f1(fl.rx)}" ry="${f1(fl.ry)}" fill="url(#table-floor)"/>`
-    h += `<ellipse class="table-floor-sheen" cx="${f1(fl.cx)}" cy="${f1(fl.cy)}" rx="${f1(fl.rx)}" ry="${f1(fl.ry)}" fill="url(#table-fsheen)"/>`
     for (const k of [1, 0.985, 1.14]) {
       const e = ellipseFull(G.floor * k * (k > 1 ? 0.9 : 1), 0)
       h += `<ellipse cx="${f1(e.cx)}" cy="${f1(e.cy)}" rx="${f1(e.rx)}" ry="${f1(e.ry)}" fill="none" stroke="#6f5532" stroke-opacity="${k === 1 ? 0.55 : 0.22}" stroke-width="${k === 1 ? 1 : 0.6}"${k > 1 ? ' stroke-dasharray="2 6"' : ''}/>`
@@ -190,11 +210,14 @@
       const a = ringPt(i, 1.24, 0), b = ringPt(i, 1.36, 0)
       h += `<line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#6f5532" stroke-opacity=".45" stroke-width=".8"/>`
     }
-    svg.innerHTML = h
+    svgMid.innerHTML = h
     gBack = sv('g', { class: 'table-chairs table-chairs--back' })
     gTable = sv('g', { class: 'table-tbl' })
+    svgMid.append(gBack, gTable)
+    const gTop = sv('g', { class: 'table-tbl table-tbl--top' })
     gFront = sv('g', { class: 'table-chairs table-chairs--front' })
-    svg.append(gBack, gTable, gFront)
+    svgTop.innerHTML = ''
+    svgTop.append(gTop, gFront)
     // 椅子
     const order = Array.from({ length: NS }, (_, i) => i).sort((a, b) => Math.cos(seatAng(b)) - Math.cos(seatAng(a)))
     for (const i of order) {
@@ -215,25 +238,32 @@
     t += `<ellipse cx="${f1(drumB.cx)}" cy="${f1(drumB.cy + 2)}" rx="${f1(drumB.rx * 1.25)}" ry="${f1(drumB.ry * 1.25)}" fill="#000" opacity=".55"/>`
     t += `<path d="M${f1(lip.cx - lip.rx)} ${f1(lip.cy)}L${f1(top.cx - top.rx)} ${f1(top.cy)}A${f1(top.rx)} ${f1(top.ry)} 0 0 0 ${f1(top.cx + top.rx)} ${f1(top.cy)}L${f1(lip.cx + lip.rx)} ${f1(lip.cy)}A${f1(lip.rx)} ${f1(lip.ry)} 0 0 1 ${f1(lip.cx - lip.rx)} ${f1(lip.cy)}Z" fill="url(#table-lip)"/>`
     t += `<ellipse class="table-topface" cx="${f1(top.cx)}" cy="${f1(top.cy)}" rx="${f1(top.rx)}" ry="${f1(top.ry)}" fill="url(#table-top)" stroke="#c29a5b" stroke-opacity=".55" stroke-width="1"/>`
-    t += `<g clip-path="url(#table-topclip)"><ellipse class="table-top-sheen" cx="${f1(top.cx)}" cy="${f1(top.cy)}" rx="${f1(top.rx)}" ry="${f1(top.ry)}" fill="url(#table-sheen)"/></g>`
-    t += `<ellipse cx="${f1(inl.cx)}" cy="${f1(inl.cy)}" rx="${f1(inl.rx)}" ry="${f1(inl.ry)}" fill="none" stroke="#c29a5b" stroke-opacity=".38" stroke-width=".8"/>`
-    t += `<ellipse cx="${f1(inl2.cx)}" cy="${f1(inl2.cy)}" rx="${f1(inl2.rx)}" ry="${f1(inl2.ry)}" fill="none" stroke="#c29a5b" stroke-opacity=".22" stroke-width=".6" stroke-dasharray="1 4"/>`
+    gTable.innerHTML = t
+    // 桌面反光（夹在第二、三层之间）
+    placeSheen(sheen.top, top, S.Rx * 0.42)
+    // 第三层：镶嵌、桌心、亮环、前排椅
+    let u = ''
+    u += `<ellipse cx="${f1(inl.cx)}" cy="${f1(inl.cy)}" rx="${f1(inl.rx)}" ry="${f1(inl.ry)}" fill="none" stroke="#c29a5b" stroke-opacity=".38" stroke-width=".8"/>`
+    u += `<ellipse cx="${f1(inl2.cx)}" cy="${f1(inl2.cy)}" rx="${f1(inl2.rx)}" ry="${f1(inl2.ry)}" fill="none" stroke="#c29a5b" stroke-opacity=".22" stroke-width=".6" stroke-dasharray="1 4"/>`
     for (let i = 0; i < NS; i++) {
       const a = ringPt(i, G.inlay - 0.035, G.top), b = ringPt(i, G.rim - 0.02, G.top)
-      t += `<line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#c29a5b" stroke-opacity=".3" stroke-width=".6"/>`
+      u += `<line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#c29a5b" stroke-opacity=".3" stroke-width=".6"/>`
     }
-    t += `<ellipse cx="${f1(cen.cx)}" cy="${f1(cen.cy)}" rx="${f1(cen.rx)}" ry="${f1(cen.ry)}" fill="none" stroke="#c29a5b" stroke-opacity=".6" stroke-width="1"/>`
-    t += `<ellipse class="table-core" cx="${f1(cen2.cx)}" cy="${f1(cen2.cy)}" rx="${f1(cen2.rx)}" ry="${f1(cen2.ry)}"/>`
-    gTable.innerHTML = t
+    u += `<ellipse cx="${f1(cen.cx)}" cy="${f1(cen.cy)}" rx="${f1(cen.rx)}" ry="${f1(cen.ry)}" fill="none" stroke="#c29a5b" stroke-opacity=".6" stroke-width="1"/>`
+    u += `<ellipse class="table-core" cx="${f1(cen2.cx)}" cy="${f1(cen2.cy)}" rx="${f1(cen2.rx)}" ry="${f1(cen2.ry)}"/>`
+    gTop.innerHTML = u
+    // 坐满时桌心的脉动（HTML 小色块，只动 opacity）
+    corePulse.style.left = f1(cen2.cx - cen2.rx + 0.5) + 'px'
+    corePulse.style.top = f1(cen2.cy - cen2.ry + 0.5) + 'px'
+    corePulse.style.width = f1(2 * cen2.rx - 1) + 'px'
+    corePulse.style.height = f1(2 * cen2.ry - 1) + 'px'
     // 桌面镶嵌的环：相邻两席都有人时，这一段亮起
     gRing = sv('g', { class: 'table-ring' })
     for (let i = 0; i < NS; i++) {
       const a0 = seatAng(i), a1 = seatAng(i + 1)
       gRing.appendChild(sv('path', { d: ellipsePath(G.inlay, G.top, a0, a1, 12), 'data-i': i }))
     }
-    gTable.appendChild(gRing)
-    sheen = svg.querySelector('#table-sheen')
-    floorSheen = svg.querySelector('#table-fsheen')
+    gTop.appendChild(gRing)
     threadSvg.setAttribute('viewBox', `0 0 ${W} ${H}`)
   }
 
@@ -778,8 +808,15 @@
     sec = node
     sec.classList.add('table')
     stage = el('div.stage')
-    svg = sv('svg', { class: 'table-svg', 'aria-hidden': 'true' })
-    stage.appendChild(svg)
+    svg = sv('svg', { class: 'table-svg table-svg--floor', 'aria-hidden': 'true' })
+    svgMid = sv('svg', { class: 'table-svg table-svg--mid', 'aria-hidden': 'true' })
+    svgTop = sv('svg', { class: 'table-svg table-svg--top', 'aria-hidden': 'true' })
+    for (const k of ['floor', 'top']) {
+      const spot = el('i.sheen-spot')
+      sheen[k] = { el: el('div.sheen.sheen--' + k, { 'aria-hidden': 'true' }, spot), spot, x: -1e9, y: -1e9, ox: 0, oy: 0, r: 1 }
+    }
+    corePulse = el('i.core-pulse', { 'aria-hidden': 'true' })
+    stage.append(svg, sheen.floor.el, svgMid, sheen.top.el, svgTop, corePulse)
 
     // 标题
     const title = el('h2.title', { text: '十五席' })
@@ -797,10 +834,11 @@
       const elx = el('div.seat', { role: 'button', tabindex: '0', 'data-cursor': '', 'data-i': i })
       const flash = el('i.flash')
       const ring = el('i.rim')
+      const glow = el('i.glow')
       const disc = el('div.disc')
       const x = el('button.x', { type: 'button', 'aria-label': '离席', 'data-cursor': '离席', 'data-cursor-tone': 'blood' })
-      elx.append(flash, ring, disc, x)
-      const num = el('span.num', { text: String(i + 1), 'aria-hidden': 'true' })
+      elx.append(flash, ring, glow, disc, x)
+      const num = el('span.num', { text: String(i + 1), 'data-n': String(i + 1), 'aria-hidden': 'true' })
       stage.append(num, elx)
       const s = { el: elx, disc, num, x, i, lift: 0, near: 0 }
       seatEls.push(s)
@@ -873,16 +911,16 @@
     const fine = App.finePointer && m.active
     const mx = fine ? m.sx - r.left : -1e4
     const my = fine ? m.sy - r.top : -1e4
-    // 桌面与地盘的反光
-    if (sheen) {
+    // 桌面与地盘的反光：只移动两块合成层（最省画质时整个关掉）
+    if (sheen.top && Q() > 0) {
       const tx = fine ? mx : S.cx + Math.sin(t * 0.3) * S.Rx * 0.4
       const ty = fine ? my : S.cy + Math.cos(t * 0.21) * S.Ry * 0.4
       S.mx = approach(S.mx < -1e3 ? tx : S.mx, tx, 0.12, dt)
       S.my = approach(S.my < -1e3 ? ty : S.my, ty, 0.12, dt)
       const sx = U.clamp(S.mx, S.cx - S.Rx * 1.2, S.cx + S.Rx * 1.2)
       const sy = U.clamp(S.my, S.cy - S.Ry * 2.4, S.cy + S.Ry * 2.4)
-      sheen.setAttribute('cx', f1(sx)); sheen.setAttribute('cy', f1(sy))
-      floorSheen.setAttribute('cx', f1(sx)); floorSheen.setAttribute('cy', f1(sy + S.Ry * 0.2))
+      moveSheen(sheen.top, sx, sy)
+      moveSheen(sheen.floor, sx, sy + S.Ry * 0.2)
     }
     // 席位
     const dragging = !!S.drag
