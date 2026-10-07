@@ -428,7 +428,7 @@
     const tl = gsap.timeline()
     const n = 8
     for (let i = 0; i < n; i++) tl.to(el, { x: U.rand(-strength, strength) * (1 - i / n), y: U.rand(-strength, strength) * (1 - i / n), duration: duration / n, ease: 'none' })
-    tl.to(el, { x: 0, y: 0, duration: 0.05 })
+    tl.to(el, { x: 0, y: 0, duration: 0.05, clearProps: 'transform' })
     return tl
   }
 
