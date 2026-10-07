@@ -512,6 +512,9 @@
 .trial-idcard.is-xlong .trial-idcard-sigil { width: 20%; }
 .trial-idcard.is-xlong .trial-idcard-name { font-size: clamp(20px, 1.8vw, 24px); }
 .trial-idcard.is-xlong .trial-idcard-text { font-size: 10.5px; line-height: 1.55; }
+/* 仍放不下（JS 判定）：纹章再缩，间距收紧，字号由 JS 逐级下调 */
+.trial-idcard.is-tight .trial-idcard-face { gap: 7px; padding-top: 18px; padding-bottom: 16px; }
+.trial-idcard.is-tight .trial-idcard-sigil { width: 15%; }
 .trial-deal-go { position: absolute; left: 0; right: 0; bottom: max(7%, 40px); z-index: 31; display: flex; justify-content: center; pointer-events: none; }
 .trial-deal-go.is-on { pointer-events: auto; }
 .trial-deal-go:empty { display: none; }
@@ -911,7 +914,17 @@
   transition: opacity .3s, transform .45s var(--ease-out), visibility 0s .3s;
   pointer-events: none;
 }
-.trial-me.is-open .trial-me-text { opacity: 1; visibility: inherit; transform: none; transition: opacity .3s, transform .45s var(--ease-out), visibility 0s; }
+.trial-me.is-open .trial-me-text { opacity: 1; visibility: inherit; transform: none; transition: opacity .3s, transform .45s var(--ease-out), visibility 0s; pointer-events: auto; }
+/* 高度由 JS 按顶栏与卡之间的空隙限定；超出时在框内滚动，底边渐隐 */
+.trial-me-text { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--brass-dim) transparent; }
+.trial-me-text::-webkit-scrollbar { width: 4px; }
+.trial-me-text::-webkit-scrollbar-thumb { background: var(--brass-dim); }
+.trial-me-text.is-scroll::after {
+  content: ''; position: sticky; bottom: -18px; display: block; height: 44px; margin: -44px -18px 0;
+  background: linear-gradient(to bottom, rgba(12, 9, 9, 0), rgba(12, 9, 9, .96) 80%);
+  pointer-events: none; transition: opacity .3s;
+}
+.trial-me-text.is-scroll.is-end::after { opacity: 0; }
 .trial-me-text b { display: block; font-family: var(--f-display); font-weight: 900; font-size: 18px; letter-spacing: .14em; color: var(--brass); margin-bottom: 8px; }
 .trial-me-text p { font-size: 13px; line-height: 1.8; color: var(--bone); white-space: pre-line; }
 .trial-me.is-dead .trial-me-card { filter: grayscale(1) brightness(.5); }
@@ -1203,8 +1216,14 @@
 }
 
 @media (max-height: 760px) and (min-width: 761px) {
-  .trial-idcard { --cw: clamp(190px, 30vh, 250px); }
+  /* 发牌大卡按高度取尺寸：顶栏与「继续」之间的空隙里放到最大（与 1440×900 时同宽，长文不再被截） */
+  .trial-idcard { --ch: clamp(300px, 62vh, 440px); --cw: calc(var(--ch) / 1.5); top: 50%; }
   .trial-inv-room { font-size: 34px; max-height: 44vh; }
+  /* 终局 / 死亡：肖像与名字按高度收一点，整列不顶进顶栏 */
+  .trial-end { gap: 12px; padding-bottom: 28px; }
+  .trial-end-face { width: clamp(130px, 25vh, 200px); }
+  .trial-end-name { font-size: clamp(34px, min(5vw, 9vh), 64px); }
+  .trial-end.is-win .trial-end-row { margin: 0 0 8px; }
 }
 
 /* ---------- 降低动效 ---------- */

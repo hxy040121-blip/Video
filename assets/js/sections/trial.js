@@ -333,9 +333,9 @@
     E.me = el('div.trial-me', null, [
       el('button.trial-me-card', { type: 'button', 'data-cursor': '翻面', 'aria-label': '身份' }, [el('span.trial-me-sigil'), el('span.trial-me-name'), el('span.trial-me-no')]),
       el('button.trial-me-act', { type: 'button', 'data-cursor': '', 'data-cursor-tone': 'blood', 'data-trial-act': 'ability' }),
-      el('div.trial-me-text', null, [el('b'), el('p')]),
+      el('div.trial-me-text', { 'data-lenis-prevent': '' }, [el('b'), el('p')]),
     ])
-    E.roster = el('div.trial-roster', null, [el('div.trial-roster-list'), el('button.trial-roster-x', { type: 'button', 'data-cursor': '', text: '取消' })])
+    E.roster = el('div.trial-roster', null, [el('div.trial-roster-list', { 'data-lenis-prevent': '' }), el('button.trial-roster-x', { type: 'button', 'data-cursor': '', text: '取消' })])
     E.cast = el('div.trial-cast', null, [el('div.trial-cast-band', null, [el('i.trial-cast-ico'), el('p.trial-cast-text')])])
     E.banner = el('div.trial-banner', null, [el('div.trial-banner-band', null, [el('div.trial-banner-sigil'), el('div.trial-banner-text', null, [el('b'), el('span')])])])
     E.notes = el('div.trial-notes')
@@ -456,6 +456,8 @@
     S.geo = { W, H, cx, cy, rx, ry, sw, sh, pos, mobile, top, bottom }
     if (S.scene === 'inv') Inv.resize()
     redrawLines()
+    if (S.E.idcard.classList.contains('is-on')) fitIdcard()
+    if (S.E.me.classList.contains('is-open')) fitMeText()
   }
   function seatCenter(k) {
     const p = S.geo && S.geo.pos[k]
@@ -646,11 +648,62 @@
     E.me.querySelector('.trial-me-no').textContent = U.roman(d.no || id.no || 1)
     E.me.querySelector('.trial-me-text b').textContent = id.name
     E.me.querySelector('.trial-me-text p').textContent = d.front === id.name ? d.frontText : (d.backText || '')
+    if (E.me.classList.contains('is-open')) fitMeText()
   }
   function toggleMeText(force) {
     const on = force == null ? !S.E.me.classList.contains('is-open') : force
+    if (on) fitMeText()
     S.E.me.classList.toggle('is-open', on)
     App.audio.sfx(on ? 'flip' : 'card', { volume: 0.6 })
+  }
+  // 卡面原文（圣女三百余字）在矮窗口里会顶进顶栏：先加宽，仍放不下就在框内滚动
+  function fitMeText() {
+    const E = S.E
+    const box = E.me && E.me.querySelector('.trial-me-text')
+    if (!box || !S.stage) return
+    box.style.width = ''
+    box.style.maxHeight = ''
+    const sr = S.stage.getBoundingClientRect()
+    const mr = E.me.getBoundingClientRect()
+    const tr = E.top.getBoundingClientRect()
+    const ceil = Math.max(sr.top + 8, (tr.height ? tr.bottom : sr.top + 64) + 10)
+    const bottom = mr.top + box.offsetTop + box.offsetHeight // 底边固定（布局值，不含入场的位移）
+    const room = Math.max(150, Math.floor(bottom - ceil))
+    const gutter = mr.left - sr.left
+    const maxW = Math.min(600, S.stage.clientWidth - 2 * gutter)
+    if (box.scrollHeight > room) {
+      for (const w of [420, 500, 600]) {
+        if (w > maxW || w <= box.offsetWidth) continue
+        box.style.width = w + 'px'
+        if (box.scrollHeight <= room) break
+      }
+    }
+    box.style.maxHeight = room + 'px'
+    box.scrollTop = 0
+    const scroll = box.scrollHeight > box.clientHeight + 1
+    box.classList.toggle('is-scroll', scroll)
+    box.classList.remove('is-end')
+    if (scroll && !box._onScroll) {
+      box._onScroll = () => box.classList.toggle('is-end', box.scrollTop + box.clientHeight >= box.scrollHeight - 2)
+      box.addEventListener('scroll', box._onScroll, { passive: true })
+    }
+  }
+  // 发牌大卡：卡面原文放不下时，纹章先让位，再逐级缩字
+  function fitIdcard() {
+    const card = S.E.idcard
+    const t = card && card.querySelector('.trial-idcard-text')
+    if (!t) return
+    t.style.fontSize = ''
+    t.style.lineHeight = ''
+    card.classList.remove('is-tight')
+    if (t.scrollHeight <= t.clientHeight + 1) return
+    card.classList.add('is-tight')
+    let fs = parseFloat(getComputedStyle(t).fontSize) || 11
+    while (t.scrollHeight > t.clientHeight + 1 && fs > 9) {
+      fs -= 0.5
+      t.style.fontSize = fs + 'px'
+      t.style.lineHeight = '1.5'
+    }
   }
   // 当前可用的能力
   function myAbility() {
@@ -1465,6 +1518,7 @@
     const len = (d.frontText || '').length
     card.classList.toggle('is-long', len > 150 && len <= 240)
     card.classList.toggle('is-xlong', len > 240)
+    fitIdcard()
     card.classList.add('is-on')
     card.classList.remove('is-flipped')
     const mk = seatOf(S.me)

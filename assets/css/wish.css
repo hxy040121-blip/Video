@@ -10,6 +10,22 @@
 .wish-cv, .wish-ribs { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .wish-ribs { pointer-events: none; filter: blur(1.4px); }
 
+/* ---------- 两端的暗（由 wish.js 按位置驱动） ---------- */
+/* 离场：整幅舞台压暗 */
+.wish-shade { position: absolute; inset: 0; z-index: 6; pointer-events: none; background: #050404; opacity: 0; }
+/* 进场：上沿从上一板块的墨色里化开（钉住后收尽） */
+.wish-fade-top {
+  position: absolute; left: 0; right: 0; top: 0; height: 52vh; z-index: 6; pointer-events: none;
+  transform-origin: 50% 0; transform: scaleY(0);
+  background: linear-gradient(to bottom, var(--ink) 0%, rgba(10, 8, 9, .9) 16%, rgba(10, 8, 9, .62) 40%, rgba(10, 8, 9, .26) 70%, rgba(10, 8, 9, .07) 88%, rgba(10, 8, 9, 0));
+}
+/* 离场：下沿沉进「再睡一次」的黑（挂在钉住段底边，与下面同色相接） */
+.wish-fade-end {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 100vh; z-index: 1; pointer-events: none;
+  transform-origin: 50% 100%; transform: scaleY(0);
+  background: linear-gradient(to top, #050404 0%, #050404 5%, rgba(5, 4, 4, .9) 22%, rgba(5, 4, 4, .62) 46%, rgba(5, 4, 4, .3) 70%, rgba(5, 4, 4, .08) 88%, rgba(5, 4, 4, 0));
+}
+
 /* ---------- 漂浮的愿望低语 ---------- */
 .wish-whispers { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .wish-w {

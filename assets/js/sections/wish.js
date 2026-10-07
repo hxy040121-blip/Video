@@ -62,8 +62,12 @@
       '<feGaussianBlur in="eyes" stdDeviation="5" result="glow"/>' +
       '<feMerge><feMergeNode in="body"/><feMergeNode in="glow"/><feMergeNode in="glow"/><feMergeNode in="eyes"/></feMerge>' +
       '</filter></svg>' })
-    E.sticky.append(E.defs, E.stage, E.whis, E.last, E.who, E.count, E.rule)
-    E.track.appendChild(E.sticky)
+    // 进场与离场的两道暗：上沿从上一板块的墨色里化开；离开时整体压暗，下沿沉进「再睡一次」的黑
+    E.shade = U.el('i.wish-shade', { 'aria-hidden': 'true' })
+    E.fadeTop = U.el('i.wish-fade-top', { 'aria-hidden': 'true' })
+    E.fadeEnd = U.el('i.wish-fade-end', { 'aria-hidden': 'true' })
+    E.sticky.append(E.defs, E.stage, E.whis, E.last, E.who, E.count, E.rule, E.shade, E.fadeTop)
+    E.track.append(E.sticky, E.fadeEnd)
 
     E.sleep = U.el('button.wish-sleep', { type: 'button', 'data-cursor': '闭眼' }, [U.el('span.wish-sleep-label', { text: '再睡一次' })])
     E.foot = U.el('footer.wish-foot', null, [
@@ -457,8 +461,10 @@
     // 镜头落向最后一把椅子
     const s = H.seats[W.fk - 1]
     const t = easeIO(sstep(T.cam0, T.cam1, p))
-    v.elev = mix(Math.PI / 2, W.mob ? 1.08 : 0.98, t)
-    v.dist = mix(10.6, W.mob ? 8.4 : 6.6, t)
+    // 离场时镜头缓缓抬起、退远，收进穹顶的黑暗
+    const lv = easeIO(W.lv || 0)
+    v.elev = mix(Math.PI / 2, W.mob ? 1.08 : 0.98, t) + 0.16 * lv
+    v.dist = mix(10.6, W.mob ? 8.4 : 6.6, t) * (1 + 0.24 * lv)
     v.tx = mix(0, s.x * 0.66, t)
     v.ty = mix(0, s.y * 0.66, t)
     v.tz = mix(0.45, 1.0, t)
@@ -491,6 +497,7 @@
     setVis(tr.bottom > 0 && tr.top < vh)
     if (!W.vis) return
     W.p = clamp01(-tr.top / Math.max(1, tr.height - window.innerHeight))
+    edges(tr, vh)
     // 平滑跟随用真实时间（与帧率无关；隔了很久才回来就直接到位）
     const rdt = Math.min(1, (now - (W.lastNow || now)) / 1000)
     W.lastNow = now
@@ -534,6 +541,31 @@
       const ew = W.eyeOk && W.pt && W.pt._eyes
       if (ew) E.eyes.style.transform = 'translate(' + (ew.ox * fw / 600).toFixed(2) + 'px,' + (ew.oy * fh / 800).toFixed(2) + 'px)'
     }
+  }
+
+  // 钉住段的两端：直接取自位置（与滚动同步，不经平滑）
+  function edges(tr, vh) {
+    const E = W.E
+    // 进场：钉住之前，舞台上沿是一道从墨色里化开的渐变，长度随露出的高度伸缩（钉住时收尽）
+    const top = tr.top > 0 ? Math.min(1, tr.top * 1.3 / (vh * 0.52)) : 0
+    // 离场：e = 舞台下沿离开视口底边的距离
+    const e = vh - tr.bottom
+    const lv = clamp01(e / vh)
+    const pre = clamp01((e + vh * 0.14) / (vh * 0.14))
+    const fe = pre * 0.26 + 0.74 * sstep(0, 0.72, lv)
+    const sh = 0.84 * sstep(0.02, 0.86, lv)
+    // 舞台比页面滚得慢：像是沉进黑暗，而不是被推走
+    const dy = e > 0 ? e * 0.38 : 0
+    W.lv = lv
+    const key = top.toFixed(3) + '|' + fe.toFixed(3) + '|' + sh.toFixed(3) + '|' + dy.toFixed(1)
+    if (key === W.edgeKey) return
+    W.edgeKey = key
+    E.fadeTop.style.transform = 'scaleY(' + top.toFixed(3) + ')'
+    E.fadeEnd.style.transform = 'scaleY(' + fe.toFixed(3) + ')'
+    E.shade.style.opacity = sh.toFixed(3)
+    // 落后的那一截不越过钉住段的底边（下面「再睡一次」的底色是半透明的）
+    E.sticky.style.transform = dy ? 'translate3d(0,' + dy.toFixed(1) + 'px,0)' : ''
+    E.sticky.style.clipPath = dy ? 'inset(0 0 ' + dy.toFixed(1) + 'px 0)' : ''
   }
 
   function setVis(v) {

@@ -723,6 +723,33 @@
 
   const D = { open: false, i: 0, root: null, page: null, nav: null, token: 0, lastNav: 0, busy: false, dir: 1, por: null }
 
+  /* 档案大图：原图自带裁切直边的几位（斑的头顶、阿尔敏的方肩、几位偏高的胸口裁线），用渐隐遮罩化开。
+     画面百分比；mt/mb = 上/下渐隐起止，rt/rb = 骨白硬描边的上/下收束，mx = 额外一层椭圆遮罩。见 cast.css .cast-dos-por */
+  const EDGE = {
+    madara: { mt0: 15, mt1: 27, mb0: 54, mb1: 70, rt: 17, rb: 48 },
+    armin: { mb0: 56, mb1: 74, rb: 50, mx: 'radial-gradient(ellipse 36% 44% at 48% 40%, #000 70%, transparent 100%)' },
+    kaiji: { mb0: 56, mb1: 72, rb: 52 },
+    kiritsugu: { mb0: 56, mb1: 72, rb: 52 },
+    shinobu: { mb0: 58, mb1: 73, rb: 54 },
+    itachi: { mb0: 60, mb1: 75, rb: 54 },
+  }
+
+  /* 右下角的大编号：落在随身物与翻页之间，字身（Cinzel 数字的墨迹约占字号的 6%–87%）不压翻页 */
+  function fitBig(P) {
+    const big = P && P.big
+    if (!big || !big.isConnected) return
+    if (window.innerWidth <= 760) { big.style.fontSize = big.style.top = big.style.bottom = ''; return }
+    const pr = P.page.getBoundingClientRect()
+    const lo = D.nav.getBoundingClientRect().top - pr.top - 16
+    const hi = P.stats.offsetTop + P.stats.offsetHeight + 20
+    const maxF = Math.min(pr.height * 0.46, (pr.width * 1.01 - P.stats.offsetLeft) / 1.32)
+    const F = U.clamp((lo - hi) / 0.81, Math.min(130, maxF), maxF)
+    big.style.fontSize = F.toFixed(1) + 'px'
+    big.style.top = (lo - 0.87 * F).toFixed(1) + 'px'
+    big.style.bottom = 'auto'
+  }
+  window.addEventListener('resize', () => { if (D.open && D.page) fitBig(D.page) })
+
   function radar(c, onAxis) {
     const st = c.stats || {}
     const R = 104
@@ -821,6 +848,8 @@
     const big = el('div.dos-bignum', { text: two(i + 1), 'aria-hidden': 'true' })
     const fig = el('div.dos-fig')
     const por = App.portrait(c.id, { className: 'cast-dos-por', eyeRange: 8 })
+    const edge = EDGE[c.id]
+    if (edge) for (const k in edge) por.style.setProperty('--' + k, k === 'mx' ? edge[k] : edge[k] + '%')
     const pimg = por.querySelector('img')
     if (pimg) {
       // 弹丸论破式的硬描边：同一幅画的剪影错开几像素垫在后面
@@ -969,6 +998,7 @@
       D.root.insertBefore(P.page, D.nav)
       D.page = P
       updateNav()
+      fitBig(P)
       playPage(P, mode === 'open' ? 0.1 : 0.02)
     }
     if (mode === 'slash') {

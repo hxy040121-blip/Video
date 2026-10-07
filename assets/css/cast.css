@@ -255,14 +255,28 @@
 }
 .cast-dos-por { width: 100%; height: 100%; }
 .cast-dos-por > svg { filter: drop-shadow(-3px -2px 0 rgba(236,198,128,.85)) drop-shadow(0 30px 40px rgba(0,0,0,.6)); }
-/* 位图：硬描边——同一幅画的骨白剪影向左上错开 */
-.cast-dos-por.is-photo { overflow: visible; }
+/* 位图：原图的裁切直边（胸口的裁线、贴边的肩、个别人的头顶）用渐隐遮罩化开；
+   --mt0/--mt1、--mb0/--mb1、--mx 由 cast.js 按人覆写（EDGE） */
+.cast-dos-por.is-photo {
+  overflow: visible;
+  --cast-mv: linear-gradient(180deg, transparent var(--mt0, 0%), #000 var(--mt1, 0%), #000 var(--mb0, 66%), transparent var(--mb1, 83%));
+  --cast-mh: linear-gradient(90deg, transparent 0%, #000 6%, #000 84%, transparent 97%);
+  -webkit-mask-image: var(--cast-mv), var(--cast-mh), var(--mx, linear-gradient(#000, #000));
+  -webkit-mask-composite: source-in;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: var(--cast-mv), var(--cast-mh), var(--mx, linear-gradient(#000, #000));
+  mask-composite: intersect;
+  mask-repeat: no-repeat;
+}
 .cast-dos-por.is-photo > img { position: relative; }
+/* 硬描边——同一幅画的骨白剪影向左上错开；只描头肩，到裁线之前收掉，免得直边被描成一道亮线 */
 .cast-dos-por.is-photo > img.cast-dos-rim {
   position: absolute; left: 0; top: 0;
   transform: translate3d(calc(var(--pvx, 0) * 1.4% - 8px), calc(var(--pvy, 0) * 1% - 2px), 0) scale(1.035);
   filter: brightness(0) invert(.9) sepia(.75) saturate(1.9);
   opacity: .92;
+  -webkit-mask-image: linear-gradient(180deg, transparent var(--rt, 0%), #000 calc(var(--rt, 0%) + 9%), #000 var(--rb, 57%), transparent calc(var(--rb, 57%) + 12%));
+  mask-image: linear-gradient(180deg, transparent var(--rt, 0%), #000 calc(var(--rt, 0%) + 9%), #000 var(--rb, 57%), transparent calc(var(--rb, 57%) + 12%));
 }
 
 .cast-dos-name {
@@ -366,6 +380,11 @@
 .cast-dos-seat-n { font-family: var(--f-latin); font-weight: 700; font-size: 13px; letter-spacing: .05em; }
 .cast-dos-seat-n:empty { display: none; }
 
+/* 矮屏：台词往上顶到头部那一行时，大「不越过它的上沿 */
+@media (max-height: 820px) and (min-width: 761px) {
+  .cast-dos-quote::after { top: -.42em; }
+}
+
 @media (max-width: 1100px) and (min-width: 761px) {
   .cast-dos-info { left: 46vw; width: 25vw; }
   .cast-dos-stats { width: 25vw; min-width: 220px; right: 2vw; }
@@ -374,7 +393,7 @@
 }
 
 @media (max-width: 760px) {
-  .cast-dos-page { height: auto; min-height: 0; overflow: hidden; padding-bottom: 96px; }
+  .cast-dos-page { height: auto; min-height: 0; overflow: hidden; padding-bottom: 112px; }
   .cast-dos-block { width: 100%; height: 64vh; bottom: auto; clip-path: polygon(0 0, 100% 0, 100% 78%, 0 100%); }
   .cast-dos-stripe { width: 100%; height: calc(64vh + 14px); bottom: auto; clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%); }
   .cast-dos-bignum { top: 38vh; bottom: auto; right: -2vw; font-size: 34vh; }
@@ -385,9 +404,10 @@
   .cast-dos-see { margin-top: 0; }
   .cast-dos-stats { position: relative; right: auto; top: auto; width: auto; min-width: 0; margin: 30px 20px 0; }
   .cast-radar { max-width: 340px; margin: 0 auto; }
+  /* 底栏：上沿留一段渐隐，翻页数字下面是实底，滚过去的正文不会从箭头与数字后面透出来 */
   .cast-dos-nav {
-    left: 0; right: 0; bottom: 0; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); gap: 6px; justify-content: space-between;
-    background: linear-gradient(180deg, rgba(5,3,4,0), rgba(5,3,4,.92) 40%);
+    left: 0; right: 0; bottom: 0; padding: 30px 14px calc(12px + env(safe-area-inset-bottom)); gap: 6px; justify-content: space-between;
+    background: linear-gradient(180deg, rgba(5,3,4,0), rgba(5,3,4,.96) 26px);
   }
   .cast-dos-arrow { width: 52px; }
   .cast-dos-seat { margin-left: 0; padding: 0 14px; letter-spacing: .3em; }
