@@ -1,0 +1,30 @@
+{
+ "id": "nagato",
+ "source_url": "https://static.wikia.nocookie.net/naruto/images/4/46/Nagato.png/revision/latest?cb=20150821081644",
+ "source_note": "《火影忍者疾风传》动画第174集截图（Narutopedia File:Nagato.png，1376×872，Nagato 词条信息栏图）：佩恩来袭一段，坐在机关里的长门，红发垂下遮住半边脸，露出的那只是轮回眼，背后一排黑棒，瘦削的肩膀。",
+ "src": "src/nagato-1b.png",
+ "eyes": [
+  570,
+  566,
+  782,
+  566
+ ],
+ "scale": 1.15,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   570,
+   566,
+   782,
+   566
+  ],
+  "r": [
+   0,
+   16
+  ]
+ },
+ "command": "python3 -I bin/iris.py src/nagato-1b.png --id nagato --eyes 570,566,782,566 --r 0,16 --keep-alpha --scale 1.15",
+ "notes": "原图 dl/nagato/nagato.png 很暗：先提亮一版给 isnet-anime 抠图（bin/levels.py 0 0.55 1.1 → src/nagato-1L.png → src/nagato-1cut.png），颜色用更亮的一版（levels 0.02 0.46 1.2 → src/nagato-1L2.png）配上前者的 alpha（src/nagato-1c.png）；顶上补 120px（bin/pad_rot.py --pad 0,120,0,0），机关和黑棒根部所在的下半截从 y690 渐隐到 960（bin/prep_cut.py --bottom 690,960 → src/nagato-1b.png）。画面左那只眼被头发完全遮住，坐标是估计的，只染看得见的那只（--r 0,16）。scale 1.15。不满意：这是机关里的长门——背后的黑棒、皮包骨的肩膀都在画面里（卡上这些不带入，馆里他能站能走），也没穿卡上写的晓袍；暗金后仍偏暗。找过：Narutopedia 的 Nagato Gutsy Shinobi 3 / Naruto and Nagato（穿袍子的年轻长门，动画原创回忆，年龄不对）、Danbooru 上的官方游戏立绘（带大片特效）、岸本画集彩页 Zerochan 1394003（同样是机关里的长门，脸被头发挡得更多）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

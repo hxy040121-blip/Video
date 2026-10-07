@@ -57,3 +57,18 @@
 | 迪奥·布兰度 | 《JOJO的奇妙冒险 星尘斗士》 | TV 动画《JOJO的奇妙冒险 星尘斗士》DIO 官方插画（JoJo Wiki File:DIO Normal SC Infobox Anime.png，1108×1691，wik… |
 | 乔尼·乔斯达 | 《JOJO的奇妙冒险 飙马野郎》 | TV 动画《JOJO的奇妙冒险 飙马野郎》（2026）乔尼·乔斯达官方角色视觉图（JoJo Wiki File:Johnny Joestar Infobox Anime.png，7… |
 | 法尼·瓦伦泰 | 《JOJO的奇妙冒险 飙马野郎》 | 《JOJO的奇妙冒险 飙马野郎》第89话原作彩页（JOJO-D 官方数码上色版，JoJo Wiki File:Valentine heart and actions speech.… |
+| 乔瑟夫·乔斯达（第二部） | 《JOJO的奇妙冒险 战斗潮流》 | TV 动画《JOJO的奇妙冒险》（2012）第21集截图（战斗潮流·瑞士圣莫里茨一段，JoJo Wiki File:BTep21-4.png，1920×1431）：到了瑞士以后的那… |
+| 乔瑟夫·乔斯达（第三部） | 《JOJO的奇妙冒险 星尘斗士》 | TV 动画《JOJO的奇妙冒险 星尘斗士》乔瑟夫官方插画（JoJo Wiki File:Joseph SC Infobox Anime.png，915×1594，wiki 去底的透… |
+| 空条承太郎（第三部） | 《JOJO的奇妙冒险 星尘斗士》 | TV 动画《JOJO的奇妙冒险 星尘斗士》官方设定稿：承太郎彩色头像集（JoJo Wiki File:JotaroP3FaceColor-MS.png，3489×2416，白底），… |
+| 空条承太郎（第六部） | 《JOJO的奇妙冒险 石之海》 | 《JOJO的奇妙冒险 石之海》原作彩色图（JoJo Wiki File:Jotaro SO Infobox Manga.png，1399×2145，wiki 去底的透明图）：第六部… |
+| 恩里克·普奇 | 《JOJO的奇妙冒险 石之海》 | 《JOJO的奇妙冒险 石之海》原作彩色图（JoJo Wiki File:Pucci New Moon Infobox Manga.png，1000×1544，透明底，wiki 注明… |
+| 迪亚哥·布兰度 | 《JOJO的奇妙冒险 飙马野郎》 | TV 动画《JOJO的奇妙冒险 飙马野郎》（2026）迪亚哥·布兰度官方角色视觉图（JoJo Wiki「Diego Brando」词条——即原本世界的迪亚哥——的信息栏图 File… |
+| 苗木诚 | 《弹丸论破 希望的学园与绝望的高中生》 | 《弹丸论破》官方设定集《Dangan Ronpa Visual Fan Book》扫描页（小松崎类绘，Zerochan 1624027，1567×2306，Official Art… |
+| 雾切响子 | 《弹丸论破 希望的学园与绝望的高中生》 | 《新弹丸论破V3》附赠模式（才能开花学园模式）雾切响子官方立绘 Sprite (1)，透明底，859×896（弹丸论破 Wiki File:Danganronpa V3 Bonus… |
+| 言峰绮礼 | 《Fate/Zero》 | ufotable《Fate/Zero》动画设定稿：言峰绮礼表情集（TYPE-MOON Wiki File:Ufotable Fate Zero Kirei Character Sh… |
+| 漩涡长门 | 《火影忍者》 | 《火影忍者疾风传》动画第174集截图（Narutopedia File:Nagato.png，1376×872，Nagato 词条信息栏图）：佩恩来袭一段，坐在机关里的长门，红发垂… |
+| 坂田银时 | 《银魂》 | 《银魂》官方插画（银魂 Wiki File:Gin Gintoki.png，1800×4154，白底，收在 Gintoki Sakata/Gallery）：坂田银时的常服——黑色立… |
+| 托尼·斯塔克 | 《复仇者联盟4：终局之战》（漫威电影宇宙） | 电影《复仇者联盟4：终局之战》（2019）截图（漫威电影宇宙 Wiki File:Tony Home Endgame 02.png，3840×1608）：湖边木屋里的夜，画面左边亮… |
+| 汉尼拔·莱克特 | 《沉默的羔羊》（1991 年电影） | 电影《沉默的羔羊》（1991）剧照（TMDB 该片背景图 aBuaXxmyD92wXbHOF16IXTc4R0J，3072×1729）：安东尼·霍普金斯饰演的汉尼拔·莱克特站在囚室… |
+| 祖国人 | 《黑袍纠察队》（剧集） | 剧集《黑袍纠察队》第五季剧照（The Boys Wiki File:Homelander-scowling-at-edgar-in-the-boys-season-5.png，30… |
+| 约翰·李贝尔特 | 《MONSTER》 | TV 动画《MONSTER》截图（Monster Wiki〔obluda.fandom.com〕File:Johan .png，1434×1079，未注明集数）：成年的约翰，金发、… |

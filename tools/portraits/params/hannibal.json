@@ -1,0 +1,27 @@
+{
+ "id": "hannibal",
+ "source_url": "https://image.tmdb.org/t/p/original/aBuaXxmyD92wXbHOF16IXTc4R0J.jpg",
+ "source_note": "电影《沉默的羔羊》（1991）剧照（TMDB 该片背景图 aBuaXxmyD92wXbHOF16IXTc4R0J，3072×1729）：安东尼·霍普金斯饰演的汉尼拔·莱克特站在囚室石墙前，头发向后梳、穿囚衣，正面直视，嘴角一点笑。",
+ "src": "src/hannibal-1p.png",
+ "eyes": [
+  606,
+  463,
+  774,
+  463
+ ],
+ "scale": 1.05,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   606,
+   463,
+   774,
+   463
+  ],
+  "r": 11
+ },
+ "command": "python3 -I bin/iris.py src/hannibal-1p.png --id hannibal --eyes 606,463,774,463 --r 11 --keep-alpha --scale 1.05",
+ "notes": "人物卡以 1991 年电影（霍普金斯）为准。原图 dl/hannibal/tmdb-16.jpg，裁出 x1150–2550（src/hannibal-1.png），isnet-general-use 抠图（bin/precut.py → src/hannibal-1cut.png），提亮（bin/levels.py 0.02 0.52 1.2 → src/hannibal-1b.png），胶片颗粒很粗，双边滤波去一部分（bin/denoise.py 7 22 5 → src/hannibal-1d.png），顶上补 120px（bin/pad_rot.py --pad 0,120,0,0 → src/hannibal-1p.png，眼坐标加 120）。scale 1.05；眼窝是大片阴影，只染半径 11px 虹膜。不满意：卡上的时间点是片尾比米尼岛（戴遮阳帽、穿浅色热带衣服），那一段只有远景和背影，没有能用的正面胸像，只好用片中的囚室剧照（装束不同，脸和神情对）；颗粒仍明显。备选：TMDB rOYB0MQzKSAhZiWwj6K0Spul68（1600×900 正面特写，头顶和下巴被切掉）、Hannibal Wiki File:Hannibal Lecter (The Silence of the Lambs).jpeg（1920×1036，同类特写）、TMDB s8804uLcuk0LngwP9jdPuIUvtld（宣传照，白衣，侧脸）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

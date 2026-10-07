@@ -1,0 +1,27 @@
+{
+ "id": "joseph3",
+ "source_url": "https://static.jojowiki.com/images/a/a1/latest/20211011184730/Joseph_SC_Infobox_Anime.png",
+ "source_note": "TV 动画《JOJO的奇妙冒险 星尘斗士》乔瑟夫官方插画（JoJo Wiki File:Joseph SC Infobox Anime.png，915×1594，wiki 去底的透明图）：费多拉帽、浅色短袖衬衫、修剪过的灰白胡子，略低头、抬眼看人。",
+ "src": "dl/joseph3/sc-anime.png",
+ "eyes": [
+  449,
+  324,
+  555,
+  317
+ ],
+ "scale": 0.86,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   449,
+   324,
+   555,
+   317
+  ],
+  "r": 10
+ },
+ "command": "python3 -I bin/iris.py dl/joseph3/sc-anime.png --id joseph3 --eyes 449,324,555,317 --r 10 --keep-alpha --scale 0.86",
+ "notes": "透明底直接 --keep-alpha。荒木画风脸窄、帽子高，按眼距统一时头偏大，scale 0.86（dio 0.8、johnny 0.92 之间）。眼窝是墨线阴影，只染半径 10px 虹膜。不满意：帽檐压着、眼睛在阴影里，粉色偏暗；右肩一大块浅色衬衫比脸还亮；眼距只有 106px（放大约 1.6 倍）。备选：JoJo Wiki File:Joseph SC Infobox Manga.png（855×1164，原作彩色，dl/joseph3/sc-manga.png）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

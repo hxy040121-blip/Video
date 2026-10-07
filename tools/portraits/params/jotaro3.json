@@ -1,0 +1,27 @@
+{
+ "id": "jotaro3",
+ "source_url": "https://static.jojowiki.com/images/6/6b/latest/20210512063525/JotaroP3FaceColor-MS.png",
+ "source_note": "TV 动画《JOJO的奇妙冒险 星尘斗士》官方设定稿：承太郎彩色头像集（JoJo Wiki File:JotaroP3FaceColor-MS.png，3489×2416，白底），取其中帽子完整、接近正面的一张（原图 x600–1830, y280–1400）：学生帽（帽檐上方金扣、左侧压扁手掌的金属牌）、高硬领学生服、左领口的金链，冷眼斜视。",
+ "src": "src/jotaro3-1c.png",
+ "eyes": [
+  501,
+  520,
+  636,
+  495
+ ],
+ "scale": 0.9,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   501,
+   520,
+   636,
+   495
+  ],
+  "r": 9
+ },
+ "command": "python3 -I bin/iris.py src/jotaro3-1c.png --id jotaro3 --eyes 501,520,636,495 --r 9 --keep-alpha --scale 0.9",
+ "notes": "原图 dl/jotaro3/ms-face.png，裁成 src/jotaro3-1.png，isnet-anime 抠图（src/jotaro3-1cut.png）；左边贴着相邻头像、底边是设定稿的截断，做渐隐：bin/prep_cut.py src/jotaro3-1cut.png src/jotaro3-1b.png --left 60,200 --bottom 950,1080；头歪着，扶正 10°：bin/pad_rot.py src/jotaro3-1b.png src/jotaro3-1c.png --rot -10 --pts 392,458,521,410（裁切图上的眼睛 → 501,520,636,495）。scale 0.9；只染半径 9px 虹膜。不满意：设定稿平涂，比截图素；肩膀以下靠渐隐；仍是四分之三侧脸、帽檐压着眉。备选：File:Jotaro SC Infobox Anime.png（977×1366 透明底，侧身更多、帽檐压眼）、Zerochan 4071302（1991 年周刊少年 JUMP 电话卡的荒木原画，手里拎着鱼）、File:JotaroStareEgypt.png（第三部动画截图）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

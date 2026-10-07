@@ -1,0 +1,27 @@
+{
+ "id": "naegi",
+ "source_url": "https://static.zerochan.net/Naegi.Makoto.full.1624027.jpg",
+ "source_note": "《弹丸论破》官方设定集《Dangan Ronpa Visual Fan Book》扫描页（小松崎类绘，Zerochan 1624027，1567×2306，Official Art / Scan）：苗木诚立绘一览，取其中正面的一张（原图 x880–1440, y740–1625）：敞开的黑外套、连帽衫、头顶一撮呆毛，皱眉张嘴，像在争论里开口的那一刻。",
+ "src": "src/naegi-1e.png",
+ "eyes": [
+  271,
+  413,
+  366,
+  412
+ ],
+ "scale": 0.9,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   271,
+   413,
+   366,
+   412
+  ],
+  "r": 19
+ },
+ "command": "python3 -I bin/iris.py src/naegi-1e.png --id naegi --eyes 271,413,366,412 --r 19 --keep-alpha --scale 0.9",
+ "notes": "原图 dl/naegi/z1624027.jpg，裁成 src/naegi-1.png，isnet-anime 抠图（src/naegi-1cut.png），顶上补 120px 透明边（bin/pad_rot.py --pad 0,120,0,0 → src/naegi-1p.png）。浅棕色虹膜在调色里太亮、吃不上粉色，先压暗一半：bin/irisdark.py src/naegi-1p.png src/naegi-1d.png 271,413,366,412 19 0.5；扫描纸纹用双边滤波去掉：bin/denoise.py src/naegi-1d.png src/naegi-1e.png 9 35 5。scale 0.9；只染半径 19px 虹膜。不满意：扫描图放大约 2 倍，线条偏软；肩膀以下是立绘原本的截断（底部渐隐盖住）。备选：Zerochan 1624028（同书另一页的立绘一览）、弹丸论破 Wiki 的 Makoto Naegi Halfbody Sprite 系列（PSP/手机版小图）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

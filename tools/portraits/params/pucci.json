@@ -1,0 +1,27 @@
+{
+ "id": "pucci",
+ "source_url": "https://static.jojowiki.com/images/1/1f/latest/20230129212746/Pucci_New_Moon_Infobox_Manga.png",
+ "source_note": "《JOJO的奇妙冒险 石之海》原作彩色图（JoJo Wiki File:Pucci New Moon Infobox Manga.png，1000×1544，透明底，wiki 注明出自单行本第15卷）：新月时期的普奇神父，剃出花纹的白发、额前星形的发际，神父袍上的大十字，正面。",
+ "src": "src/pucci-1L.png",
+ "eyes": [
+  419,
+  273,
+  529,
+  286
+ ],
+ "scale": 0.85,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   419,
+   273,
+   529,
+   286
+  ],
+  "r": 9
+ },
+ "command": "python3 -I bin/iris.py src/pucci-1L.png --id pucci --eyes 419,273,529,286 --r 9 --keep-alpha --scale 0.85",
+ "notes": "原图 dl/pucci/nm-manga.png。深肤色加深紫袍，暗金后脸太暗，先提亮：bin/levels.py dl/pucci/nm-manga.png src/pucci-1L.png 0 0.92 1.25。scale 0.85；只染半径 9px 虹膜。右肩后那条白色飘带保留。不满意：脸上的网点阴影粗；原作上色是紫袍（卡写黑袍，单色后分不出）。备选：File:Pucci New Moon Infobox Anime.png（744×1148 动画版，眼距只有 87px，放大后发糊；dl/pucci/nm-anime.png，eyes 312,205,399,213）、Zerochan 4024014（动画截图 1920×1080，正面，但整帧几乎全黑，提亮后用 GrabCut 抠也和背景粘在一起）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

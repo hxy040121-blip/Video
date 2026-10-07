@@ -1,0 +1,27 @@
+{
+ "id": "tony",
+ "source_url": "https://static.wikia.nocookie.net/marvelcinematicuniverse/images/2/28/Tony_Home_Endgame_02.png/revision/latest?cb=20210601185821",
+ "source_note": "电影《复仇者联盟4：终局之战》（2019）截图（漫威电影宇宙 Wiki File:Tony Home Endgame 02.png，3840×1608）：湖边木屋里的夜，画面左边亮着时间旅行的全息模型，托尼穿深色便服，鬓角花白、修过的山羊胡，歪头斜看——卡上解开时间旅行的那一夜。",
+ "src": "src/tony-1q.png",
+ "eyes": [
+  872,
+  968,
+  1128,
+  927
+ ],
+ "scale": 0.95,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   872,
+   968,
+   1128,
+   927
+  ],
+  "r": 17
+ },
+ "command": "python3 -I bin/iris.py src/tony-1q.png --id tony --eyes 872,968,1128,927 --r 17 --keep-alpha --scale 0.95",
+ "notes": "人物卡以电影（MCU）为准。原图 dl/tony/home02.png 是夜景蓝调、很暗：先提亮（bin/levels.py 0.0 0.6 1.15 → src/tony-1L.png），裁出人物 x800–2800（src/tony-1c.png），isnet-general-use 抠图（bin/precut.py → src/tony-1cut.png），顶上补 200px 并扶正 8°：bin/pad_rot.py src/tony-1cut.png src/tony-1p.png --pad 0,200,0,0 --rot -8 --pts 748,672,996,596（→ 872,968,1128,927）；再提亮并去三成饱和（bin/levels.py 0.02 0.62 1.25 0.3 → src/tony-1q.png）。写实脸按眼距统一时头偏大，scale 0.95（sherlock 0.8）；只染半径 17px 虹膜。不满意：头歪着、眼睛斜看，不是正面；宽银幕画面里人物只到胸口。备选：File:Tony Home Endgame 01.png（同一场，侧脸看向画外）、File:Tony Stark (Endgame).png（同一场的正脸，但低头含泪）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

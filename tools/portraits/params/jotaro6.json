@@ -1,0 +1,27 @@
+{
+ "id": "jotaro6",
+ "source_url": "https://static.jojowiki.com/images/f/fb/latest/20220925234952/Jotaro_SO_Infobox_Manga.png",
+ "source_note": "《JOJO的奇妙冒险 石之海》原作彩色图（JoJo Wiki File:Jotaro SO Infobox Manga.png，1399×2145，wiki 去底的透明图）：第六部的承太郎，帽顶一颗星、帽前手掌金牌，深紫色长大衣（领口星章、细链、两肩大星、袖上 JOJO 字样），正面直视。",
+ "src": "src/jotaro6-1.png",
+ "eyes": [
+  712,
+  333,
+  862,
+  340
+ ],
+ "scale": 0.95,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   712,
+   333,
+   862,
+   340
+  ],
+  "r": 11
+ },
+ "command": "python3 -I bin/iris.py src/jotaro6-1.png --id jotaro6 --eyes 712,333,862,340 --r 11 --keep-alpha --scale 0.95",
+ "notes": "原图是调色板 PNG（dl/jotaro6/so-manga.png），转成 RGBA 存 src/jotaro6-1.png 后直接 --keep-alpha。scale 0.95；只染半径 11px 虹膜。不满意：眼睛一带是原作的网点阴影，暗金调色后像蒙了一层纱；动画版（File:Jotaro SO Infobox Anime.png 381×533、File:Jotaro Stone Ocean Anime Profile.png 全身 879×1854）头太小，没用。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

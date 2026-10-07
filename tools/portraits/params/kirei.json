@@ -1,0 +1,27 @@
+{
+ "id": "kirei",
+ "source_url": "https://static.wikia.nocookie.net/typemoon/images/f/f9/Ufotable_Fate_Zero_Kirei_Character_Sheet2.png/revision/latest?cb=20141018160058",
+ "source_note": "ufotable《Fate/Zero》动画设定稿：言峰绮礼表情集（TYPE-MOON Wiki File:Ufotable Fate Zero Kirei Character Sheet2.png，3354×1722，透明底）。取上排正中那张正面胸像：短发、立领黑神父袍，面无表情的直视。",
+ "src": "src/kirei-1c.png",
+ "eyes": [
+  254,
+  501,
+  417,
+  504
+ ],
+ "scale": 1.1,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   256,
+   502,
+   415,
+   505
+  ],
+  "r": 11
+ },
+ "command": "python3 -I bin/iris.py src/kirei-1c.png --id kirei --eyes 254,501,417,504 --iris 256,502,415,505 --r 11 --soft 0.3 --keep-alpha --scale 1.1",
+ "notes": "与 kiritsugu 同一套设定稿，做法相同。原图 dl/kirei/sheet2.png，裁出 x1260–1960, y0–800 贴到 700×900 透明画布的 y=100 处（src/kirei-1.png）；擦掉左下、右下露进来的相邻头像：bin/prep_cut.py src/kirei-1.png src/kirei-1b.png --erase \"0,790 165,790 165,900 0,900\" --erase \"515,780 700,780 700,900 515,900\" --feather 1；alpha 收 2px（MinFilter 5 + 0.8 模糊 → src/kirei-1c.png），免得设定稿的白描边在暗金里变成亮线。scale 1.1 与 kiritsugu 一致；只染半径 11px 虹膜。不满意：设定稿画到领口就截断，看不到胸前的十字架；平涂偏素。备选：Zerochan 4159426（Fate/Zero 动画截图 1920×1080，带笑的正面特写，但头顶和下巴被画面切掉）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

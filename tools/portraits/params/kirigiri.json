@@ -1,0 +1,27 @@
+{
+ "id": "kirigiri",
+ "source_url": "https://static.wikia.nocookie.net/danganronpa/images/2/2a/Danganronpa_V3_Bonus_Mode_Kyoko_Kirigiri_Sprite_%281%29.png/revision/latest?cb=20171113053847",
+ "source_note": "《新弹丸论破V3》附赠模式（才能开花学园模式）雾切响子官方立绘 Sprite (1)，透明底，859×896（弹丸论破 Wiki File:Danganronpa V3 Bonus Mode Kyoko Kirigiri Sprite (1).png）：一代的装束——长发、齐刘海、左鬓系黑丝带的细辫、深色短外套、白衬衫与领带，面无表情地正视。",
+ "src": "src/kirigiri-1p.png",
+ "eyes": [
+  352,
+  299,
+  454,
+  299
+ ],
+ "scale": 0.92,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   352,
+   299,
+   454,
+   299
+  ],
+  "r": 17
+ },
+ "command": "python3 -I bin/iris.py src/kirigiri-1p.png --id kirigiri --eyes 352,299,454,299 --r 17 --keep-alpha --scale 0.92",
+ "notes": "与 junko 同一来源系列。原图 dl/kirigiri/v3-1.png。浅紫色虹膜吃不上粉色，先压暗：bin/irisdark.py dl/kirigiri/v3-1.png src/kirigiri-1d.png 352,219,454,219 17 0.55；头顶贴着原图上边，补 80px 透明边（bin/pad_rot.py --pad 0,80,0,0 → src/kirigiri-1p.png，眼坐标加 80）。scale 0.92（与 junko 一致）；只染半径 17px 虹膜。不满意：长发很宽，两侧溶进画框边；附赠模式立绘线条比一代 PSP 立绘细。备选：Sprite (13)（略侧目），src/kirigiri-13d.png，eyes 356,218,454,224 --scale 0.92。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

@@ -1,0 +1,27 @@
+{
+ "id": "homelander",
+ "source_url": "https://static.wikia.nocookie.net/amazons-the-boys/images/a/a7/Homelander-scowling-at-edgar-in-the-boys-season-5.png/revision/latest?cb=20260506052520",
+ "source_note": "剧集《黑袍纠察队》第五季剧照（The Boys Wiki File:Homelander-scowling-at-edgar-in-the-boys-season-5.png，3024×1703）：穿深蓝制服、金色高领的祖国人正面直视，抿着嘴的笑停在脸上，眼睛没跟着笑。",
+ "src": "src/homelander-1d.png",
+ "eyes": [
+  688,
+  788,
+  1012,
+  774
+ ],
+ "scale": 1.0,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   688,
+   788,
+   1012,
+   774
+  ],
+  "r": 22
+ },
+ "command": "python3 -I bin/iris.py src/homelander-1d.png --id homelander --eyes 688,788,1012,774 --r 22 --keep-alpha --scale 1.0",
+ "notes": "人物卡以剧集为准。卡上的时间点是第五季终集的椭圆办公室，那一场的截图（File:HomelanderGreetsButcher.png 1366×562、File:Homelanderfinalbattleseason5-1.png 远景）不是太小就是太远，所以用同一季、同一身制服的特写。原图 dl/homelander/scowl.png，裁出 x700–2600（src/homelander-1.png），isnet-general-use 抠图（bin/precut.py），顶上补 150px（bin/pad_rot.py → src/homelander-1p.png），提亮去两成饱和（bin/levels.py 0.03 0.85 1.2 0.2 → src/homelander-1q.png）；蓝眼睛太亮，染出来的粉色发荧光，先把虹膜压暗四成（bin/irisdark.py src/homelander-1q.png src/homelander-1d.png 688,788,1012,774 24 0.6）。scale 1.0；只染半径 22px 虹膜。不满意：制服完好，没有卡上打斗之后的皱和破；肩甲只露出一点。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

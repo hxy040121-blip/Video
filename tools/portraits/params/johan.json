@@ -1,0 +1,27 @@
+{
+ "id": "johan",
+ "source_url": "https://static.wikia.nocookie.net/obluda/images/5/55/Johan_.png/revision/latest?cb=20250513000002",
+ "source_note": "TV 动画《MONSTER》截图（Monster Wiki〔obluda.fandom.com〕File:Johan .png，1434×1079，未注明集数）：成年的约翰，金发、黑色高领毛衣外罩外套，正面直视，半张脸落在斜射的阴影里，神情温和、眼睛里没有笑意。",
+ "src": "src/johan-1b.png",
+ "eyes": [
+  580,
+  568,
+  849,
+  572
+ ],
+ "scale": 1.2,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   580,
+   568,
+   849,
+   572
+  ],
+  "r": 24
+ },
+ "command": "python3 -I bin/iris.py src/johan-1b.png --id johan --eyes 580,568,849,572 --r 24 --keep-alpha --scale 1.2",
+ "notes": "原图 dl/johan/johan-.png，isnet-anime 抠图干净（src/johan-1cut.png）；原帧顶部切到头发，补 150px 透明边后做线性渐隐：bin/pad_rot.py --pad 0,150,0,0 → src/johan-1p.png，bin/prep_cut.py src/johan-1p.png src/johan-1b.png --top 140,420 --feather 0（眼坐标已加 150）。scale 1.2 时脸宽与 light 相当；只染半径 24px 虹膜。不满意：头顶是渐隐出来的，不是完整的发顶。备选：Monster Wiki File:Johan Adult.png（2870×2158，同一动画的截图，头发完整、微笑眯眼、灰色高领加西装外套）——src/johan-2.png（已擦掉头顶一小块树叶），eyes 1257,895,1622,892 --keep-alpha --scale 1.2；选了前者，因为直视和半脸阴影更合卡上「笑起来很柔和，眼睛却不跟着动」。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

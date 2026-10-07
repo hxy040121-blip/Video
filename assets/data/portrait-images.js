@@ -37,5 +37,20 @@ window.PORTRAIT_IMAGES = {
  "frieren": "assets/art/portraits/frieren.webp",
  "dio": "assets/art/portraits/dio.webp",
  "johnny": "assets/art/portraits/johnny.webp",
- "valentine": "assets/art/portraits/valentine.webp"
+ "valentine": "assets/art/portraits/valentine.webp",
+ "joseph2": "assets/art/portraits/joseph2.webp",
+ "joseph3": "assets/art/portraits/joseph3.webp",
+ "jotaro3": "assets/art/portraits/jotaro3.webp",
+ "jotaro6": "assets/art/portraits/jotaro6.webp",
+ "pucci": "assets/art/portraits/pucci.webp",
+ "diego": "assets/art/portraits/diego.webp",
+ "naegi": "assets/art/portraits/naegi.webp",
+ "kirigiri": "assets/art/portraits/kirigiri.webp",
+ "kirei": "assets/art/portraits/kirei.webp",
+ "nagato": "assets/art/portraits/nagato.webp",
+ "gintoki": "assets/art/portraits/gintoki.webp",
+ "tony": "assets/art/portraits/tony.webp",
+ "hannibal": "assets/art/portraits/hannibal.webp",
+ "homelander": "assets/art/portraits/homelander.webp",
+ "johan": "assets/art/portraits/johan.webp"
 };

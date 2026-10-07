@@ -1,0 +1,27 @@
+{
+ "id": "joseph2",
+ "source_url": "https://static.jojowiki.com/images/c/ca/latest/20201025165709/BTep21-4.png",
+ "source_note": "TV 动画《JOJO的奇妙冒险》（2012）第21集截图（战斗潮流·瑞士圣莫里茨一段，JoJo Wiki File:BTep21-4.png，1920×1431）：到了瑞士以后的那身——厚外套、条纹长围巾、露指手套、护耳帽（帽顶被画面切掉），正面直视、嘴角带点坏笑，右手举着拴响球的绳子。",
+ "src": "src/joseph2-1c.png",
+ "eyes": [
+  626,
+  613,
+  921,
+  657
+ ],
+ "scale": 1.0,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   626,
+   613,
+   921,
+   657
+  ],
+  "r": 28
+ },
+ "command": "python3 -I bin/iris.py src/joseph2-1c.png --id joseph2 --eyes 626,613,921,657 --r 28 --keep-alpha --scale 1.0",
+ "notes": "原图 dl/joseph2/BTep21-4.png。isnet-anime 抠图（src/joseph2-1cut.png）左边墙面有残留，用 bin/refine_cut.py（GrabCut）按前景/背景多边形重判：--fg \"320,120;1200,0;1740,0;1920,420;1920,1431;220,1431;280,820\" --bg \"0,470;110,490;230,650;215,1110;0,1190\" → src/joseph2-1.png。原帧偏暗，颜色用提亮的一版（bin/levels.py 0.03 0.85 1.15 → src/joseph2-L.png）；画面下方两颗响球擦掉（人物卡写响球不在身上）：bin/prep_cut.py src/joseph2-1.png src/joseph2-1b.png --rgb src/joseph2-L.png --erase \"230,1230 300,1190 420,1180 520,1220 560,1300 570,1431 220,1431\" --erase \"1260,1300 1360,1260 1470,1270 1560,1330 1600,1431 1240,1431\" --feather 3 --right 1450,1850。顶上补 200px 透明边（bin/pad_rot.py --pad 0,200,0,0），帽顶被原帧切掉，上缘线性渐隐（bin/prep_cut.py --top 220,540 --feather 0 → src/joseph2-1c.png），眼坐标已加 200。眼距 298px，scale 1.0 时头和 jotaro3 相当；只染半径 28px 虹膜。不满意：护耳帽只剩帽檐、头顶靠渐隐；右上角举起的手和横过胸前的绳子还在（手在画框右边淡出）；没找到同一身装束（瑞士段：外套+条纹围巾+护耳帽）又完整的正面官方胸像——JoJo Wiki 的 outfit 参考图里没有这一身，Danbooru/Zerochan 同装束的几乎都是同人。备选：dl/joseph2/BTep21-11.png、BTep23-23.png（同段的特写/中景），Danbooru 9672130（荒木 THE JOJO WORLD 宣传画，装束不对）、11995721（游戏概念图，没穿外套和帽子）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

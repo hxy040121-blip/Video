@@ -1,0 +1,27 @@
+{
+ "id": "gintoki",
+ "source_url": "https://static.wikia.nocookie.net/gintama/images/e/e8/Gin_Gintoki.png/revision/latest?cb=20140205032251",
+ "source_note": "《银魂》官方插画（银魂 Wiki File:Gin Gintoki.png，1800×4154，白底，收在 Gintoki Sakata/Gallery）：坂田银时的常服——黑色立领衣、外面松垮套着只穿一只袖子的白底流水纹和服，一手托腮，死鱼眼带笑看向观者。",
+ "src": "src/gintoki-1c.png",
+ "eyes": [
+  1090,
+  988,
+  1258,
+  990
+ ],
+ "scale": 0.95,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   1090,
+   988,
+   1258,
+   990
+  ],
+  "r": 14
+ },
+ "command": "python3 -I bin/iris.py src/gintoki-1c.png --id gintoki --eyes 1090,988,1258,990 --r 14 --keep-alpha --scale 0.95",
+ "notes": "原图 dl/gintoki/gin-gintoki.png，取上半截（y0–2200，src/gintoki-1.png），isnet-anime 抠图（src/gintoki-1cut.png）。举在画面左边的手臂和木刀「洞爷湖」用多边形擦掉（人物卡写木刀不在身上）：bin/prep_cut.py src/gintoki-1cut.png src/gintoki-1b.png --erase \"0,0 960,0 960,480 880,560 860,700 865,850 900,900 760,930 725,1000 725,1500 760,1700 800,2200 0,2200\" --feather 2；白发白衣在暗金里过亮，压一点：bin/levels.py src/gintoki-1b.png src/gintoki-1c.png 0.0 1.08 0.8。scale 0.95；只染半径 14px 虹膜。不满意：擦掉手臂后左肩只剩一块黑衣剪影；白发仍是全画面最亮的一块；卡上的时间点（将军暗杀篇末，第 524 话）没有专门的官方图，用的是常服的通用插画。备选：银魂 Wiki File:GinSSTimeskip.png（银之魂篇动画截图，端着酒杯低头）、File:Gintoki (Gintama the Final).png（剧场版特写，咧嘴笑，头顶被切掉）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}

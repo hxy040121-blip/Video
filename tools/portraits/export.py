@@ -3,7 +3,7 @@
 
 用法：python3 tools/portraits/export.py <加工目录> [--size 900] [--quality 82]
 输出：assets/art/portraits/<id>.webp（900×1200）与 assets/data/portrait-images.js（window.PORTRAIT_IMAGES）。
-只导出 assets/data/characters.js 里有的角色；缺的会列出来。需要：pip install pillow
+只导出 assets/data/characters.js（与 characters-new.js）里有的角色；缺的会列出来。需要：pip install pillow
 """
 import json, os, subprocess, sys
 from PIL import Image
@@ -15,8 +15,9 @@ def main():
     a = sys.argv[2:]
     size = int(a[a.index('--size') + 1]) if '--size' in a else 900
     q = int(a[a.index('--quality') + 1]) if '--quality' in a else 82
-    ids = json.loads(subprocess.run(['node', '-e', "global.window={};require(process.argv[1]);console.log(JSON.stringify(window.CHARACTERS.map(c=>c.id)))",
-                                     os.path.join(ROOT, 'assets/data/characters.js')], capture_output=True, text=True, check=True).stdout)
+    # characters.js 之外，v4.71 新增的人在 characters-new.js（若存在一并读入）
+    ids = json.loads(subprocess.run(['node', '-e', "global.window={};for(const f of process.argv.slice(1)){try{require(f)}catch(e){if(!/characters-new/.test(f))throw e}};console.log(JSON.stringify(window.CHARACTERS.map(c=>c.id)))",
+                                     os.path.join(ROOT, 'assets/data/characters.js'), os.path.join(ROOT, 'assets/data/characters-new.js')], capture_output=True, text=True, check=True).stdout)
     out_dir = os.path.join(ROOT, 'assets/art/portraits')
     os.makedirs(out_dir, exist_ok=True)
     found, missing, total = {}, [], 0

@@ -1,0 +1,27 @@
+{
+ "id": "diego",
+ "source_url": "https://static.jojowiki.com/images/8/80/latest/20260911174915/Diego_Brando_Infobox_Anime.png",
+ "source_note": "TV 动画《JOJO的奇妙冒险 飙马野郎》（2026）迪亚哥·布兰度官方角色视觉图（JoJo Wiki「Diego Brando」词条——即原本世界的迪亚哥——的信息栏图 File:Diego Brando Infobox Anime.png，1232×1920，wiki 去底的透明图）：DIO 字样的骑手帽、披肩长发、高领骑手上衣，戴手套的手抬到帽边，冷着脸直视。",
+ "src": "src/diego-1r.png",
+ "eyes": [
+  838,
+  631,
+  996,
+  622
+ ],
+ "scale": 0.9,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   838,
+   631,
+   996,
+   622
+  ],
+  "r": 13
+ },
+ "command": "python3 -I bin/iris.py src/diego-1r.png --id diego --eyes 838,631,996,622 --r 13 --keep-alpha --scale 0.9",
+ "notes": "与 johnny 同一组动画视觉图。调色板 PNG 先转 RGBA（src/diego-1.png）；头往一侧歪，补边并扶正：bin/pad_rot.py src/diego-1.png src/diego-1r.png --pad 100,150,100,0 --rot -10 --pts 481,388,635,352（→ 838,631,996,622）。scale 0.9；只染半径 13px 虹膜。不满意：抬起的手占了画面左侧一块；帽子上的 DIO 字很亮。另一个世界来的迪亚哥（Diego Brando (Alternate Universe) 词条）外貌几乎一样，这里取的是原本世界那一条的图。备选：File:Diego Brando Infobox Manga.png（538×809 原作彩色，太小）。（工作目录 scratchpad/portraits-new，不在仓库里；bin/ 下 iris.py=work-F2/irisclip2.py 的副本〔只把路径改到 portraits-new〕，precut.py=work-A/precut_general.py，prep_cut.py/pad_rot.py/levels.py/refine_cut.py/ellipse_top.py 是旧 work 目录脚本的副本；irisdark.py〔浅色虹膜预压暗〕、denoise.py〔双边滤波去纸纹/胶片颗粒〕是这次新写的。下载的原图在 dl/<id>/，读它们的 Python 一律 -I。）"
+}
