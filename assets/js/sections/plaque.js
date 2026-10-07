@@ -2759,14 +2759,6 @@
     window.addEventListener('keydown', e => { if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ') S.ptr = 'keyboard' }, true)
     // 本局钱袋变了（这里的取币与兑换，或庭审、控制台……）
     App.bus.on('econ:change', onEcon)
-    // 模拟庭审赢得的金币：庭审还没开钱袋（econ.source 不是 'trial'）时由这里记进钱袋；
-    // 庭审自己开局、用 App.econ.gain 记账之后，这个事件只是旧的通知，不再重复记
-    App.bus.on('trial:coins', n => {
-      n = Math.floor(+n || 0)
-      const e = econ()
-      if (n <= 0 || (e && e.source === 'trial')) return
-      EC.gain(n, 'trial')
-    })
     App.tick(tick)
   }
 
