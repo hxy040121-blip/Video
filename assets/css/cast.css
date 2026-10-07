@@ -161,6 +161,12 @@
   pointer-events: none; white-space: nowrap;
 }
 .cast-name { font-family: var(--f-display); font-weight: 900; font-size: 14px; line-height: 1.1; letter-spacing: .08em; color: #f0dcae; text-shadow: 0 1px 0 #000; }
+/* 显示名的小铜签：同一个人的两个时间点（卡名括号里的「第二部」「第六部」……） */
+.cast-part {
+  display: inline-block; margin-left: .5em; padding: 2px 2px 1px 4px; vertical-align: 2px;
+  font-family: var(--f-sans); font-weight: 500; font-style: normal; font-size: 9px; line-height: 1; letter-spacing: .18em;
+  color: #e9c78a; border: 1px solid rgba(194,154,91,.55); background: rgba(194,154,91,.1); text-shadow: none;
+}
 .cast-epi { font-family: var(--f-sans); font-size: 9.5px; line-height: 1.2; letter-spacing: .32em; padding-left: .32em; color: rgba(194,154,91,.62); min-height: 1.2em; }
 .cast-item.is-hot .cast-epi, .cast-lv.is-hot .cast-epi { color: #e9c78a; }
 .cast-rivet { position: absolute; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe7b0, #6f5532 70%); }
@@ -260,6 +266,7 @@
 .cast.is-mob .cast-latin { left: 20px; top: calc(13vh + min(17vh, 120px) * 2 + 28px); font-size: 10px; letter-spacing: .3em; }
 .cast.is-mob .cast-name { font-size: 12.5px; }
 .cast.is-mob .cast-epi { font-size: 9px; letter-spacing: .22em; }
+.cast.is-mob .cast-part { font-size: 8.5px; letter-spacing: .12em; padding-left: 3px; }
 .cast.is-mob .cast-plate { min-width: 96px; padding: 6px 12px; }
 .cast.is-mob .cast-hudname { display: none; }
 .cast.is-mob .cast-hud { bottom: 14px; }
@@ -347,6 +354,13 @@
   margin: 0; white-space: nowrap;
 }
 .cast-dos-name span { display: inline-block; }
+/* 显示名：竖排大名字下面一枚小铜签（「第二部」） */
+.cast-dos-name .cast-dos-part {
+  margin-top: .32em; padding: .7em .45em .5em; font-family: var(--f-sans); font-weight: 500; font-size: max(12px, .17em);
+  line-height: 1; letter-spacing: .3em; color: var(--brass); text-shadow: none;
+  border: 1px solid rgba(194,154,91,.6); background: rgba(10,8,9,.55);
+}
+.cast-dos-name--ghost .cast-dos-part { visibility: hidden; }
 .cast-dos-name.is-latin { text-orientation: mixed; letter-spacing: .02em; }
 .cast-dos-name--ghost {
   z-index: 1; left: calc(36vw + 1.1vh); top: calc(9vh + 1.1vh);

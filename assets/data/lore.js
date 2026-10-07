@@ -4,10 +4,12 @@
                   crimeScene 适合作案发现场, weapons 可作凶器之物, floorSurface 地面材质}（洋馆物理层 §1.3 §3 §6）
    atmosphere     洋馆里的短句（均有原文依据）
    clocks         钟与报时（§3.3）        entrance  正门与黑钻石封墙
-   clueTemplates  线索模板：{id, name, text, attribute, predicate, variants[{text, predicate}], source}
+   clueTemplates  线索模板：{id, name, text, attribute, glyph, visible, predicate, variants[{text, predicate}], source}
+                  glyph 证物卡角上的维度图标：height 身高、gender 性别、physique 体格、medical 医护、observation 现场观察、
+                  era 年代与器械、items 随身物；visible 这一维度别人看不看得见（身高、性别、体格、随身物看得见）
                   predicate 是对角色 c（CHARACTERS 的一项）的 JS 表达式字符串，如 "c.heightCm >= 178"
    bodyStages     尸体随死后分钟数的变化（§7.4）
-   causes         死因：{id, name, sign 体表特征, needs 对凶手的要求（predicate 或空）}
+   causes         死因：{id, name, sign 体表特征, needs 对凶手的要求（predicate 或空）, glyph/visible 同上（needs 不空时）}
    phases         一局游戏的循环阶段：{key, title, line, broadcast}
    coins          金币规则摘要      startState  开局初态摘要
    广播句式原文见 WORLD.broadcasts。
@@ -1874,6 +1876,8 @@ window.LORE = {
    "id": "handprint",
    "name": "手印",
    "attribute": "heightCm",
+   "glyph": "height",
+   "visible": true,
    "text": "侧光下，银背镜高处有一枚裸手印，离地约{v}厘米",
    "predicate": "c.heightCm >= 178",
    "variants": [
@@ -1892,6 +1896,8 @@ window.LORE = {
    "id": "woodprint",
    "name": "鞋印",
    "attribute": "heightCm",
+   "glyph": "height",
+   "visible": true,
    "text": "古木地板侧光下有湿鞋印淡渍，鞋码偏大",
    "predicate": "c.heightCm >= 178",
    "variants": [
@@ -1910,6 +1916,8 @@ window.LORE = {
    "id": "spareclothes",
    "name": "换洗衣物",
    "attribute": "heightCm",
+   "glyph": "height",
+   "visible": true,
    "text": "洗衣布草室里一套换洗衣物，尺码偏大",
    "predicate": "c.heightCm >= 178",
    "variants": [
@@ -1924,6 +1932,8 @@ window.LORE = {
    "id": "bloodshirt",
    "name": "冷水血衣",
    "attribute": "gender",
+   "glyph": "gender",
+   "visible": true,
    "text": "冷水洗过仍留淡痕的{v}衣物，塞在套房衣柜下部",
    "predicate": "c.gender === \"男\"",
    "variants": [
@@ -1938,6 +1948,8 @@ window.LORE = {
    "id": "lipstick",
    "name": "杯沿唇印",
    "attribute": "gender",
+   "glyph": "gender",
+   "visible": true,
    "text": "酒杯沿留着一抹口红印，杯身有裸手印",
    "predicate": "c.gender === \"女\"",
    "variants": [
@@ -1956,6 +1968,8 @@ window.LORE = {
    "id": "defense",
    "name": "防御伤",
    "attribute": "physique",
+   "glyph": "physique",
+   "visible": true,
    "text": "死者手臂有防御伤，颈部瘀痕很深",
    "predicate": "c.stats.physique === \"受训\"",
    "variants": [
@@ -1974,6 +1988,8 @@ window.LORE = {
    "id": "freezer",
    "name": "冷冻柜结冻",
    "attribute": "knowsModernDevices",
+   "glyph": "era",
+   "visible": false,
    "text": "尸体冻硬了，和尸僵的硬不一样：进过−18 ℃的冷冻柜",
    "predicate": "c.knowsModernDevices === true",
    "variants": [
@@ -1992,6 +2008,8 @@ window.LORE = {
    "id": "coldpool",
    "name": "冷池浸泡",
    "attribute": "medical",
+   "glyph": "medical",
+   "visible": false,
    "text": "尸体湿冷，僵硬与体温对不上：泡过16 ℃的冷池",
    "predicate": "c.stats.medical !== \"无\"",
    "variants": [
@@ -2010,6 +2028,8 @@ window.LORE = {
    "id": "vessel",
    "name": "大血管一刀",
    "attribute": "medical",
+   "glyph": "medical",
+   "visible": false,
    "text": "只有一刀，切在大腿内侧的大血管上",
    "predicate": "c.stats.medical === \"有\" || c.stats.medical === \"战场急救\"",
    "variants": [
@@ -2028,6 +2048,8 @@ window.LORE = {
    "id": "furniture",
    "name": "家具归位",
    "attribute": "observation",
+   "glyph": "observation",
+   "visible": false,
    "text": "椅子挪走又搬回，皮毯压痕严丝合缝",
    "predicate": "c.stats.observation === \"擅长\"",
    "variants": [
@@ -2042,6 +2064,8 @@ window.LORE = {
    "id": "scrub",
    "name": "擦洗边界",
    "attribute": "observation",
+   "glyph": "observation",
+   "visible": false,
    "text": "玉地血迹擦得极净，连凿纹与拼缝都清过",
    "predicate": "c.stats.observation === \"擅长\"",
    "variants": [
@@ -2056,6 +2080,8 @@ window.LORE = {
    "id": "gloves",
    "name": "手套污印",
    "attribute": "items",
+   "glyph": "items",
+   "visible": true,
    "text": "只有带污的手套印；馆里的手套一样没少",
    "predicate": "c.carried.some(i => i.includes(\"手套\"))",
    "variants": [
@@ -2070,6 +2096,8 @@ window.LORE = {
    "id": "pipe",
    "name": "烟味与烟灰",
    "attribute": "items",
+   "glyph": "items",
+   "visible": true,
    "text": "关门的房里烟味未散，桌上一撮烟斗烟丝灰",
    "predicate": "c.carried.some(i => /烟斗|烟管/.test(i))",
    "variants": [
@@ -2136,7 +2164,9 @@ window.LORE = {
    "id": "strangle",
    "name": "扼颈或勒颈",
    "sign": "颈部瘀痕，眼睑针尖状出血点",
-   "needs": "c.stats.physique === \"受训\""
+   "needs": "c.stats.physique === \"受训\"",
+   "glyph": "physique",
+   "visible": true
   },
   {
    "id": "smother",

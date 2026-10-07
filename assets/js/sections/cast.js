@@ -1,7 +1,7 @@
 /* ==========================================================
    卡池 · cast —— 二层东肖像廊
-   滚动时长廊横向推进：38 幅肖像挂在暗酒红织锦墙上，细黄铜画框（尖拱 / 椭圆 / 内凹角 / 八角，一套四型），
-   画框下一块小铜名牌（名字 + 尚未解出的称号）。
+   滚动时长廊横向推进：53 幅肖像（卡池全部人物卡）挂在暗酒红织锦墙上，上下两排错开半格，细黄铜画框（尖拱 / 椭圆 / 内凹角 / 八角，一套四型），
+   画框下一块小铜名牌（卡名 + 尚未解出的称号；同一个人的两个时间点，卡名括号里的「第二部」之类刻成一枚小铜签）。
    光标是一支蜡烛：靠近的画框被照亮，黄铜反光与投影随烛光移动；远处的肖像沉在黑里，只剩一双双血粉的虹膜在发光
    （位图肖像的虹膜位置见 EYES）。画像随光标微微偏转、像在转头看你。
    你停下不动时它们一幅幅转开、望向长廊东头，眼里的光暗下去；你一动——整条长廊同时转回来，所有的眼睛一齐亮起。
@@ -30,6 +30,11 @@
   const smooth = (a, b, v) => { const t = U.clamp((v - a) / (b - a)); return t * t * (3 - 2 * t) }
   const approach = (cur, to, k, dt) => cur + (to - cur) * (1 - Math.pow(1 - k, dt))
   const two = n => String(n).padStart(2, '0')
+  // 罗马数字（长廊的拉丁字题签：卡池共几幅）
+  const roman = n => [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]
+    .reduce((o, [v, r]) => { while (n >= v) { o += r; n -= v } return o }, '')
+  // 卡名拆成「名字」与括号里的显示名（两位乔瑟夫、两位承太郎：「乔瑟夫·乔斯达（第二部）」→ 乔瑟夫·乔斯达 + 第二部）
+  const splitName = n => { const m = /^(.+?)（([^（）]+)）$/.exec(n || ''); return m ? { main: m[1], part: m[2] } : { main: n || '', part: '' } }
   const typo = s => String(s || '').replace(/'([^'\n]*)'/g, '‘$1’').replace(/"([^"\n]*)"/g, '“$1”')
   const Q = () => (App.quality ? App.quality.level : 2) // 2 全效果 / 1 / 0 最省
 
@@ -173,7 +178,9 @@
     u = Math.min(u, S.mob ? S.vw * 0.5 : 232)
     u = Math.max(u, 120)
     S.u = u
-    const colW = u * (S.mob ? 1.16 : 1.2)
+    // 53 幅：列距比 38 幅时收紧一点（同排相邻两框之间仍留出一指宽），滚动换算也快一些（见下面的 k），
+    // 整条长廊比 38 幅时只长一成左右
+    const colW = u * (S.mob ? 1.14 : 1.17)
     S.introW = S.mob ? S.vw * 0.92 : Math.max(540, S.vw * 0.4)
     const rowH = 1.38 * u + plate + nail
     const y1 = top + nail + (1.38 * u) / 2
@@ -196,7 +203,7 @@
     Object.assign(voidIt, { type: 'arch', w: vw0, h: vh0, x: Math.round(lastC - vw0 / 2), y: Math.round((y1 + y2) / 2 - vh0 / 2) })
     S.trackW = Math.round(lastC + (S.mob ? S.vw * 0.62 : S.vw * 0.5))
     S.travel = Math.max(1, S.trackW - S.vw)
-    S.k = S.mob ? 0.85 : 0.78 // 竖向滚动 1px → 横向推进 1/k px
+    S.k = S.mob ? 0.7 : 0.65 // 竖向滚动 1px → 横向推进 1/k px（38 幅时是 0.85 / 0.78）
     sec.style.height = Math.round(vh + S.travel * S.k) + 'px'
     wall.style.width = fore.style.width = S.trackW + 'px'
     for (const it of S.items) placeItem(it)
@@ -430,7 +437,10 @@
     const frame = el('div.frame', { 'aria-hidden': 'true' })
     const a = el('div.a', { 'aria-hidden': 'true' }, [shadow, win, frame])
     const epiTxt = isVoid ? '·····' : '·'.repeat(Math.max(3, Array.from(c.epithet || '').length))
-    const plate = el('div.plate', null, [el('i.rivet'), el('span.name', { text: isVoid ? '？？？' : c.name }), el('span.epi', { text: epiTxt }), isVoid ? null : el('span.seatno'), el('i.rivet')])
+    const nm = splitName(isVoid ? '？？？' : c.name)
+    const nameEl = el('span.name', { text: nm.main })
+    if (nm.part) nameEl.appendChild(el('i.part', { text: nm.part })) // 「第二部」：名字旁一枚小铜签
+    const plate = el('div.plate', null, [el('i.rivet'), nameEl, el('span.epi', { text: epiTxt }), isVoid ? null : el('span.seatno'), el('i.rivet')])
     // 可交互的窗（透明，形状同窗口）：悬停时静态版会藏起来，热区不能跟着藏
     const hit = el('div.hit', isVoid
       ? { role: 'button', tabindex: '0', 'aria-label': '？', 'data-cursor': '', 'data-cursor-tone': 'blood' }
@@ -586,7 +596,7 @@
       title,
       el('div.hall', { text: '东肖像廊' }),
       el('p.whisper', { text: '画里的人都醒着' }),
-      el('div.latin', { text: 'XXXVIII · EAST GALLERY' }),
+      el('div.latin', { text: roman(N) + ' · EAST GALLERY' }),
     ])
     fore.appendChild(intro)
     // 眼睛的光（浮在黑暗之上）
@@ -1126,15 +1136,19 @@
       por.insertBefore(rim, pimg)
     }
     fig.appendChild(por)
-    const nameLen = Array.from(c.name).length
+    // 标题用卡名：括号里的显示名（第二部、第六部……）不跟着竖排成大字，刻成名字下面一枚小铜签
+    const nm = splitName(c.name)
+    const nameLen = Array.from(nm.main).length + (nm.part ? 1.6 : 0) // 小铜签约占一字半高
     const name = el('h3.dos-name', { 'aria-label': c.name })
     name.style.setProperty('--n', String(Math.max(2, nameLen)))
     const nameChars = []
-    for (const ch of Array.from(c.name)) {
+    for (const ch of Array.from(nm.main)) {
       const s = el('span', { text: ch === '·' ? '・' : ch, 'aria-hidden': 'true' })
       name.appendChild(s)
       nameChars.push(s)
     }
+    const part = nm.part ? el('span.dos-part', { text: nm.part, 'aria-hidden': 'true' }) : null
+    if (part) name.appendChild(part)
     const nameGhost = name.cloneNode(true)
     nameGhost.className = 'cast-dos-name cast-dos-name--ghost'
     nameGhost.setAttribute('aria-hidden', 'true')
@@ -1172,10 +1186,10 @@
     const rd = radar(c, showAxis)
     const tags = el('ul.dos-tags')
     for (const t of c.carried || []) tags.appendChild(el('li', { text: typo(t) }))
-    const stats = el('div.dos-stats', null, [el('div.dos-sk', { text: 'VII · 判定' }), rd.svg, read, (c.carried || []).length ? el('div.dos-sk', { text: '随身物' }) : null, tags])
+    const stats = el('div.dos-stats', null, [el('div.dos-sk', { text: '判定 · 七项' }), rd.svg, read, (c.carried || []).length ? el('div.dos-sk', { text: '随身物' }) : null, tags])
 
     page.append(stripe, block, big, fig, nameGhost, name, info, stats)
-    return { page, c, por, block, stripe, big, fig, name, nameGhost, nameChars, epi, work, metaEl, zh, orig, quote, see, dream, rd, tags, stats, info }
+    return { page, c, por, block, stripe, big, fig, name, nameGhost, nameChars, part, epi, work, metaEl, zh, orig, quote, see, dream, rd, tags, stats, info }
   }
 
   function playPage(P, delay) {
@@ -1193,6 +1207,7 @@
       .fromTo([P.see, P.dream], { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.8, stagger: 0.1, ease: 'expo.out' }, 0.75)
       .fromTo(P.stats.querySelectorAll('.cast-dos-sk'), { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.2 }, 0.3)
       .fromTo(P.orig, { opacity: 0 }, { opacity: 0, duration: 0.01 }, 0)
+    if (P.part) tl.fromTo(P.part, { opacity: 0, yPercent: -40 }, { opacity: 1, yPercent: 0, duration: 0.6, ease: 'expo.out' }, 0.25 + P.nameChars.length * 0.05)
     if (P.tags.children.length) tl.fromTo(Array.from(P.tags.children), { opacity: 0, y: 8, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.06, ease: 'back.out(2)' }, 1.1)
     P.rd.play(d + 0.35)
     App.text.scramble(P.epi, P.c.epithet, { duration: 0.8, delay: d + 0.3 })

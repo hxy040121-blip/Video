@@ -1,5 +1,6 @@
 // 庭审引擎的规则测试：node tools/test-trial.mjs
-// 依据 主持人游戏.md 第三节（投票、平票、误判与结束）、第五节（各身份）、第八节（金币）。
+// 依据 主持人游戏.md 第 3 节（投票、平票、误判与结束）、第 5 节（各身份）、第 7 节（广播与称呼）、第 8 节（金币）；
+// 运行规则 5.4（破绽与察觉）、7.5（结案对账）；洋馆物理层 7（痕迹）、8.3（耗时）。
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -9,6 +10,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 globalThis.window = globalThis
 require(join(ROOT, 'assets/data/world.js'))
 require(join(ROOT, 'assets/data/characters.js'))
+require(join(ROOT, 'assets/data/characters-new.js'))
 require(join(ROOT, 'assets/data/lore.js'))
 const TE = require(join(ROOT, 'assets/js/sections/trial-engine.js'))
 
@@ -101,6 +103,18 @@ section('平票、无结果、误判')
   V.voters.forEach(v => TE.cast(g, T, V, v, v === ids[0] ? ids[1] : ids[0]))
   const r = TE.settle(g, T, V)
   ok(r.outcome === 'unique' && r.base[ids[0]] === 4 && r.totals[ids[0]] === 3, '小丑总票数减一（隐藏修正），仍可成为唯一最高者')
+}
+{
+  // 小丑的能力不会被沉默（主持人游戏 5.2）
+  const { g, ids } = game(5, { [ALL[0]]: '小丑', [ALL[1]]: '沉默者' })
+  const T = trial(g, ids[4])
+  T.phase = 'debate'
+  ok(TE.silence(g, T, ids[1], ids[0]) && T.silenced.includes(ids[0]), '沉默者封锁了小丑')
+  T.phase = 'vote'
+  const V = TE.beginVote(g, T)
+  V.voters.forEach(v => TE.cast(g, T, V, v, v === ids[0] ? ids[1] : ids[0]))
+  const r = TE.settle(g, T, V)
+  ok(r.base[ids[0]] === 4 && r.totals[ids[0]] === 3, '被沉默的小丑仍减一票')
 }
 {
   // 没有并列、但最高票不大于零：两名小丑都没有投票权，第三人（刚才的待处刑者，不能被选）投其中一人
@@ -297,7 +311,7 @@ section('先知、占卜家、敲钟人、恋人、魔术师')
   ok(g.notices.length === before + 1, '先知的通知包括主持人处刑')
   const g2 = game(6, { [ALL[1]]: '占卜家' }, { player: ALL[0] }).g
   const fr = TE.fortune(g2, ALL[1], ALL[0])
-  ok(fr && fr.name === TE.frontName(g2, ALL[0]) && g2.notices.some(n => n.type === 'known'), '占卜家得知当前正位身份名，被查验者收到通知')
+  ok(fr && fr.name === TE.frontName(g2, ALL[0]) && g2.notices.length === 0, '占卜家得知当前正位身份名，被查验者不收到任何通知')
   ok(TE.fortune(g2, ALL[1], ALL[2]) === null, '占卜家每天一次')
 }
 {
@@ -354,12 +368,40 @@ section('受命资格与线索')
     if (TE.frontName(g, c.murderer) === '圣女') saintBad++
     if (c.murderer === g.player || c.victim === g.player || c.victim === c.murderer) bad++
     for (const k of c.clues) if (!TE.pred(k.predicate)(m)) clueBad++
-    if (c.clues.length > 4 || c.clues.length < 1) over++
+    if (c.clues.length !== 3) over++
   }
   ok(cases > 300 && bad === 0, '不能行走者只以毒或门行凶；凶手、死者都不是玩家')
   ok(saintBad === 0, '圣女不会被选中成为受命者')
   ok(clueBad === 0, '每条线索对凶手都为真')
-  ok(over === 0, '线索最多四条')
+  ok(over === 0, '每案恰好三条线索')
+}
+{
+  // 线索去重：同一维度不重复（死因要求的维度也算已用）；每条都标出维度与看不看得见；手印带离地厘米数
+  let cases = 0, dupDim = 0, noDim = 0, causeDup = 0, hand = 0, handBad = 0, labelLong = 0, dimSeen = new Set(), visBad = 0
+  for (let s = 1; s <= 500; s++) {
+    const ids = ALL.slice((s * 7) % 40, (s * 7) % 40 + [8, 12, 15][s % 3])
+    const seats = Array(15).fill(null)
+    ids.forEach((id, i) => { seats[i] = id })
+    const g = TE.create({ seats, seed: s * 17, player: ids[1] })
+    const c = TE.newCase(g)
+    if (c.type !== 'case' || c.lastStanding !== undefined) continue
+    cases++
+    const dims = c.clues.map(k => k.dim)
+    if (dims.some(d => !d)) noDim++
+    if (new Set(dims).size !== dims.length) dupDim++
+    if (c.cause.needs && c.cause.glyph && dims.includes(c.cause.glyph)) causeDup++
+    for (const k of c.clues) {
+      dimSeen.add(k.dim)
+      if (k.visible !== TE.DIM_VISIBLE[k.dim]) visBad++
+      if (Array.from(k.label).length > 12) labelLong++
+      if (k.tpl === 'handprint') { hand++; if (!/约\d+厘米/.test(k.label) || !/离地约\d+厘米/.test(k.text)) handBad++ }
+    }
+  }
+  ok(cases > 400 && noDim === 0 && dupDim === 0, `同一维度不重复（${cases} 案）`)
+  ok(causeDup === 0, '死因要求的维度（扼颈要受训）不再出一条同维度的线索')
+  ok(dimSeen.size === 7 && visBad === 0, '七个维度都会出现；身高、性别、体格、随身物看得见，医护、现场观察、年代与器械看不见')
+  ok(hand > 20 && handBad === 0, `手印卡带「约 N 厘米」（${hand} 张）`)
+  ok(labelLong === 0, '证物卡短名不超过十二个字')
 }
 {
   let narrowed = 0, total = 0
@@ -370,7 +412,7 @@ section('受命资格与线索')
     total++
     if (c.remaining.length <= 2) narrowed++
   }
-  ok(narrowed / total > 0.6, `多数案件把嫌疑人缩到一两人（${narrowed}/${total}）`)
+  ok(narrowed / total > 0.65, `多数案件把嫌疑人缩到一两人（${narrowed}/${total}）`)
 }
 
 /* ---------------- 去向与询问 ---------------- */
@@ -448,7 +490,8 @@ section('去向、询问与拆穿')
 /* ---------------- 调查的文字 ---------------- */
 section('调查的文字')
 {
-  let decoys = 0, empty = 0, herrings = 0, repeats = 0, bodyBad = 0, leads = 0, games = 0
+  let decoys = 0, empty = 0, herrings = 0, repeats = 0, bodyBad = 0, leads = 0, games = 0, facts = 0, contra = 0, herrBad = 0, recheck = 0
+  const texts = []
   for (let s = 1; s <= 60; s++) {
     const ids = ALL.slice(s % 23, s % 23 + 15)
     const seats = Array(15).fill(null)
@@ -459,14 +502,32 @@ section('调查的文字')
     for (let n = 0; n < 6; n++) {
       const c = TE.newCase(g)
       if (c.type !== 'case' || c.lastStanding !== undefined) break
+      const f = TE.caseFacts(c)
       for (const sp of c.spots) {
         if (sp.kind === 'decoy') {
           decoys++
           if (!sp.desc) empty++
           if (seen.has(sp.desc)) repeats++
           seen.add(sp.desc)
-          if (sp.herring) { herrings++; if (!sp.herring.bait || !sp.herring.truth) empty++ }
-        } else if (sp.kind === 'body') { if (!sp.obs) bodyBad++ } else if (sp.lead) leads++
+          if (sp.fact) facts++
+          // 排除性事实不与本案矛盾
+          if ((sp.fact === 'not-dragged' && (f.moved || f.scuffed)) || (sp.fact === 'no-wash' && f.washed) || (sp.fact === 'no-handprint' && f.handprint) ||
+            (sp.fact === 'no-forced' && f.door) || (sp.flavor === 'vessel' && sp.fact === 'not-used' && f.cupUsed) || (sp.fact === 'not-moved' && f.furniture) ||
+            (sp.fact === 'not-from-water' && (f.moved || f.drown)) || (sp.flavor === 'fridge' && f.freezer && sp.fact)) contra++
+          texts.push(sp.desc, sp.detail || '')
+          if (sp.herring) {
+            herrings++
+            if (!sp.herring.bait || !sp.herring.truth) empty++
+            texts.push(sp.herring.bait, sp.herring.truth)
+            const r1 = TE.inspect(g, c, sp.id, null)
+            if (!r1 || !r1.herring || r1.herring.truth || r1.desc === sp.herring.truth) herrBad++ // 当场只看见可疑的东西
+            const t0 = g.minutes
+            const r2 = TE.reexamine(g, c, sp.id)
+            if (r2 && (r2.cost < 3 || r2.cost > 5 || g.minutes !== t0 + r2.cost || r2.truth !== sp.herring.truth)) herrBad++
+            if (r2) recheck++
+            if (TE.reexamine(g, c, sp.id) !== null) herrBad++
+          }
+        } else if (sp.kind === 'body') { if (!sp.obs) bodyBad++; texts.push(sp.obs) } else if (sp.lead) { leads++; texts.push(sp.lead) }
       }
       const res = TE.inspect(g, c, 'body', null)
       if (!res || !res.obs || !res.stage) bodyBad++
@@ -482,6 +543,16 @@ section('调查的文字')
   ok(repeats === 0, '同一局里诱饵点的描写不重复')
   ok(herrings > decoys * 0.12 && herrings < decoys * 0.4, `偶有疑似线索（${herrings} 处）`)
   ok(bodyBad === 0 && leads > 100, '验尸按死因与尸体阶段描写；发现线索时有动作描写')
+  ok(facts > decoys * 0.6 && contra === 0, `陈设点多半给出排除性事实，且不与本案矛盾（${facts}/${decoys}）`)
+  ok(herrBad === 0 && recheck > 30, `疑似线索当场不揭晓，再看一次花三到五分钟才看清（${recheck} 处）`)
+  // 描写里只写馆里实有的东西：灯亮着（没有手电）、刚打扫过（没有积灰）、没有备用钥匙与锁孔、没有便笺与爽身粉
+  const pool = texts.concat(Object.values(TE.texts.FACTS).flat().map(x => x.t), Object.values(TE.texts.DECOY_TEXT).flat(), TE.texts.DECOY_DETAIL,
+    TE.texts.HERRINGS.flatMap(h => [h.bait, h.truth]), Object.values(TE.texts.BODY_TEXT).flat(), Object.values(TE.texts.CLUE_LEAD).flat())
+  const BAD = /手电|积灰|落着灰|薄灰|灰尘|只有灰|的灰|层灰|钥匙孔|锁孔|黄铜钥匙|便笺|爽身粉|上的蜡|残局|冷掉的茶|地面裂开/
+  const badT = pool.filter(t => t && BAD.test(t))
+  ok(badT.length === 0, '描写里没有手电、积灰、钥匙孔、便笺之类馆里没有的东西' + (badT.length ? '（' + badT.slice(0, 3).join('｜') + '）' : ''))
+  const poison = TE.texts.BODY_TEXT.poison.join('')
+  ok(/口唇和指甲发紫/.test(poison) && /喝空/.test(poison) && /气味/.test(poison) && !/发青|还剩一口/.test(poison), '毒杀的尸征：口唇指甲发紫、少量白沫、没有气味、杯子喝空')
 }
 
 /* ---------------- 辩论的节拍 ---------------- */
@@ -528,10 +599,166 @@ section('辩论的节拍')
   ok(respondAsk > 0, '玩家被指认时由他选择怎样回应')
 }
 
+/* ---------------- 破绽与察觉 ---------------- */
+section('破绽与察觉')
+{
+  // 概率按伪装档；被当众拆穿过 +10%；已被确认是凶手 +25%；察觉 一般 50%、善于读人 75%
+  const pickBy = (k, v) => ALL.find(id => CHARACTERS.find(c => c.id === id).stats[k] === v)
+  const hi = pickBy('disguise', '高'), mid = pickBy('disguise', '中'), lo = pickBy('disguise', '低')
+  const { g } = game(5, {}, { ids: [hi, mid, lo].concat(ALL.filter(x => ![hi, mid, lo].includes(x)).slice(0, 3)) })
+  const T0 = trial(g, lo)
+  const p = id => TE.tellChance(g, T0, id)
+  ok(Math.abs(p(hi) - 0.1) < 1e-9 && Math.abs(p(mid) - 0.25) < 1e-9 && Math.abs(p(lo) - 0.45) < 1e-9, '破绽概率：伪装高 10%、中 25%、低 45%')
+  T0.exposed[lo] = 'x'
+  ok(Math.abs(p(lo) - 0.55) < 1e-9, '被当众拆穿过（承压）+10%')
+  T0.knownMurderer = lo
+  ok(Math.abs(p(lo) - 0.7) < 1e-9, '已被确认是凶手（极限）+25%')
+  const rp = ALL.find(id => CHARACTERS.find(c => c.id === id).stats.readsPeople === '是'), nr = ALL.find(id => CHARACTERS.find(c => c.id === id).stats.readsPeople === '一般')
+  ok(TE.noticeChance(g, rp) === 0.75 && TE.noticeChance(g, nr) === 0.5, '察觉：善于读人 75%，一般 50%')
+}
+{
+  // 统计：每一场至多判一次；只判持秘密者；成立率与伪装档相符
+  let rolls = 0, shown = 0, twice = 0, wrongHolder = 0, seenIn = 0, watchers = 0
+  for (let s = 1; s <= 3000; s++) {
+    const { g, ids } = game(8, {}, { seed: s, ids: ALL.slice(s % 40, s % 40 + 8) })
+    const m = ids.find(id => CHARACTERS.find(c => c.id === id).stats.disguise === '中')
+    if (!m) continue
+    const T = trial(g, m)
+    const book = {}
+    const a = TE.rollTell(g, T.case, book, m, ids.filter(x => x !== m), 'accused', T)
+    if (TE.rollTell(g, T.case, book, m, ids, 'accused', T) !== null) twice++
+    const inno = ids.find(x => x !== m)
+    if (TE.rollTell(g, T.case, {}, inno, ids, 'accused', T) !== null) wrongHolder++
+    if (!a) continue
+    rolls++
+    if (a.shown) { shown++; watchers += 7; seenIn += a.seen.length }
+  }
+  ok(twice === 0 && wrongHolder === 0, '每一场至多判一次；不是持秘密者不判')
+  ok(Math.abs(shown / rolls - 0.25) < 0.04, `伪装中档的破绽成立率约 25%（${(shown / rolls * 100).toFixed(1)}%）`)
+  ok(seenIn / watchers > 0.5 && seenIn / watchers < 0.75, `成立后旁人按 50%/75% 察觉（${(seenIn / watchers * 100).toFixed(1)}%）`)
+}
+{
+  // 庭审里：被指认时掷，表现挂在回应上；被拆穿、痕迹被谈起时单独产出 tell；AI 的怀疑度随察觉加权
+  let tells = 0, onResp = 0, bad = 0, perScene = 0, inv = 0, invBad = 0, susp = 0, suspN = 0
+  for (let s = 1; s <= 160; s++) {
+    const ids = ALL.slice((s * 3) % 40, (s * 3) % 40 + 9)
+    const seats = Array(15).fill(null)
+    ids.forEach((id, i) => { seats[i] = id })
+    const g = TE.create({ seats, seed: s * 41, player: ids[0] })
+    const c = TE.newCase(g)
+    if (c.type !== 'case' || c.lastStanding !== undefined) continue
+    const r = TE.interview(g, c, c.murderer)
+    if (r && r.tell) { inv++; if (r.tell.holder !== c.murderer || (r.tell.seen.length && r.tell.seen[0] !== g.player)) invBad++ }
+    TE.courtOpen(g, c)
+    const T = TE.openTrial(g, c)
+    const counts = {}
+    TE.autoTrial(g, T, ev => {
+      if (ev.tell && ev.tell.shown) { onResp++; if (ev.speaker !== ev.tell.holder) bad++ }
+      if (ev.type === 'tell') { tells++; if (!TE.secretHolders(g, c).includes(ev.holder) && !T.executed.some(x => x.id === ev.holder)) bad++ }
+    })
+    for (const tl of T.tellLog) counts[tl.holder] = (counts[tl.holder] || 0) + 1
+    if (Object.values(counts).some(n => n > 1)) perScene++
+    for (const a in T.tellSeen) for (const t of T.tellSeen[a]) {
+      if (!TE.isLiving(g, a) || !TE.isLiving(g, t)) continue
+      const base = TE.suspicion(g, T, a, t)
+      const keep = T.tellSeen[a]; T.tellSeen[a] = []
+      const without = TE.suspicion(g, T, a, t)
+      T.tellSeen[a] = keep
+      suspN++; if (base > without + 1) susp++
+    }
+  }
+  ok(onResp > 0 && bad === 0, `被指认时的破绽挂在本人的回应上（${onResp} 次）；被拆穿、痕迹被谈起时也会判（${tells} 次单独的破绽）`)
+  ok(perScene === 0, '依次发言这一场里，同一人至多判一次破绽')
+  ok(inv > 0 && invBad === 0, `调查期询问凶手也会判破绽，只有问话的人看得见（${inv} 次）`)
+  ok(suspN === 0 || susp === suspN, '察觉到的破绽让 AI 更怀疑那个人')
+}
+
+/* ---------------- 称呼、发现、手段的物理后果 ---------------- */
+section('称呼、发现与手段')
+{
+  const two = ['joseph2', 'joseph3', 'l', 'obito', 'light']
+  const seats = Array(15).fill(null)
+  two.forEach((id, i) => { seats[i * 2] = id })
+  const g = TE.create({ seats, seed: 5 })
+  ok(TE.callOf(g, 'l') === '龙崎' && TE.callOf(g, 'light') === '夜神月', '广播与台词用馆里报的名字（L → 龙崎）')
+  ok(TE.callOf(g, 'joseph2') === '1号' && TE.callOf(g, 'joseph3') === '3号', '同局两人报同一个名字：改说「N号」')
+  ok(TE.callOf(g, 'obito') === '7号', '不报名的人：改说「N号」')
+  const g1 = TE.create({ seats: ['joseph2', 'l'].concat(Array(13).fill(null)), seed: 5 })
+  ok(TE.callOf(g1, 'joseph2') === '乔瑟夫·乔斯达', '同局只有一位乔瑟夫时照常报名字')
+  ok(TE.lineOf(g, 'light', 'accuse', 'l').includes('龙崎'), '人物卡台词的 {X} 也代入报的名字')
+}
+{
+  let self = 0, selfBad = 0, poison = 0, bottleBad = 0, door = 0, doorBad = 0, cases = 0
+  for (let s = 1; s <= 600; s++) {
+    const ids = ALL.slice((s * 11) % 40, (s * 11) % 40 + 10)
+    const seats = Array(15).fill(null)
+    ids.forEach((id, i) => { seats[i] = id })
+    const g = TE.create({ seats, seed: s * 23, player: ids[2] })
+    const c = TE.newCase(g)
+    if (c.type !== 'case' || c.lastStanding !== undefined) continue
+    cases++
+    if (c.selfReport) { self++; if (c.discoverer !== c.murderer || !TE.isLiving(g, c.discoverer)) selfBad++ }
+    else if (c.discoverer === c.murderer) selfBad++
+    if (c.cause.id === 'poison') { poison++; if (!c.bottle || c.bottle.room !== TE.person(g, c.murderer).seat + '号套房' || c.bottle.at > c.tMurder) bottleBad++ }
+    if (c.cause.id === 'door') { door++; if (!c.doorLock || c.doorLock.until - c.doorLock.at !== 60) doorBad++ }
+  }
+  ok(self > 10 && self < cases * 0.25 && selfBad === 0, `凶手看见尸体时偶尔会在心里要求播报，成为发现者（${self}/${cases}）`)
+  ok(poison >= 5 && bottleBad === 0, `女巫的毒：小玻璃瓶在凶手套房的书桌上，取在行凶之前（${poison} 案）`)
+  ok(door >= 5 && doorBad === 0, `典狱长：门锁一小时，发动时全馆广播（${door} 案）`)
+}
+
+/* ---------------- 结案对账 ---------------- */
+section('结案对账（T.log 与 c.record）')
+{
+  let recs = 0, bad = 0, decisive = 0, uniques = 0, empties = 0, logBad = 0, finders = 0
+  for (let s = 1; s <= 120; s++) {
+    const ids = ALL.slice((s * 5) % 40, (s * 5) % 40 + 8)
+    const seats = Array(15).fill(null)
+    ids.forEach((id, i) => { seats[i] = id })
+    const res = TE.autoGame({ seats, seed: s * 7 })
+    const g = res.g
+    for (const r of g.records) {
+      recs++
+      if (!r.murderer || !r.victim || !r.room || r.clues.length !== 3 || !Array.isArray(r.rounds) || !Array.isArray(r.log)) bad++
+      if (r.log.some(e => /^ask-/.test(e.type)) || !r.log.some(e => e.type === 'open')) logBad++
+      for (const k of r.clues) if (k.foundBy) finders++
+      for (const V of r.rounds) {
+        if (V.empty) empties++
+        if (V.kind === 'normal' && V.result && V.result.outcome === 'unique') {
+          uniques++
+          if (V.decisive) { decisive++; if (V.decisive.target !== V.result.pending) bad++ }
+        }
+        if (V.ballots.length && V.voters.length < V.ballots.length) bad++
+      }
+      if (r.solved !== (r.executed.some(x => x.correct))) bad++
+    }
+  }
+  ok(recs > 200 && bad === 0, `每案结案后留下完整的记录：真相、三条线索、每轮选票、处刑（${recs} 案）`)
+  ok(logBad === 0, 'T.log 记下每个演出事件，不含 ask-*')
+  ok(finders > recs, '记录里有每条线索的发现者')
+  ok(uniques > 100 && decisive / uniques > 0.8, `产生唯一结果的投票多半标出决定性的一票（${decisive}/${uniques}）`)
+  void empties
+}
+{
+  // 两人终局：互投并列 → 重投时两人都不能投，界面快进
+  const { g, ids } = game(5)
+  const [a, b] = ids
+  for (const id of ids.slice(2)) TE.person(g, id).alive = false
+  const T = trial(g, b)
+  T.phase = 'vote'
+  let V = TE.beginVote(g, T)
+  TE.cast(g, T, V, a, b); TE.cast(g, T, V, b, a)
+  const r = TE.settle(g, T, V)
+  V = TE.beginVote(g, T)
+  ok(r.outcome === 'tie' && V.empty && V.voters.length === 0, '两人终局并列后的重投没有人能投（标为 empty，界面快进）')
+  const r2 = TE.settle(g, T, V)
+  ok(r2.outcome === 'end' && T.endReason === 'noresult', '随即「连续两次未产生唯一结果，本场审判结束」')
+}
+
 /* ---------------- 台词池 ---------------- */
 section('台词池')
 {
-  for (const f of ['a', 'b', 'c', 'd']) require(join(ROOT, 'assets/data/lines/' + f + '.js'))
+  for (const f of ['a', 'b', 'c', 'd', 'e', 'f']) require(join(ROOT, 'assets/data/lines/' + f + '.js'))
   const P = globalThis.TRIAL_LINES || {}
   const KEYS = ['wake', 'discover', 'react', 'search', 'found', 'statement', 'alibi', 'accuse', 'accuseClue', 'agree', 'doubt', 'defend', 'counter', 'silent', 'vote', 'executed', 'watch', 'right', 'wrong', 'win', 'wish']
   const ALLOW = { discover: ['V'], react: ['V'], search: ['ROOM'], found: ['CLUE'], alibi: ['ROOM', 'TIME'], accuse: ['X'], accuseClue: ['X', 'CLUE'], agree: ['X'], doubt: ['X'], counter: ['X'], vote: ['X'], watch: ['X'], right: ['X'], wrong: ['X'] }
@@ -541,7 +768,7 @@ section('台词池')
     if (!Array.isArray(arr) || !arr.length) { missing.push(id + '.' + k); continue }
     for (const t of arr) for (const m of t.matchAll(/\{(\w+)\}/g)) if (!(ALLOW[k] || []).includes(m[1])) badPh.push(id + '.' + k)
   }
-  ok(missing.length === 0, '三十八人每个场合都有台词' + (missing.length ? '（缺 ' + missing.slice(0, 6).join('、') + '）' : ''))
+  ok(ALL.length === 53 && missing.length === 0, '53 人每个场合都有台词' + (missing.length ? '（缺 ' + missing.slice(0, 6).join('、') + '）' : ''))
   ok(badPh.length === 0, '占位符只用该场合允许的')
 }
 

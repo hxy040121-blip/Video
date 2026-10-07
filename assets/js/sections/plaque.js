@@ -7,13 +7,21 @@
      （WORLD.prices.void）不刻在牌上。
      光标是一束掠射的光：牌面高光、拉丝反光、框的投影与每一行刻字的阴阳边随光源方位实时变化。
    · 理币盘：收纳台白玉台面上的白玉理币盘，十五摞 × 十枚，整列居中（Canvas 2D 简易透视）。
-     点一摞取一枚，金币带着拖影飞进右下角「你的钱袋」。
-   · 兑换：悬停条目 = 报价（需要几枚），点击 = 同意。一枚一百分，按整枚付，不找零。
-     金币从钱袋飞向条目、熔进铜牌，条目一亮，物品名从光标处的墨里浮出（东西出现在身边）。
-     手机：第一下报价，第二下同意。
-   · 退出券：悬停时浮现一扇由 500 个空位排成的门，只有馆里现存的金币能填进去。
-     点它：铜牌深处一声闷响，整块铜牌轻震，那一条的血粉光熄灭片刻。
-   App.state.coins = 钱袋里的枚数；trial:coins（模拟庭审赢得的金币）在进入本板块时落进钱袋。
+     点一摞取一枚，金币带着拖影飞进右下角「你的钱袋」。第一次碰的那一摞是「你的」；你有了一摞之后再拿的，
+     是「别人的那一摞」（拿得到，抢夺不罚，只是看得见）。
+   · 钱袋就是这一局的钱袋 App.state.econ（core/app.js 的 App.econ）：铜牌与模拟庭审读写同一份，开新局就换掉。
+   · 兑换（价目表 8.2）：悬停条目 = 报价（需要几枚；不足整枚的画成缺一块的币），点击 = 同意。
+     整百的条目点一下即成交（照牌价买，视为同意）；不整百的放进收纳台上「这一次兑换」的便笺，
+     写成「70 + 30 = 100」，凑不满整百时同意钮是灰的、缺的那一块在呼吸（添东西凑满）。只能用身上的金币。
+     便笺开着时，再点的条目都进便笺（这一次兑换还没结）。
+     金币从钱袋飞向条目（或便笺）、熔掉，物品名从光标处的墨里浮出；买到的东西刻成小牌落在收纳台的白玉台面上，留着。
+     服务在你的套房兑现（号牌 = 房号）。手机：第一下报价，第二下同意。
+   · 默念：「未列之物，问价即答」一行（与钱袋旁的小钮）——第 10 节牌外价目只在这里，只对你报价，问过的价记住；
+     也能念几条会「不成立」的请求，只得知不成立，不收金币。第 10 节绝不刻上铜牌。
+   · 修复身体残疾：修的是「你」（econ.me，庭审里选的人；没有就先选）；卡上没写明残疾的，报价时就不成立。
+   · 退出券：悬停时浮现一扇由 500 个空位排成的门，只有馆里现存的金币能填进去；门旁写着这一局的真实数字
+     （开局全馆 150 枚 / 每审结一批每人 5–10 枚 / 一张 500 枚）。钱袋不够：铜牌深处一声闷响，那一条的血粉光熄灭片刻。
+     够了才能买；买下后多一步「持券，向主持人请求离馆」，之后 econ.exited（离馆，不是死亡），不再兑换。
    ========================================================== */
 (function () {
   'use strict'
@@ -28,29 +36,41 @@
      数据
      ===================================================================== */
   const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  const coinsFor = pts => Math.max(1, Math.ceil(pts / 100)) // 按整枚付，不找零
+  // 一枚一百分。不足整枚的不向上取整：一次兑换的总价必须正好是整百（价目表 8.2），差的添东西凑满
+  const kindOf = name => /退出券/.test(name) ? 'ticket' : /修复身体残疾/.test(name) ? 'repair' : /服务/.test(name) ? 'service' : 'item'
+  const mkItem = (name, pts, off) => ({ name, pts, coins: pts / 100, round: pts % 100 === 0, kind: kindOf(name), off: !!off })
   const CHS = (PR.chapters || []).map(ch => ({
     title: ch.title || '',
     exit: /离场/.test(ch.title || ''),
-    items: (ch.items || []).map(it => (it.sub ? { sub: it.sub } : { name: it.item, pts: +it.points || 0, coins: coinsFor(+it.points || 0) })),
+    items: (ch.items || []).map(it => (it.sub ? { sub: it.sub } : mkItem(it.item, +it.points || 0))),
   }))
-  const EXIT_CH = CHS.find(c => c.exit) || { title: '六、离场', exit: true, items: [{ name: '退出券一张', pts: 50000, coins: 500 }] }
-  const EXIT = EXIT_CH.items.find(i => i.name) || { name: '退出券一张', pts: 50000, coins: 500 }
+  const EXIT_CH = CHS.find(c => c.exit) || { title: '六、离场', exit: true, items: [mkItem('退出券一张', 50000)] }
+  const EXIT = EXIT_CH.items.find(i => i.name) || mkItem('退出券一张', 50000)
   const BODY = CHS.filter(c => !c.exit)
   const HOW = PR.how || []
   const NST = 15 // 十五摞
   const PER = 10 // 每摞十枚
+  const EC = App.econ
+  const econ = () => App.state.econ
+  // 短名：牌外条目冒号后面是说明（「镇静剂一针：注射后……」），便笺与台面上的小牌只刻冒号前
+  const short = name => String(name).split('：')[0]
+  // 「你」的套房：号牌 = 房号
+  const suiteText = () => { const e = econ(); return e && e.seat ? '在你的 ' + e.seat + ' 号套房兑现' : '在你的套房兑现' }
 
   /* =====================================================================
      状态
      ===================================================================== */
   const S = {
     E: {}, el: null, visible: false,
-    coins: 0, // 钱袋里的真实枚数（= App.state.coins）
+    coins: 0, // 钱袋里的真实枚数（= App.state.econ.coins；还没开局为 0）
     shown: 0, // 钱袋上显示的数（动画中可能落后于真实值）
-    spent: 0, // 已熔进铜牌的枚数
-    rain: 0, // 庭审赢得、尚未落进钱袋的枚数
-    stacks: new Array(NST).fill(PER),
+    rain: 0, // 别处（庭审）记进钱袋、尚未落进钱袋图标的枚数
+    stacks: new Array(NST).fill(PER), // 理币盘每摞剩几枚（econ.tray 的镜像，画布用）
+    owner: new Array(NST).fill(null), // 每摞是谁的（econ.tray[i].owner）
+    game: 0, // 当前钱袋的局号
+    self: false, // 正在由本板块改钱袋（econ:change 的监听据此不重复演）
+    note: [], // 这一次兑换的便笺：[{ it, qty }]
+    noteBusy: false,
     eng: [], // 刻字：光照变量的载体
     quoted: null, quoteT: 0,
     hov: -1,
@@ -65,11 +85,12 @@
   const L = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.42, f: 1 }
   const trayLeft = () => S.stacks.reduce((a, b) => a + b, 0)
 
-  function setCoins(n) {
-    S.coins = Math.max(0, Math.round(n))
-    App.state.coins = S.coins
-    App.bus.emit('coins:change', S.coins)
+  // 由本板块改钱袋：监听 econ:change 时不当作「别处来的金币」再演一遍
+  function self(fn) {
+    S.self = true
+    try { return fn() } finally { S.self = false }
   }
+  const left = () => { const e = econ(); return !!(e && e.exited) }
 
   /* =====================================================================
      颜色坡道（Canvas 用）
@@ -312,7 +333,21 @@
     // 兑换方式 + 第 1 到第 5 节，分三栏
     const how = U.el('div.plaque-blk.plaque-how')
     how.appendChild(reg(U.el('h3.plaque-h.plaque-eng.plaque-reveal', { text: '兑换方式' }), 1.3))
-    for (const t of HOW) how.appendChild(reg(U.el('p.plaque-p.plaque-eng.plaque-reveal', { text: t }), 1))
+    for (const t of HOW) {
+      const p = reg(U.el('p.plaque-p.plaque-eng.plaque-reveal', { text: t }), 1)
+      // 「未列之物，问价即答」：默念的入口（牌外价目只在默念里，不刻在牌上）
+      if (/问价即答/.test(t)) {
+        p.classList.add('plaque-ask')
+        p.setAttribute('role', 'button')
+        p.setAttribute('tabindex', '0')
+        p.setAttribute('data-cursor', '默念')
+        p.appendChild(U.el('i.plaque-ask-ico', { 'aria-hidden': 'true' }))
+        p.addEventListener('click', () => openAsk())
+        p.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAsk() } })
+        E.askLine = p
+      }
+      how.appendChild(p)
+    }
     const blocks = [{ el: how, h: 2.2 + HOW.reduce((a, t) => a + Math.ceil(Array.from(t).length / 16) * 1.05 + 0.35, 0) }]
     // 估高：名字长过十二个字的条目在栏里折成两行（v4.71 的铜牌上这样的长名多了，落款圆章要放进真正最矮的那一栏）
     for (const ch of BODY) blocks.push({ el: chapterEl(ch), h: 2.2 + ch.items.reduce((a, it) => a + (it.sub ? 1.8 : Array.from(it.name).length > 12 ? 1.75 : 1), 0) })
@@ -355,15 +390,24 @@
       E.stackBtns.push(b)
     }
     E.trayWrap.append(E.trayCv, E.hits)
-    E.table.appendChild(E.trayWrap)
+    // 交付：买到的东西刻成小牌，落在收纳台的白玉台面上（理币盘前），留着
+    E.goods = U.el('div.plaque-goods', { role: 'list', 'aria-label': '收纳台' })
+    E.table.append(E.trayWrap, E.goods)
     E.scene.append(E.cap, E.wall, E.table)
 
-    // —— 你的钱袋 ——
+    // —— 视口右下：这一次兑换的便笺、持券离馆、默念、「你」、钱袋（同一个 sticky 层） ——
     E.purseIco = U.el('span.plaque-purse-ico', {}, [U.el('i', { text: '100' })])
     E.purseN = U.el('b.plaque-purse-n', { text: '0' })
     E.purse = U.el('div.plaque-purse.is-empty', { role: 'status', 'aria-live': 'polite' }, [E.purseIco, E.purseN])
+    E.askBtn = U.el('button.plaque-dock-ask', { type: 'button', 'aria-label': '默念', 'data-cursor': '默念', onclick: () => openAsk() }, [U.el('i')])
+    E.meBtn = U.el('button.plaque-dock-me', { type: 'button', 'aria-label': '你', 'data-cursor': '你', hidden: true, onclick: () => pickMe() })
+    E.req = U.el('button.plaque-req', { type: 'button', 'data-cursor': '离馆', 'data-cursor-tone': 'blood', hidden: true, onclick: () => requestExit() }, [U.el('i.plaque-req-ico'), U.el('span', { text: '持券，向主持人请求离馆' })])
+    E.note = buildNote()
+    E.dockRow = U.el('div.plaque-dock-row', {}, [E.askBtn, E.meBtn, E.purse])
+    E.dockIn = U.el('div.plaque-dock-in', {}, [E.note, E.req, E.dockRow])
+    E.dock = U.el('div.plaque-dock', {}, [E.dockIn])
 
-    el.append(E.fx, E.scene, E.inks, E.purse)
+    el.append(E.fx, E.scene, E.inks, E.dock)
   }
 
   // 按屏宽分栏（三栏 / 两栏 / 单栏），章节不拆开，使最高的一栏尽量矮
@@ -385,7 +429,7 @@
     return true
   }
 
-  function stackLabel(i) { return (i + 1) + ' · ' + S.stacks[i] }
+  function stackLabel(i) { return (i + 1) + ' · ' + S.stacks[i] + (S.owner[i] === 'me' ? ' · 你的' : '') }
 
   /* =====================================================================
      铜牌的光：光标是一束掠射的光
@@ -636,7 +680,7 @@
   }
 
   /* =====================================================================
-     报价 · 兑换
+     报价 · 兑换（价目表 8.2：报价只给本人；照牌价买视为同意；总价正好整百；只用身上的金币）
      ===================================================================== */
   function bindItem(b, exit) {
     const mouseLike = e => e.pointerType === 'mouse' || e.pointerType === 'pen'
@@ -647,16 +691,41 @@
     b.addEventListener('click', e => (exit ? exitClick(e) : itemClick(b, e)))
   }
 
-  function renderNeed(it) {
-    const E = S.E, n = it.coins, have = S.coins
-    E.need.textContent = ''
-    E.need.classList.toggle('is-short', have < n)
-    if (n <= 10) {
-      for (let i = 0; i < n; i++) E.need.appendChild(U.el('i.plaque-coin' + (i < have ? '' : '.is-hollow')))
-    } else {
-      E.need.appendChild(U.el('i.plaque-coin' + (have >= n ? '' : '.is-hollow')))
-      E.need.appendChild(U.el('b.plaque-need-n', { text: '×' + n }))
+  // 一枚币的图形：满的 / 空心（钱袋里没有）/ 缺一块（不足整枚，f 是有的那一部分 0–1）
+  function coinEl(have, f) {
+    if (f != null && f < 1) {
+      const c = U.el('i.plaque-coin.is-part')
+      c.style.setProperty('--f', Math.round(f * 100) + '%')
+      return c
     }
+    return U.el('i.plaque-coin' + (have ? '' : '.is-hollow'))
+  }
+  // 把分数画成金币：整枚的一枚枚摆出来（多于十枚时一枚 + ×n），零头画成缺一块的币
+  function coinsInto(box, pts, have) {
+    const whole = Math.floor(pts / 100), frac = (pts % 100) / 100
+    if (whole <= 10) for (let i = 0; i < whole; i++) box.appendChild(coinEl(i < have))
+    else {
+      box.appendChild(coinEl(have >= whole))
+      box.appendChild(U.el('b.plaque-need-n', { text: '×' + fmt(whole) }))
+    }
+    if (frac > 0) box.appendChild(coinEl(true, frac))
+  }
+
+  function renderNeed(it) {
+    const E = S.E, N = E.need, have = S.coins
+    N.textContent = ''
+    N.classList.remove('is-short', 'is-void', 'is-who', 'is-frac')
+    if (left()) { N.classList.add('is-void'); N.appendChild(U.el('b.plaque-need-v', { text: '离馆' })); return }
+    if (it.kind === 'repair') {
+      const e = econ(), me = e && e.me
+      // 还不知道「你」是谁：一个空着的人形，点下去先选人
+      if (!me) { N.classList.add('is-who'); N.appendChild(U.el('i.plaque-need-who')); return }
+      // 卡上没写明残疾（或已修好）：报价时就告知不成立，不收金币
+      if (!EC.disability(me) || e.repaired[me]) { N.classList.add('is-void'); N.appendChild(U.el('b.plaque-need-v', { text: '不成立' })); return }
+    }
+    N.classList.toggle('is-short', have < Math.ceil(it.coins))
+    N.classList.toggle('is-frac', !it.round)
+    coinsInto(N, it.pts, have)
   }
   // 报价落在这一行的点线上，紧挨着分数（不遮别的行）
   function placeNeed(b) {
@@ -693,6 +762,11 @@
       App.audio.sfx('click')
       return
     }
+    const it = b._it
+    if (left()) return leftRefuse(b)
+    if (it.kind === 'repair') return repairClick(b, e)
+    // 不整百的、或这一次兑换的便笺还开着：放进便笺（添东西凑满）；整百的点一下即成交（照牌价买，视为同意）
+    if (S.note.length || !it.round) return addToNote(it, b)
     buy(b, e)
   }
 
@@ -707,25 +781,15 @@
     return fallback || { x: L.x, y: L.y }
   }
 
-  function buy(b, e) {
-    const it = b._it
-    if (b._busy) return
-    if (S.coins < it.coins) return refuse(b)
-    b._busy = true
-    const n = it.coins
-    const before = S.coins
-    S.rain = 0
-    setCoins(S.coins - n)
-    S.spent += n
-    unquote()
-    const tap = pointOf(e, b)
-    const vis = S.reduced ? Math.min(n, 4) : Math.min(n, 24)
+  // 付款的演出：金币一枚枚从钱袋飞出，熔在 anchor 处。first：第一枚落下时；done：最后一枚落下时
+  function payFly(n, before, anchor, first, done) {
+    const vis = Math.max(1, S.reduced ? Math.min(n, 4) : Math.min(n, 24))
     const gap = vis > 12 ? 0.045 : 0.08
-    const anchor = () => { const r = b._pts.getBoundingClientRect(); return { x: r.left + r.width * 0.5, y: r.top + r.height * 0.55, r: 4 } }
+    const game = S.game
     let landed = 0
     for (let k = 0; k < vis; k++) {
       gsap.delayedCall(k * gap, () => {
-        S.shown = Math.max(S.coins, Math.round(before - (n * (k + 1)) / vis))
+        if (S.game === game) S.shown = Math.max(S.coins, Math.round(before - (n * (k + 1)) / vis))
         paintPurse(false)
         if (k % 2 === 0) App.audio.sfx('coin', { volume: 0.35, pitch: 1.15 + Math.random() * 0.2, pan: 0.6 })
         const p = purseC()
@@ -734,19 +798,51 @@
           arrive: () => {
             landed++
             melt(anchor)
-            if (landed === 1) { App.audio.sfx('coins', { volume: 0.85 }); heat(b) }
-            if (landed === vis) done()
+            if (landed === 1 && first) first()
+            if (landed === vis && done) done()
           },
         })
       })
     }
-    function done() {
+  }
+
+  // 一次成交（整百的条目、修复身体残疾）
+  function buy(b, e, list) {
+    const it = b._it
+    if (b._busy) return
+    list = list || [{ name: it.name, pts: it.pts }]
+    const before = S.coins
+    const r = self(() => EC.pay(list))
+    if (!r.ok) return r.reason === 'repair' ? voidRow(b) : r.reason === 'exited' ? leftRefuse(b) : refuse(b)
+    b._busy = true
+    S.rain = 0
+    unquote()
+    const tap = pointOf(e, b)
+    const anchor = () => { const q = b._pts.getBoundingClientRect(); return { x: q.left + q.width * 0.5, y: q.top + q.height * 0.55, r: 4 } }
+    payFly(r.coins, before, anchor, () => { App.audio.sfx('coins', { volume: 0.85 }); heat(b) }, () => {
       lightRow(b)
       gsap.delayedCall(0.36, () => {
-        ink(it.name, cursorNow(S.fine ? null : tap))
+        deliver(r.items, cursorNow(S.fine ? null : tap))
         b._busy = false
       })
+    })
+  }
+
+  // 交付：东西刻成小牌落在收纳台上；物品名从光标处的墨里浮出（服务：在你的套房兑现；修复：卡上那一句被抹去）
+  function deliver(items, at) {
+    const goods = items.filter(x => x.kind !== 'repair')
+    if (goods.length) renderGoods(goods.map(x => x.name))
+    renderDock()
+    const x = items[0]
+    if (!x) return
+    if (x.kind === 'repair') {
+      ink(EC.disability(x.who) || x.name, at, { struck: true })
+      App.flash(App.color.bone, { opacity: 0.25, duration: 1.4 })
+      return
     }
+    if (x.kind === 'service') return ink(suiteText(), at)
+    const names = items.map(i => short(i.name)).join('、')
+    ink(items.length > 1 && Array.from(names).length > 16 ? short(x.name) + '……' : names, at)
   }
 
   function heat(b) {
@@ -770,15 +866,32 @@
     b._lt = setTimeout(() => b.classList.remove('is-lit'), 260)
   }
 
-  function refuse(b) {
-    App.audio.sfx('wrong', { volume: 0.7 })
-    // 这一行连同它的阴阳边（影子副本里的同一行）一起抖
+  // 这一行连同它的阴阳边（影子副本里的同一行）一起抖
+  function shakeRow(b) {
     const rows = [b].concat(twinsOf(b._pts).map(t => t.parentElement).filter(Boolean))
     gsap.killTweensOf(rows, 'x')
     if (!S.reduced) gsap.fromTo(rows, { x: 0 }, { keyframes: { x: [0, -6, 5, -4, 3, -1.5, 0] }, duration: 0.42, ease: 'none', clearProps: 'transform' })
+  }
+  // 身上的不够：不成立
+  function refuse(b) {
+    App.audio.sfx('wrong', { volume: 0.7 })
+    shakeRow(b)
     purseShort()
     quote(b, S.ptr === 'touch')
     if (trayLeft() > 0) trayHint()
+  }
+  // 不成立的请求：报价处只显出「不成立」，不收金币
+  function voidRow(b) {
+    App.audio.sfx('wrong', { volume: 0.5, pitch: 0.8 })
+    shakeRow(b)
+    quote(b, S.ptr === 'touch')
+  }
+  // 已离馆：什么都换不到了
+  function leftRefuse(b) {
+    App.audio.sfx('door', { volume: 0.45, pitch: 0.6 })
+    if (b && b._pts) quote(b, S.ptr === 'touch')
+    const D = S.E.dockIn
+    if (!S.reduced) gsap.fromTo(D, { x: 0 }, { keyframes: { x: [0, -6, 5, -3, 0] }, duration: 0.4, ease: 'none', clearProps: 'transform' })
   }
 
   function purseShort() {
@@ -792,13 +905,15 @@
   }
 
   /* ---------- 墨：物品名从光标处的墨里浮出 ---------- */
-  // 墨字挂在板块上（跟着页面走），不挂在视口层
-  function ink(text, at) {
+  // 墨字挂在板块上（跟着页面走），不挂在视口层。struck：一道划痕把这句抹去（修复身体残疾）
+  function ink(text, at, opts) {
+    opts = opts || {}
     const E = S.E
     const fr = S.el.getBoundingClientRect()
-    const node = U.el('div.plaque-ink')
-    const chars = Array.from(text).map(ch => U.el('span', { text: ch }))
-    node.append(...chars)
+    const chars = Array.from(text)
+    const node = U.el('div.plaque-ink' + (chars.length > 9 ? '.is-long' : '') + (opts.struck ? '.is-struck' : ''))
+    const spans = chars.map(ch => U.el('span', { text: ch }))
+    node.append(...spans)
     E.inks.hidden = false
     E.inks.appendChild(node)
     const w = node.offsetWidth, h = node.offsetHeight
@@ -810,9 +925,307 @@
     if (S.reduced) {
       gsap.fromTo(node, { opacity: 0 }, { opacity: 1, duration: 0.5 })
     } else {
-      gsap.fromTo(chars, { opacity: 0, yPercent: 70, scaleY: 1.5, filter: 'blur(12px)' }, { opacity: 1, yPercent: 0, scaleY: 1, filter: 'blur(0px)', duration: 1.2, stagger: 0.07, ease: 'expo.out', delay: 0.12 })
+      gsap.fromTo(spans, { opacity: 0, yPercent: 70, scaleY: 1.5, filter: 'blur(12px)' }, { opacity: 1, yPercent: 0, scaleY: 1, filter: 'blur(0px)', duration: 1.2, stagger: Math.min(0.07, 1 / spans.length), ease: 'expo.out', delay: 0.12 })
     }
-    gsap.to(node, { opacity: 0, y: -28, filter: 'blur(8px)', duration: 1.4, delay: 3, ease: 'power2.in', onComplete: () => { node.remove(); if (!E.inks.childElementCount) E.inks.hidden = true } })
+    gsap.to(node, { opacity: 0, y: -28, filter: 'blur(8px)', duration: 1.4, delay: opts.struck ? 3.6 : 3, ease: 'power2.in', onComplete: () => { node.remove(); if (!E.inks.childElementCount) E.inks.hidden = true } })
+  }
+
+  /* ---------- 这一次兑换的便笺 ---------- */
+  function buildNote() {
+    const E = S.E
+    E.noteList = U.el('div.plaque-note-list')
+    E.noteSum = U.el('div.plaque-note-sum')
+    E.noteCoins = U.el('div.plaque-note-coins', { 'aria-hidden': 'true' })
+    E.noteOk = U.el('button.plaque-note-ok', { type: 'button', 'data-cursor': '同意', onclick: () => noteAgree() }, [U.el('span', { text: '同意' })])
+    E.noteX = U.el('button.plaque-note-x', { type: 'button', 'aria-label': '作罢', 'data-cursor': '作罢', onclick: () => { App.audio.sfx('whoosh', { volume: 0.3 }); clearNote() } })
+    const foot = U.el('div.plaque-note-foot', {}, [E.noteCoins, E.noteOk])
+    return U.el('div.plaque-note', { hidden: true, role: 'group', 'aria-label': '这一次兑换' }, [E.noteX, E.noteList, E.noteSum, foot])
+  }
+  function addToNote(it, b) {
+    if (S.noteBusy) return
+    if (left()) return leftRefuse(b)
+    const had = S.note.length
+    const x = S.note.find(n => n.it.name === it.name)
+    if (x) x.qty++
+    else S.note.push({ it, qty: 1 })
+    App.audio.sfx('card', { volume: 0.5 })
+    if (b) lightRow(b)
+    renderNote(it.name)
+    if (!had) showNote()
+  }
+  function renderNote(bump) {
+    const E = S.E
+    const total = S.note.reduce((a, x) => a + x.it.pts * x.qty, 0)
+    E.noteList.textContent = ''
+    for (const x of S.note) {
+      const chip = U.el('button.plaque-note-chip', { type: 'button', 'data-cursor': '−', title: x.it.name }, [
+        U.el('span.plaque-note-name', { text: short(x.it.name) }),
+        x.qty > 1 ? U.el('b.plaque-note-q', { text: '×' + x.qty }) : null,
+      ])
+      chip.addEventListener('click', () => noteRemove(x))
+      E.noteList.appendChild(chip)
+      if (bump === x.it.name && !S.reduced) gsap.fromTo(chip, { scale: 0.72, opacity: 0.2 }, { scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(3)', clearProps: 'transform,opacity' })
+    }
+    // 「70 + 30 = 100」
+    const round = total > 0 && total % 100 === 0
+    E.noteSum.textContent = ''
+    E.noteSum.append(U.el('span', { text: S.note.map(x => fmt(x.it.pts) + (x.qty > 1 ? '×' + x.qty : '')).join(' + ') + ' = ' }), U.el('b', { text: fmt(total) }))
+    E.noteCoins.textContent = ''
+    coinsInto(E.noteCoins, total, S.coins)
+    // 不整百：缺的那一块在呼吸，旁边一道向上的箭头——回铜牌上添东西凑满
+    if (!round) E.noteCoins.appendChild(U.el('i.plaque-note-more'))
+    E.note.classList.toggle('is-round', round)
+    E.note.classList.toggle('is-short', round && S.coins < total / 100)
+    E.noteOk.disabled = !round
+    E.noteOk.setAttribute('data-cursor', round ? '同意' : '')
+  }
+  function noteRemove(x) {
+    if (S.noteBusy) return
+    App.audio.sfx('tick', { volume: 0.4 })
+    if (--x.qty <= 0) S.note.splice(S.note.indexOf(x), 1)
+    if (!S.note.length) hideNote()
+    else renderNote()
+  }
+  function clearNote(now) {
+    S.note = []
+    hideNote(now)
+  }
+  function showNote() {
+    const N = S.E.note
+    gsap.killTweensOf(N)
+    N.hidden = false
+    if (!S.reduced) gsap.fromTo(N, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: 'expo.out', clearProps: 'transform,opacity' })
+  }
+  function hideNote(now) {
+    const N = S.E.note
+    gsap.killTweensOf(N)
+    if (now || S.reduced || N.hidden) { N.hidden = true; gsap.set(N, { clearProps: 'transform,opacity' }); return }
+    gsap.to(N, { opacity: 0, y: 12, duration: 0.3, ease: 'power2.in', onComplete: () => { N.hidden = true; gsap.set(N, { clearProps: 'transform,opacity' }) } })
+  }
+  function noteShake() {
+    if (S.reduced) return
+    gsap.fromTo(S.E.note, { x: 0 }, { keyframes: { x: [0, -7, 6, -4, 2, 0] }, duration: 0.42, ease: 'none', clearProps: 'transform' })
+  }
+  // 同意：这一次兑换整张便笺一起结算
+  function noteAgree() {
+    if (S.noteBusy || !S.note.length) return
+    if (left()) return leftRefuse()
+    const list = S.note.map(x => ({ name: x.it.name, pts: x.it.pts, qty: x.qty, off: x.it.off }))
+    const check = EC.settle(list, econ() || null)
+    if (check.reason === 'round') return noteShake()
+    if (check.reason === 'purse' || (!econ() && check.coins > 0)) {
+      App.audio.sfx('wrong', { volume: 0.7 })
+      noteShake(); purseShort()
+      if (trayLeft() > 0) trayHint()
+      return
+    }
+    // 在默念里同意：先合上，金币从钱袋飞向落回原处的便笺
+    if (S.askOpen) { App.overlay.close(); gsap.delayedCall(0.42, noteAgree); return }
+    const before = S.coins
+    const r = self(() => EC.pay(list))
+    if (!r.ok) { noteShake(); return }
+    S.noteBusy = true
+    S.rain = 0
+    App.audio.sfx('click')
+    const sumR = () => { const q = S.E.noteSum.getBoundingClientRect(); return { x: q.left + q.width * 0.5, y: q.top + q.height * 0.5, r: 4 } }
+    const at = sumR()
+    payFly(r.coins, before, sumR, () => App.audio.sfx('coins', { volume: 0.85 }), () => {
+      gsap.delayedCall(0.3, () => {
+        clearNote()
+        deliver(r.items, { x: at.x, y: at.y - 40 })
+        S.noteBusy = false
+      })
+    })
+  }
+
+  /* ---------- 修复身体残疾：修的是「你」 ---------- */
+  function repairClick(b, ev) {
+    const e = EC.ensure()
+    if (!e.me) return pickMe(() => { if (S.visible) quote(b, true) })
+    const list = [{ name: b._it.name, pts: b._it.pts, repair: e.me }]
+    const r = EC.settle(list, e)
+    if (r.reason === 'repair') return voidRow(b) // 卡上没写明残疾：报价时就告知不成立，不收金币
+    if (!r.ok) return refuse(b)
+    buy(b, ev, list)
+  }
+  // 你是谁：十五席上的人（没排过席位就是卡池里的全部）。庭审开的局里「你」已定，不在这里改
+  function pickMe(cb) {
+    const e = econ()
+    if (e && e.source === 'trial' && e.me) return
+    const seated = (App.state.seats || []).filter(id => id && App.char(id))
+    const ids = seated.length ? seated : App.chars.map(c => c.id)
+    const root = U.el('div.pq-who')
+    const grid = U.el('div.pq-who-grid' + (seated.length ? '' : '.is-names'))
+    for (const id of ids) {
+      const c = App.char(id)
+      if (!c) continue
+      const no = (App.state.seats || []).indexOf(id) + 1
+      const btn = U.el('button.pq-who-b' + (e && e.me === id ? '.is-on' : ''), { type: 'button', 'data-cursor': '你' }, [
+        seated.length ? App.portrait(id, { className: 'pq-who-p', track: false }) : null,
+        no ? U.el('span.pq-who-no', { text: String(no).padStart(2, '0') }) : null,
+        U.el('span.pq-who-n', { text: c.name }),
+      ])
+      btn.addEventListener('click', () => {
+        self(() => EC.setMe(id))
+        renderDock()
+        App.audio.sfx('drop', { volume: 0.7 })
+        App.overlay.close()
+        if (cb) gsap.delayedCall(0.4, cb)
+      })
+      grid.appendChild(btn)
+    }
+    root.append(U.el('div.pq-who-h', { text: '你' }), grid)
+    App.overlay.open(root, { className: 'is-plaque is-who' })
+    App.audio.sfx('whoosh', { volume: 0.4 })
+    if (!S.reduced) gsap.fromTo(grid.children, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.02, ease: 'expo.out', clearProps: 'transform,opacity' })
+  }
+
+  /* ---------- 默念：第 10 节牌外价目（问了才知道，只对你报价）与几条不成立的请求 ---------- */
+  let OFF_CHS = null
+  function offChapters() {
+    if (OFF_CHS) return OFF_CHS
+    OFF_CHS = []
+    for (const o of EC.offList()) {
+      let ch = OFF_CHS.find(c => c.no === o.no)
+      if (!ch) OFF_CHS.push(ch = { no: o.no, title: o.title, items: [] })
+      ch.items.push(o)
+    }
+    return OFF_CHS
+  }
+  function openAsk() {
+    if (S.askOpen) return
+    if (left()) return leftRefuse()
+    const root = U.el('div.pq-ask')
+    const head = U.el('div.pq-ask-h', {}, [U.el('i.pq-ask-lips', { 'aria-hidden': 'true' }), U.el('span', { text: '默念' })])
+    const cols = U.el('div.pq-ask-cols')
+    for (const ch of offChapters()) {
+      const box = U.el('div.pq-ask-ch')
+      box.appendChild(U.el('h4.pq-ask-t', {}, [U.el('b', { text: ch.no }), U.el('span', { text: ch.title })]))
+      for (const o of ch.items) box.appendChild(askItem(o))
+      cols.appendChild(box)
+    }
+    const voids = U.el('div.pq-ask-ch.pq-ask-voids')
+    voids.appendChild(U.el('h4.pq-ask-t', { 'aria-hidden': 'true' }, [U.el('i.pq-ask-x')]))
+    for (const v of EC.VOID_ASKS) voids.appendChild(voidItem(v))
+    cols.appendChild(voids)
+    const foot = U.el('div.pq-ask-foot')
+    root.append(head, cols, foot)
+    // 便笺跟着进默念：问了价的东西再点一下就进这一次兑换
+    foot.appendChild(S.E.note)
+    S.askOpen = true
+    App.overlay.open(root, {
+      className: 'is-plaque is-ask',
+      onClose: () => {
+        S.askOpen = false
+        S.E.dockIn.insertBefore(S.E.note, S.E.req)
+        App.audio.setMood({ tension: 0.18 })
+      },
+    })
+    App.audio.sfx('whoosh', { volume: 0.4, pitch: 0.8 })
+    App.audio.setMood({ tension: 0.32 })
+    if (!S.reduced) gsap.fromTo(cols.children, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.05, ease: 'expo.out', clearProps: 'transform,opacity' })
+  }
+  function askItem(o) {
+    const it = mkItem(o.name, o.pts, true)
+    const asked = () => { const e = econ(); return !!(e && e.asked[o.name] != null) }
+    const q = U.el('span.pq-ask-q')
+    const b = U.el('button.pq-ask-i', { type: 'button', 'data-cursor': '问价' }, [U.el('span.pq-ask-n', { text: o.name }), q])
+    const showQ = fresh => {
+      b.classList.add('is-asked')
+      b.setAttribute('data-cursor', '+')
+      q.textContent = ''
+      const cs = U.el('span.pq-ask-c')
+      coinsInto(cs, o.pts, S.coins)
+      q.append(U.el('b', { text: fmt(o.pts) }), cs)
+      if (fresh && !S.reduced) gsap.fromTo(q, { opacity: 0, x: -10, filter: 'blur(6px)' }, { opacity: 1, x: 0, filter: 'blur(0px)', duration: 0.7, ease: 'expo.out', clearProps: 'transform,opacity,filter' })
+    }
+    if (asked()) showQ(false)
+    b.addEventListener('click', () => {
+      if (left()) return leftRefuse()
+      if (!asked()) {
+        self(() => EC.ask(o.name))
+        App.audio.sfx('type', { volume: 0.6 })
+        showQ(true)
+        return
+      }
+      addToNote(it, null)
+      b.classList.remove('is-add')
+      void b.offsetWidth
+      b.classList.add('is-add')
+    })
+    return b
+  }
+  function voidItem(v) {
+    const V = PR.void || {}
+    const k = (V.kinds || []).find(x => x.key === v.key)
+    const q = U.el('span.pq-ask-q')
+    const b = U.el('button.pq-ask-i.pq-ask-v', { type: 'button', 'data-cursor': '默念', title: k ? k.text : '' }, [U.el('span.pq-ask-n', { text: v.label }), q])
+    b.addEventListener('click', () => {
+      if (left()) return leftRefuse()
+      const r = EC.settle([{ name: v.label, void: v.key }], econ() || null)
+      // 不收金币，他只得知不成立
+      q.textContent = ''
+      q.appendChild(U.el('b.pq-void', { text: r.reason ? '不成立' : '' }))
+      b.classList.add('is-void')
+      App.audio.sfx('wrong', { volume: 0.45, pitch: 0.75 })
+      if (!S.reduced) gsap.fromTo(q.firstChild, { scale: 1.8, opacity: 0, rotate: -8 }, { scale: 1, opacity: 1, rotate: -3, duration: 0.35, ease: 'expo.out' })
+    })
+    return b
+  }
+
+  /* ---------- 台面：买到的东西刻成小牌，留着 ---------- */
+  const GLYPH = {
+    item: '<svg viewBox="0 0 16 16"><path d="M8 1.5 14.5 8 8 14.5 1.5 8Z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 5 11 8 8 11 5 8Z" fill="currentColor"/></svg>',
+    service: '<svg viewBox="0 0 16 16"><circle cx="5" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8.2 8H15M12.5 8v2.6M14.6 8v1.8" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
+    ticket: '<svg viewBox="0 0 16 16"><path d="M3 15V6.5a5 5 0 0 1 10 0V15" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M1.5 15h13" stroke="currentColor" stroke-width="1.2"/><circle cx="10.4" cy="10.4" r=".9" fill="currentColor"/></svg>',
+  }
+  function renderGoods(fresh) {
+    const E = S.E, e = econ()
+    const list = e ? e.items : []
+    E.goods.textContent = ''
+    E.goods.classList.toggle('is-empty', !list.length)
+    let k = 0
+    list.forEach((it, i) => {
+      const g = U.el('div.plaque-good.is-' + it.kind + (it.off ? '.is-off' : ''), { role: 'listitem', title: it.name })
+      g.style.setProperty('--r', ((((i * 37) % 9) - 4) * 0.55).toFixed(2) + 'deg')
+      g.append(U.el('i.plaque-good-g', { html: GLYPH[it.kind] || GLYPH.item, 'aria-hidden': 'true' }), U.el('span.plaque-good-n', { text: short(it.name) }))
+      if (it.qty > 1) g.appendChild(U.el('b.plaque-good-q', { text: '×' + it.qty }))
+      if (it.kind === 'service') g.appendChild(U.el('span.plaque-good-s', { text: e.seat ? e.seat + ' 号套房' : '套房' }))
+      if (it.kind === 'ticket' && !e.exited) {
+        g.setAttribute('role', 'button'); g.setAttribute('tabindex', '0')
+        g.setAttribute('data-cursor', '离馆'); g.setAttribute('data-cursor-tone', 'blood')
+        g.addEventListener('click', requestExit)
+      }
+      E.goods.appendChild(g)
+      if (fresh && fresh.indexOf(it.name) >= 0 && !S.reduced) {
+        gsap.fromTo(g, { y: -54, opacity: 0 }, { y: 0, opacity: 1, duration: 0.95, ease: 'bounce.out', delay: 0.06 * k++, clearProps: 'transform,opacity' })
+        if (k === 1) gsap.delayedCall(0.35, () => App.audio.sfx('drop', { volume: 0.4 }))
+      }
+    })
+  }
+
+  /* ---------- 钱袋旁：「你」、默念、持券离馆 ---------- */
+  function renderDock() {
+    const E = S.E, e = econ()
+    if (!E.dock) return
+    const tk = !!(e && !e.exited && EC.hasTicket())
+    if (tk && E.req.hidden) {
+      E.req.hidden = false
+      if (!S.reduced) gsap.fromTo(E.req, { opacity: 0, y: 14, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'expo.out', clearProps: 'transform,opacity' })
+    } else if (!tk) E.req.hidden = true
+    const me = (e && e.me) || null
+    if (me !== S.meShown) {
+      S.meShown = me
+      E.meBtn.textContent = ''
+      E.meBtn.hidden = !me
+      if (me) E.meBtn.appendChild(App.portrait(me, { className: 'plaque-dock-por', track: false }))
+      E.meBtn.setAttribute('aria-label', me && App.char(me) ? App.char(me).name : '你')
+    }
+    E.meBtn.disabled = !!(e && e.source === 'trial')
+    const out = !!(e && e.exited)
+    S.el.classList.toggle('is-left', out)
+    E.exit.classList.toggle('is-left', out)
+    E.purse.classList.toggle('is-left', out)
   }
 
   /* ---------- 退出券 ---------- */
@@ -841,8 +1254,12 @@
       App.audio.sfx('click')
       return
     }
+    if (left()) return leftRefuse()
     if (S.coins >= EXIT.coins) return buyExit(e)
-    // 不够：铜牌深处一声闷响，整块铜牌轻震，血粉光熄灭片刻
+    exitThud()
+  }
+  // 不够：铜牌深处一声闷响，整块铜牌轻震，血粉光熄灭片刻
+  function exitThud() {
     const E = S.E
     App.audio.sfx('door', { volume: 1, pitch: 0.7 })
     if (!S.reduced) App.shake(E.mount, 7, 0.55)
@@ -866,18 +1283,20 @@
   function buyExit(e) {
     const E = S.E, b = E.exitBtn
     if (b._busy) return
+    const before = S.coins
+    const r = self(() => EC.pay([{ name: EXIT.name, pts: EXIT.pts }]))
+    if (!r.ok) return exitThud()
     b._busy = true
-    const n = EXIT.coins, before = S.coins
     S.rain = 0
-    setCoins(S.coins - n)
-    S.spent += n
+    const n = r.coins
     const tap = pointOf(e, b)
     const vis = S.reduced ? 8 : 60
-    const anchor = () => { const r = b._pts.getBoundingClientRect(); return { x: r.left + r.width * U.rand(0.2, 0.8), y: r.top + r.height * 0.55, r: 5 } }
+    const anchor = () => { const q = b._pts.getBoundingClientRect(); return { x: q.left + q.width * U.rand(0.2, 0.8), y: q.top + q.height * 0.55, r: 5 } }
+    const game = S.game
     let landed = 0
     for (let k = 0; k < vis; k++) {
       gsap.delayedCall(k * 0.025, () => {
-        S.shown = Math.max(S.coins, Math.round(before - (n * (k + 1)) / vis))
+        if (S.game === game) S.shown = Math.max(S.coins, Math.round(before - (n * (k + 1)) / vis))
         paintPurse(false)
         const p = purseC()
         fly({
@@ -890,12 +1309,24 @@
               App.flash(App.color.blood, { opacity: 0.5, duration: 1.2 })
               E.exit.classList.add('is-hot')
               lightRow(b)
-              gsap.delayedCall(0.4, () => { ink(EXIT.name, cursorNow(S.fine ? null : tap)); b._busy = false })
+              gsap.delayedCall(0.4, () => { deliver(r.items, cursorNow(S.fine ? null : tap)); b._busy = false })
             }
           },
         })
       })
     }
+  }
+  // 持券，向主持人请求离馆（价目表 8.2；主持人游戏第 6 节）：离馆不是死亡——没有锈红，只有门外的白光
+  function requestExit() {
+    if (left() || !EC.hasTicket()) return
+    if (!self(() => EC.exit())) return
+    hideDoor(true)
+    clearNote(true)
+    App.audio.sfx('door', { volume: 0.9, pitch: 1.15 })
+    App.audio.sfx('wind', { volume: 0.7 })
+    App.flash(App.color.bone, { opacity: 0.85, duration: 2.4, hold: 0.3 })
+    renderGoods()
+    renderDock()
   }
 
   /* =====================================================================
@@ -1506,14 +1937,28 @@
     T.dirty = true
     if (i >= 0 && S.stacks[i] > 0) App.audio.sfx('coin', { volume: 0.2, pitch: 1.25 + Math.random() * 0.25, pan: (i - 7) / 8 })
   }
+  // 理币盘跟着钱袋：每摞剩几枚、是谁的
+  function syncTray() {
+    const e = econ()
+    for (let i = 0; i < NST; i++) {
+      const t = e ? e.tray[i] : null
+      const n = t ? t.n : PER, o = t ? t.owner : null
+      if (n !== S.stacks[i] || o !== S.owner[i]) { S.stacks[i] = n; S.owner[i] = o; T.dirty = true }
+      syncStackBtn(i)
+    }
+    S.E.hits.classList.toggle('has-mine', S.owner.indexOf('me') >= 0)
+  }
   function syncStackBtn(i) {
     const b = S.E.stackBtns[i]
     b.setAttribute('aria-label', stackLabel(i))
-    if (S.stacks[i] <= 0) {
-      b.disabled = true
+    const empty = S.stacks[i] <= 0
+    if (b.disabled !== empty) b.disabled = empty
+    if (empty) {
       b.removeAttribute('data-cursor')
       if (S.hov === i) S.hov = -1
-    }
+    } else if (!b.hasAttribute('data-cursor')) b.setAttribute('data-cursor', '')
+    b.classList.toggle('is-mine', S.owner[i] === 'me')
+    b.classList.toggle('is-grab', S.owner[i] === 'other')
   }
   function stackTop(i) {
     const r = S.E.trayWrap.getBoundingClientRect()
@@ -1523,21 +1968,35 @@
   }
   function takeCoin(i) {
     if (S.stacks[i] <= 0) return
+    if (left()) return leftRefuse()
     const from = stackTop(i)
-    S.stacks[i]--
-    T.dirty = true
-    syncStackBtn(i)
+    const r = self(() => EC.take(i)) // 理币盘与钱袋一并更新（syncTray）
+    if (!r) return
     App.audio.sfx('coin', { volume: 0.75, pitch: 0.92 + Math.random() * 0.12, pan: (i - 7) / 8 })
     melt(() => from, { gold: true, dur: 0.5 })
     fly({ from, to: purseC, dur: U.rand(0.72, 0.9), arc: T.mob ? 0.25 : U.rand(0.38, 0.5), size: from.r, arrive: () => gain(1) })
+    if (r.grab) grabMark(from)
     if (trayLeft() === 0 && !S.reduced) gsap.delayedCall(0.9, () => App.glitch && App.glitch(S.E.purseN, 0.3))
   }
+  // 拿的是别人的那一摞：盘上方浮起极短的一句（抢夺不受惩罚，只是看得见）
+  function grabMark(from) {
+    const W = S.E.trayWrap, r = W.getBoundingClientRect()
+    const tag = U.el('span.plaque-grab', { text: '别人的', 'aria-hidden': 'true' })
+    tag.style.left = (from.x - r.left).toFixed(1) + 'px'
+    tag.style.top = (from.y - r.top).toFixed(1) + 'px'
+    W.appendChild(tag)
+    App.audio.sfx('coin', { volume: 0.3, pitch: 0.62 })
+    if (S.reduced) { setTimeout(() => tag.remove(), 1400); return }
+    gsap.fromTo(tag, { opacity: 0, y: 6 }, { opacity: 1, y: -16, duration: 0.45, ease: 'expo.out' })
+    gsap.to(tag, { opacity: 0, y: -30, duration: 0.6, delay: 1.1, ease: 'power2.in', onComplete: () => tag.remove() })
+  }
+  // 一枚落进钱袋（钱袋的真实枚数取币时已经记上，这里只追上显示）
   function gain(k) {
-    setCoins(S.coins + k)
     S.shown = Math.min(S.coins, S.shown + k)
     paintPurse(true)
     ring()
     if (S.quoted) renderNeed(S.quoted._it) // 报价跟着钱袋更新：空心的币被一枚枚填上
+    if (S.note.length) renderNote()
     App.audio.sfx('coin', { volume: 0.42, pitch: 1.42 + Math.random() * 0.2, pan: 0.7 })
     melt(purseC, { gold: true, dur: 0.55 })
   }
@@ -1949,8 +2408,9 @@
     ctx.lineTo(x0 + Wd + pad * 2.2, base + pad * 0.4)
     ctx.stroke()
     ctx.restore()
-    // 数：盘里的 + 钱袋里的 + 熔掉的
-    const tray = trayLeft(), mine = S.coins, spent = Math.min(S.spent, 500)
+    // 数：盘里的 + 钱袋里的 + 熔掉的（都是这一局钱袋里的真实数）
+    const e = econ()
+    const tray = trayLeft(), mine = S.coins, spent = Math.min(e ? e.spent : 0, 500)
     const goldN = Math.min(500, tray + mine)
     const n1 = Math.min(500, tray), n2 = goldN, n3 = Math.min(500, goldN + spent)
     const rr = p * 0.34, cr = p * 0.4
@@ -2017,7 +2477,40 @@
       ctx.fillStyle = 'rgba(235,227,214,' + (la * 0.9).toFixed(3) + ')'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'alphabetic'
-      ctx.fillText(String(EXIT.coins), cx, base - Rr - rad - pad * 2.6)
+      const ty = base - Rr - rad - pad * 2.6
+      ctx.fillText(String(EXIT.coins), cx, ty)
+      // 门旁写着这一局的真实数字：一张 500 枚；开局全馆 150 枚（门里的一道线，只够填到这里）；每审结一批每人 5–10 枚
+      const cap = Math.round(clamp(p * 0.6, 10, 12)), fn = Math.round(fs * 0.72)
+      const capFont = '500 ' + cap + 'px "Sans SC", "Noto Sans SC", sans-serif'
+      ctx.font = capFont
+      ctx.textAlign = 'left'
+      ctx.fillStyle = 'rgba(160,150,138,' + (la * 0.85).toFixed(3) + ')'
+      ctx.font = '700 ' + fs + 'px Cinzel, serif'
+      const w500 = ctx.measureText(String(EXIT.coins)).width
+      ctx.font = capFont
+      ctx.fillText('一张', cx + w500 / 2 + 8, ty)
+      const i150 = Math.min(pts.length, EC.TOTAL) - 1
+      const y150 = base - (Math.floor(pts[i150].y) + 1) * p
+      const roomR = FX.w - (x0 + Wd + pad * 2.6) > 96
+      const lx = roomR ? x0 + Wd + pad * 2.6 : x0 + Wd - pad * 0.6
+      ctx.strokeStyle = 'rgba(232,184,92,' + (la * 0.6).toFixed(3) + ')'
+      ctx.setLineDash([3, 3])
+      ctx.beginPath(); ctx.moveTo(x0 - pad * 0.6, y150); ctx.lineTo(roomR ? lx - 8 : x0 + Wd + pad * 0.6, y150); ctx.stroke()
+      ctx.setLineDash([])
+      const tag = (y, num, txt) => {
+        ctx.textAlign = roomR ? 'left' : 'right'
+        ctx.textBaseline = 'alphabetic'
+        ctx.font = '700 ' + fn + 'px Cinzel, serif'
+        ctx.fillStyle = 'rgba(232,184,92,' + la.toFixed(3) + ')'
+        ctx.fillText(num, lx, y - 3)
+        ctx.font = capFont
+        ctx.fillStyle = 'rgba(160,150,138,' + (la * 0.85).toFixed(3) + ')'
+        ctx.textBaseline = 'top'
+        ctx.fillText(txt, lx, y + 3)
+      }
+      tag(y150, String(EC.TOTAL), '开局全馆')
+      tag((y150 + base - Rr) / 2 - p * 2, '+' + EC.BATCH[0] + '–' + EC.BATCH[1], '每审结一批 · 每人')
+      ctx.textBaseline = 'alphabetic'
     }
   }
 
@@ -2041,17 +2534,19 @@
   }
   // 庭审赢得的金币：从上方（庭审那一边）落进钱袋
   function rainIn() {
-    const n = S.rain
+    const n = S.rain, game = S.game
     S.rain = 0
     const vis = Math.min(n, S.reduced ? 5 : 30)
-    let got = 0
+    let got = 0, landed = 0
     App.audio.sfx('coins', { volume: 0.7 })
     for (let k = 0; k < vis; k++) {
       const from = { x: window.innerWidth * U.rand(0.4, 0.96), y: -30 - U.rand(0, 90) }
       fly({
         from, to: purseC, dur: U.rand(0.85, 1.25), arc: 0.06, size: U.rand(8, 12), delay: k * 0.07,
         arrive: () => {
-          const tgt = Math.round((n * (k + 1)) / vis)
+          if (S.game !== game) return // 换了一局：旧的金币不再算数
+          // 按落下的先后计数（各枚飞行时长不同，落下的顺序不一定是起飞的顺序）
+          const tgt = Math.round((n * ++landed) / vis)
           S.shown = Math.min(S.coins, S.shown + (tgt - got))
           got = tgt
           paintPurse(true)
@@ -2150,16 +2645,10 @@
     plaqueLight(vw, vh)
     trayTick(dtf, vw, vh, now)
     fxTick(dt, now)
-    // 别处改了钱袋（App.state.coins）→ 跟上
-    if (typeof App.state.coins === 'number' && App.state.coins !== S.coins) {
-      S.coins = Math.max(0, Math.floor(App.state.coins))
-      S.shown = S.coins
-      paintPurse(false)
-    }
     if (S.rain > 0) {
       const pr = S.E.purse.getBoundingClientRect()
       if (pr.top < vh && pr.bottom > 0) rainIn()
-    }
+    } else if (S.shown !== S.coins && !FX.fl.length) { S.shown = S.coins; paintPurse(false) } // 没有金币在飞时，钱袋上的数一定是真实的
     // 钱袋空着时，理币盘隔一会儿亮一道光
     if (S.coins === 0 && trayLeft() > 0 && now - S.lastSweep > 7600) {
       const tr = S.E.trayWrap.getBoundingClientRect()
@@ -2193,13 +2682,46 @@
     if (T.cv) trayResize()
   }
 
+  // 钱袋变了：换了一局就整个重来；同一局里，别处记进来的金币从上方落进钱袋，别的变化直接跟上
+  function onEcon(e) {
+    if (!S.E.purse || !e) return
+    const t = e.last ? e.last.type : ''
+    if (e.game !== S.game) {
+      S.game = e.game
+      S.rain = 0
+      S.coins = S.shown = e.coins
+      clearNote(true)
+      if (S.askOpen) App.overlay.close()
+      paintPurse(false)
+      syncTray()
+      renderGoods()
+      renderDock()
+      if (S.quoted) renderNeed(S.quoted._it)
+      return
+    }
+    S.coins = e.coins
+    syncTray()
+    if (!S.self) {
+      if (t === 'gain') S.rain += e.last.n
+      else { S.rain = 0; S.shown = S.coins; paintPurse(false) }
+      if (t === 'pay' || t === 'exit') renderGoods()
+      renderDock() // 本板块自己的兑换在交付时（金币落定之后）才更新
+    }
+    if (S.quoted) renderNeed(S.quoted._it)
+    if (S.note.length && !S.noteBusy) renderNote()
+  }
+
   function mount(el) {
     S.el = el
-    S.coins = S.shown = typeof App.state.coins === 'number' ? Math.max(0, Math.floor(App.state.coins)) : 0
-    App.state.coins = S.coins
+    const e0 = econ()
+    S.coins = S.shown = e0 ? e0.coins : 0
+    S.game = e0 ? e0.game : 0
     S.q = App.quality && typeof App.quality.level === 'number' ? App.quality.level : 2
     build(el)
     paintPurse(false)
+    syncTray()
+    renderGoods()
+    renderDock()
     genTextures(el)
     trayInit()
     fxInit()
@@ -2235,12 +2757,15 @@
     window.addEventListener('touchstart', () => { S.touchT = performance.now() }, { passive: true })
     window.addEventListener('touchmove', () => { S.touchT = S.moveT = performance.now() }, { passive: true })
     window.addEventListener('keydown', e => { if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ') S.ptr = 'keyboard' }, true)
-    // 模拟庭审赢得的金币
+    // 本局钱袋变了（这里的取币与兑换，或庭审、控制台……）
+    App.bus.on('econ:change', onEcon)
+    // 模拟庭审赢得的金币：庭审还没开钱袋（econ.source 不是 'trial'）时由这里记进钱袋；
+    // 庭审自己开局、用 App.econ.gain 记账之后，这个事件只是旧的通知，不再重复记
     App.bus.on('trial:coins', n => {
       n = Math.floor(+n || 0)
-      if (n <= 0) return
-      setCoins(S.coins + n)
-      S.rain += n
+      const e = econ()
+      if (n <= 0 || (e && e.source === 'trial')) return
+      EC.gain(n, 'trial')
     })
     App.tick(tick)
   }

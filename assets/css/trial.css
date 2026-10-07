@@ -31,20 +31,23 @@
 
 /* ---------- 场景显隐（斜切幕布遮住时切换：出现立即可见，消失时淡出） ---------- */
 .trial-ring, .trial-dome { transition: opacity .2s var(--ease-out), visibility 0s; }
-.trial-cine, .trial-inv, .trial-exec, .trial-end { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s var(--ease-out), visibility 0s linear .3s; }
+.trial-cine, .trial-inv, .trial-exec, .trial-end, .trial-replay { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s var(--ease-out), visibility 0s linear .3s; }
 .trial-stage[data-scene="cine"] .trial-cine,
 .trial-stage[data-scene="inv"] .trial-inv,
 .trial-stage[data-scene="exec"] .trial-exec,
+.trial-stage[data-scene="replay"] .trial-replay,
 .trial-stage[data-scene="end"] .trial-end { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .2s var(--ease-out), visibility 0s; }
 
 .trial-stage[data-scene="cine"] .trial-ring,
 .trial-stage[data-scene="inv"] .trial-ring,
 .trial-stage[data-scene="exec"] .trial-ring,
+.trial-stage[data-scene="replay"] .trial-ring,
 .trial-stage[data-scene="end"] .trial-ring { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s var(--ease-out), visibility 0s linear .3s; }
 
 .trial-stage[data-scene="inv"] .trial-dome,
 .trial-stage[data-scene="exec"] .trial-dome,
 .trial-stage[data-scene="end"] .trial-dome,
+.trial-stage[data-scene="replay"] .trial-dome,
 .trial-stage[data-scene="cine"] .trial-dome { opacity: 0; visibility: hidden; transition: opacity .3s var(--ease-out), visibility 0s linear .3s; }
 .trial-top, .trial-bar, .trial-me { transition: opacity .3s var(--ease-out), visibility 0s linear .3s; }
 
@@ -410,6 +413,7 @@
 .trial-stamp:not(.is-on) { visibility: hidden; }
 .trial-stamp.is-on { visibility: inherit; }
 .trial-stamp.is-fail { color: var(--bone-dim); text-shadow: 6px 6px 0 var(--ink), 0 0 30px rgba(0, 0, 0, .8); }
+.trial-stamp.is-long { font-size: clamp(44px, 6.2vw, 100px); }
 
 /* 发言 */
 .trial-say {
@@ -645,7 +649,7 @@
 /* ==========================================================
    调查
    ========================================================== */
-.trial-inv { position: absolute; inset: 0; z-index: 20; background: radial-gradient(ellipse at 50% 50%, rgba(20, 24, 30, .35), rgba(5, 6, 8, .65)); }
+.trial-inv { position: absolute; inset: 0; z-index: 20; background: radial-gradient(ellipse at 50% 50%, rgba(26, 32, 40, .55), rgba(6, 8, 11, .82)); }
 .trial-inv-timer { position: absolute; z-index: 0; pointer-events: none; }
 .trial-inv-timer svg { width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg); }
 .trial-inv-ticks { transform: rotate(90deg); transform-origin: 500px 500px; }
@@ -659,8 +663,9 @@
 .trial-stage:not([data-scene="inv"]) .trial-inv-arc { animation-play-state: paused; }
 @keyframes trial-low { 50% { opacity: .55; } }
 .trial-inv-cv { position: absolute; left: 0; top: 0; z-index: 1; touch-action: manipulation; }
-/* 手电：只有光圈大小的小画布，跟着光平移（整屏的 .trial-inv-cv 只放极暗的底图，不再每帧重画） */
+/* 侧光：只有光那么大的小画布，跟着光平移（整屏的 .trial-inv-cv 放亮着的房间，只在变化时重画） */
 .trial-inv-light { position: absolute; left: 0; top: 0; z-index: 1; pointer-events: none; will-change: transform; }
+.trial-inv-cv { touch-action: none; }
 .trial-inv-spots { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; z-index: 2; pointer-events: none; }
 .trial-spot {
   position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
@@ -672,23 +677,27 @@
 }
 .trial-spot:hover::after { border-color: rgba(235, 227, 214, .6); transform: scale(1.5); }
 .trial-spot.is-done { pointer-events: none; }
-/* 窄屏（手机）：光圈外的热点也有一点微光（原先在整屏画布上每帧画；改为按钮自己的合成器动画：慢慢转、一明一暗） */
-.trial-inv.is-narrow .trial-spot::before {
+/* 灯亮着：看得见的热点都有一点微光（按钮自己的合成器动画：慢慢转、一明一暗）；要侧光才看得见的，扫到之前什么也没有 */
+.trial-spot::before {
   content: ''; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px;
-  background: rgba(255, 244, 222, .11);
+  background: rgba(255, 244, 222, .3);
   clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
   pointer-events: none;
   animation: trial-spark-rot 10.5s linear infinite, trial-spark-tw .435s ease-in-out infinite alternate;
 }
-.trial-inv.is-narrow .trial-spot.is-body::before {
+.trial-spot.is-body::before {
   inset: auto; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 0; border-radius: 0;
-  background: rgba(255, 46, 126, .1); animation-name: trial-spark-rot, trial-spark-sz;
+  background: rgba(255, 46, 126, .38); animation-name: trial-spark-rot, trial-spark-sz;
 }
-.trial-inv.is-narrow .trial-spot:nth-child(3n+1)::before { animation-delay: -2s, -.3s; }
-.trial-inv.is-narrow .trial-spot:nth-child(3n+2)::before { animation-delay: -5s, -.6s; }
-.trial-inv.is-narrow .trial-spot.is-done::before, .trial-inv.is-narrow.is-over .trial-spot::before { display: none; }
+.trial-spot:nth-child(3n+1)::before { animation-delay: -2s, -.3s; }
+.trial-spot:nth-child(3n+2)::before { animation-delay: -5s, -.6s; }
+.trial-spot.is-done::before, .trial-inv.is-over .trial-spot::before, .trial-spot.is-hidden::before { display: none; }
+.trial-spot.is-hidden { pointer-events: none; visibility: hidden; }
+/* 侧光扫到：一圈冷光漾开 */
+.trial-spot.is-found::after { border-color: rgba(214, 236, 255, .85); animation: trial-spot-found 1.4s var(--ease-out) both; }
+@keyframes trial-spot-found { from { transform: scale(.4); opacity: 1; } to { transform: scale(2.6); opacity: 0; } }
 @keyframes trial-spark-rot { to { rotate: 360deg; } }
-@keyframes trial-spark-tw { from { opacity: .2; scale: .8; } to { opacity: 1; scale: 1.2; } }
+@keyframes trial-spark-tw { from { opacity: .35; scale: .8; } to { opacity: 1; scale: 1.25; } }
 @keyframes trial-spark-sz { from { scale: .8; } to { scale: 1.2; } }
 .trial-inv.is-over .trial-spot, .trial-inv.is-auto .trial-spot { pointer-events: none; }
 
@@ -1212,11 +1221,7 @@
 .trial-core:has(.trial-stamp.is-on) > .trial-core-count,
 .trial-core:has(.trial-stamp.is-on) > .trial-core-mood { opacity: 0; }
 
-.trial-spot.is-body::before {
-  content: ''; position: absolute; inset: 8px; border-radius: 50%; border: 1px dashed rgba(255, 46, 126, .0);
-  transition: border-color .4s;
-}
-.trial-spot.is-body:hover::before { border-color: rgba(255, 46, 126, .7); animation: trial-spin 8s linear infinite; }
+.trial-spot.is-body:hover::after { border-color: rgba(255, 46, 126, .75); border-style: dashed; }
 
 /* ==========================================================
    插话气泡 / 出示证据
@@ -1257,6 +1262,241 @@
 .trial-proof-ico { display: block; width: 28px; height: 28px; }
 .trial-proof-ico svg { display: block; width: 100%; height: 100%; }
 .trial-proof b { font-family: var(--f-display); font-weight: 900; font-size: clamp(15px, 1.4vw, 20px); letter-spacing: .06em; }
+
+/* ==========================================================
+   证物卡：维度图标、排除性事实、疑似线索（虚边）、破绽的小眼睛
+   ========================================================== */
+.trial-card-dim {
+  position: absolute; right: 13px; top: 5px; width: 14px; height: 14px; color: var(--brass);
+  opacity: .9; pointer-events: none;
+}
+.trial-card-dim svg { display: block; width: 100%; height: 100%; }
+/* 看不见的特征（医护、现场观察、年代）：图标外一圈虚线 */
+.trial-card-dim.is-unseen { color: var(--bone-dim); }
+.trial-card-dim.is-unseen::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 1px dashed rgba(235, 227, 214, .35); }
+.trial-card.is-fact { background: linear-gradient(110deg, #13161a, #0c0d0f); }
+.trial-card.is-fact::before { background: rgba(141, 152, 166, .7); }
+.trial-card.is-fact .trial-card-ico { color: rgba(176, 196, 216, .9); }
+.trial-card.is-fact .trial-card-no { color: rgba(141, 152, 166, .9); }
+/* 疑似线索：虚边、角上一个问号，「再看一次」才揭开 */
+.trial-card.is-herring { border-style: dashed; border-color: rgba(235, 227, 214, .42); background: rgba(16, 13, 14, .78); }
+.trial-card.is-herring::before { background: repeating-linear-gradient(to bottom, var(--bone-dim) 0 4px, transparent 4px 8px); }
+.trial-card.is-herring::after {
+  content: '?'; position: absolute; right: 12px; top: 3px; font-family: var(--f-display); font-weight: 900; font-size: 15px; line-height: 1; color: var(--bone);
+}
+.trial-stage[data-scene="inv"] .trial-card.is-herring:not(.is-cleared) { cursor: pointer; animation: trial-herring 2.4s ease-in-out infinite; }
+@keyframes trial-herring { 50% { border-color: rgba(235, 227, 214, .85); } }
+.trial-card.is-herring.is-checking { animation: none !important; border-color: var(--bone); }
+.trial-card.is-herring.is-cleared { border-style: solid; border-color: rgba(235, 227, 214, .1); opacity: .55; }
+.trial-card.is-herring.is-cleared::after { content: ''; left: 12px; right: 10px; top: 50%; height: 1px; background: var(--ash); transform: rotate(-8deg); }
+.trial-card.is-herring.is-cleared .trial-card-label { color: var(--bone-dim); }
+.trial-card-tell {
+  position: absolute; left: 4px; bottom: 4px; width: 14px; height: 14px; color: var(--blood); pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(255, 46, 126, .6));
+}
+.trial-card-tell svg { display: block; width: 100%; height: 100%; }
+.trial-mark.is-tell { background: var(--ink); color: var(--blood); box-shadow: 0 0 0 1px var(--blood), 0 0 8px rgba(255, 46, 126, .45); }
+.trial-quip.is-tell .trial-quip-body { border-left-color: var(--blood); }
+.trial-quip.is-tell .trial-quip-body p { letter-spacing: .3em; color: var(--bone-dim); }
+.trial-inv-pop.is-tell { border-left-color: var(--bone); }
+
+/* ==========================================================
+   开庭：议事厅的三道门合上、扣死
+   ========================================================== */
+.trial-doors { position: absolute; inset: 0; z-index: 14; pointer-events: none; visibility: hidden; }
+.trial-doors.is-on { visibility: inherit; }
+.trial-stage:not([data-scene="court"]) .trial-doors { visibility: hidden; }
+.trial-door { position: absolute; width: 30px; height: 39px; margin: -20px 0 0 -15px; transition: opacity 1.2s var(--ease-out); }
+.trial-door svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.trial-door-frame { fill: none; stroke: var(--brass); stroke-width: 2; }
+.trial-door-leaf { fill: #1a1310; stroke: var(--brass-dim); stroke-width: 1.4; transform-box: fill-box; transform-origin: 0 50%; }
+.trial-door-knob { fill: var(--brass); }
+.trial-door-lock { fill: none; stroke: var(--blood); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: 50% 50%; transform: scale(.4); transition: opacity .2s, transform .35s cubic-bezier(.3, 1.8, .5, 1); }
+.trial-door-lock rect { fill: var(--ink); }
+.trial-door.is-shut .trial-door-lock { opacity: 1; transform: none; }
+.trial-door.is-shut .trial-door-leaf { stroke: var(--brass); }
+.trial-doors.is-dim .trial-door { opacity: .32; }
+
+/* ==========================================================
+   席位档案（悬停 / 长按）
+   ========================================================== */
+.trial-prof {
+  position: absolute; left: 0; top: 0; z-index: 58; width: 286px; padding: 12px 14px 13px;
+  background: linear-gradient(160deg, rgba(22, 17, 15, .97), rgba(10, 8, 9, .97));
+  border-left: 2px solid var(--brass);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, .6), 0 0 0 1px rgba(194, 154, 91, .2);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.trial-prof.is-on, .trial-prof.is-measure { opacity: 1; visibility: inherit; }
+.trial-prof.is-measure { visibility: hidden; }
+.trial-prof-head { display: flex; align-items: baseline; gap: 8px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid rgba(194, 154, 91, .2); }
+.trial-prof-no { font-family: var(--f-latin); font-size: 11px; letter-spacing: .15em; color: var(--brass); }
+.trial-prof-head b { font-family: var(--f-display); font-weight: 900; font-size: 15px; line-height: 1.25; letter-spacing: .04em; color: var(--bone); }
+.trial-prof-head i { font-style: normal; font-family: var(--f-sans); font-size: 11px; letter-spacing: .12em; color: var(--bone-dim); }
+.trial-prof-tell { width: 15px; height: 15px; margin-left: auto; align-self: center; color: var(--blood); }
+.trial-prof-tell svg { display: block; width: 100%; height: 100%; }
+.trial-prof-body { display: flex; gap: 10px; align-items: flex-start; }
+.trial-prof-left { flex: 0 0 auto; width: 58px; }
+.trial-prof-ruler { display: block; width: 58px; height: 92px; overflow: visible; }
+.trial-prof-ticks line { stroke: rgba(194, 154, 91, .45); stroke-width: 1; }
+.trial-prof-lab text { font-family: var(--f-mono); font-size: 7px; fill: var(--ash); text-anchor: end; }
+.trial-prof-bar { fill: rgba(194, 154, 91, .55); }
+.trial-prof-mark { stroke: var(--bone); stroke-width: 1.4; }
+.trial-prof-cm { font-family: var(--f-mono); font-size: 10px; fill: var(--bone); }
+.trial-prof-right { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px; }
+.trial-prof-traits { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.trial-prof-t { display: inline-flex; align-items: center; gap: 4px; font-family: var(--f-sans); font-size: 12px; letter-spacing: .06em; color: var(--bone); }
+.trial-prof-t i, .trial-prof-items > i { display: block; width: 15px; height: 15px; flex: 0 0 auto; color: var(--brass); }
+.trial-prof-t i svg, .trial-prof-items > i svg { display: block; width: 100%; height: 100%; }
+.trial-prof-t.is-strong { color: var(--bone); }
+.trial-prof-t.is-strong i { color: var(--blood); }
+.trial-prof-items { display: flex; gap: 6px; align-items: flex-start; }
+.trial-prof-items ul { list-style: none; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.trial-prof-items li { font-size: 11px; line-height: 1.4; color: var(--bone-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 186px; }
+.trial-prof-see { font-family: var(--f-serif); font-size: 12px; line-height: 1.55; color: var(--bone); }
+.trial-prof-see span { display: block; margin-bottom: 1px; font-family: var(--f-sans); font-size: 9px; letter-spacing: .35em; color: var(--brass-dim); }
+
+/* ==========================================================
+   结案对账：真相回放
+   ========================================================== */
+.trial-replay {
+  position: absolute; inset: 0; z-index: 30; overflow: hidden auto; overscroll-behavior: contain;
+  background: radial-gradient(ellipse 70% 60% at 30% 40%, rgba(40, 14, 20, .55), rgba(8, 6, 7, .96) 72%), rgba(8, 6, 7, .9);
+  padding: calc(var(--hud-h) + 52px) var(--gutter) 96px;
+}
+.trial-rp-in {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); grid-template-areas: "head plan" "clues votes";
+  gap: 26px 36px; max-width: 1240px; margin: 0 auto;
+}
+.trial-rp-head { grid-area: head; display: flex; gap: 22px; align-items: flex-start; min-width: 0; }
+.trial-rp-plan { grid-area: plan; position: relative; height: clamp(220px, 36vh, 340px); min-width: 0; border: 1px solid rgba(141, 152, 166, .18); background: rgba(10, 12, 15, .6); }
+.trial-rp-plan.is-empty { display: none; }
+.trial-rp-plan canvas { position: absolute; left: 0; top: 0; }
+.trial-rp-ov { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+.trial-rp-route { fill: none; stroke: var(--blood); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 7 5; filter: drop-shadow(0 0 5px rgba(255, 46, 126, .7)); }
+.trial-rp-door { fill: var(--ink); stroke: var(--blood); stroke-width: 2; }
+.trial-rp-body { fill: none; stroke: var(--blood); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.trial-rp-bt { font-family: var(--f-mono); font-size: 11px; fill: var(--blood); text-anchor: middle; paint-order: stroke; stroke: var(--ink); stroke-width: 3px; }
+.trial-rp-tent path { fill: var(--blood); }
+.trial-rp-tent text { font-family: var(--f-latin); font-size: 9px; fill: var(--ink); text-anchor: middle; }
+.trial-rp-tent .trial-rp-finder { font-size: 10px; fill: var(--brass); paint-order: stroke; stroke: var(--ink); stroke-width: 3px; }
+.trial-rp-tent.is-lost path { fill: var(--ash); }
+.trial-rp-tent.is-lost .trial-rp-finder { fill: var(--ash); }
+.trial-rp-clues { grid-area: clues; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.trial-rp-votes { grid-area: votes; display: flex; flex-wrap: wrap; gap: 14px 18px; align-content: flex-start; min-width: 0; }
+.trial-rp-votes.is-empty { display: none; }
+.trial-rp-go { position: sticky; bottom: 0; display: flex; justify-content: center; margin: 22px calc(-1 * var(--gutter)) -96px; padding: 16px 0 26px; pointer-events: none; background: linear-gradient(to top, rgba(8, 6, 7, .95) 40%, rgba(8, 6, 7, 0)); }
+.trial-stage[data-scene="replay"] .trial-me { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+.trial-rp-go .trial-btn { pointer-events: auto; }
+
+/* 翻牌 */
+.trial-rp-card { flex: 0 0 auto; width: clamp(120px, 12vw, 170px); aspect-ratio: 3 / 4; perspective: 900px; transform: rotate(-3deg); }
+.trial-rp-card-in { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
+.trial-rp-card-back, .trial-rp-card-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.trial-rp-card-back { transform: rotateY(180deg); background: radial-gradient(ellipse at 50% 40%, #2c1f17, #0f0b0a 75%); box-shadow: 0 0 0 1px var(--brass-dim), 0 20px 40px rgba(0, 0, 0, .6); }
+.trial-rp-card-back i { position: absolute; inset: 9px; border: 1px solid var(--brass-dim); }
+.trial-rp-card-back i + i { inset: 26%; border-radius: 50%; border-color: rgba(194, 154, 91, .35); }
+.trial-rp-card-face { overflow: hidden; background: radial-gradient(ellipse at 50% 38%, #f6efe4 0%, #d9ccba 55%, #a8988a 100%); box-shadow: 0 0 0 5px var(--ink), 10px 10px 0 5px rgba(255, 46, 126, .45); }
+.trial-rp-card-face .portrait { width: 100%; }
+.trial-rp-card-no { position: absolute; left: 8px; bottom: 6px; font-family: var(--f-latin); font-weight: 700; font-size: 18px; color: var(--ink); }
+.trial-rp-info { min-width: 0; display: flex; flex-direction: column; gap: 9px; padding-top: 4px; }
+.trial-rp-case { font-family: var(--f-latin); font-size: 11px; letter-spacing: .4em; color: var(--blood); }
+.trial-rp-name { font-family: var(--f-display); font-weight: 900; font-size: clamp(26px, 2.6vw, 40px); line-height: 1.08; letter-spacing: .02em; }
+.trial-rp-how { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-family: var(--f-sans); font-size: 13px; letter-spacing: .08em; color: var(--bone); }
+.trial-rp-cause { display: block; width: 22px; height: 22px; color: var(--blood); }
+.trial-rp-cause svg { display: block; width: 100%; height: 100%; }
+.trial-rp-room { color: var(--bone-dim); }
+.trial-rp-time { font-family: var(--f-mono); color: var(--blood); }
+.trial-rp-victim { display: flex; align-items: center; gap: 8px; }
+.trial-rp-vface { width: 28px; aspect-ratio: 3 / 4; overflow: hidden; border-bottom: 1px solid var(--rust); }
+.trial-rp-vface .portrait { width: 100%; }
+.trial-rp-victim b { font-family: var(--f-sans); font-weight: 500; font-size: 12px; letter-spacing: .12em; color: var(--bone-dim); text-decoration: line-through; text-decoration-color: var(--rust); }
+.trial-rp-extra { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.trial-rp-extra > span { display: inline-flex; align-items: center; gap: 5px; font-family: var(--f-mono); font-size: 11px; letter-spacing: .06em; color: var(--bone-dim); }
+.trial-rp-extra i { display: block; width: 14px; height: 14px; color: var(--brass); }
+.trial-rp-extra i svg { display: block; width: 100%; height: 100%; }
+.trial-rp-extra .is-lie { color: var(--blood); text-decoration: line-through; }
+.trial-rp-extra .is-lie i { color: var(--blood); }
+.trial-rp-extra .is-self i { color: var(--blood); }
+.trial-rp-stamp {
+  align-self: flex-start; margin-top: 2px; padding: 3px 12px 3px calc(12px + .3em);
+  font-family: var(--f-display); font-weight: 900; font-size: 18px; letter-spacing: .3em; color: var(--ink); background: var(--blood); transform: rotate(-4deg);
+}
+.trial-rp-stamp.is-fail { background: var(--ash); color: var(--bone); }
+.trial-rp-seal {
+  align-self: flex-start; padding: 5px 12px 5px calc(12px + .25em); border: 2px solid var(--blood); color: var(--blood);
+  font-family: var(--f-brush); font-size: 20px; letter-spacing: .25em; line-height: 1; transform: rotate(-6deg);
+  box-shadow: inset 0 0 0 1px rgba(255, 46, 126, .35), 0 0 18px rgba(255, 46, 126, .25);
+}
+/* 线索 → 凶手的特征 */
+.trial-rp-clue { display: grid; grid-template-columns: minmax(0, 1fr) 32px 34px minmax(0, auto); align-items: center; gap: 8px; }
+.trial-rp-k {
+  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 12px 8px 10px;
+  background: linear-gradient(110deg, #1c1517, #0f0c0d); border-left: 3px solid var(--blood);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+.trial-rp-k b { font-family: var(--f-latin); font-size: 11px; color: var(--blood); }
+.trial-rp-k i { display: block; width: 22px; height: 22px; flex: 0 0 auto; color: var(--bone); }
+.trial-rp-k i svg { display: block; width: 100%; height: 100%; }
+.trial-rp-k span { font-family: var(--f-sans); font-size: 12px; letter-spacing: .04em; color: var(--bone); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trial-rp-by { font-family: var(--f-latin); font-size: 12px; color: var(--brass); text-align: center; }
+.trial-rp-link { display: block; height: 1px; background: linear-gradient(90deg, var(--blood), rgba(255, 46, 126, .2)); position: relative; }
+.trial-rp-link::after { content: ''; position: absolute; right: -1px; top: -3px; border: 3.5px solid transparent; border-left: 5px solid var(--blood); }
+.trial-rp-f { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid rgba(255, 46, 126, .5); font-family: var(--f-sans); font-size: 12px; color: var(--bone); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.trial-rp-f i { display: block; width: 15px; height: 15px; color: var(--blood); flex: 0 0 auto; }
+.trial-rp-f i svg { display: block; width: 100%; height: 100%; }
+.trial-rp-f.is-unseen { border-style: dashed; }
+.trial-rp-f.is-none { border-color: transparent; color: var(--ash); }
+.trial-rp-clue.is-lost .trial-rp-k { border-left-color: var(--ash); filter: grayscale(1); opacity: .6; }
+.trial-rp-clue.is-lost .trial-rp-by { color: var(--ash); }
+.trial-rp-clue.is-lost .trial-rp-link { background: linear-gradient(90deg, var(--ash), transparent); }
+.trial-rp-clue.is-lost .trial-rp-link::after { border-left-color: var(--ash); }
+.trial-rp-clue.is-herring .trial-rp-k { border-left: 1px dashed var(--bone-dim); background: rgba(16, 13, 14, .7); opacity: .7; }
+.trial-rp-clue.is-herring .trial-rp-k b { color: var(--bone-dim); }
+.trial-rp-clue.is-herring .trial-rp-link { visibility: hidden; }
+/* 投票的流向 */
+.trial-rp-vote { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 128px; }
+.trial-rp-ring { width: 120px; height: 120px; }
+.trial-rp-ring svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.trial-rp-rim { fill: none; stroke: var(--brass-dim); stroke-width: 1; opacity: .6; }
+.trial-rp-ring circle.is-empty { fill: var(--ink-3); }
+.trial-rp-ring circle.is-off { fill: var(--ash); }
+.trial-rp-ring circle.is-on { fill: var(--bone-dim); }
+.trial-rp-ring circle.is-m { fill: var(--blood); filter: drop-shadow(0 0 4px var(--blood)); }
+.trial-rp-ring path { fill: none; stroke-linecap: round; }
+.trial-rp-ring path.is-right { stroke: var(--blood); stroke-width: 1.3; }
+.trial-rp-ring path.is-led { stroke: var(--bone-dim); stroke-width: 1; stroke-dasharray: 2 3; opacity: .8; }
+.trial-rp-ring path.is-dec { stroke-width: 3; opacity: 1; stroke-dasharray: none; filter: drop-shadow(0 0 4px rgba(255, 46, 126, .8)); }
+.trial-rp-ring path.is-led.is-dec { stroke: var(--bone); filter: drop-shadow(0 0 4px rgba(235, 227, 214, .7)); }
+.trial-rp-self { fill: none; stroke: var(--ash); stroke-width: 1; }
+.trial-rp-x path { stroke: var(--bone); stroke-width: 2; }
+.trial-rp-x.is-right path { stroke: var(--blood); }
+.trial-rp-vk { font-family: var(--f-sans); font-size: 11px; letter-spacing: .3em; color: var(--bone-dim); }
+.trial-rp-vo { font-family: var(--f-latin); font-size: 14px; color: var(--bone); }
+.trial-rp-vote.is-right .trial-rp-vo { color: var(--blood); }
+.trial-rp-vote.is-wrong .trial-rp-vo { text-decoration: line-through; text-decoration-color: var(--rust); }
+
+/* 终局的总表：一案一行 */
+.trial-end-ledger { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 4px; width: min(620px, 100%); margin: -4px 0 6px; }
+.trial-led-row {
+  display: grid; grid-template-columns: 34px minmax(0, 1fr) 22px minmax(0, 1fr) auto 26px; align-items: center; gap: 10px;
+  padding: 4px 10px; background: rgba(10, 8, 9, .55); border-left: 2px solid var(--blood); text-align: left;
+}
+.trial-led-row.is-fail { border-left-color: var(--ash); }
+.trial-led-no { font-family: var(--f-latin); font-size: 12px; color: var(--brass); }
+.trial-led-p { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.trial-led-p b { font-family: var(--f-sans); font-weight: 500; font-size: 12px; letter-spacing: .04em; color: var(--bone); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trial-led-p.is-dead b { color: var(--bone-dim); text-decoration: line-through; text-decoration-color: var(--rust); }
+.trial-led-face { display: block; flex: 0 0 auto; width: 22px; aspect-ratio: 3 / 4; overflow: hidden; }
+.trial-led-face .portrait { width: 100%; }
+.trial-led-p.is-dead .trial-led-face { filter: grayscale(1) brightness(.6); }
+.trial-led-arrow { display: block; width: 18px; height: 18px; color: var(--blood); }
+.trial-led-arrow svg { display: block; width: 100%; height: 100%; }
+.trial-led-st { font-family: var(--f-display); font-weight: 900; font-size: 12px; letter-spacing: .2em; color: var(--blood); }
+.trial-led-row.is-fail .trial-led-st { color: var(--ash); }
+.trial-led-mis { font-family: var(--f-latin); font-size: 11px; color: var(--rust); text-align: right; }
+.trial-end.has-ledger.is-win .trial-end-row { margin-bottom: 6px; }
 
 /* ==========================================================
    手机
@@ -1376,6 +1616,29 @@
 }
 
 @media (max-width: 760px) {
+  .trial-prof { width: min(286px, calc(100vw - 20px)); padding: 10px 12px 11px; }
+  .trial-prof-items li { max-width: 170px; }
+  .trial-door { width: 22px; height: 29px; margin: -15px 0 0 -11px; }
+  .trial-replay { padding: calc(var(--hud-h) + 48px) 14px 90px; }
+  .trial-rp-go { margin: 18px -14px -90px; }
+  .trial-rp-in { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "plan" "clues" "votes"; gap: 18px; }
+  .trial-rp-head { gap: 14px; }
+  .trial-rp-card { width: 104px; }
+  .trial-rp-name { font-size: 24px; }
+  .trial-rp-plan { height: 230px; }
+  .trial-rp-clue { grid-template-columns: minmax(0, 1fr) 24px 18px minmax(0, auto); gap: 6px; }
+  .trial-rp-f { max-width: 120px; font-size: 11px; padding: 4px 7px; }
+  .trial-rp-k { padding: 7px 8px; }
+  .trial-rp-k span { font-size: 11px; }
+  .trial-rp-votes { gap: 10px; justify-content: center; }
+  .trial-rp-vote { width: 100px; }
+  .trial-rp-ring { width: 96px; height: 96px; }
+  .trial-end-ledger { gap: 3px; }
+  .trial-led-row { grid-template-columns: 22px minmax(0, 1fr) 14px minmax(0, 1fr) auto 18px; gap: 5px; padding: 3px 6px; }
+  .trial-led-face { width: 16px; }
+  .trial-led-p b { font-size: 10px; }
+  .trial-led-st { font-size: 10px; letter-spacing: .05em; }
+  .trial-end.has-ledger.is-win .trial-end-row { display: none; }
   .trial-quip { max-width: 64vw; }
   .trial-quip-face { width: 26px; }
   .trial-quip-body { padding: 5px 9px 6px 10px; }
@@ -1408,6 +1671,6 @@
 /* ---------- 降低动效 ---------- */
 @media (prefers-reduced-motion: reduce) {
   .trial-fx-lines, .trial-exec-rays, .trial-end-halo::after, .trial-veil-sigil i { animation: none !important; }
-  .trial-seat.is-target .trial-seat-card::before, .trial-seat.is-pending .trial-seat-card::before, .trial-seat.is-target .trial-seat-hit::before, .trial-seat.is-tie .trial-seat-card, .trial-inv.is-narrow .trial-spot::before, .trial-seat-count.is-lead, .trial-mark.is-known, .trial-btn.is-breath, .trial-me-act.is-on, .trial-card, .trial-me.is-choice .trial-me-card { animation: none !important; }
+  .trial-seat.is-target .trial-seat-card::before, .trial-seat.is-pending .trial-seat-card::before, .trial-seat.is-target .trial-seat-hit::before, .trial-seat.is-tie .trial-seat-card, .trial-spot::before, .trial-seat-count.is-lead, .trial-card.is-herring, .trial-mark.is-known, .trial-btn.is-breath, .trial-me-act.is-on, .trial-card, .trial-me.is-choice .trial-me-card { animation: none !important; }
   .trial-idcard-inner { transition-duration: .3s; }
 }

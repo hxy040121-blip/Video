@@ -1,13 +1,15 @@
 /* ==========================================================
    十五席 · table —— 装载
    与穹顶下的那张圆桌是同一张：青白玉桌面、老紫檀鼓座、墨玉地盘、十五把乌木扶手椅，
-   1 号正北、顺时针；十五号与一号相邻（开局配置 §1、洋馆物理层 §1.1）。
-   这里换成 3/4 俯视的「操作台」视角：桌沿十五枚黄铜号牌，桌下一排 38 枚圆形肖像徽章。
+   1 号正北、顺时针；十五号与一号相邻（卡司总则 §5、洋馆物理层 §1.1）。
+   这里换成 3/4 俯视的「操作台」视角：桌沿十五枚黄铜号牌，桌下一盘 53 枚圆形肖像徽章——交错的三排（18 / 17 / 18），
+   顺序同卡池长廊（一列一列、上中下）。桌面上整盘摆在桌下；手机上是一条横向滑动的长条（边缘渐隐、下面一道细铜线标出位置），
+   桌与徽章在同一屏里，点徽章再点席位不必上下翻。
    拖：徽章拖向席位，身后拉出一根红线连回原处；靠近空席时被吸住（预览），落座 drop + 席位闪一下黄铜光。
        席上的人可以拖走（拖出桌外即离席），拖到别的席位互换。
    点：点徽章再点席位（手机用这个）；点席上的人再点别的席位互换，点 × 离席。
    随机：席位像老虎机一样闪过人像，一席一席定格；清空：一席一席熄灭。
-   光标：靠近的席位抬起、号牌发亮；桌面与墨玉地盘的反光随光标移动；徽章排像船坞一样在光标下放大。
+   光标：靠近的席位抬起、号牌发亮；桌面与墨玉地盘的反光随光标移动；徽章盘像船坞一样在光标下放大。
    每次变化写入 App.state.seats（长度 15，角色 id 或 null）、App.store('seats')，并发出 cast:change。
    另收 cast:seat / cast:unseat（卡池档案里的「入座 / 离席」）。
    渲染：静态的桌、椅、徽章不成合成层（只有十五个小席位常驻合成层）；徽章放大只重画光标附近的几枚。
@@ -35,6 +37,16 @@
   const f1 = n => n.toFixed(1)
   const Q = () => (App.quality ? App.quality.level : 2) // 2 全效果 / 1 / 0 最省
 
+  /* 徽章盘：交错的三排，长排 L 枚、中间一排错开半格少一枚；53 人正好 18 / 17 / 18。
+     顺序同卡池长廊，一列一列地排：上、中、下，再下一列 */
+  const TRAY = (() => {
+    const n = CH.length, R = 3
+    const L = Math.max(1, Math.ceil((n + Math.floor(R / 2)) / R))
+    const slots = []
+    for (let c = 0; c < L && slots.length < n; c++) for (let r = 0; r < R && slots.length < n; r++) if (!(r % 2 && c === L - 1)) slots.push([c, r])
+    return { L, R, slots }
+  })()
+
   /* 几何（单位：席位环半径 = 1；《洋馆物理层》：桌径 4.8 m、椅环半径约 2.98 m） */
   const G = { table: 0.805, top: 0.255, lip: 0.02, drum: 0.352, floor: 1.42, inlay: 0.64, rim: 0.73, seatZ: 0.15, backZ: 0.37, chairW: 0.104, chairD: 0.09, headZ: 0.27 }
 
@@ -45,12 +57,13 @@
     sel: null, // { kind: 'badge', id } | { kind: 'seat', i }
     drag: null, busy: false, justDragged: 0, hover: null, full: false,
     mx: -1e4, my: -1e4, docTop: 0, docLeft: 0,
+    trayScroll: 0, trayMax: 0, trayCW: 0, barW: 0, thumbW: 0,
   }
   let sec, stage, svg, svgMid, svgTop, gTable, gFront, gBack, gRing, threadSvg, threadPath, threadPin
   // 反光：椭圆裁切（.table-sheen）里一块独立合成的光斑（.table-sheen-spot），跟着光标只改 transform
   const sheen = { top: null, floor: null }
   let corePulse
-  let trayEl, readName, readEpi, countEl, countBig, btnRand, btnClear
+  let trayEl, traySizer, trayBar, trayThumb, readName, readEpi, countEl, countBig, btnRand, btnClear
   const seatEls = [] // { el, disc, head, x, y, nx, ny, num, k, lift, x: btn }
   const badges = {} // id → { el, disc, por, x, y, k }
   const heads = {} // id → 圆形头像（席位 / 拖动用，带视线追随）
@@ -94,6 +107,7 @@
     const vw = window.innerWidth, vh = window.innerHeight
     S.mob = vw < 760
     S.W = vw
+    const L = TRAY.L
     if (S.mob) {
       S.Rx = Math.min(vw * 0.4, 170)
       S.Ry = S.Rx * 0.66
@@ -101,34 +115,33 @@
       S.cx = vw / 2
       S.cy = Math.round(158 + S.Ry + S.Rz * G.headZ)
       S.d = Math.round(S.Rx * 0.215)
-      const cols = 7
-      const gap = 8
-      S.bd = Math.floor((vw - 32 - gap * (cols - 1)) / cols)
-      S.bd = Math.min(S.bd, 48)
-      S.trayCols = cols
-      S.trayGap = gap
+      // 横向滑动的长条：一屏露出六枚半（第七枚切在边上，看得出还有）
+      S.trayGap = 8
+      S.bd = Math.min(50, Math.floor((vw - 32 - S.trayGap * 6) / 6.6))
+      S.trayVP = Math.round((S.bd + S.trayGap) * 0.86)
+      S.trayH = 2 * S.trayVP + S.bd
       S.uiY = Math.round(S.cy + S.Ry * 1.12 + 22)
       S.readY = S.uiY + 50
       S.trayY = S.readY + 50
-      const rows = Math.ceil(CH.length / cols)
-      S.H = Math.round(S.trayY + rows * S.bd + (rows - 1) * (gap + 4) + 40)
+      S.H = Math.round(S.trayY + S.trayH + 52)
     } else {
       S.H = Math.max(vh, 660)
-      S.Rx = Math.min(vw * 0.3, 470, (S.H - 330) * 1.04)
+      // 徽章盘：先按宽与高定徽章大小，再让桌子让出它上面的读名一行（地盘下沿最多压住读名 30px）
+      const avail = Math.min(vw - 2 * Math.max(40, vw * 0.045), 1400)
+      S.trayGap = Math.round(U.clamp(vw * 0.008, 9, 13))
+      S.bd = Math.floor(Math.min(60, S.H * 0.058, (avail - S.trayGap * (L - 1)) / L))
+      S.trayVP = Math.round((S.bd + S.trayGap) * 0.84)
+      S.trayH = 2 * S.trayVP + S.bd
+      S.trayY = Math.round(S.H - S.trayH - 4 - Math.max(30, S.H * 0.04))
+      S.readY = S.trayY - 58
+      S.uiY = S.readY
+      // 地盘下沿 = 0.17H + (0.37 + 0.37·0.93·0.85 + 1.42·0.37)·Rx
+      S.Rx = Math.min(vw * 0.3, 470, (S.H - 330) * 1.04, (S.readY + 30 - S.H * 0.17) / 1.188)
       S.Ry = S.Rx * 0.37
       S.Rz = S.Rx * 0.93
       S.cx = vw / 2
       S.cy = Math.round(S.H * 0.17 + S.Ry + S.Rz * G.backZ * 0.85)
       S.d = Math.round(Math.min(72, Math.max(50, S.Rx * 0.14)))
-      const cols = Math.ceil(CH.length / 2)
-      const avail = Math.min(vw - 2 * Math.max(40, vw * 0.045), 1400)
-      S.trayCols = cols
-      S.trayGap = Math.max(8, Math.min(16, (avail - cols * 56) / (cols - 1)))
-      S.bd = Math.floor(Math.min(60, (avail - S.trayGap * (cols - 1)) / cols))
-      const trayH = 2 * S.bd + S.trayGap + 6
-      S.trayY = S.H - trayH - Math.max(36, S.H * 0.05)
-      S.readY = S.trayY - 62
-      S.uiY = S.readY
     }
     stage.style.height = S.H + 'px'
     sec.classList.toggle('is-mob', S.mob)
@@ -312,25 +325,68 @@
   }
 
   function placeTray() {
-    const cols = S.trayCols, bd = S.bd, gap = S.trayGap
-    const total = cols * bd + (cols - 1) * gap
-    const x0 = (S.W - total) / 2
-    const rowGap = S.mob ? gap + 4 : gap
-    const rows = Math.ceil(CH.length / cols)
-    // 徽章区的盒子只框住徽章（留出放大的余量），不再盖满整个舞台
-    const m = Math.round(bd * 0.45)
-    const tx = Math.floor(x0 - m), ty = Math.floor(S.trayY - m)
-    Object.assign(trayEl.style, { left: tx + 'px', top: ty + 'px', width: Math.ceil(total + 2 * m) + 'px', height: Math.ceil(rows * bd + (rows - 1) * rowGap + 2 * m) + 'px' })
+    const bd = S.bd, gap = S.trayGap, pitch = bd + gap, L = TRAY.L
+    const total = L * bd + (L - 1) * gap // 长排的宽（短排错开半格，落在它里面）
+    let tx, ty, tw, th, x0
+    if (S.mob) {
+      // 长条：盒子横贯整屏，里面横向滚动；两头各留一段给渐隐
+      const m = Math.round(bd * 0.32)
+      x0 = 16
+      tx = 0; ty = S.trayY - m; tw = S.W; th = S.trayH + 2 * m
+      S.trayCW = Math.ceil(x0 + total + 30)
+      traySizer.style.width = S.trayCW + 'px'
+      S.trayMax = Math.max(0, S.trayCW - S.W)
+      Object.assign(trayBar.style, { display: '', left: '16px', top: Math.round(S.trayY + S.trayH + 16) + 'px', width: S.W - 32 + 'px' })
+      S.barW = S.W - 32
+      S.thumbW = Math.max(24, Math.round(S.barW * S.W / S.trayCW))
+      trayThumb.style.width = S.thumbW + 'px'
+      if (trayEl.scrollLeft > S.trayMax) trayEl.scrollLeft = S.trayMax
+      onTrayScroll()
+    } else {
+      // 整盘居中；盒子只框住徽章（留出放大的余量），不盖满整个舞台
+      const m = Math.round(bd * 0.45)
+      x0 = (S.W - total) / 2
+      tx = Math.floor(x0 - m); ty = Math.floor(S.trayY - m); tw = Math.ceil(total + 2 * m); th = Math.ceil(S.trayH + 2 * m)
+      x0 -= tx
+      traySizer.style.width = '0px'
+      trayBar.style.display = 'none'
+      S.trayScroll = 0
+      if (trayEl.scrollLeft) trayEl.scrollLeft = 0
+    }
+    S.trayX = tx; S.trayTop = ty
+    Object.assign(trayEl.style, { left: tx + 'px', top: ty + 'px', width: tw + 'px', height: th + 'px' })
+    const y0 = S.trayY - ty
     CH.forEach((c, n) => {
       const b = badges[c.id]
-      const col = n % cols, row = Math.floor(n / cols)
-      b.x = x0 + col * (bd + gap) + bd / 2
-      b.y = S.trayY + row * (bd + rowGap) + bd / 2
-      b.el.style.left = f1(b.x - tx) + 'px'
-      b.el.style.top = f1(b.y - ty) + 'px'
+      const [col, row] = TRAY.slots[n]
+      b.lx = x0 + col * pitch + (row % 2 ? pitch / 2 : 0) + bd / 2
+      b.ly = y0 + row * S.trayVP + bd / 2
+      b.x = tx + b.lx
+      b.y = ty + b.ly
+      b.el.style.left = f1(b.lx) + 'px'
+      b.el.style.top = f1(b.ly) + 'px'
       b.el.style.width = b.el.style.height = bd + 'px'
       b.el.style.marginLeft = b.el.style.marginTop = -bd / 2 + 'px'
     })
+  }
+  // 徽章此刻在舞台里的位置（手机的长条横向滚过了多少）
+  const badgeXY = b => [b.x - (S.mob ? S.trayScroll : 0), b.y]
+  // 长条滚动：只记下位置、挪那一小截铜线（不在帧循环里读 scrollLeft）
+  function onTrayScroll() {
+    S.trayScroll = trayEl.scrollLeft
+    if (!S.mob) return
+    const p = S.trayMax ? U.clamp(S.trayScroll / S.trayMax) : 0
+    trayThumb.style.transform = `translateX(${f1(p * (S.barW - S.thumbW))}px)`
+  }
+  // 手机：要飞回的那枚徽章不在长条的可见段里，就把长条滚到它面前；返回它落定后的舞台坐标
+  function revealBadge(b) {
+    if (!S.mob) return badgeXY(b)
+    const vis = b.lx - S.trayScroll
+    if (vis > S.bd * 0.6 && vis < S.W - S.bd * 0.6) return badgeXY(b)
+    const to = Math.round(U.clamp(b.lx - S.W / 2, 0, S.trayMax))
+    const o = { v: S.trayScroll }
+    gsap.to(o, { v: to, duration: 0.55, ease: 'power2.inOut', onUpdate: () => { trayEl.scrollLeft = o.v } })
+    return [b.x - to, b.y]
   }
 
   function placeUI() {
@@ -458,7 +514,10 @@
       return
     }
     gsap.set([readName, readEpi], { opacity: 1 })
-    readName.textContent = c.name
+    // 卡名；括号里的显示名（两位乔瑟夫、两位承太郎）刻成名字旁一枚小铜签
+    const m = /^(.+?)（([^（）]+)）$/.exec(c.name)
+    readName.textContent = m ? m[1] : c.name
+    if (m) readName.appendChild(el('i.read-part', { text: m[2] }))
     readEpi.textContent = ''
     App.text.scramble(readEpi, c.epithet, { duration: 0.6 })
     if (!RM) gsap.fromTo(readName, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.45, ease: 'expo.out' })
@@ -513,6 +572,7 @@
   function returnToTray(id, i) {
     const s = seatEls[i], b = badges[id]
     if (!s || !b || RM) return
+    const [bx, by] = revealBadge(b)
     const fly = cloneHead(id)
     fly.classList.add('table-fly')
     const sz = s.size
@@ -520,7 +580,7 @@
     stage.appendChild(fly)
     gsap.set(fly, { x: s.x - sz / 2, y: s.y - sz / 2 })
     gsap.to(fly, {
-      x: b.x - sz / 2, y: b.y - sz / 2, scale: S.bd / sz, duration: 0.7, ease: 'power3.inOut',
+      x: bx - sz / 2, y: by - sz / 2, scale: S.bd / sz, duration: 0.7, ease: 'power3.inOut',
       onComplete: () => { fly.remove(); gsap.fromTo(b.el, { scale: 1.25 }, { scale: 1, duration: 0.5, ease: 'back.out(3)', clearProps: 'scale' }) },
     })
     App.audio.sfx('whoosh', { volume: 0.5, pan: U.clamp((s.x / S.W - 0.5) * 1.6, -1, 1) })
@@ -598,7 +658,8 @@
   function beginDrag(ev, src) {
     const id = src.id
     const gd = Math.round(S.d * 1.06)
-    const o = src.kind === 'seat' ? { x: seatEls[src.i].x, y: seatEls[src.i].y } : { x: badges[id].x, y: badges[id].y }
+    const bxy = badgeXY(badges[id])
+    const o = src.kind === 'seat' ? { x: seatEls[src.i].x, y: seatEls[src.i].y } : { x: bxy[0], y: bxy[1] }
     setSel(null)
     const ghost = el('div.ghost')
     ghost.style.width = ghost.style.height = gd + 'px'
@@ -706,9 +767,9 @@
         S.seats[from] = null
         renderSeat(from)
         commit()
-        const b = badges[D.id]
-        retractThread(b.x, b.y, false)
-        gsap.to(D.ghost, { x: b.x - D.gd / 2, y: b.y - D.gd / 2, scale: S.bd / D.gd, duration: 0.6, ease: 'power3.inOut', onUpdate: () => followThread(D), onComplete: end })
+        const [bx, by] = revealBadge(badges[D.id])
+        retractThread(bx, by, false)
+        gsap.to(D.ghost, { x: bx - D.gd / 2, y: by - D.gd / 2, scale: S.bd / D.gd, duration: 0.6, ease: 'power3.inOut', onUpdate: () => followThread(D), onComplete: end })
         App.audio.sfx('whoosh', { volume: 0.6 })
       } else {
         gsap.to(D.ghost, {
@@ -881,8 +942,13 @@
       x.addEventListener('click', e => { e.stopPropagation(); setSel(null); App.audio.sfx('whoosh', { volume: 0.6 }); unseat(i, true) })
     }
 
-    // 徽章区
+    // 徽章盘（手机上是横向滚动的长条：.table-tray-size 撑出滚动宽度，下面一道细铜线 .table-traybar 标出看到哪儿）
     trayEl = el('div.tray')
+    traySizer = el('i.tray-size', { 'aria-hidden': 'true' })
+    trayEl.appendChild(traySizer)
+    trayEl.addEventListener('scroll', onTrayScroll, { passive: true })
+    trayThumb = el('i')
+    trayBar = el('div.traybar', { 'aria-hidden': 'true' }, trayThumb)
     for (const c of CH) {
       const b = el('button.badge', { type: 'button', 'aria-label': c.name, 'data-cursor': '', 'data-id': c.id })
       const disc = el('span.disc')
@@ -900,7 +966,7 @@
       b.addEventListener('pointerenter', () => { S.hover = c.id; if (!S.drag && !S.sel) showName(c.id) })
       b.addEventListener('pointerleave', () => { S.hover = null; if (!S.drag && !S.sel) showName(null) })
     }
-    stage.appendChild(trayEl)
+    stage.append(trayEl, trayBar)
 
     // 名字读出、计数、按钮
     readName = el('div.read-name')
@@ -976,7 +1042,7 @@
     }
     // 徽章：船坞式放大（只写 scale 属性）
     if (!S.mob) {
-      const inTray = fine && my > S.trayY - S.bd * 1.2 && my < S.trayY + S.bd * 3.4
+      const inTray = fine && my > S.trayY - S.bd * 1.2 && my < S.trayY + S.trayH + S.bd * 1.2
       for (const c of CH) {
         const b = badges[c.id]
         let k = 1
@@ -991,6 +1057,9 @@
           const on = q !== 1
           b.kw = q
           b.el.style.scale = on ? q : ''
+          // 放大的那几枚压在交错的邻排上面
+          const z = on ? (q > 1.12 ? '3' : '2') : ''
+          if (z !== b.zw) { b.zw = z; b.el.style.zIndex = z }
         }
       }
     }
@@ -1019,6 +1088,13 @@
         if (tw !== g.w) { g.w = tw; h.querySelectorAll('.p-iris').forEach(n => n.setAttribute('transform', tw)) }
       }
     }
+  }
+
+  // 手机：长条第一次露出来时往右探一截再回来——看得出能滑（不写字）
+  function peekTray() {
+    if (!S.mob || RM || S.trayScroll > 0 || !S.trayMax) return
+    const o = { v: 0 }
+    gsap.to(o, { v: Math.min(84, S.trayMax), duration: 0.65, ease: 'power2.inOut', yoyo: true, repeat: 1, delay: 0.25, onUpdate: () => { trayEl.scrollLeft = o.v } })
   }
 
   /* =====================================================================
@@ -1070,12 +1146,13 @@
         gsap.fromTo(seatEls.map(s => s.num), { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.05, clearProps: 'opacity', scrollTrigger: { trigger: sec, start: 'top 55%', toggleActions: 'play none none none' } })
         // 入场的一秒多里徽章临时各自成层（只走合成器，不逐帧重画徽章区），并关掉徽章自带的 opacity 过渡
         // （否则每一帧的 opacity 都会再起一段 CSS 过渡）；入场完就撤
-        const tray = Array.from(trayEl.children)
+        // （徽章盘露出来时才播：原来挂在板块顶到 40% 处，那时徽章盘还在屏幕下面）
+        const tray = Array.from(trayEl.querySelectorAll('.table-badge'))
         gsap.fromTo(tray, { opacity: 0, y: 20 }, {
-          opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: { each: 0.015, from: 'center' }, clearProps: 'opacity,y',
-          scrollTrigger: { trigger: sec, start: 'top 40%', toggleActions: 'play none none none' },
+          opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: { each: 0.012, from: 'center' }, clearProps: 'opacity,y',
+          scrollTrigger: { trigger: trayEl, start: 'top 94%', toggleActions: 'play none none none' },
           onStart: () => { for (const n of tray) { n.style.transition = 'none'; n.style.willChange = 'transform, opacity' } },
-          onComplete: () => { for (const n of tray) { n.style.transition = ''; n.style.willChange = '' } },
+          onComplete: () => { for (const n of tray) { n.style.transition = ''; n.style.willChange = '' }; peekTray() },
         })
       }
       let rw = 0, lastW = window.innerWidth

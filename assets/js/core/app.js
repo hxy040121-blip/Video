@@ -149,6 +149,267 @@
   for (const c of App.chars) App.charMap[c.id] = c
   App.char = id => App.charMap[id] || null
 
+  /* ---------- 本局钱袋（App.state.econ · App.econ） ----------
+     依据：价目表 8.1–8.2、第 9 节；开局流程 2.2；主持人游戏 8。接口说明另见 docs/design-system.md §9。
+     一局一个钱袋：铜牌与模拟庭审读写同一份。开新局（App.econ.newGame）整个换掉，不跨局累积，也不写进本地存储（刷新即无）。
+     还没有人开过局时 App.state.econ 为 null；铜牌上第一次取币 / 兑换时由 App.econ.ensure() 开一局「铜牌上的试玩」。
+     App.state.econ = {
+       game      局号（每开一局 +1）
+       source    'plaque' 铜牌上的试玩（盘里十五摞都在，你还没取）/ 'trial' 模拟庭审开的局（规则宣告之后：每人已各取一摞）
+       me        「你」的角色 id（庭审里你选的人；铜牌上修复残疾时可以先选）；null 未定
+       seat      你的席位号 1–15（号牌 = 套房号）；0 未知
+       coins     你身上带着的枚数。只有这些能付账；没有账本，也没有余额播报（8.1）
+       spent     这一局你付出去的枚数（熔进铜牌）
+       tray[15]  理币盘，一列十五摞：{ n 这一摞还剩几枚, owner 这一摞是谁的 }
+                 owner：null 没人动过 / 'me' 你的一摞 / 'other' 别人的（你从中拿过）/ 角色 id（庭审开局各取一摞）
+       grabbed   你从别人的那一摞里拿的枚数（抢夺不受惩罚，只是人人看得见）
+       items[]   交付到你手边、还留着的东西：{ name, pts 单价（分）, qty, kind, off, at }
+                 kind：'item' 物品 / 'service' 服务（在你绑定的套房兑现）/ 'ticket' 退出券；off：牌外（第 10 节）的东西
+       repaired  { 角色 id: true }：修复过身体残疾的人（卡上写明保留的残疾全部修好；乔尼、格里菲斯此后能走）
+       asked     { 牌外物品名: 分 }：问过价的牌外物品（第 10 节问了才知道；此后照这个价）
+       exited    null / { at, seat }：持退出券离馆（不是死亡；离馆者退出游戏和愿望争夺，回到记忆截止那一刻）
+       last      最近一次变化，给监听者决定怎么演：{ type: 'new'|'take'|'gain'|'lose'|'pay'|'ask'|'me'|'exit', … }
+     }
+     每次变化后 App.bus.emit('econ:change', econ)；App.state.coins 同步为 econ.coins（旧代码兼容）。 */
+  ;(function () {
+    const PR = () => (window.WORLD && window.WORLD.prices) || {}
+    const NST = 15, PER = 10
+    // 卡上写明保留的残疾（人物卡「身体」一条原文；卡司总则 2、价目表第 9 节）。人物数据日后若带 disability 字段，以数据为准
+    const DISABLED = {
+      johnny: '腰以下瘫痪',
+      griffith: '手脚的筋被切断，舌头被割掉，人瘦得皮包骨头',
+      guts: '左前臂和右眼没了',
+      sasuke: '左臂没有了',
+      shanks: '左臂从肩下不远处断掉，只剩一截上臂根',
+      baku: '体弱，跑不了几步就喘，力气撑不久',
+    }
+    // 几条典型的「不成立」请求（价目表 8.2；key 对应 WORLD.prices.void.kinds）
+    const VOID_ASKS = [
+      { label: '谁是受命者', key: 'ask' },
+      { label: '能打开正门的钥匙', key: 'bypass' },
+      { label: '能打出去的电话', key: 'bypass' },
+      { label: '买回被封住的本事', key: 'power' },
+    ]
+    let gameNo = 0
+    const st = () => App.state.econ
+    const emit = (e, last) => {
+      e.last = last
+      App.state.coins = e.coins
+      App.bus.emit('econ:change', e)
+      return e
+    }
+    // 铜牌上的条目（第 1–6 节）与牌外价目（第 10 节，火器按「一把 / 弹药一发」拆成两条）
+    let plaqueIdx = null, offIdx = null
+    function plaqueList() {
+      if (plaqueIdx) return plaqueIdx
+      plaqueIdx = []
+      for (const ch of PR().chapters || []) for (const it of ch.items || []) if (it.item) plaqueIdx.push({ name: it.item, pts: +it.points || 0, ch: ch.title })
+      return plaqueIdx
+    }
+    function offList() {
+      if (offIdx) return offIdx
+      offIdx = []
+      const op = PR().offPlaque || {}
+      for (const ch of op.chapters || []) {
+        for (const t of ch.tiers || []) {
+          offIdx.push({ name: t.item + '，一把', pts: +t.points || 0, no: ch.no, title: ch.title, level: t.level })
+          offIdx.push({ name: t.item + '，弹药一发', pts: +t.round || 0, no: ch.no, title: ch.title, level: t.level })
+        }
+        for (const it of ch.items || []) offIdx.push({ name: it.item, pts: +it.points || 0, no: ch.no, title: ch.title })
+      }
+      return offIdx
+    }
+    const disability = id => {
+      const c = App.char(id)
+      return (c && c.disability) || DISABLED[id] || null
+    }
+    const kindOf = name => /退出券/.test(name) ? 'ticket' : /服务/.test(name) ? 'service' : /修复身体残疾/.test(name) ? 'repair' : 'item'
+    // 列表项统一成 { name, pts, qty, kind, off, void, repair }；字符串按名字查价（先铜牌，后牌外）
+    function norm(list) {
+      const out = []
+      for (const raw of [].concat(list || [])) {
+        if (raw == null) continue
+        const it = typeof raw === 'string' ? { name: raw } : Object.assign({}, raw)
+        if (it.pts == null && it.name) {
+          const p = plaqueList().find(x => x.name === it.name)
+          const o = !p && offList().find(x => x.name === it.name)
+          if (p) it.pts = p.pts
+          else if (o) { it.pts = o.pts; it.off = true }
+        }
+        it.pts = +it.pts || 0
+        it.qty = Math.max(1, Math.floor(+it.qty || 1))
+        it.kind = it.kind || (it.void ? 'void' : kindOf(it.name || ''))
+        out.push(it)
+      }
+      return out
+    }
+
+    const E = App.econ = {
+      NST, PER, TOTAL: NST * PER, TICKET: 500, // 开局全馆 150 枚；退出券一张 500 枚
+      BATCH: [5, 10],                           // 每审结一批，存活在馆者每人得 5（全部查明再 +5）
+      VOID_ASKS,
+      get: st,
+      // 当前这一局；还没有就开一局「铜牌上的试玩」
+      ensure: () => st() || E.newGame({ source: 'plaque' }),
+      /* 开新局。opts：
+         me      「你」的角色 id；seats  十五席（长度 15，元素是角色 id 或 null）
+         source  'trial' / 'plaque'（默认：有 me 就是 'trial'）
+         taken   盘里是不是已经各取一摞（默认：source 为 'trial' 时是——模拟从规则宣告之后开始）
+         coins   你身上的起始枚数（默认：已各取一摞时 10，否则 0） */
+      newGame(opts = {}) {
+        const seats = Array.isArray(opts.seats) ? opts.seats.slice(0, NST) : (App.state.seats || []).slice(0, NST)
+        const me = opts.me || null
+        const source = opts.source || (me ? 'trial' : 'plaque')
+        const taken = opts.taken != null ? !!opts.taken : source === 'trial'
+        const seat = me ? seats.indexOf(me) + 1 : 0
+        const tray = []
+        for (let i = 0; i < NST; i++) {
+          // 已各取一摞：有人坐的席位那一摞已被取走；空席的那一摞还在盘里
+          if (taken && (!seats.some(Boolean) || seats[i])) tray.push({ n: 0, owner: seats[i] ? (seats[i] === me ? 'me' : seats[i]) : 'other' })
+          else tray.push({ n: PER, owner: null })
+        }
+        const e = {
+          game: ++gameNo, source, me, seat: Math.max(0, seat),
+          coins: opts.coins != null ? Math.max(0, Math.floor(opts.coins)) : taken ? PER : 0,
+          spent: 0, tray, grabbed: 0, items: [], repaired: {}, asked: {}, exited: null, last: null,
+        }
+        App.state.econ = e
+        return emit(e, { type: 'new' })
+      },
+      // 设定「你」是谁（铜牌上修复残疾时选人；庭审开局由 newGame 带入）
+      setMe(id) {
+        const e = E.ensure()
+        if (e.me === id) return e
+        e.me = id || null
+        e.seat = id ? (App.state.seats || []).indexOf(id) + 1 : 0
+        return emit(e, { type: 'me', id: e.me })
+      },
+      // 从理币盘第 i 摞取一枚：第一次碰的那一摞是你的，你有了一摞之后再拿的都是「别人的那一摞」
+      take(i) {
+        const e = E.ensure(), s = e.tray[i]
+        if (!s || s.n <= 0 || e.exited) return null
+        const mine = e.tray.some(t => t.owner === 'me')
+        let grab = false
+        if (s.owner !== 'me') {
+          if (!mine && s.owner == null) s.owner = 'me'
+          else { grab = true; if (s.owner == null) s.owner = 'other'; e.grabbed++ }
+        }
+        s.n--
+        e.coins++
+        emit(e, { type: 'take', i, grab, n: 1 })
+        return { grab, left: s.n }
+      },
+      // 你身上多了 / 少了几枚（余波发放、拾取、交易、被抢……）；why 只是给监听者看的标签
+      gain(n, why) {
+        n = Math.floor(+n || 0)
+        const e = E.ensure()
+        if (n <= 0) return e
+        e.coins += n
+        return emit(e, { type: 'gain', n, why: why || null })
+      },
+      lose(n, why) {
+        const e = E.ensure()
+        n = Math.min(e.coins, Math.floor(+n || 0))
+        if (n <= 0) return e
+        e.coins -= n
+        return emit(e, { type: 'lose', n, why: why || null })
+      },
+      /* 结算检查（纯函数，不改钱袋）。list：名字，或 { name, pts?, qty?, void?, repair? } 的数组
+           void   不成立类别的 key（WORLD.prices.void.kinds：power/super/ask/kill/bypass/outsider）
+           repair 修复谁（角色 id；省略时按名字「修复身体残疾」识别，修的是 econ.me）
+         返回 { ok, total 总价（分）, coins 要付几枚, reason, key, text 原文, result, … }
+           reason：null 成立 / 'empty' / 'exited' 已离馆 / 'void' 不成立的请求 / 'repair' 对象没有卡上写明的残疾（who 为 null：还不知道「你」是谁）
+                   / 'round' 总价不是整百（short：还差几分凑满）/ 'purse' 身上的枚数不够（need：还差几枚）
+           text：WORLD.prices.void 里对应的原文；result：「不收金币……他只得知不成立」原句 */
+      settle(list, econ) {
+        econ = econ === undefined ? st() : econ
+        const V = PR().void || { kinds: [], other: [], result: '' }
+        const rule = k => (V.kinds || []).find(x => x.key === k) || (V.other || []).find(x => x.key === k) || null
+        const items = norm(list)
+        let total = 0
+        for (const it of items) total += it.pts * it.qty
+        const no = (reason, key, extra) => Object.assign({ ok: false, total, coins: 0, reason, key: key || null, text: key && rule(key) ? rule(key).text : '', result: V.result || '' }, extra || null)
+        if (!items.length) return no('empty')
+        if (econ && econ.exited) return no('exited')
+        for (const it of items) if (it.void) return no('void', it.void, { item: it.name || null })
+        for (const it of items) {
+          if (it.kind !== 'repair' && it.repair == null) continue
+          const who = it.repair || (econ && econ.me) || null
+          if (!who || !disability(who) || (econ && econ.repaired[who])) return no('repair', 'repair', { who })
+        }
+        if (total % 100) return no('round', 'round', { short: 100 - (total % 100) })
+        const coins = total / 100
+        const have = econ ? econ.coins : 0
+        if (have < coins) return no('purse', 'purse', { coins, need: coins - have })
+        return { ok: true, total, coins, reason: null, key: null, text: '', result: '' }
+      },
+      // 结算并付款、交付：成立时扣金币、把东西记进 items（修复记进 repaired）；不成立时什么都不改。返回 settle 的结果（成立时多 items：这一次交付的）
+      pay(list) {
+        const e = E.ensure()
+        const r = E.settle(list, e)
+        if (!r.ok) return r
+        const got = []
+        e.coins -= r.coins
+        e.spent += r.coins
+        for (const it of norm(list)) {
+          if (it.kind === 'repair' || it.repair != null) {
+            const who = it.repair || e.me
+            e.repaired[who] = true
+            got.push({ name: it.name || '修复身体残疾', pts: it.pts, qty: 1, kind: 'repair', who })
+            continue
+          }
+          const kind = it.kind === 'void' ? 'item' : it.kind
+          const off = !!it.off || (!plaqueList().some(x => x.name === it.name) && offList().some(x => x.name === it.name))
+          const have = kind !== 'ticket' && e.items.find(x => x.name === it.name && x.kind === kind)
+          if (have) have.qty += it.qty
+          else e.items.push({ name: it.name, pts: it.pts, qty: it.qty, kind, off, at: e.items.length })
+          got.push({ name: it.name, pts: it.pts, qty: it.qty, kind, off })
+        }
+        r.items = got
+        emit(e, { type: 'pay', coins: r.coins, total: r.total, items: got })
+        return r
+      },
+      // 问价（第 10 节牌外物品）：只对本人报价；问过的价记进 asked。返回分数，表上没有返回 null
+      ask(name) {
+        const o = offList().find(x => x.name === name)
+        if (!o) return null
+        const e = E.ensure()
+        if (e.asked[name] == null) {
+          e.asked[name] = o.pts
+          emit(e, { type: 'ask', name, pts: o.pts })
+        }
+        return o.pts
+      },
+      // 持退出券要求离馆：手边须有一张退出券。成功后 econ.exited = { at, seat }；opts.at 可传局内分钟数
+      exit(opts = {}) {
+        const e = st()
+        if (!e || e.exited) return false
+        const k = e.items.findIndex(x => x.kind === 'ticket' && x.qty > 0)
+        if (k < 0) return false
+        if (--e.items[k].qty <= 0) e.items.splice(k, 1)
+        e.exited = { at: Math.floor(opts.at != null ? opts.at : App.state.minutes), seat: e.seat }
+        emit(e, { type: 'exit' })
+        return true
+      },
+      disability,                               // 卡上写明保留的残疾（原文）；没有返回 null
+      canWalk(id) {                             // 卡上的 canWalk，修复过残疾的按能走算
+        const c = App.char(id), e = st()
+        return !(c && c.canWalk === false) || !!(e && e.repaired[id])
+      },
+      price(name) {                             // { pts, off }：先查铜牌，后查牌外；都没有返回 null
+        const p = plaqueList().find(x => x.name === name)
+        if (p) return { pts: p.pts, off: false }
+        const o = offList().find(x => x.name === name)
+        return o ? { pts: o.pts, off: true } : null
+      },
+      plaqueList, offList,
+      trayLeft: () => { const e = st(); return e ? e.tray.reduce((a, t) => a + t.n, 0) : NST * PER },
+      stacksLeft: () => { const e = st(); return e ? e.tray.filter(t => t.n > 0).length : NST },
+      hasTicket: () => { const e = st(); return !!(e && e.items.some(x => x.kind === 'ticket' && x.qty > 0)) },
+    }
+    App.state.econ = null
+  })()
+
   /* ---------- 光标 / 鼠标 ---------- */
   const mouse = (App.mouse = {
     x: window.innerWidth / 2, y: window.innerHeight / 2,

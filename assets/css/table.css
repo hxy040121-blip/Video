@@ -154,11 +154,23 @@ html[data-q="0"] .table-sheen { display: none; }
   transition: opacity .45s var(--ease-out);
 }
 
-/* ---------- 徽章区 ---------- */
-/* 徽章区：盒子只框住徽章（table.js 的 placeTray） */
+/* ---------- 徽章盘 ---------- */
+/* 徽章盘：交错的三排（table.js 的 TRAY / placeTray）；桌面上盒子只框住徽章 */
 .table-tray { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 20; }
-/* 船坞式放大：table.js 直接写 scale 属性。徽章不成层（38 枚各占一层太多；临时提层又会让徽章区反复重新分层），
-   放大时只重画光标附近那几枚的小方块 */
+.table-tray-size { position: absolute; left: 0; top: 0; height: 1px; display: block; pointer-events: none; visibility: hidden; }
+/* 手机：横向滑动的长条，两头渐隐；下面一道细铜线，亮的一截是看到的那一段 */
+.table.is-mob .table-tray {
+  pointer-events: auto; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x pan-y;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 30px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 30px), transparent 100%);
+}
+.table.is-mob .table-tray::-webkit-scrollbar { display: none; }
+.table-traybar { position: absolute; z-index: 20; height: 3px; pointer-events: none; }
+.table-traybar::before { content: ''; position: absolute; left: 0; right: 0; top: 1px; height: 1px; background: rgba(111,85,50,.45); }
+.table-traybar > i { position: absolute; left: 0; top: 0; height: 3px; display: block; background: var(--brass); box-shadow: 0 0 6px rgba(194,154,91,.45); }
+/* 船坞式放大：table.js 直接写 scale 属性。徽章不成层（53 枚各占一层太多；临时提层又会让徽章区反复重新分层），
+   放大时只重画光标附近那几枚的小方块；放大的那几枚由 table.js 抬高 z-index，压在交错的邻排上面 */
 .table-badge {
   position: absolute; pointer-events: auto; border-radius: 50%;
   transform-origin: 50% 60%;
@@ -226,6 +238,12 @@ html[data-q="0"] .table-sheen { display: none; }
   display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; text-align: center; white-space: nowrap;
 }
 .table-read-name { font-family: var(--f-display); font-weight: 900; font-size: clamp(22px, 2.2vw, 30px); line-height: 1.1; letter-spacing: .06em; color: var(--bone); min-height: 1.1em; }
+/* 显示名的小铜签（两位乔瑟夫、两位承太郎：卡名括号里的「第二部」……） */
+.table-read-part {
+  display: inline-block; margin-left: .55em; padding: 3px 3px 2px 6px; vertical-align: .32em;
+  font-family: var(--f-sans); font-weight: 500; font-style: normal; font-size: 11px; line-height: 1; letter-spacing: .3em;
+  color: var(--brass); border: 1px solid rgba(194,154,91,.55); background: rgba(194,154,91,.08);
+}
 .table-read-epi { font-family: var(--f-sans); font-size: 11px; letter-spacing: .42em; padding-left: .42em; color: var(--brass); min-height: 1.3em; }
 .table-ui {
   position: absolute; left: var(--gutter); right: var(--gutter); z-index: 26; transform: translateY(-50%);

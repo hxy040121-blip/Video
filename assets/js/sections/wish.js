@@ -661,6 +661,7 @@
         tray: 0, // 理币盘空着
       })
       const H = W.H
+      const trayN = () => { const e = App.state.econ; H.tray = e ? e.tray.filter(t => t.n > 0).length : 0 }; trayN(); App.bus.on('econ:change', trayN) // 理币盘照这一局的钱袋（还没有钱袋就是空盘）
       H.lampPow = 1.7; H.lampRange = 2.7; H.homePow = 0.8; H.homeRange = 3.4
       H.light.power = 0.8
       H.lensA = 0.85
