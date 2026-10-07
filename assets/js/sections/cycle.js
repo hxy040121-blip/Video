@@ -91,7 +91,7 @@
     { key: 'mandate', name: '受命', w: 1.2, pal: { a: '#0c0607', b: '#7d1616', glow: 0.16 }, tension: 0.3, line: pline('mandate', '私人通知，只送达一人。') },
     { key: 'murder', name: '行凶', w: 0.95, pal: { a: '#140507', b: '#a3104a', glow: 0.3 }, tension: 0.62, line: pline('murder', '不可回头的那一步。') },
     { key: 'discover', name: '发现', w: 0.75, pal: { a: '#1e0611', b: '#ff2e7e', glow: 0.7 }, tension: 0.9, line: pline('discovery', '看见了，并确认他已死去。') },
-    { key: 'inv', name: '调查', w: 1.25, pal: { a: '#0a0c0f', b: '#8d98a6', glow: 0.26 }, tension: 0.5, line: pline('investigate', '一百二十分钟，线索无主。') },
+    { key: 'inv', name: '调查', w: 1.25, pal: { a: '#0a0c0f', b: '#8d98a6', glow: 0.26 }, tension: 0.5, line: pline('investigate', '一百二十分钟，谁找到算谁的。') },
     { key: 'court', name: '庭审', w: 1.25, pal: { a: '#16100a', b: '#c29a5b', glow: 0.38 }, tension: 1, line: pline('debate', '自一号席起，各说一次。') },
     { key: 'verdict', name: '判定', w: 1.15, pal: { a: '#1c0408', b: '#d10f45', glow: 0.55 }, tension: 1, line: '' },
     { key: 'after', name: '余波', w: 1.3, pal: { a: '#130e08', b: '#c29a5b', glow: 0.42 }, tension: 0.16, line: pline('payout', '金币无声出现在圆桌上。') },
@@ -1132,7 +1132,7 @@
     const T = []
     const deg = r => (r * 180) / Math.PI
 
-    // 湿鞋淡渍：一串脚印离开尸体
+    // 鞋印：一串脚印离开尸体
     {
       const a = at(0.34, 0.3), b = at(1.22, 0.9)
       const ang = Math.atan2(b[1] - a[1], b[0] - a[0])
@@ -1146,7 +1146,7 @@
         pts.push([x, y])
         m += `<path d="${SOLE}" transform="translate(${fx(x)} ${fx(y)}) rotate(${fx(deg(ang) + 90 + s * 6)}) scale(${(sc * (s > 0 ? -1 : 1)).toFixed(3)} ${sc.toFixed(3)})"/>`
       }
-      T.push({ id: 'shoe', cls: 'tr-shoe', m, pts, lbl: clueName('woodprint', '湿鞋淡渍'), lp: [b[0] - R * 0.05, b[1] + R * 0.12] })
+      T.push({ id: 'shoe', cls: 'tr-shoe', m, pts, lbl: clueName('woodprint', '鞋印'), lp: [b[0] - R * 0.05, b[1] + R * 0.12] })
     }
     // 血滴
     {
