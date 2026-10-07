@@ -1360,10 +1360,14 @@
    结案对账：真相回放
    ========================================================== */
 .trial-replay {
-  position: absolute; inset: 0; z-index: 30; overflow: hidden auto; overscroll-behavior: contain;
+  position: absolute; left: 0; right: 0; bottom: 0; top: calc(var(--hud-h) + 44px); z-index: 30; overflow: hidden auto; overscroll-behavior: contain;
   background: radial-gradient(ellipse 70% 60% at 30% 40%, rgba(40, 14, 20, .55), rgba(8, 6, 7, .96) 72%), rgba(8, 6, 7, .9);
-  padding: calc(var(--hud-h) + 52px) var(--gutter) 96px;
+  padding: 10px var(--gutter) 96px;
+  /* 滚动的内容不钻到顶栏底下：上沿淡出 */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
 }
+.trial-stage[data-scene="replay"]::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: calc(var(--hud-h) + 44px); z-index: 29; background: rgba(8, 6, 7, .9); pointer-events: none; }
 .trial-rp-in {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); grid-template-areas: "head plan" "clues votes";
   gap: 26px 36px; max-width: 1240px; margin: 0 auto;
@@ -1618,7 +1622,7 @@
   .trial-prof { width: min(286px, calc(100vw - 20px)); padding: 10px 12px 11px; }
   .trial-prof-items li { max-width: 170px; }
   .trial-door { width: 22px; height: 29px; margin: -15px 0 0 -11px; }
-  .trial-replay { padding: calc(var(--hud-h) + 48px) 14px 90px; }
+  .trial-replay { padding: 8px 14px 90px; }
   .trial-rp-go { margin: 18px -14px -90px; }
   .trial-rp-in { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "plan" "clues" "votes"; gap: 18px; }
   .trial-rp-head { gap: 14px; }
