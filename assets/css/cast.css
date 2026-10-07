@@ -130,7 +130,10 @@
   background: radial-gradient(circle closest-side, rgba(255,222,160,.95), rgba(255,186,110,.45) 32%, rgba(255,170,90,0) 64%);
 }
 .cast.is-lowq .cast-lamp { display: none !important; } /* 降画质：去掉唯一的混合模式层 */
-/* 玻璃上的反光（悬停时掠过一次；掠过期间 cast.js 临时给它独立合成） */
+/* 玻璃上的反光（悬停时掠过一次；掠过期间 cast.js 临时给它独立合成）。只在悬停那一幅上存在：
+   否则它压在肖像层上面，每幅亮起的画都会为它多建一个（透明的）层 */
+.cast-glint { display: none; }
+.cast-lv.is-warm .cast-glint { display: block; }
 .cast-glint {
   position: absolute; top: -10%; bottom: -10%; left: -40%; right: -40%; pointer-events: none; opacity: 0;
   background: linear-gradient(104deg, transparent 40%, rgba(255,236,200,.1) 46%, rgba(255,246,226,.34) 50%, rgba(255,236,200,.08) 54%, transparent 60%);

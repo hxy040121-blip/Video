@@ -36,7 +36,7 @@
   const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v)
   const sstep = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
   const mix = (a, b, t) => a + (b - a) * t
-  const norm3 = (x, y, z) => { const l = Math.hypot(x, y, z) || 1; return [x / l, y / l, z / l] }
+  const norm3 = (x, y, z) => { const l = Math.sqrt(x * x + y * y + z * z) || 1; return [x / l, y / l, z / l] }
   const rgb = (r, g, b) => 'rgb(' + (r < 0 ? 0 : r > 255 ? 255 : r | 0) + ',' + (g < 0 ? 0 : g > 255 ? 255 : g | 0) + ',' + (b < 0 ? 0 : b > 255 ? 255 : b | 0) + ')'
   const hex = h => U.hexToRgb(h || '#c29a5b')
   const easeIO = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
@@ -93,10 +93,20 @@
   }
   // 世界 → 屏幕 [sx, sy, depth, px/m]；在近平面之后返回 null
   Camera.prototype.p = function (x, y, z) {
-    const c = this.cam(x, y, z)
-    if (c[2] < this.near) return null
-    const s = this.f / c[2]
-    return [this.W / 2 + this.ox + c[0] * s, this.H / 2 + this.oy - c[1] * s, c[2], s]
+    return this.pt(x, y, z, null)
+  }
+  // 同上，写进 out（给每帧成百上千次的投影用，免得每次都新建数组）；out 为 null 时新建
+  Camera.prototype.pt = function (x, y, z, out) {
+    const dx = x - this.pos[0], dy = y - this.pos[1], dz = z - this.pos[2]
+    const R = this.R, Up = this.Up, F = this.F
+    const cz = dx * F[0] + dy * F[1] + dz * F[2]
+    if (cz < this.near) return null
+    const s = this.f / cz
+    const sx = this.W / 2 + this.ox + (dx * R[0] + dy * R[1] + dz * R[2]) * s
+    const sy = this.H / 2 + this.oy - (dx * Up[0] + dy * Up[1] + dz * Up[2]) * s
+    if (!out) return [sx, sy, cz, s]
+    out[0] = sx; out[1] = sy; out[2] = cz; out[3] = s
+    return out
   }
   Camera.prototype.depth = function (x, y, z) {
     return (x - this.pos[0]) * this.F[0] + (y - this.pos[1]) * this.F[1] + (z - this.pos[2]) * this.F[2]
@@ -435,9 +445,9 @@
         // 简单的高光：法线与「光→面→眼」半角
         const L = S.light, C = S.cam.pos
         const lx = L.x - px, ly = L.y - py, lz = L.z - pz, vx = C[0] - px, vy = C[1] - py, vz = C[2] - pz
-        const ll = Math.hypot(lx, ly, lz) || 1, vl = Math.hypot(vx, vy, vz) || 1
+        const ll = Math.sqrt(lx * lx + ly * ly + lz * lz) || 1, vl = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1
         const hx = lx / ll + vx / vl, hy = ly / ll + vy / vl, hz = lz / ll + vz / vl
-        const hl = Math.hypot(hx, hy, hz) || 1
+        const hl = Math.sqrt(hx * hx + hy * hy + hz * hz) || 1
         const nh = Math.max(0, (hx * nx + hy * ny + hz * nz) / hl)
         const k = Math.pow(nh, 28) * spec * L.power * L.flick * S.poolA / (1 + (ll * ll) / (L.range * L.range))
         r += o.lightCol[0] * k; g += o.lightCol[1] * k; b += o.lightCol[2] * k
@@ -755,7 +765,7 @@
       const r0 = 2.5 + ((i * 37) % 11) / 30, r1 = G.disc - 0.06 - ((i * 53) % 7) / 25
       DISC_RAYS.push({ x0: Math.cos(a) * r0, y0: Math.sin(a) * r0, x1: Math.cos(a) * r1, y1: Math.sin(a) * r1, mx: Math.cos(a) * 3.3, my: Math.sin(a) * 3.3 })
     }
-    const rayBk = new Map()
+    const rayBk = new Map(), RP0 = [0, 0, 0, 0], RP1 = [0, 0, 0, 0]
     function drawFloor(ctx) {
       const c = S.cam, Lt = S.light
       const fl = FL
@@ -813,7 +823,7 @@
         const d2 = (R.mx - Lt.x) ** 2 + (R.my - Lt.y) ** 2 + z2
         const key = Math.round(fa * (base + pw / (1 + d2 / rr) * 0.1) * 250)
         if (key <= 0) continue
-        const p0 = c.p(R.x0, R.y0, 0.003), p1 = c.p(R.x1, R.y1, 0.003)
+        const p0 = c.pt(R.x0, R.y0, 0.003, RP0), p1 = c.pt(R.x1, R.y1, 0.003, RP1)
         if (!p0 || !p1) continue
         let L = rayBk.get(key)
         if (!L) rayBk.set(key, (L = []))
@@ -1082,12 +1092,12 @@
     /* ---------- 长方体 ---------- */
     // 八个角一次投影；每个可见面向外扩 0.3px 填一次（等于原来「同色填充 + 0.6px 同色描边」的外缘：
     // 相邻面的接缝不漏底），一面一笔，不再另描一笔
-    const BQX = new Float64Array(8), BQY = new Float64Array(8), ENX = new Float64Array(4), ENY = new Float64Array(4)
+    const BQX = new Float64Array(8), BQY = new Float64Array(8), ENX = new Float64Array(4), ENY = new Float64Array(4), TMP = [0, 0, 0, 0]
     function drawBox(ctx, P, N, alb, spec, extra, faceAlb) {
       const c = S.cam, C = c.pos
       let all = true
       for (let i = 0; i < 8; i++) {
-        const p = c.p(P[i][0], P[i][1], P[i][2])
+        const p = c.pt(P[i][0], P[i][1], P[i][2], TMP)
         if (!p) { all = false; break }
         BQX[i] = p[0]; BQY[i] = p[1]
       }
@@ -1121,7 +1131,7 @@
         const sg = A2 > 0 ? 0.3 : -0.3
         for (let j = 0; j < 4; j++) {
           const i = id[j], k = id[(j + 1) & 3]
-          const dx = BQX[k] - BQX[i], dy = BQY[k] - BQY[i], l = Math.hypot(dx, dy) || 1
+          const dx = BQX[k] - BQX[i], dy = BQY[k] - BQY[i], l = Math.sqrt(dx * dx + dy * dy) || 1
           ENX[j] = dy / l * sg; ENY[j] = -dx / l * sg
         }
         ctx.beginPath()
@@ -1152,11 +1162,11 @@
         const a = pts[i], b = pts[(i + 1) % pts.length]
         const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2
         let nx = b[1] - a[1], ny = a[0] - b[0]
-        const nl = Math.hypot(nx, ny) || 1
+        const nl = Math.sqrt(nx * nx + ny * ny) || 1
         nx /= nl; ny /= nl
         if (nx * (mx - cx) + ny * (my - cy) < 0) { nx = -nx; ny = -ny }
         let lx = ls[0] - mx, ly = ls[1] - my
-        const ll = Math.hypot(lx, ly) || 1
+        const ll = Math.sqrt(lx * lx + ly * ly) || 1
         lx /= ll; ly /= ll
         const f = nx * lx + ny * ly
         if (f < 0.12) continue
@@ -1354,10 +1364,20 @@
       ctx.restore()
       ctx.setTransform(k, 0, 0, k, 0, 0)
     }
-    const glowCache = new Map()
+    const glowCache = new Map(), fontOk = {}
+    // 字体是否已载入（载入后不再查；载入前最多每半秒查一次）
+    function fontReady(font) {
+      let f = fontOk[font]
+      if (f === true) return true
+      const now = performance.now()
+      if (f && now - f < 500) return false
+      f = !document.fonts || document.fonts.check(font)
+      fontOk[font] = f || now
+      return f
+    }
     function numGlow(k, font, hov, sq) {
       // 字体载入前后各缓存一份（载入前用的是后备字体的形状）
-      const ready = !document.fonts || document.fonts.check(font)
+      const ready = fontReady(font)
       const key = k + font + (hov ? 'h' : 'w') + sq + (ready ? '' : '~')
       let c = glowCache.get(key)
       if (c) return c
@@ -1459,12 +1479,12 @@
     // 冷光细线按透明度与线宽分桶，所有肋的同一桶一笔描完。原来是每条肋 14 段、每段两笔（一共八百多笔描边）
     const RX = new Float64Array(15), RY = new Float64Array(15), RWv = new Float64Array(15), SA = new Float64Array(15)
     const NX = new Float64Array(15), NY = new Float64Array(15)
-    const glintBk = new Map()
+    const glintBk = new Map(), RQ = [0, 0, 0, 0]
     // 点 i..k（含两端）连成一块肋身
     function ribPiece(ctx, i, k, alpha) {
       for (let j = i; j <= k; j++) {
         const a = Math.max(i, j - 1), b = Math.min(k, j + 1)
-        const tx = RX[b] - RX[a], ty = RY[b] - RY[a], l = Math.hypot(tx, ty) || 1
+        const tx = RX[b] - RX[a], ty = RY[b] - RY[a], l = Math.sqrt(tx * tx + ty * ty) || 1
         NX[j] = -ty / l; NY[j] = tx / l
       }
       ctx.beginPath()
@@ -1503,14 +1523,14 @@
         for (let j = 0; j <= N; j++) {
           const t = j / N, ang = t * Math.PI / 2
           const k = Math.cos(ang), z = G.spring + (G.apex - G.spring) * Math.sin(ang)
-          const q = c.p(r.sx * k, r.sy * k, z)
+          const q = c.pt(r.sx * k, r.sy * k, z, RQ)
           const okj = !!q
           if (okj) { RX[j] = q[0]; RY[j] = q[1]; RWv[j] = q[3] }
           // 第 j-1 → j 段：透明度取段中点（与原来逐段画时一样）
           let a = 0
           if (okj && ok && j > 0) {
             a = a0
-            if (fadeK) a *= mix(sstep(ringPx * 1.02, ringPx * 1.55, Math.hypot((RX[j] + RX[j - 1]) / 2 - center[0], (RY[j] + RY[j - 1]) / 2 - center[1])), 1, S.tilt)
+            if (fadeK) { const mx = (RX[j] + RX[j - 1]) / 2 - center[0], my = (RY[j] + RY[j - 1]) / 2 - center[1]; a *= mix(sstep(ringPx * 1.02, ringPx * 1.55, Math.sqrt(mx * mx + my * my)), 1, S.tilt) }
             if (a <= 0.005) a = 0
           }
           SA[j] = a
@@ -1520,7 +1540,7 @@
             const m = lp / (1 + ((r.sx * k - Lt.x) ** 2 + (r.sy * k - Lt.y) ** 2 + (z - Lt.z) ** 2) / lr)
             const ga = a * (0.03 + Math.min(0.45, m * 0.55)), gw = Math.max(0.6, w * 0.05)
             const key = Math.round(ga * 50) * 64 + Math.min(63, Math.round(gw * 4))
-            const ox = RY[j] - RY[j - 1], oy = -(RX[j] - RX[j - 1]), ol = Math.hypot(ox, oy) || 1, sh = w * 0.32 * r.side
+            const ox = RY[j] - RY[j - 1], oy = -(RX[j] - RX[j - 1]), ol = Math.sqrt(ox * ox + oy * oy) || 1, sh = w * 0.32 * r.side
             let L = glintBk.get(key)
             if (!L) glintBk.set(key, (L = []))
             L.push(RX[j - 1] + ox / ol * sh, RY[j - 1] + oy / ol * sh, RX[j] + ox / ol * sh, RY[j] + oy / ol * sh)

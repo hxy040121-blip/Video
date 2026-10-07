@@ -101,7 +101,8 @@
       if (skippable) S.skippers.add(sk)
     })
   }
-  function skipAll() { for (const f of Array.from(S.skippers)) f() }
+  // 离席（遮幕在上）时不跳：点遮幕的空白处不能让对局在暂停中往前走
+  function skipAll() { if (S.paused) return; for (const f of Array.from(S.skippers)) f() }
   // 等待玩家输入：setup(resolve) 安装处理器并返回清理函数
   function ask(setup) {
     const tok = S.token
@@ -845,8 +846,8 @@
         const r = b.getBoundingClientRect()
         const sr = S.stage.getBoundingClientRect()
         const fx = opts.from.x - (r.left - sr.left) - r.width / 2, fy = opts.from.y - (r.top - sr.top) - r.height / 2
-        gsap.fromTo(b, { x: fx, y: fy, scale: 0.4, rotate: -14, opacity: 0 }, { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1, duration: 0.8, ease: 'expo.out' })
-      } else gsap.fromTo(b, { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'expo.out' })
+        gsap.fromTo(b, { x: fx, y: fy, scale: 0.4, rotate: -14, opacity: 0 }, { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1, duration: 0.8, ease: 'expo.out', clearProps: 'transform,opacity' })
+      } else gsap.fromTo(b, { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'expo.out', clearProps: 'transform,opacity' })
     }
     track.scrollTo && track.scrollTo({ left: track.scrollWidth, behavior: 'smooth' })
     return rec
@@ -1168,7 +1169,7 @@
      交互：点席位、能力、选人
      ========================================================== */
   function onStageClick(e) {
-    if (e.target.closest('button, a, .trial-roster, .trial-me, .trial-bar')) return
+    if (S.paused || e.target.closest('button, a, .trial-roster, .trial-me, .trial-bar, .trial-veil')) return
     touchSelect(null)
     // 身份卡的说明开着时，点别处先把它收起
     if (S.E.me && S.E.me.classList.contains('is-open')) { toggleMeText(false); return }
@@ -1472,6 +1473,7 @@
      ========================================================== */
   function lockScroll() {
     const top = S.sec.getBoundingClientRect().top + window.scrollY
+    S.lockAt = performance.now()
     const L = App.scroll && App.scroll.lenis
     if (L) {
       L.scrollTo(top, { duration: 0.7, force: true, lock: true, onComplete: () => { if (S.active) App.scroll.stop() } })
@@ -1831,7 +1833,7 @@
     const g = S.geo
     const others = pickVoices(living().filter(x => x !== c.discoverer), U.randInt(1, 2))
     others.forEach((id, i) => {
-      const at = g.mobile ? { x: g.W / 2 + (i ? 40 : -40), y: g.H - 210 + i * 66 } : { x: g.W * (i ? 0.7 : 0.3), y: g.H * (i ? 0.84 : 0.8) }
+      const at = g.mobile ? { x: g.W / 2 + (i ? 40 : -40), y: g.H - 210 + i * 66 } : { x: g.W * (i ? 0.7 : 0.6), y: g.H * (i ? 0.81 : 0.7) }
       setTimeout(() => { if (S.scene === 'cine' && !S.paused) quip(id, line(id, 'react', { V: vName }, ctx), { at, tone: 'react', life: 2.6 }) }, 350 + i * 750)
     })
     await wait(600 + others.length * 650)
@@ -2734,7 +2736,10 @@
         if (opts.lead) gsap.fromTo(lead, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.5, ease: 'expo.out' })
         if (opts.tag) gsap.fromTo(tag, { scale: 2.2, opacity: 0, rotate: -18 }, { scale: 1, opacity: 1, rotate: -8, duration: 0.4, delay: 0.25, ease: 'expo.out' })
       }
-      if (opts.alarm) { App.audio.sfx('glitch', { volume: 0.5 }); App.glitch(box, 0.3) }
+      if (opts.alarm) {
+        App.audio.sfx('glitch', { volume: 0.5 })
+        if (window.gsap) gsap.fromTo(tag, { x: -10 }, { x: 0, duration: 0.6, delay: 0.3, ease: 'elastic.out(1.4, 0.25)' })
+      }
       const sp = opts.fast ? 14 : 20
       await typeIn(box.querySelector('.trial-inv-pop-text'), text, sp, isAct(text))
       if (opts.more) {
@@ -2801,7 +2806,7 @@
       const rec = S.talk && S.talk[id]
       if (!rec) continue
       rec.el.classList.add('is-conflict')
-      if (window.gsap) gsap.fromTo(rec.el, { y: -18 }, { y: 0, duration: 0.6, ease: 'bounce.out' })
+      if (window.gsap) gsap.fromTo(rec.el, { y: -18 }, { y: 0, duration: 0.6, ease: 'bounce.out', clearProps: 'transform' })
     }
     App.audio.sfx('wrong', { volume: 0.35 })
   }
@@ -2996,6 +3001,7 @@
       case 'speech': {
         // 一般看法；或谈自己找到的线索（线索名一闪）
         if (ev.mode === 'clue' && ev.clue) {
+          focusActor(ev.speaker)
           await proof(ev.speaker, ev.clue, null)
           await say(ev.speaker, line(ev.speaker, 'found', { CLUE: ev.clue.name }))
         } else await say(ev.speaker, line(ev.speaker, 'statement'))
@@ -3005,8 +3011,8 @@
         drawLine(ev.speaker, ev.target, { cls: 'is-accuse', kind: 'accuse', dur: 0.35 })
         App.audio.sfx('slash', { volume: 0.5 })
         shakeSeat(ev.target)
-        // 手里有相符的证据：先出示，再指认
-        if (ev.clue) await proof(ev.speaker, ev.clue, ev.target)
+        // 手里有相符的证据：先出示，再指认（上一位的台词先收起）
+        if (ev.clue) { focusActor(ev.speaker); await proof(ev.speaker, ev.clue, ev.target) }
         const text = ev.clue ? line(ev.speaker, 'accuseClue', { X: nameOf(ev.target), CLUE: ev.clue.name }) : line(ev.speaker, 'accuse', { X: nameOf(ev.target) })
         await say(ev.speaker, text, { tone: 'accuse' })
         return
@@ -3713,6 +3719,13 @@
     if (!S.visible || !S.stage) return
     const m = App.mouse
     const r = S.stage.getBoundingClientRect()
+    // 游戏中滚动是锁住的：上方板块迟一步排版（远离视口时不画）会把舞台挤离视口顶端，锁着的滚动不会跟上——对齐回来
+    if (S.active && !S.paused && Math.abs(r.top) > 1.5 && performance.now() - (S.lockAt || 0) > 1500) {
+      S.lockAt = performance.now()
+      const y = window.scrollY + r.top
+      if (App.scroll && App.scroll.lenis) App.scroll.lenis.scrollTo(y, { immediate: true, force: true })
+      else window.scrollTo(0, y)
+    }
     const nx = U.clamp((m.sx - r.left) / (r.width || 1)) - 0.5
     const ny = U.clamp((m.sy - r.top) / (r.height || 1)) - 0.5
     tiltX = U.lerp(tiltX, nx, 0.06)

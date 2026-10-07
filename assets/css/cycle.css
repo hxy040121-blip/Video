@@ -144,6 +144,8 @@
 .cycle-loop {
   position: absolute; z-index: 9; right: var(--gutter); bottom: 28px; width: 80px; height: 80px;
   pointer-events: auto;
+  /* 自成一个 80px 的小层：进度弧每滚一步都在变，不让它并进压在满屏镜头层上的那一大块层里重画 */
+  will-change: transform;
 }
 .cycle-loop-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .cycle-loop-track { fill: none; stroke: rgba(235, 227, 214, .14); stroke-width: 1; }

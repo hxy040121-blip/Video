@@ -41,7 +41,8 @@
     radial-gradient(circle var(--tr, 1000px) at var(--tc, 50% 100%), rgba(8, 6, 8, .2) 0%, rgba(8, 6, 8, .5) 78%, rgba(10, 7, 9, .74) 97.5%, rgba(10, 7, 9, 0) 100%);
   transition: opacity 1s var(--ease-out);
 }
-.identities-table-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+/* 桌沿圆圈只画这一段之内（overflow 不可见：否则整圈都算进图层，又是两千多像素见方） */
+.identities-table-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
 /* 席位记号随扇面转动：整张 SVG 作为合成层绕桌心旋转（桌沿双线、虚线圈另在一张静止的 SVG 里）。
    SVG 本身是桌心的一个 2px 小点，记号画在盒子外面（见 identities.js layoutTable） */
 .identities-table-rot { position: absolute; left: 0; top: 0; width: 2px; height: 2px; overflow: visible; will-change: transform; }

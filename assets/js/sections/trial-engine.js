@@ -8,6 +8,11 @@
    - 庭审流程是一个生成器 TrialEngine.trialFlow(game, trial)：
      它逐个产出要演出的事件；遇到需要玩家决定的地方产出 ask-* 事件，
      由界面用 it.next(输入) 把选择送回。测试与旁观模式用 autoTrial 代答。
+   - 辩论的节拍：turn → 指认 accuse{clue 出示的证据} → 旁人插话 interject{stance: agree|doubt}（0—2 人）
+     → 被指认者回应：defend 辩解 / counter 反咬 / alibi 交代去向（玩家被指认时先产出 ask-respond）
+     → expose 当众拆穿（去向与在场者的真实去向矛盾）；不指认时：speech{mode: statement|clue} / alibi / silent。
+   - 去向：newCase 时为每人生成案发时的真实去向与说法（c.where）；凶手亲手行凶时说谎。玩家调查期可 interview 询问。
+   - 调查的文字（诱饵点的陈设描写、疑似线索、验尸、发现线索的动作）与去向只用子随机数，不消耗 g.r。
 
    本模拟的取舍（与原文一致之处见各函数注释）：
    - 受命者 = 本批唯一凶手（不是玩家）；死者不是玩家、不是凶手。

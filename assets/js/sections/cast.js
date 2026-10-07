@@ -876,11 +876,11 @@
         }
         // 黄铜反光：光斑中心 = 烛光在框坐标里的位置（只改 transform）；亮度够才有这一层
         // （够不着的那圈画框上原来只有光斑最外圈一点暗铜色，看不出来，省掉这一层）
-        const shOn = it.warm || L > (it.shineOn ? 0.25 : 0.3) || (it.shineOn && S.dip > 0.01)
+        const shOn = it.warm || L > (it.shineOn ? 0.3 : 0.35) || (it.shineOn && S.dip > 0.01)
         if (shOn !== it.shineOn) { it.shineOn = shOn; it.lv.classList.toggle('is-shine', shOn); it.gx = -1e9 }
         if (shOn) {
           const gx = S.cx - sx + it.P, gy = S.cy - it.y + it.P
-          const so = ((0.42 + 0.58 * L) * (it.warm ? 1 : smooth(0.25, 0.4, L))).toFixed(2)
+          const so = ((0.42 + 0.58 * L) * (it.warm ? 1 : smooth(0.3, 0.45, L))).toFixed(2)
           if (so !== it.oSh) { it.oSh = so; it.spot.style.opacity = so }
           if (Math.abs(gx - it.gx) > 0.5 || Math.abs(gy - it.gy) > 0.5) moveShine(it, gx, gy)
         }
