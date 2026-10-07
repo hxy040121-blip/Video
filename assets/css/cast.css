@@ -47,8 +47,8 @@
 
 /* ---------- 画：静态版（画在墙里，画一次） ---------- */
 .cast-item { position: absolute; }
-/* 离视口远的画先不画（cast.js 的 setFar：让墙这一层画过的东西都落在合成器的绘制范围里）；透明的点击区留着，Tab 照样走得到 */
-.cast-item.is-far, .cast-eyes.is-far, .cast-thread.is-far { visibility: hidden; }
+/* 墙分段（cast.js 的 buildSegs）：远处那几段先不画，墙这一层画过的东西都落在合成器的绘制范围里；透明的点击区留着 */
+.cast-item.is-far, .cast-thread.is-far { visibility: hidden; }
 .cast-item.is-far > .cast-hit { visibility: visible; }
 .cast-a, .cast-b, .cast-swing, .cast-w { position: absolute; inset: 0; pointer-events: none; }
 .cast-wire { position: absolute; left: 0; display: block; pointer-events: none; background: no-repeat 0 0 / 100% 100%; }

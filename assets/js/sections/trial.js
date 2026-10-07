@@ -44,6 +44,8 @@
     cards: [], tests: {}, armed: null, targeting: null,
     T: null, V: null, C: null,
     coins: 0, skippers: new Set(), lastTime: -1,
+    notes: {},      // 你自己的推理笔记：notes[席上的人][证物 id] = 'ok' 相符 / 'no' 不符 / 'q' 存疑（纯本地标记，不问引擎）
+    frame: null,    // 你在时间刻度上框出的死亡时间窗 [早, 晚]（局内分钟）
   }
   let def
 
@@ -282,6 +284,17 @@
     gloves: '<path d="M7 21v-6L4.5 11.5c-.8-1.2.8-2.4 1.8-1.3L8 12V4.5c0-1.3 2-1.3 2 0V10V3.6c0-1.4 2-1.4 2 0V10V4.6c0-1.3 2-1.3 2 0V11V7c0-1.3 2-1.3 2 0v8l-1 6z"/><path d="M7 18h9"/>',
     pipe: '<path d="M3 9h7l6 6h2.5a2.5 2.5 0 0 0 0-5H16"/><path d="M16 10v-1.5a3 3 0 0 1 3-3"/><path d="M7 6c0-1 .8-1.5.8-2.5M10 6c0-1 .8-1.5.8-2.5" opacity=".6"/>',
     body: '<circle cx="12" cy="4.5" r="2"/><path d="M12 7v7M12 9l-5 3M12 9l5-2M12 14l-4 6.5M12 14l4.5 6"/>',
+    photo: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><rect x="5.5" y="6.5" width="13" height="9"/><path d="M8 13.5l2.5-3 2 2 1.5-1.5 2.5 2.5" opacity=".7"/>',
+    luminol: '<path d="M9 9h6v11a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1z"/><path d="M10 9V6h4v3M12 6V4h4"/><path d="M18 3.5l2-1M18.5 5.5h2.2M18 7.5l2 1" opacity=".7"/>',
+    powder: '<path d="M14 3l4 4-7 7-4-4z"/><path d="M7 10l-3 3c-1 1-1 3 0 4l3 3c1 1 3 1 4 0l3-3"/><circle cx="18" cy="17" r=".9"/><circle cx="20" cy="20" r=".7"/><circle cx="16" cy="20.5" r=".6"/>',
+    recorder: '<rect x="6" y="2.5" width="12" height="19" rx="2"/><circle cx="12" cy="8" r="2.5"/><path d="M9 14h6M9 16.5h6M9 19h4" opacity=".7"/>',
+    blanket: '<path d="M3 7c3-2 6 2 9 0s6-2 9 0v11c-3-2-6 2-9 0s-6-2-9 0z"/><path d="M3 12c3-2 6 2 9 0s6-2 9 0" opacity=".6"/>',
+    meal: '<path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M8 8c0-1.5 1-1.5 1-3M12 8c0-1.5 1-1.5 1-3M16 8c0-1.5 1-1.5 1-3" opacity=".6"/>',
+    sleep: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
+    drink: '<path d="M7 3h10l-1.5 18h-7z"/><path d="M7.6 9h8.8" opacity=".6"/>',
+    ticket: '<path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/>',
+    voidask: '<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>',
+    exitdoor: '<path d="M5 21V3h11v18M3 21h18"/><path d="M16 7l4-2v18l-4-2"/><circle cx="13" cy="12" r=".9"/>',
     look: '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/><path d="M8 8.5a3 3 0 0 1 3-1.5" opacity=".6"/>',
     talk: '<path d="M4 5h16v10H10l-4 4v-4H4z"/><path d="M8 9h8M8 12h5" opacity=".6"/>',
   }
@@ -298,12 +311,18 @@
     era: '<circle cx="12" cy="12" r="2.6"/><circle cx="12" cy="12" r="6.3"/><path d="M12 2.5v3.2M12 18.3v3.2M2.5 12h3.2M18.3 12h3.2M5.3 5.3l2.2 2.2M16.5 16.5l2.2 2.2M5.3 18.7l2.2-2.2M16.5 7.5l2.2-2.2"/>',
     items: '<path d="M4.5 8.5h15l-1.3 12H5.8z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>',
     walk: '<circle cx="12" cy="14" r="6.5"/><circle cx="12" cy="14" r="1.2"/><path d="M12 7.5v13M5.5 14h13M10 2.5h4"/>',
+    time: '<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5V12l3.5 2.5"/><path d="M3 5l3-2M21 5l-3-2" opacity=".6"/>',
   }
   function dimIcon(key) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (DIM_ICON[key] || '') + '</svg>'
   }
   // 破绽的记号：一只小眼睛（只算推测，不算证据）
   const EYE_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 12s3.8-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.8 5.5-9.5 5.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.4" fill="currentColor"/></svg>'
+  // 录音（磁带）、听说（只是他的说法）、举手、相符（证物贴在他身上）、追问
+  const TAPE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="1.5"/><circle cx="8" cy="12" r="2.2"/><circle cx="16" cy="12" r="2.2"/><path d="M8 14.2h8"/></svg>'
+  const HEARSAY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H10l-4 4v-4H4z"/><path d="M9 8.5c-1 .3-1.5 1-1.5 2M13 8.5c-1 .3-1.5 1-1.5 2"/></svg>'
+  const HAND_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11V3.8a1.5 1.5 0 0 1 3 0V11V5.2a1.5 1.5 0 0 1 3 0V13.5c0 4-2.2 7.5-6.2 7.5-2.6 0-4.1-1.3-5.4-3.4L3.6 14c-.7-1.2.9-2.4 1.9-1.4L8 15"/></svg>'
+  const ASK_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8.5 8.5a3.5 3.5 0 1 1 5 3.2c-1 .5-1.5 1.2-1.5 2.3v.5"/><circle cx="12" cy="18.5" r=".6" fill="currentColor"/></svg>'
 
   /* ==========================================================
      搭建 DOM
@@ -957,7 +976,7 @@
   function clearBar() {
     S.cards = []
     S.talk = {}
-    S.tests = {}
+    S.notes = {}
     S.armed = null
     S.E.bar.querySelector('.trial-bar-track').innerHTML = ''
     S.E.bar.classList.remove('is-tip')
@@ -966,13 +985,21 @@
   // opts：by 别人找到的（席号）、talk 证言卡、fact 陈设点的排除性事实、herring 疑似线索（虚边，「再看一次」才揭开）
   function addCard(item, opts = {}) {
     const track = S.E.bar.querySelector('.trial-bar-track')
-    const testable = !!item.predicate
+    if (opts.talk) item.talk = true
+    if (opts.fact) item.fact = item.fact || true
+    const testable = !!(item.predicate || item.shift || item.id === 'photo')
     const no = String(S.cards.length + 1).padStart(2, '0')
-    const cls = 'button.trial-card' + (opts.by ? '.is-shared' : '') + (testable ? '' : '.is-info') + (opts.talk ? '.is-talk' : '') + (opts.fact ? '.is-fact' : '') + (opts.herring ? '.is-herring' : '')
+    const cls = 'button.trial-card' + (opts.by ? '.is-shared' : '') + (testable ? '' : '.is-info') + (opts.talk ? '.is-talk' : '') + (opts.fact ? '.is-fact' : '') + (opts.herring ? '.is-herring' : '') + (item.shift ? '.is-shift' : '')
     const b = el(cls, { type: 'button', 'data-cursor': testable ? '出示' : opts.herring ? '再看' : '', 'aria-label': item.label })
     b.innerHTML = `<span class="trial-card-no">${no}</span><span class="trial-card-ico">${icon(item.icon)}</span><span class="trial-card-label">${U.esc(item.label)}</span>` +
       (item.dim ? `<span class="trial-card-dim${item.visible === false ? ' is-unseen' : ''}" data-dim="${item.dim}">${dimIcon(item.dim)}</span>` : '') +
       (opts.by ? `<span class="trial-card-by">${U.roman(seatOf(opts.by))}</span>` : '')
+    if (opts.talk && item.segs) {
+      const row = el('span.trial-card-segs')
+      for (const sg of item.segs) row.appendChild(el('i', { text: sg.room }))
+      b.appendChild(row)
+    }
+    if (opts.rec) b.appendChild(el('i.trial-card-rec', { html: TAPE_ICON }))
     const rec = { item, el: b, no, herring: opts.herring || null }
     S.cards.push(rec)
     track.appendChild(b)
@@ -998,25 +1025,32 @@
     S.E.bar.classList.add('is-tip')
   }
   function hideTip() { S.E.bar.classList.remove('is-tip') }
+  // 能当众出示的证物：筛人的证物（有判别条件）、让死亡时间窗偏移的证物、尸体照片
+  const presentable = rec => !!(rec && !rec.herring && !rec.item.talk && !rec.item.fact && (rec.item.predicate || rec.item.shift || rec.item.id === 'photo'))
+  // 能做笔记的证物：筛人的证物
+  const notable = rec => !!(rec && rec.item.predicate && !rec.herring)
   function onCardClick(rec) {
+    // 选卡（出示、对质、驳回）：交给正在等的那一步
+    if (S.cardPick) { if (S.cardPick.filter(rec)) S.cardPick.done(rec); else { App.audio.sfx('wrong', { volume: 0.25 }); shakeCard(rec) } return }
     // 疑似线索：调查期里点它「再看一次」（三到五分钟）
     if (rec.herring && !rec.herring.cleared && S.scene === 'inv') { Inv.recheck(rec); return }
-    if (S.scene !== 'court' || !rec.item.predicate) { showTip(rec); App.audio.sfx('flip', { volume: 0.5 }); return }
+    // 验尸卡：打开死亡时间（三格读数与你框出的时间窗）
+    if (rec.item.id === 'body' && S.autopsy && (S.scene === 'inv' || S.scene === 'court')) { openAutopsy(); return }
+    if (rec.item.id === 'photo' && S.C && S.C.photo && S.scene === 'court') { openAutopsy({ photo: true }); return }
+    if (S.scene !== 'court' || !(notable(rec) || presentable(rec))) { showTip(rec); App.audio.sfx('flip', { volume: 0.5 }); return }
     if (S.armed === rec) return disarm()
     disarm()
-    cancelTargeting()
+    if (!S.presentArm) cancelTargeting()
     S.armed = rec
     rec.el.classList.add('is-armed')
     S.stage.classList.add('is-armed')
     showTip(rec)
     App.audio.sfx('whoosh', { volume: 0.5 })
-    for (let k = 1; k <= 15; k++) {
-      const s = S.seat[k]
-      const ok = s.id && TE.isLiving(S.G, s.id) && !isMe(s.id)
-      s.hit.setAttribute('data-cursor', ok ? '出示' : '')
-      s.root.classList.toggle('is-target', !!ok)
-    }
-    refreshCursor()
+    refreshTargets()
+  }
+  function shakeCard(rec) {
+    if (!rec || !window.gsap) return
+    gsap.fromTo(rec.el, { x: -5 }, { x: 0, duration: 0.45, ease: 'elastic.out(1.2, 0.25)', clearProps: 'transform' })
   }
   function disarm() {
     if (!S.armed) return
@@ -1026,49 +1060,48 @@
     hideTip()
     refreshTargets()
   }
-  // 出示：证物对一个人比一比，看符合与否（第二部分会改成当众出示）
-  function fire(rec, id) {
+  // 推理笔记：拿起一张证物点席位，在 ✓ → ✗ → ? → 空 之间轮换。只是你自己的标记，不问任何人
+  const NOTE_NEXT = { undefined: 'ok', ok: 'no', no: 'q', q: undefined }
+  function noteSeat(rec, id) {
     const k = seatOf(id)
-    const ok = TE.pred(rec.item.predicate)(charOf(id))
-    S.tests[id] = S.tests[id] || {}
-    S.tests[id][rec.item.id] = ok
-    const sr = S.stage.getBoundingClientRect()
-    const cr = rec.el.getBoundingClientRect()
-    const from = { x: cr.left - sr.left + cr.width / 2, y: cr.top - sr.top }
-    const to = seatCenter(k)
-    const streak = svg('line', { x1: from.x, y1: from.y, x2: to.x, y2: to.y, class: 'trial-bullet' })
-    S.E.lines.appendChild(streak)
-    const len = Math.hypot(to.x - from.x, to.y - from.y)
-    App.audio.sfx('vote')
-    if (window.gsap) {
-      gsap.fromTo(streak, { strokeDasharray: `60 ${len}`, strokeDashoffset: 0 }, {
-        strokeDashoffset: -len, duration: 0.32, ease: 'power2.in',
-        onComplete: () => {
-          streak.remove()
-          App.audio.sfx(ok ? 'stamp' : 'glitch', { volume: ok ? 0.55 : 0.4 })
-          renderPips(id)
-          shakeSeat(id)
-          const s = S.seat[k]
-          const burst = el('i.trial-hitmark' + (ok ? '.is-ok' : '.is-no'))
-          s.root.appendChild(burst)
-          gsap.fromTo(burst, { scale: 0.3, opacity: 1 }, { scale: 1.8, opacity: 0, duration: 0.7, ease: 'expo.out', onComplete: () => burst.remove() })
-        },
-      })
-    } else renderPips(id)
+    const t = S.notes[id] || (S.notes[id] = {})
+    const v = NOTE_NEXT[t[rec.item.id]]
+    if (v) t[rec.item.id] = v
+    else delete t[rec.item.id]
+    App.audio.sfx(v === 'ok' ? 'stamp' : v ? 'tick' : 'click', { volume: 0.4 })
+    renderPips(id)
+    if (k && window.gsap) gsap.fromTo(S.seat[k].pips, { scale: 1.5 }, { scale: 1, duration: 0.35, ease: 'back.out(3)' })
   }
   function renderPips(id) {
     const k = seatOf(id)
     if (!k) return
     const box = S.seat[k].pips
     box.innerHTML = ''
-    const t = S.tests[id] || {}
+    const t = S.notes[id] || {}
     for (const rec of S.cards) {
-      if (!rec.item.predicate) continue
+      if (!notable(rec)) continue
       const v = t[rec.item.id]
-      box.appendChild(el('i.trial-pip' + (v === true ? '.is-ok' : v === false ? '.is-no' : '.is-none')))
+      box.appendChild(el('i.trial-pip' + (v === 'ok' ? '.is-ok' : v === 'no' ? '.is-no' : v === 'q' ? '.is-q' : '.is-none')))
     }
   }
-  function renderAllPips() { for (const id of Object.keys(S.tests)) renderPips(id) }
+  function renderAllPips() { for (const id of Object.keys(S.notes)) renderPips(id) }
+  // 选一张卡（filter 决定哪些能选）：合适的卡呼吸，其余压暗；返回 Promise<rec | null>
+  function pickCard(filter) {
+    disarm()
+    return ask(done => {
+      S.cardPick = { filter, done }
+      S.E.bar.classList.add('is-picking')
+      for (const r of S.cards) r.el.classList.toggle('is-pickable', !!filter(r))
+      const kill = () => done(null)
+      picks.add(kill)
+      return () => {
+        S.cardPick = null
+        picks.delete(kill)
+        S.E.bar.classList.remove('is-picking')
+        for (const r of S.cards) r.el.classList.remove('is-pickable')
+      }
+    })
+  }
 
   // 私人通知（屏幕边缘）
   const NOTE_ICON = {
@@ -1317,10 +1350,10 @@
   function pickVoices(pool, n) { return U.shuffle(pool.filter(Boolean)).slice(0, n) }
 
   /* ---------- 出示证据：证物卡从证物栏飞到桌心、盖章，再射向被指认者 ---------- */
-  async function proof(speaker, clue, target) {
-    if (!clue || !S.geo) return
+  async function proof(speaker, clue, target, opts = {}) {
+    if (!clue || !S.geo) return null
     const g = S.geo
-    const chip = el('div.trial-proof', null, [el('span.trial-proof-ico', { html: icon(clue.tpl) }), el('b', { text: clue.label || clue.name })])
+    const chip = el('div.trial-proof' + (clue.claim ? '.is-claim' : ''), null, [el('span.trial-proof-ico', { html: icon(clue.tpl) }), el('b', { text: clue.label || clue.name })])
     S.E.quips.appendChild(chip)
     const mid = { x: g.cx, y: g.cy - (g.mobile ? 96 : Math.min(150, g.ry * 0.62)) }
     chip.style.left = mid.x + 'px'
@@ -1341,7 +1374,9 @@
     App.audio.sfx('stamp', { volume: 0.7 })
     App.shake(S.stage, 4, 0.2)
     await wait(S.spectate ? 260 : 360)
-    if (!window.gsap) { chip.remove(); return }
+    // 误导的「证据」：留在桌心，等人驳回（或辩论结束时收走）
+    if (opts.keep) { chip.classList.add('is-kept'); if (window.gsap) gsap.to(chip, { scale: 0.86, y: -6, duration: 0.3, ease: 'power2.out' }); return chip }
+    if (!window.gsap) { chip.remove(); return null }
     if (target) {
       const to = seatCenter(seatOf(target))
       gsap.to(chip, { x: to.x - mid.x, y: to.y - mid.y, scale: 0.35, rotate: 8, opacity: 0, duration: 0.38, ease: 'power3.in', onComplete: () => { chip.remove(); shakeSeat(target) } })
@@ -1401,7 +1436,13 @@
     }
     if (!s.id) return
     if (S.armed) {
-      if (TE.isLiving(S.G, s.id) && !isMe(s.id)) { fire(S.armed, s.id) }
+      if (S.G && TE.isLiving(S.G, s.id) && !isMe(s.id)) {
+        if (S.presentArm && presentable(S.armed) && S.presentArm.ok(s.id)) {
+          if (!App.finePointer && S.touchPick !== k) { touchSelect(k); return }
+          touchSelect(null)
+          S.presentArm.done(S.armed, s.id)
+        } else if (notable(S.armed)) noteSeat(S.armed, s.id)
+      }
       return
     }
     if (S.targeting && S.targeting.seat) {
@@ -1453,7 +1494,12 @@
     for (let k = 1; k <= 15; k++) {
       const s = S.seat[k]
       let ok = false, label = ''
-      if (S.armed) { ok = !!(s.id && S.G && TE.isLiving(S.G, s.id) && !isMe(s.id)); label = '出示' }
+      if (S.armed) {
+        ok = !!(s.id && S.G && TE.isLiving(S.G, s.id) && !isMe(s.id))
+        const pres = S.presentArm && presentable(S.armed) && ok && S.presentArm.ok(s.id)
+        label = pres ? '出示' : '标记'
+        if (!pres && !notable(S.armed)) ok = false
+      }
       else if (S.targeting && S.targeting.filter && s.id) { ok = !!S.targeting.filter(s.id, k); label = S.targeting.label }
       else if (S.scene === 'intro' && s.id && introReady()) { ok = true; label = '入座' }
       s.root.classList.toggle('is-target', ok)
@@ -3276,23 +3322,44 @@
     },
   }
 
-  // 去向的小标：房间 · 时刻（· 在一起的人）
-  function alibiTag(room, time, withIds) {
+  // 去向的小标：时刻—时刻 房间（· 在一起的人）
+  function alibiTag(room, time, withIds, to) {
     const w = (withIds || []).filter(id => S.G && S.G.people[id])
-    return room + ' · ' + hhmm(time) + (w.length ? ' · ' + w.map(callOf).join('、') : '')
+    return (to ? hhmm(time) + '—' + hhmm(to) : hhmm(time)) + ' ' + room + (w.length ? ' · ' + w.map(callOf).join('、') : '')
   }
-  // 证言卡：调查时问到的去向（你自己的也算一张）；与所知相矛盾的会被标出
+  // 两段时间线的全文：21:00—21:40 宴饮厅，和某人在一起｜21:40—22:30 3号套房，独自
+  function segText(segs) {
+    return (segs || []).map(sg => {
+      const w = (sg.with || []).filter(x => S.G && S.G.people[x])
+      return hhmm(sg.from) + '—' + hhmm(sg.to) + ' ' + sg.room + (w.length ? '，和' + w.map(callOf).join('、') + '在一起' : '，独自')
+    }).join('｜')
+  }
+  // 证言卡：「这个时段你在哪」的两段（你自己的也算一张）；落在你框出的死亡时间窗里的那段标亮
   function talkCard(id, r) {
     S.talk = S.talk || {}
     if (S.talk[id]) return S.talk[id]
-    const w = (r.with || []).filter(x => S.G.people[x])
+    const segs = r.segs || []
     const rec = addCard({
-      id: 'talk:' + id, label: (isMe(id) ? '你' : callOf(id)) + ' · ' + r.room,
-      text: hhmm(r.time) + ' 前后在' + r.room + (w.length ? '，和' + w.map(callOf).join('、') + '在一起' : '，独自一人'),
-      predicate: null, icon: 'talk',
-    }, { talk: true })
+      id: 'talk:' + id, label: isMe(id) ? '你' : callOf(id), who: id, segs,
+      text: segText(segs), predicate: null, icon: 'talk',
+    }, { talk: true, rec: !!r.recorded })
+    rec.who = id
+    rec.recorded = !!r.recorded
     S.talk[id] = rec
+    lightTalk()
     return rec
+  }
+  // 与时间窗相交的那一段标亮（没框就都不亮）
+  function lightTalk() {
+    const f = S.frame
+    for (const id in S.talk || {}) {
+      const rec = S.talk[id]
+      const chips = rec.el.querySelectorAll('.trial-card-segs i')
+      ;(rec.item.segs || []).forEach((sg, i) => {
+        const on = !!(f && sg.from < f[1] && sg.to > f[0])
+        if (chips[i]) chips[i].classList.toggle('is-lit', on)
+      })
+    }
   }
   function markConflict(k) {
     for (const id of [k.liar, k.witness]) {
@@ -3450,7 +3517,7 @@
       addCard({ id: 'body', label: c.cause.name, text: c.cause.sign + '。' + opened.body.stage + '。', predicate: c.cause.needs || null, icon: 'body', dim: c.cause.needs ? c.cause.glyph || null : null, visible: c.cause.visible }, { by: opened.body.by, from: p })
       await wait(260)
     }
-    // 卡片顺序可能变了：重排试射记录
+    // 卡片多了：重排推理笔记
     renderAllPips()
     const T = TE.openTrial(G, c)
     S.T = T
@@ -3516,12 +3583,85 @@
         drawLine(ev.speaker, ev.target, { cls: 'is-accuse', kind: 'accuse', dur: 0.35 })
         App.audio.sfx('slash', { volume: 0.5 })
         shakeSeat(ev.target)
-        // 手里有相符的证据：先出示，再指认（上一位的台词先收起）
+        // 手里有相符的证据：先出示，再指认（上一位的台词先收起）；凶手的误导拿现场的一处陈设说事（虚边的「证据」）
         if (ev.clue) { focusActor(ev.speaker); await proof(ev.speaker, ev.clue, ev.target) }
-        const text = ev.clue ? line(ev.speaker, 'accuseClue', { X: callOf(ev.target), CLUE: ev.clue.name }, toX(ev.target)) : line(ev.speaker, 'accuse', { X: callOf(ev.target) }, toX(ev.target))
+        else if (ev.claim) { focusActor(ev.speaker); S.claimChip = await proof(ev.speaker, { label: ev.claim.label, tpl: 'look', claim: true }, null, { keep: true }) }
+        const cl = ev.clue ? ev.clue.name : ev.claim ? ev.claim.label : null
+        const text = cl ? line(ev.speaker, 'accuseClue', { X: callOf(ev.target), CLUE: cl }, toX(ev.target)) : line(ev.speaker, 'accuse', { X: callOf(ev.target) }, toX(ev.target))
         await say(ev.speaker, text, { tone: 'accuse' })
+        // 这一处你细查过：举手的手势亮一下
+        if (ev.claim && ev.claim.playerSaw && S.E.hand) pulseHand()
         return
       }
+      case 'present': {
+        // 当众出示：证物卡飞到桌心、盖章，射向被出示的人；照片连同你框出的时间窗
+        drawLine(ev.speaker, ev.target || ev.speaker, { cls: 'is-accuse is-present', kind: 'accuse', dur: 0.32 })
+        focusActor(ev.speaker)
+        await proof(ev.speaker, ev.clue, ev.target)
+        const tx = ev.target ? line(ev.speaker, 'accuseClue', { X: callOf(ev.target), CLUE: ev.clue.name }, toX(ev.target)) : line(ev.speaker, 'found', { CLUE: ev.clue.name })
+        await say(ev.speaker, tx, { tone: 'accuse', tag: ev.clue.label })
+        return
+      }
+      case 'rebut': {
+        // 不相符：他拿出反证——看得见的特征当场可见（档案里那一项）；看不见的只是他自己的说法（听说）
+        const ch = charOf(ev.speaker)
+        const chip = rebutChip(ev, ch)
+        const pool = linePool(ev.speaker, 'rebut').length ? 'rebut' : 'defend'
+        await say(ev.speaker, line(ev.speaker, pool, { X: callOf(ev.against) }, toX(ev.against)), { tone: 'defend', tag: '' })
+        if (chip) setTimeout(() => chip.remove(), 400)
+        markNote(ev.speaker, ev.clue && ev.clue.id, 'no')
+        clearLines('accuse')
+        return
+      }
+      case 'reframe': {
+        // 识破假窗口：大家改按真正的死亡时刻对去向（或按照片与你框出的时间窗）
+        await reframeAnim(ev)
+        if (ev.shift) S.refKnown = true
+        return
+      }
+      case 'question': {
+        // 追问去向：一条虚线 + 问号
+        drawLine(ev.speaker, ev.target, { cls: 'is-doubt is-question', kind: 'accuse', dur: 0.3, dot: 3 })
+        const k = seatOf(ev.speaker)
+        if (k) seatMark(ev.speaker, ASK_MARK, 'is-ask')
+        App.audio.sfx('tick', { volume: 0.5 })
+        shakeSeat(ev.target)
+        await wait(S.spectate ? 380 : 520)
+        if (k) S.seat[k].mark.querySelectorAll('.is-ask').forEach(m => m.remove())
+        return
+      }
+      case 'confront': {
+        // 对质：两张证言卡撞在桌心；对得上矛盾就裂开
+        await confrontAnim(ev)
+        return
+      }
+      case 'refute': {
+        // 拿排除性事实驳回误导的「证据」：那张卡飞到桌心压住它
+        if (ev.ok) {
+          const rec = S.cards.find(r => r.item.spot === (ev.claim && ev.claim.spot))
+          focusActor(ev.speaker)
+          if (rec && isMe(ev.speaker)) await proof(ev.speaker, { id: rec.item.id, label: rec.item.label, tpl: 'look' }, null)
+          if (S.claimChip) { S.claimChip.classList.add('is-struck'); const cc = S.claimChip; S.claimChip = null; setTimeout(() => cc.remove(), 900) }
+          await stamp('矛盾', { hold: 650, sfx: 'glitch' })
+          await say(ev.speaker, line(ev.speaker, 'doubt', { X: callOf(ev.target) }, toX(ev.target)), { tone: 'accuse' })
+          seatMark(ev.target, LIE_MARK, 'is-lie')
+        } else {
+          App.audio.sfx('wrong', { volume: 0.4 })
+          shakeSeat(ev.speaker)
+          await wait(500)
+        }
+        return
+      }
+      case 'discuss': {
+        // 第二段：公开讨论。桌心盖章，举手的手势出现
+        S.discuss = true
+        clearLines('accuse')
+        hideSay()
+        await stamp('讨论', { hold: 700 })
+        showHand()
+        return
+      }
+      case 'ask-interject': return await interjectUI(ev)
       case 'interject': {
         // 旁人插话：附议（细线连向被指认者）或质疑（虚线连向指认者），气泡一闪而过
         const agree = ev.stance === 'agree'
@@ -3533,6 +3673,8 @@
       }
       case 'defend':
         await say(ev.speaker, line(ev.speaker, 'defend'), { tone: 'defend', tell: ev.tell })
+        // 被出示的证物与他相符：他只能辩解——证物的小图标贴在他的席位上
+        if (ev.present && ev.clue) { seatMark(ev.speaker, icon(ev.clue.tpl), 'is-match'); markNote(ev.speaker, ev.clue.id, 'ok') }
         clearLines('accuse')
         return
       case 'counter': {
@@ -3546,7 +3688,7 @@
       }
       case 'alibi': {
         const text = line(ev.speaker, 'alibi', { ROOM: ev.room, TIME: hhmm(ev.time) })
-        await say(ev.speaker, text, { tone: ev.response ? 'defend' : null, tag: alibiTag(ev.room, ev.time, ev.with), tell: ev.tell })
+        await say(ev.speaker, text, { tone: ev.response ? 'defend' : null, tag: alibiTag(ev.room, ev.time, ev.with, ev.to), tell: ev.tell })
         if (ev.response) clearLines('accuse')
         return
       }
@@ -3555,7 +3697,7 @@
         drawLine(ev.speaker, ev.target, { cls: 'is-accuse', kind: 'accuse', dur: 0.3 })
         shakeSeat(ev.target)
         await stamp('矛盾', { hold: 650, sfx: 'glitch' })
-        await say(ev.speaker, line(ev.speaker, 'alibi', { ROOM: ev.truth || ev.room, TIME: hhmm(ev.time) }), { tone: 'accuse', tag: (ev.truth || ev.room) + ' · ' + hhmm(ev.time) })
+        await say(ev.speaker, line(ev.speaker, 'alibi', { ROOM: ev.truth || ev.room, TIME: hhmm(ev.time) }), { tone: 'accuse', tag: alibiTag(ev.truth || ev.room, ev.time, null, ev.to) })
         seatMark(ev.target, LIE_MARK, 'is-lie')
         if (S.talk) markConflict({ liar: ev.target, witness: ev.speaker })
         clearLines('accuse')
@@ -3592,9 +3734,14 @@
           S.debateResolve = done
           const pick = pickSeat(x => TE.isLiving(G, x) && x !== S.me, '指认')
           pick.then(id => { if (id) done({ kind: 'accuse', target: id }) }).catch(() => {})
+          S.E.ask.innerHTML = ''
+          // 出示：拿起一张证物、点一个人（算你这一次发言）；每场三次
+          if (ev.presentLeft > 0 && S.cards.some(presentable)) {
+            S.presentArm = { ok: x => TE.isLiving(G, x) && x !== S.me, done: (rec, id) => done({ kind: 'present', clue: rec.item.id, target: id, frame: S.frame }) }
+            S.E.ask.appendChild(presentButton(ev.presentLeft))
+          }
           const b = button('沉默', '', 'silent')
           b.addEventListener('click', e => { e.stopPropagation(); done({ kind: 'silent' }) })
-          S.E.ask.innerHTML = ''
           S.E.ask.appendChild(b)
           if (ev.canAlibi) {
             const a = button('不在场证明', '', 'alibi')
@@ -3602,8 +3749,11 @@
             S.E.ask.appendChild(a)
           }
           S.E.ask.classList.add('is-on')
+          refreshTargets()
           return () => {
             S.debateResolve = null
+            S.presentArm = null
+            disarm()
             S.E.ask.innerHTML = ''
             S.E.ask.classList.remove('is-on')
             pick.kill()
@@ -3650,6 +3800,9 @@
       }
       case 'debate-end':
         killPicks()
+        hideHand()
+        S.discuss = false
+        if (S.claimChip) { S.claimChip.remove(); S.claimChip = null }
         hideSay()
         clearLines(null)
         S.phase = 'vote'

@@ -9,12 +9,24 @@
      它逐个产出要演出的事件；遇到需要玩家决定的地方产出 ask-* 事件，
      由界面用 it.next(输入) 把选择送回。测试与旁观模式用 autoTrial 代答。
      产出的每个非 ask-* 事件同时记进 T.log（见 logEntry）；每次投票记进 T.rounds。
-   - 辩论的节拍：turn → 指认 accuse{clue 出示的证据} → 旁人插话 interject{stance: agree|doubt}（0—2 人）
-     → 被指认者回应：defend 辩解 / counter 反咬 / alibi 交代去向（玩家被指认时先产出 ask-respond）
-     → expose 当众拆穿（去向与在场者的真实去向矛盾）；不指认时：speech{mode: statement|clue} / alibi / silent。
-     破绽（运行规则 5.4）：持秘密者被指认时掷一次，结果挂在他的回应事件上（ev.tell）；
-     看见自己留下的痕迹被人谈起、谎言被当面戳穿时另产出 tell 事件。
-   - 去向：newCase 时为每人生成案发时的真实去向与说法（c.where）；凶手亲手行凶时说谎。玩家调查期可 interview 询问。
+   - 辩论分两段（主持人游戏 3.2；开局流程 2.4）：
+     ① 依次发言：turn → 指认 accuse → 旁人插话 interject{stance: agree|doubt}（0—2 人）
+        → 被指认者回应：defend 辩解 / counter 反咬 / alibi 交代去向（玩家被指认时先产出 ask-respond）
+        → expose 当众拆穿（说法与在场者的真实去向矛盾）；不指认时：speech{mode: statement|clue} / alibi / silent；
+        也可以当众出示 present 一张证物（见下）。
+     ② 公开讨论：discuss 之后若干拍（八人局 4—6、十五人局 6—8），每拍由「最有话说」的人发言
+        （手里有没谈过的证物、知道谁的说法与自己的去向矛盾、刚被指认、想追问谁的去向、凶手要误导）；
+        玩家举手（raiseHand，每场 3 次）后在下一拍产出 ask-interject：出示、对质两张证言、追问去向、附议或质疑当前指认、
+        拿排除性事实反驳误导。没有新论点时主持人喊停，产出 debate-end（广播「辩论结束，开始投票。」）。
+   - 当众出示（运行规则 3.2、4.6）：present{speaker, target, clue} → 不相符的人 rebut 拿出反证（看得见的特征当场可见；
+     看不见的只是他自己的说法，算听说）；相符的人只能 defend 辩解，持秘密者掷破绽。玩家每场至多出示 3 次。
+     出示「让死亡时间窗偏移」的证物 = 识破假窗口：之后大家按真正的死亡时刻对去向（T.refTime）。
+   - 破绽（运行规则 5.4）：持秘密者被指认、被出示证物时掷一次，结果挂在他的回应事件上（ev.tell）；
+     看见自己留下的痕迹被人谈起、谎言被当面戳穿时另产出 tell 事件。依次发言算一场，公开讨论另算一场。
+   - 去向：newCase 时为每人生成「这个时段你在哪」的两段时间线（c.where[id].segs，切点 c.span.cut）；凶手亲手行凶时
+     在含真正死亡时刻的那一段说谎；借冷池、蚕丝被、热池、冷冻柜让死亡时间窗偏移时，另一段（假窗口）他真的和别人在一起。
+   - 死亡时间（洋馆物理层 7.4、7.5）：验尸得三格读数（体温、僵硬、尸斑，lore.bodyReadings），各对应一个死亡时段；
+     医护「有 / 战场急救 / 基本常识」由窄到宽自动给出窗口；被干扰的读数按偏移后的样子读（内行也会估错）。
    - 调查的文字（诱饵点的排除性事实与陈设描写、疑似线索、验尸、发现线索的动作）与去向只用子随机数，不消耗 g.r。
    - 称呼：广播与台词里的〈某某〉{X}{V} 用 callOf（此人在馆里报的名字；同局重名或不报名时说「N号」）。
    - 结案对账：closeTrial 把本案的真相、线索的发现者、每轮选票与决定性的一票写进 c.record，并收进 g.records。
@@ -24,8 +36,22 @@
    - 不发放逆位能力，只把凶手卡背的敲钟人（三十分钟）、女巫（毒）、
      典狱长（门）当作行凶手段；国王、贞德等流程略去。
    - 凶手看见尸体时有时会在心里要求播报（主持人游戏 3.1），自己成为发现者。
-   - 每案三条线索，维度（身高、性别、体格、医护、现场观察、年代与器械、随身物）互不重复，死因要求的维度也算在内。
-   - 持秘密者只算凶手与他的帮凶；破绽每一场至多一次：调查期的询问算一场，依次发言算一场。
+   - 每案三条线索，维度（身高、性别、体格、医护、现场观察、年代与器械、随身物、死亡时间）互不重复，死因要求的维度也算在内。
+     「死亡时间」一维是让时间窗偏移的处理，不筛人。
+   - 持秘密者只算凶手与他的帮凶；破绽每一场至多一次：调查期的询问算一场，依次发言算一场，公开讨论算一场。
+   - AI 只凭看得见的特征（身高、性别、体格、随身物）对照证物；医护、现场观察、年代这类看不见的，只从当众出示的回应里得知。
+   - 金币（主持人游戏 8；价目表 8.1；物理层 7.4）：每人开局身上 10 枚（规则宣告时各取一摞）；余波时存活在馆者各得本轮的 5 或 10 枚，
+     未查明时凶手另 10 枚在套房书桌（coinsDesk，不在身上）；死者身上的金币留在尸体处，有人取走（1 分钟）才转手，没人取就留在现场；
+     被处刑者、离馆者身上的金币条文没写，不动。AI 每到饭点（8:00、12:00、18:00）用 1 枚吃一餐（只记账，不演出）。
+   - 身体（身体结算 1、2、4）：起点第一日 12:00 吃过饭、7:00 起床。馆内没有食物，只有兑换来的饭才算吃过。
+     未进食 24 小时以上「复杂推理慢一半」→ 验尸与询问耗时 ×1.5，「持续体力活每二十分钟要歇五分钟」→ 去别的房间追踪 +5 分钟；
+     48 小时以上「不能做持续体力活」→ 不能去别的房间追踪。连续清醒 24 小时以上「反应时间翻倍」→ 验尸与询问同样 ×1.5（两项合计至多 ×2）。
+     模拟不演作息：两案之间若跨过一个夜里（2:00—6:00 不在调查与庭审中），按戒备中睡了一觉回升一档（身体结算 4「睡四小时回升一档」，
+     冷、地面、有人来往让睡眠少算）；兑换「热水浴、按摩、一夜安眠的服务」才算睡足七小时，回到 0。
+   - 调查期的兑换只给物理事实（物理层 7.5）：鲁米诺要先用毛毯罩出暗处，只对有血的死因有用，漂白剂擦过处也会亮；
+     指纹粉显出对凶手成立的手印（若有）；录音笔录下本案的询问，开庭对质时可以放录音；拍立得在尸体移走前拍下，开庭可出示。
+     打听谁是凶手、谁是受命者之类一律不成立（价目表 8.2）。
+   - 退出券（开局流程 2.4；主持人游戏 6）：持券离馆的人 inMansion = false，不是死亡；不再参加庭审与愿望的争夺。
    ========================================================== */
 (function (root) {
   'use strict'
@@ -102,7 +128,7 @@
   }
   // 维度：线索模板与死因上的 glyph（lore.js）；旧数据按 attribute 推出
   const DIM_OF = { heightCm: 'height', gender: 'gender', physique: 'physique', medical: 'medical', observation: 'observation', knowsModernDevices: 'era', items: 'items' }
-  const DIM_VISIBLE = { height: true, gender: true, physique: true, items: true, medical: false, observation: false, era: false }
+  const DIM_VISIBLE = { height: true, gender: true, physique: true, items: true, medical: false, observation: false, era: false, time: false }
   const dimOf = t => (t && (t.glyph || DIM_OF[t.attribute])) || null
   // 要压低侧光、贴地扫过才看得见的痕迹（洋馆物理层 7.1「侧光下」、7.2「要侧光近看」）：手印、湿鞋淡渍、刮痕、擦洗边界、压痕与色差、污印
   const RAKING = { handprint: [0, 1, 2], woodprint: [0], defense: [1], scrub: [0, 1], furniture: [0, 1], gloves: [0] }
@@ -163,6 +189,7 @@
   /* ==========================================================
      对局
      ========================================================== */
+  const START_COINS = 10
   function create(opts = {}) {
     const data = {
       chars: opts.chars || (root.CHARACTERS || []),
@@ -195,7 +222,9 @@
       notices: [],
       deaths: [],
       hooks: opts.hooks || null, // 可注入的 AI 决策（测试用），如 { ballot(g, T, V, voter, aiBallot) }
+      lastCourt: null, // 上一场庭审结束的时刻（两案之间的作息从这里算）
     }
+    g.startMinutes = g.minutes
     // 同局里报同一个名字的人（两位乔瑟夫、两位承太郎）：广播与台词改说「N号」（主持人游戏 7）
     const callCount = {}
     for (const id of order) { const cn = callNameRaw(charMap[id]); if (cn) callCount[cn] = (callCount[cn] || 0) + 1 }
@@ -215,6 +244,10 @@
         lover: null,
         coinsTable: 0,
         coinsDesk: 0,
+        coins: START_COINS, // 身上带着的枚数（开局各取一摞）；玩家的这一份由界面与 App.econ 同步
+        ate: 12 * 60,       // 最近一次进食：第一日 12:00（身体结算 1）
+        slept: 7 * 60,      // 最近一次睡醒：第一日 07:00
+        mealAt: null,       // AI 已结算到哪一顿饭
         puffSeat: null,
         fortuneDay: 0,
         deathAt: null,
@@ -275,6 +308,169 @@
     }
     for (const q of Object.values(g.people)) if (q.puffSeat === p.seat) q.puffSeat = null
     if (g.mandated === id) g.mandated = null
+  }
+  // 持退出券离馆（开局流程 2.4；主持人游戏 6）：不是死亡，席位留空；身上的金币条文没写，不动
+  function leave(g, id) {
+    const p = P(g, id)
+    if (!p || !isLiving(g, id)) return false
+    p.inMansion = false
+    p.leftAt = g.minutes
+    for (const q of Object.values(g.people)) if (q.puffSeat === p.seat) q.puffSeat = null
+    if (g.mandated === id) g.mandated = null
+    return true
+  }
+
+  /* ---------- 身体：饥饿与困倦（身体结算 1、2、4）→ 调查耗时 ---------- */
+  const HUNGER_AT = [12, 24, 48]      // 未进食：12—24 走神 / 24—48 复杂推理慢一半 / 48 以上不能做持续体力活
+  const AWAKE_AT = [18, 24, 36, 48]   // 连续清醒：18—24 / 24—36 反应时间翻倍 / 36—48 / 48 以上
+  const tierOf = (h, cuts) => cuts.filter(x => h >= x).length
+  function bodyState(g, id, at) {
+    const p = P(g, id)
+    const t = at == null ? g.minutes : at
+    if (!p) return { hungerH: 0, awakeH: 0, hunger: 0, sleep: 0, mult: 1, awayPlus: 0, noAway: false }
+    const hungerH = Math.max(0, (t - p.ate) / 60), awakeH = Math.max(0, (t - p.slept) / 60)
+    const hunger = tierOf(hungerH, HUNGER_AT), sleep = tierOf(awakeH, AWAKE_AT)
+    const mult = Math.min(2, 1 + (hunger >= 2 ? 0.5 : 0) + (sleep >= 2 ? 0.5 : 0))
+    return { hungerH, awakeH, hunger, sleep, mult, awayPlus: hunger === 2 ? 5 : 0, noAway: hunger >= 3 }
+  }
+  // 吃了一餐（兑换来的饭）；ids 可以是一组人（十五人份的同一餐）
+  function eat(g, ids, at) {
+    for (const id of [].concat(ids)) { const p = P(g, id); if (p && isLiving(g, id)) p.ate = at == null ? g.minutes : at }
+  }
+  // 一夜安眠：睡足七小时，回到 0
+  function rest(g, id, at) { const p = P(g, id); if (p) p.slept = at == null ? g.minutes : at }
+  // 两案之间跨过一个夜里（2:00—6:00 不在调查与庭审中）：戒备中睡了一觉，回升一档
+  function nightRest(g, id, from, to) {
+    const p = P(g, id)
+    if (!p || from == null || to <= from) return false
+    let slept = false
+    for (let d = Math.floor(from / 1440); d <= Math.floor(to / 1440); d++) {
+      const a = d * 1440 + 120, b = d * 1440 + 360
+      if (a < from || b > to) continue
+      const h = Math.max(0, (b - p.slept) / 60)
+      const tier = tierOf(h, AWAKE_AT)
+      const back = tier <= 1 ? 0 : AWAKE_AT[tier - 2]
+      p.slept = Math.max(p.slept, b - back * 60)
+      slept = true
+    }
+    return slept
+  }
+  /* ---------- 金币：只记账（主持人游戏 8；价目表 8.1） ---------- */
+  // AI 每到饭点用 1 枚吃一餐（8:00、12:00、18:00）；没钱就饿着
+  const MEALS = [8 * 60, 12 * 60, 18 * 60]
+  function aiMeals(g, upTo) {
+    const t = upTo == null ? g.minutes : upTo
+    for (const id of livingIds(g)) {
+      if (id === g.player) continue
+      const p = P(g, id)
+      let from = p.mealAt == null ? g.startMinutes : p.mealAt
+      for (let d = Math.floor(from / 1440); d <= Math.floor(t / 1440); d++) {
+        for (const m of MEALS) {
+          const at = d * 1440 + m
+          if (at <= from || at > t) continue
+          if (p.coins >= 1) { p.coins--; p.ate = at; p.spentMeals = (p.spentMeals || 0) + 1 }
+        }
+      }
+      p.mealAt = t
+    }
+  }
+  // 付出 n 枚（兑换）：身上不够返回 false
+  function payCoins(g, id, n) {
+    const p = P(g, id)
+    n = Math.floor(+n || 0)
+    if (!p || n < 0 || p.coins < n) return false
+    p.coins -= n
+    return true
+  }
+  function gainCoins(g, id, n) { const p = P(g, id); if (p && n > 0) p.coins += Math.floor(n) }
+  // 拾取死者衣袋里的金币：耗 1 分钟（调查期内）；by 默认玩家
+  function takeBodyCoins(g, c, by) {
+    const who = by || g.player
+    if (!c || !c.bodyCoins || !isLiving(g, who) || c.coinsTaken) return null
+    if (g.minutes >= c.tCourt) return null
+    const n = c.bodyCoins
+    g.minutes += 1
+    gainCoins(g, who, n)
+    c.bodyCoins = 0
+    c.coinsTaken = { by: who, n, at: g.minutes }
+    return { n, by: who, cost: 1 }
+  }
+
+  /* ---------- 调查期兑换来的工具：只给物理事实，不给结论（洋馆物理层 7.5；价目表第 9 节鲁米诺） ----------
+     luminol  鲁米诺：调查期灯关不掉，要先用毛毯罩出一块暗处；只对有血的现场有用——血类痕迹的热点显出来、细查省时；
+              漂白剂擦过的地方也会亮（假阳性：那一处细查下去只是陈设）。
+     powder   指纹粉：显出对凶手成立的手印——本案已有手印就直接显出；戴手套的人只留污印；否则多出一条手印（物理层 7.2：只看得出大小与位置）。
+     camera   拍立得：尸体移走前拍下（体温、僵硬、尸斑的样子），开庭可出示。
+     recorder 录音笔：本案此后的询问都录下来，开庭对质时可以放录音。
+     返回 {cost, ...}；不能用返回 null。只用子随机数。 */
+  const BLOODY = { stab: 1, blunt: 1, fall: 1 }
+  function hasBlood(c) {
+    return !!BLOODY[c.cause.id] || (c.clues || []).some(k => k.tpl === 'scrub' || k.tpl === 'bloodshirt' || (k.tpl === 'freezer' && k.vi === 2))
+  }
+  function useTool(g, c, name, by) {
+    const who = by || g.player
+    if (!c || g.minutes >= c.tCourt || !isLiving(g, who)) return null
+    const tools = c.tools || (c.tools = {})
+    const rr = subRng(g, c.no * 6263 + name.length * 31)
+    const take = n => { const k = Math.min(n, c.tCourt - g.minutes); g.minutes += k; return k }
+    if (name === 'recorder') { c.recorder = true; tools.recorder = true; return { cost: 0 } }
+    if (name === 'camera') {
+      if (tools.camera) return null
+      const cost = take(1)
+      c.photo = { at: g.minutes, by: who, readings: bodyReadings(g, c), ruler: [Math.floor((g.minutes - 540) / 60) * 60, g.minutes] }
+      tools.camera = true
+      return { cost, photo: c.photo }
+    }
+    if (name === 'luminol') {
+      if (tools.luminol) return null
+      const cost = take(3)
+      tools.luminol = true
+      const blood = hasBlood(c)
+      const glow = []
+      if (blood) {
+        for (const s of c.spots) {
+          if (s.done) continue
+          const k = s.clue
+          const bloodK = s.kind === 'body' || (k && (k.tpl === 'scrub' || k.tpl === 'bloodshirt' || (k.tpl === 'freezer' && k.vi === 2) || (k.place === 'away' && BLOODY[c.cause.id])))
+          if (!bloodK) continue
+          s.glow = true
+          s.raking = false
+          if (s.kind === 'clue') s.cost = Math.max(2, Math.round(s.cost * 0.6))
+          glow.push(s.id)
+        }
+      }
+      // 漂白剂擦过的一处陈设（若有）：也亮，细查下去只是陈设
+      const decoys = c.spots.filter(s => s.kind === 'decoy' && !s.done)
+      let fake = null
+      if (decoys.length && rr() < 0.6) { fake = decoys[Math.floor(rr() * decoys.length)]; fake.glow = true; fake.fakeGlow = true; glow.push(fake.id) }
+      return { cost, blood, glow, fake: fake ? fake.id : null }
+    }
+    if (name === 'powder') {
+      if (tools.powder) return null
+      const cost = take(2)
+      tools.powder = true
+      const m = charOf(g, c.murderer)
+      const hand = c.spots.find(s => s.clue && s.clue.tpl === 'handprint')
+      if (hand) { hand.raking = false; hand.glow = true; hand.cost = Math.max(2, Math.round(hand.cost * 0.6)); return { cost, spot: hand.id, existed: true } }
+      if ((m.carried || []).some(i => /手套/.test(i))) return { cost, smudge: true }
+      const t = (g.data.lore.clueTemplates || []).find(x => x.id === 'handprint')
+      if (!t) return { cost }
+      const vs = [{ text: t.text, predicate: t.predicate, vi: 0 }].concat((t.variants || []).map((v, i) => ({ text: v.text, predicate: v.predicate, vi: i + 1 })))
+      const v = vs.find(x => pred(x.predicate)(m))
+      if (!v) return { cost }
+      const val = clueValue('handprint', v.vi, m)
+      let text = v.text.replace(/\{v\}/g, val)
+      if (!/\{v\}/.test(v.text)) text += '，离地约' + val + '厘米'
+      const k = {
+        id: 'kp', tpl: 'handprint', vi: v.vi, name: t.name, attribute: t.attribute, predicate: v.predicate, dim: 'height', visible: true,
+        raking: false, value: val, text, label: (LABELS.handprint[v.vi] || t.name).replace(/\{v\}/g, val), place: 'room', awayTo: null, foundBy: null, powder: true,
+      }
+      c.clues.push(k)
+      const sp = { id: 'kp', kind: 'clue', clue: k, cost: 3, done: false, lead: '刷开指纹粉——', raking: false, glow: true, added: true }
+      c.spots.push(sp)
+      return { cost, spot: 'kp', added: true }
+    }
+    return null
   }
 
   /* ---------- 受命资格 ---------- */
@@ -345,6 +541,7 @@
     const victim = pick(g.r, victims)
     const start = Math.max(g.minutes, g.mandateAt)
     const tMurder = Math.min(deadline - 30, start + randInt(g.r, 150, 840))
+    aiMeals(g, tMurder)
     g.minutes = tMurder
     kill(g, victim, 'murder', tMurder)
 
@@ -353,7 +550,11 @@
       tMandate: g.mandateAt, tMurder, tDiscover: null, tCourt: null,
       bell: P(g, m).back === '敲钟人', investMinutes: 120,
       discoverer: null, selfReport: false, clues: [], spots: [], bodySeen: false, remaining: [],
+      // 死者身上的金币随衣物留在尸体处（物理层 7.4）；有人取走才转手
+      bodyCoins: P(g, victim).coins, coinsTaken: null,
+      shift: null, // 让死亡时间窗偏移的处理（buildClues 决定）：{clue, dir, minutes, reads}
     }
+    P(g, victim).coins = 0
     // 女巫的毒：发动后小玻璃瓶及瓶塞放在女巫房间的书桌上（主持人游戏 5.12）——受命者视为同时拥有女巫身份，即凶手的套房
     if (cause.id === 'poison') c.bottle = { room: P(g, m).seat + '号套房', at: Math.max(g.mandateAt, tMurder - randInt(subRng(g, tMurder), 40, 200)) }
     // 典狱长：发动时全馆广播（主持人游戏 5.1、7）；门锁一小时后自动弹开
@@ -373,6 +574,9 @@
     c.tDiscover = tMurder + randInt(g.r, 12, 190)
     c.investMinutes = c.bell ? 30 : 120 // 敲钟人：三十分钟
     c.tCourt = c.tDiscover + c.investMinutes
+    aiMeals(g, c.tDiscover)
+    // 两案之间的作息（只算玩家：调查耗时随之变化）
+    if (g.player && isLiving(g, g.player)) nightRest(g, g.player, g.lastCourt == null ? g.startMinutes : g.lastCourt, c.tDiscover)
     g.minutes = c.tDiscover
     buildClues(g, c)
     buildSpots(g, c)
@@ -381,19 +585,31 @@
   }
 
   /* ---------- 线索生成：每案三条，维度互不重复 ----------
-     先贪心排除（每次在还没用过的维度里挑排除嫌疑人最多的一条），剩 1–2 名嫌疑人或已有三条为止；
-     不足三条时只从没用过的维度里补足。死因要求的维度（扼颈要受训 → 体格）算作已用。所有线索都对凶手为真。 */
+     ① 让死亡时间窗偏移的处理（冷池、蚕丝被、热池、冷冻柜；lore 模板的 shift）：凶手想得到（模板的 predicate）、
+        能走动、亲手行凶（毒与门不在场）时，约四成案件用它——这一条占「死亡时间」一维，不筛人（predicate 为 null）。
+     ② 其余先贪心排除（每次在还没用过的维度里挑排除嫌疑人最多的一条），剩 1–2 名嫌疑人或已有三条为止；
+        不足三条时只从没用过的维度里补足。死因要求的维度（扼颈要受训 → 体格）算作已用。筛人的线索都对凶手为真。 */
   function suspectsOf(g, c) {
     return livingIds(g).filter(id => id !== c.victim && !(id === g.player && isLiving(g, g.player)))
   }
+  const SHIFT_P = 0.42
   function buildClues(g, c) {
     const L = g.data.lore
     const m = charOf(g, c.murderer)
     const suspects = suspectsOf(g, c)
     const opts = []
+    const shifts = []
     for (const t of L.clueTemplates || []) {
       const vs = [{ text: t.text, predicate: t.predicate, vi: 0 }].concat((t.variants || []).map((v, i) => ({ text: v.text, predicate: v.predicate, vi: i + 1 })))
-      const ok = vs.filter(v => pred(v.predicate)(m) && compatible(t.id, v.vi, c))
+      const sh = vi => (t.shift || []).find(x => x.vi === vi) || null
+      // 让时间窗偏移的变体另放一边（不进筛人的候选）
+      for (const v of vs) {
+        const s = sh(v.vi)
+        if (!s || !pred(v.predicate)(m) || !compatible(t.id, v.vi, c)) continue
+        if (m.canWalk === false || ['poison', 'door'].includes(c.cause.id)) continue
+        shifts.push({ t, v, s })
+      }
+      const ok = vs.filter(v => !sh(v.vi) && pred(v.predicate)(m) && compatible(t.id, v.vi, c))
       if (!ok.length) continue
       const v = pick(g.r, ok)
       const val = clueValue(t.id, v.vi, m)
@@ -419,6 +635,26 @@
     const cd = dimOf(c.cause)
     if (c.cause.needs) { remaining = remaining.filter(id => pred(c.cause.needs)(charOf(g, id))); if (cd) used.add(cd) }
     const chosen = []
+    // ① 偏移：方向与幅度（看上去的死亡时刻 tA = tMurder + dir·分钟）；看上去的时刻要早于发现、晚于受命
+    if (shifts.length && g.r() < SHIFT_P) {
+      const cand = shuffle(g.r, shifts)
+      for (const { t, v, s } of cand) {
+        const mins = randInt(g.r, 90, 170)
+        const tA = c.tMurder + s.dir * mins
+        if (tA > c.tDiscover - 20 || tA < c.tMandate) continue
+        const labels = LABELS[t.id] || []
+        const o = {
+          tpl: t.id, vi: v.vi, name: t.name, attribute: t.attribute, predicate: null, needs: v.predicate,
+          dim: 'time', visible: false, raking: false, value: null, text: v.text,
+          label: labels[v.vi] || t.name, place: 'body', awayTo: null, foundBy: null,
+          shift: { dir: s.dir, minutes: mins, reads: s.reads.slice() },
+        }
+        c.shift = { dir: s.dir, minutes: mins, reads: s.reads.slice(), tA, tpl: t.id, vi: v.vi }
+        chosen.push(o)
+        used.add('time')
+        break
+      }
+    }
     const free = o => !chosen.includes(o) && !used.has(o.dim)
     while (remaining.length > 2 && chosen.length < 3) {
       let bestN = 0, best = []
@@ -444,6 +680,7 @@
       remaining = remaining.filter(id => test(o, id))
     }
     c.clues = shuffle(g.r, chosen).map((o, i) => Object.assign(o, { id: 'k' + i }))
+    if (c.shift) c.shift.clue = (c.clues.find(k => k.shift) || {}).id || null
     c.remaining = remaining
     return c.clues
   }
@@ -701,12 +938,16 @@
     const rr = subRng(g, c.no * 7919 + 13)
     const facts = caseFacts(c)
     const spots = []
-    spots.push({ id: 'body', kind: 'body', cost: cost((med === '有' ? 8 : med === '战场急救' ? 10 : 13) + jit()), done: false, obs: bodyObs(g, c, rr) })
+    // 饥饿与困倦（身体结算 2、4）：验尸慢一半；追到别的房间要歇脚，饿过两天就去不了
+    const bs = pc ? bodyState(g, g.player, c.tDiscover) : bodyState(g, null)
+    c.body = bs
+    spots.push({ id: 'body', kind: 'body', cost: Math.round(cost((med === '有' ? 8 : med === '战场急救' ? 10 : 13) + jit()) * bs.mult), done: false, obs: bodyObs(g, c, rr) })
     for (const k of c.clues) {
       let n = k.place === 'away' ? 18 : k.place === 'body' ? 8 : 7
       if (obs === '擅长' && k.place !== 'away') n -= 2
       const lead = flavorPick(g, rr, 'l:' + k.place, CLUE_LEAD[k.place] || CLUE_LEAD.room).split('{TO}').join(k.awayTo || '门外')
-      spots.push({ id: k.id, kind: 'clue', clue: k, cost: cost(n + jit()), done: false, lead, raking: !!k.raking })
+      const away = k.place === 'away'
+      spots.push({ id: k.id, kind: 'clue', clue: k, cost: cost(n + jit()) + (away ? bs.awayPlus : 0), done: false, lead, raking: !!k.raking, blocked: away && bs.noAway })
     }
     const objs = shuffle(g.r, (c.roomInfo.objects || []).slice())
     // 陈设点：两到三处，各给一条排除性事实（或描写）；每案至多一处「疑似线索」
@@ -732,27 +973,72 @@
     for (const s of st) if (minutesSince >= s.minutes) cur = s
     return cur.text
   }
+  /* ---------- 死亡时间（洋馆物理层 7.4、7.5） ----------
+     三格读数：体温、僵硬、尸斑各按死后分钟数落在表里的一档，每一档对应一个死亡时段（钟面时刻 band [早, 晚]，null 为更早）。
+     被偏移处理干扰的读数（冷池让体温看上去更久，蚕丝被、热池让体温看上去更新，冷冻柜让体温与僵硬都像死了很久）
+     按「看上去」的死后分钟读；没被干扰的照实读——几格对不上，就是有人动过尸体。 */
+  const apparentDeath = c => c.tMurder + (c.shift ? c.shift.dir * c.shift.minutes : 0)
+  function bodyReadings(g, c, at) {
+    const R = (g.data.lore && g.data.lore.bodyReadings) || []
+    const t = at == null ? g.minutes : at
+    const sh = c.shift
+    return R.map(r => {
+      const off = sh && sh.reads.includes(r.key) ? sh.dir * sh.minutes : 0
+      const since = t - (c.tMurder + off)
+      let from = 0, step = r.steps.length - 1
+      for (let i = 0; i < r.steps.length; i++) {
+        const to = r.steps[i].to
+        if (to == null || since < to) { step = i; break }
+        from = to
+      }
+      const s = r.steps[step]
+      return { key: r.key, name: r.name, text: s.text, step, band: [s.to == null ? null : t - s.to, t - from], shifted: !!off }
+    })
+  }
+  // 几格读数共同落在的时段（交集）；没有交集返回 null
+  function readingsWindow(reads, ruler0) {
+    let a = -Infinity, b = Infinity
+    for (const r of reads) { a = Math.max(a, r.band[0] == null ? -Infinity : r.band[0]); b = Math.min(b, r.band[1]) }
+    if (a === -Infinity) a = ruler0 == null ? b - 360 : ruler0
+    return a < b ? [a, b] : null
+  }
+  // 医护按卡上的程度自动给出死亡时间窗（7.5：常态下前后一两个小时余量；战场急救、基本常识更宽）。
+  // 被偏移处理骗过时，窗口落在「看上去」的时刻；知道尸体被怎样处理过（找到了那条线索），才按真正的时刻估
+  const MED_SPAN = { 有: [60, 80], 战场急救: [100, 130], 基本常识: [150, 190] }
+  function medWindow(g, c, who, knowsShift) {
+    const ch = charOf(g, who)
+    const span = ch && ch.stats && MED_SPAN[ch.stats.medical]
+    if (!span) return null
+    const rr = subRng(g, c.no * 3571 + (P(g, who) ? P(g, who).seat : 0))
+    const center = (knowsShift ? c.tMurder : apparentDeath(c)) + Math.round((rr() - 0.5) * 30)
+    const w = span[0] + Math.floor(rr() * (span[1] - span[0] + 1))
+    return [center - w, center + w]
+  }
+  // 这个人知不知道尸体被怎样处理过：那条线索是他找到的
+  const knowsShift = (c, who) => !!(c.shift && c.clues.some(k => k.shift && k.foundBy && k.foundBy === who))
   // 细查一处：消耗馆内时间，返回所得。by：调查者（缺省为玩家；旁观时为代为调查的人）
   // 疑似线索这时只看见可疑的东西（herring.bait）；看清它（herring.truth）要另花三到五分钟 reexamine
   function inspect(g, c, spotId, by) {
     const s = c.spots.find(x => x.id === spotId)
     if (!s || s.done) return null
+    if (s.blocked && (!by || by === g.player)) return null // 饿过两天：去不了别的房间
     s.done = true
     const who = by || g.player
+    s.by = who
     const cost = Math.min(s.cost, Math.max(0, c.tCourt - g.minutes))
     g.minutes += cost
     const out = { spot: s, cost, by: who }
     if (s.kind === 'body') {
       c.bodySeen = true
-      const pc = charOf(g, who)
       const since = g.minutes - c.tMurder
       out.cause = c.cause
       out.stage = bodyStage(g, since)
       out.obs = s.obs || ''
-      if (pc && pc.stats.medical === '有') {
-        const a = c.tMurder - randInt(g.r, 30, 75), b = c.tMurder + randInt(g.r, 30, 75)
-        out.window = [a, b]
-      }
+      out.readings = bodyReadings(g, c)
+      out.ruler = [Math.floor((g.minutes - 540) / 60) * 60, g.minutes]
+      out.window = medWindow(g, c, who, knowsShift(c, who))
+      out.coins = c.bodyCoins || 0
+      c.autopsy = { at: g.minutes, by: who, readings: out.readings, ruler: out.ruler, window: out.window }
     } else if (s.kind === 'clue') {
       s.clue.foundBy = who
       out.clue = s.clue
@@ -781,10 +1067,15 @@
     g.minutes = Math.min(c.tCourt, g.minutes + minutes)
     return c.tCourt - g.minutes
   }
-  /* ---------- 去向：案发时每人在哪、对外怎么说（不在场陈述） ----------
-     无辜者照实说（连同同在一处的人）；凶手若亲手行凶，就说自己在别处、且没有同伴——
-     他说的那间房里若真有人，那人就能拆穿他。下毒与关门不必在场，凶手照实说。
+  /* ---------- 去向：「这个时段你在哪」——两段时间线（不在场陈述） ----------
+     时段 c.span = {from, cut, to} 盖住真正的死亡时刻（以及偏移后看上去的时刻），在 cut 处切成两段（各取整到十分钟）。
+     无辜者照实说两段（连同同在一处的人）；凶手若亲手行凶，含真正死亡时刻的那一段说谎、说自己没有同伴——
+     他说的那间房里那一段若真有人，那人就能拆穿他。借冷池、蚕丝被、热池、冷冻柜让时间窗偏移时，
+     他在「看上去」的那一段真的和别人在一起（假窗口里的不在场证明是真的），真正的那一段多半说自己在套房里，没人能拆穿——
+     只有识破偏移，才看得出他在真正的死亡时刻没有人作证。下毒与关门不必在场，凶手照实说。
+     where[id] = {segs[{room, floor, with}], claim{segs[{room, with}]}, lie, lieSeg}；room/with/claim.room/claim.with 是含真正死亡时刻那一段的简写。
      只用子随机数（subRng），不消耗 g.r。 */
+  const walks = (g, id) => (g.walkFix && g.walkFix[id]) || charOf(g, id).canWalk !== false
   function buildWhere(g, c) {
     const rr = subRng(g, c.no * 104729 + 31)
     const L = g.data.lore.rooms || {}
@@ -792,61 +1083,121 @@
     const crime = c.roomInfo.name
     const common = all.filter(x => x.crimeScene && !/套房/.test(x.name) && x.name !== crime)
     const suiteOf = id => { const r = all.find(x => x.name === P(g, id).seat + '号套房'); return r && r.name !== crime ? r : null }
-    const lying = !['poison', 'door'].includes(c.cause.id)
-    const people = livingIds(g).filter(id => !(lying && id === c.murderer))
-    const where = {}
-    const taken = []
-    for (const id of shuffle(rr, people)) {
-      const walk = charOf(g, id).canWalk !== false
-      const own = suiteOf(id)
-      let room = null
-      if (walk && taken.length && rr() < 0.3) room = taken[Math.floor(rr() * taken.length)]
-      else if (own && rr() < (walk ? 0.38 : 0.75)) room = own
-      else {
-        const near = walk ? common : common.filter(x => own && x.floor === own.floor)
-        const pool = near.length ? near : common
-        room = pool[Math.floor(rr() * pool.length)] || own
+    const lying = !['poison', 'door'].includes(c.cause.id) && isLiving(g, c.murderer)
+    const m = c.murderer
+    const tA = apparentDeath(c)
+    const r10 = x => Math.round(x / 10) * 10
+    const cut = c.shift ? r10((c.tMurder + tA) / 2) : r10(c.tMurder + (rr() < 0.5 ? -1 : 1) * (25 + Math.floor(rr() * 46)))
+    const lo = Math.min(c.tMurder, tA, cut), hi = Math.max(c.tMurder, tA, cut)
+    c.span = { from: r10(lo - 40 - Math.floor(rr() * 31)), cut, to: r10(hi + 40 + Math.floor(rr() * 31)) }
+    const segOf = t => (t < cut ? 0 : 1)
+    const kTrue = segOf(c.tMurder), kFake = c.shift ? segOf(tA) : null
+    const people = livingIds(g)
+    const segs = {}
+    for (const id of people) segs[id] = [null, null]
+    // 先排凶手的两段里要特殊处理的部分
+    const fixed = {}
+    if (lying) {
+      fixed[kTrue] = { room: crime, floor: c.roomInfo.floor }
+    }
+    for (let k = 0; k < 2; k++) {
+      const taken = []
+      for (const id of shuffle(rr, people)) {
+        if (id === m && fixed[k]) { segs[id][k] = fixed[k]; continue }
+        if (id === m && kFake === k) continue // 假窗口那一段：等别人都排好，再坐到有人的房里
+        const walk = walks(g, id)
+        const own = suiteOf(id)
+        let room = null
+        const prev = k === 1 && segs[id][0]
+        if (prev && prev.room !== crime && (!walk || rr() < 0.35)) room = all.find(x => x.name === prev.room) || null
+        if (!room) {
+          if (walk && taken.length && rr() < 0.3) room = taken[Math.floor(rr() * taken.length)]
+          else if (own && rr() < (walk ? 0.38 : 0.75)) room = own
+          else {
+            const near = walk ? common : common.filter(x => own && x.floor === own.floor)
+            const pool = near.length ? near : common
+            room = pool[Math.floor(rr() * pool.length)] || own
+          }
+        }
+        if (!room) continue
+        segs[id][k] = { room: room.name, floor: room.floor }
+        taken.push(room)
       }
-      if (!room) continue
-      where[id] = { room: room.name, floor: room.floor }
-      taken.push(room)
+      if (lying && kFake === k) {
+        // 假窗口：凶手真的和别人待在一处（挑一位能走动的人，坐到他那里）
+        const mates = people.filter(x => x !== m && segs[x][k] && walks(g, x))
+        const mate = mates.length ? mates[Math.floor(rr() * mates.length)] : null
+        const at = mate ? segs[mate][k] : (suiteOf(m) ? { room: suiteOf(m).name, floor: suiteOf(m).floor } : { room: common[0].name, floor: common[0].floor })
+        segs[m][k] = { room: at.room, floor: at.floor }
+      }
+    }
+    const where = {}
+    for (const id of people) {
+      if (!segs[id][0] || !segs[id][1]) continue
+      where[id] = { segs: segs[id].map(x => ({ room: x.room, floor: x.floor, with: [] })) }
+    }
+    for (const id in where) for (let k = 0; k < 2; k++) {
+      where[id].segs[k].with = Object.keys(where).filter(o => o !== id && where[o].segs[k].room === where[id].segs[k].room)
     }
     for (const id in where) {
-      where[id].with = Object.keys(where).filter(o => o !== id && where[o].room === where[id].room)
-      where[id].claim = { room: where[id].room, with: where[id].with.slice() }
+      where[id].claim = { segs: where[id].segs.map(x => ({ room: x.room, with: x.with.slice() })) }
       where[id].lie = false
+      where[id].lieSeg = null
     }
-    if (lying && isLiving(g, c.murderer)) {
-      const m = c.murderer
-      const occupied = Array.from(new Set(Object.values(where).map(w => w.room)))
+    if (lying && where[m]) {
+      const occupied = Array.from(new Set(Object.keys(where).filter(x => x !== m).map(x => where[x].segs[kTrue].room)))
       const own = suiteOf(m)
+      const free = common.filter(r => !occupied.includes(r.name))
+      const freeRoom = () => (free.length ? free[Math.floor(rr() * free.length)] : common[Math.floor(rr() * common.length)] || { name: '走廊' }).name
       const x = rr()
       let lie
-      if (x < 0.5 && occupied.length) lie = occupied[Math.floor(rr() * occupied.length)]
+      if (c.shift) lie = own && x < 0.75 ? own.name : freeRoom()
+      else if (x < 0.5 && occupied.length) lie = occupied[Math.floor(rr() * occupied.length)]
       else if (x < 0.8 && own) lie = own.name
-      else {
-        const free = common.filter(r => !occupied.includes(r.name))
-        lie = (free.length ? free[Math.floor(rr() * free.length)] : common[Math.floor(rr() * common.length)] || { name: '走廊' }).name
-      }
-      where[m] = { room: crime, floor: c.roomInfo.floor, with: [], claim: { room: lie, with: [] }, lie: true }
+      else lie = freeRoom()
+      where[m].segs[kTrue].with = []
+      where[m].claim.segs[kTrue] = { room: lie, with: [] }
+      where[m].lie = true
+      where[m].lieSeg = kTrue
+    }
+    // 简写：含真正死亡时刻的那一段
+    for (const id in where) {
+      const W = where[id]
+      W.room = W.segs[kTrue].room
+      W.floor = W.segs[kTrue].floor
+      W.with = W.segs[kTrue].with
+      W.claim.room = W.claim.segs[kTrue].room
+      W.claim.with = W.claim.segs[kTrue].with
     }
     c.where = where
-    // 大家被问到的那个时刻：案发前后，取整到十分钟
-    c.tAlibi = Math.round((c.tMurder + Math.floor(rr() * 31) - 15) / 10) * 10
+    c.kTrue = kTrue
+    c.tAlibi = c.span.from
     c.asked = []
     c.known = []
     return where
   }
-  // a 说自己在某处；w 当时真在那里，却没和 a 在一起 → w 能拆穿 a
-  function contradicts(c, a, w) {
+  // 一段时间线的起止
+  const segSpan = (c, k) => (k === 0 ? [c.span.from, c.span.cut] : [c.span.cut, c.span.to])
+  const segAt = (c, t) => (t < c.span.cut ? 0 : 1)
+  // a 说自己某一段在某处；w 那一段真在那里，却没和 a 在一起 → w 能拆穿 a（返回是哪一段，没有返回 -1）
+  function contradictSeg(c, a, w) {
     const A = c && c.where && c.where[a], W = c && c.where && c.where[w]
-    if (!A || !W || a === w) return false
-    return W.room === A.claim.room && !W.with.includes(a)
+    if (!A || !W || a === w) return -1
+    for (let k = 0; k < 2; k++) if (W.segs[k].room === A.claim.segs[k].room && !W.segs[k].with.includes(a)) return k
+    return -1
   }
-  // 玩家在调查期询问一人：他照自己的说法交代去向；花费调查时间。与玩家所知相矛盾的说法被记下
+  const contradicts = (c, a, w) => contradictSeg(c, a, w) >= 0
+  // 说法的两段（给界面与事件）：[{from, to, room, with}]
+  function claimSegs(g, c, id) {
+    const W = c.where && c.where[id]
+    if (!W) return []
+    return W.claim.segs.map((x, k) => ({ from: segSpan(c, k)[0], to: segSpan(c, k)[1], room: x.room, with: x.with.filter(o => g.people[o]) }))
+  }
+  // 玩家在调查期询问一人：「这个时段你在哪」，他照自己的说法交代两段去向；花费调查时间。与玩家所知相矛盾的说法被记下
   function interviewCost(g, id) {
     const pc = charOf(g, g.player), t = charOf(g, id)
-    return 6 + (pc && pc.stats.readsPeople === '是' ? 0 : 2) + (t && t.stats.suspicion === '重' ? 2 : 0)
+    const base = 6 + (pc && pc.stats.readsPeople === '是' ? 0 : 2) + (t && t.stats.suspicion === '重' ? 2 : 0)
+    return Math.round(base * bodyState(g, g.player).mult)
   }
   function interview(g, c, id) {
     if (!c.where || !c.where[id] || !g.player || id === g.player || !isLiving(g, id) || !isLiving(g, g.player)) return null
@@ -858,7 +1209,7 @@
     const w = c.where[id]
     const found = []
     const note = (liar, witness) => {
-      if (!c.known.some(k => k.liar === liar && k.witness === witness)) { const k = { liar, witness }; c.known.push(k); found.push(k) }
+      if (!c.known.some(k => k.liar === liar && k.witness === witness)) { const k = { liar, witness, seg: contradictSeg(c, liar, witness) }; c.known.push(k); found.push(k) }
     }
     if (contradicts(c, id, g.player)) note(id, g.player)
     for (const b of c.asked) {
@@ -866,10 +1217,12 @@
       if (contradicts(c, b, id)) note(b, id)
     }
     c.asked.push(id)
+    // 录音笔开着：这一段问话录下来了（开庭对质时可以放录音）
+    if (c.recorder) (c.recorded || (c.recorded = [])).push(id)
     // 被问到案发的时间与地点：持秘密者掷一次破绽（调查期的询问算一场），只有问话的玩家在看着他
     const tell = rollTell(g, c, c.tells || (c.tells = {}), id, [g.player], 'asked')
     if (tell) (c.tellLog || (c.tellLog = [])).push(Object.assign({ t: g.minutes, scene: 'inv' }, tell))
-    return { id, room: w.claim.room, with: w.claim.with.slice(), time: c.tAlibi, cost, conflicts: found, tell }
+    return { id, segs: claimSegs(g, c, id), room: w.claim.room, with: w.claim.with.slice(), time: c.span.from, span: Object.assign({}, c.span), cost, conflicts: found, tell, recorded: !!c.recorder }
   }
 
   /* ---------- 破绽与察觉（运行规则 5.4） ----------
@@ -1029,8 +1382,17 @@
       executed: [], // 处刑：{id, correct, via, t}
       agree: {}, doubt: {}, exposed: {}, claimed: {}, lastMode: null,
       tells: {},    // 本场已判过破绽的人（依次发言算一场）
+      tellsOpen: {}, // 公开讨论另算一场
       tellSeen: {}, // 谁察觉了谁的破绽：{观察者: [持秘密者]}（AI 的怀疑度据此加权）
       tellLog: [],  // 本场成立与否的每一次破绽判定
+      stage: 'turns', // 辩论的哪一段：turns 依次发言 / open 公开讨论
+      // 当众出示（A5）：玩家每场至多 3 次；tested[某人][证物] = 'match' 相符（只能辩解）/ 'rebut' 不相符（拿出反证）
+      presentLeft: PRESENT_MAX, presents: [], tested: {},
+      // 公开讨论（A6）：玩家举手 3 次；current 当前的指认 {accuser, target, clue?, claim?}
+      hands: HAND_MAX, handUp: false, current: null, spoken: {}, spokeOpen: {}, answered: {}, beats: 0, beatsRun: 0, stopReason: null,
+      misled: false, refuted: {}, // 凶手拿陈设误导（一次）；被排除性事实驳倒的人
+      // 大家按哪个时刻对去向：开庭时按尸体「看上去」的死亡时刻；有人出示让时间窗偏移的证物（识破）后按真正的时刻
+      refTime: apparentDeath(c), refKnown: !c.shift,
     }
     // 调查期询问时察觉到的破绽，带进庭审
     for (const tl of c.tellLog || []) for (const w of tl.seen || []) (T.tellSeen[w] || (T.tellSeen[w] = [])).push(tl.holder)
@@ -1048,10 +1410,33 @@
     return T
   }
 
-  /* ---------- AI 的怀疑度：符合线索条数 + 噪声 + 旁人指认 + 已知事实 ---------- */
+  /* ---------- 当众看得到的相符：身高、性别、体格、随身物一眼可见；看不见的特征只认当众出示时的回应 ---------- */
+  function publicMatches(g, T, t) {
+    const ch = charOf(g, t)
+    const c = T.case
+    let n = 0
+    for (const k of c.clues || []) {
+      if (!k.foundBy || !k.predicate) continue
+      const res = T.tested && T.tested[t] && T.tested[t][k.id]
+      if (k.visible) n += pred(k.predicate)(ch) ? 1 : 0
+      else if (res === 'match') n += 1
+      else if (res === 'rebut') n -= 0.3
+    }
+    if (c.cause && c.cause.needs) n += pred(c.cause.needs)(ch) ? 1 : 0
+    return n
+  }
+  // 按大家对的时刻，此人交代的那一段有没有人作证（只算当众交代过的）：独自 +，有同伴 −
+  function alibiWeight(g, T, t) {
+    const c = T.case
+    if (!T.claimed[t] || !c.where || !c.where[t] || !c.span) return 0
+    const s = c.where[t].claim.segs[segAt(c, T.refTime)]
+    return s.with.some(x => g.people[x]) ? -0.3 : 0.35
+  }
+  /* ---------- AI 的怀疑度：当众看得到的相符 + 噪声 + 旁人指认 + 已知事实 ---------- */
   function suspicion(g, T, a, t) {
     if (T.knownMurderer) return t === T.knownMurderer ? 100 : (T.noise[a][t] || 0) * 0.1
-    let s = matches(g, T.case, t) + ((T.noise[a] && T.noise[a][t]) || 0)
+    let s = publicMatches(g, T, t) + ((T.noise[a] && T.noise[a][t]) || 0) + alibiWeight(g, T, t)
+    if (T.refuted && T.refuted[t]) s += 1.4
     const by = (T.accuse[t] || []).filter(x => x !== a)
     s += 0.32 * by.length
     // 旁人的附议与质疑、被当众拆穿的谎
@@ -1077,7 +1462,7 @@
     if (T.decoy && cands.includes(T.decoy)) return T.decoy
     let best = -1, list = []
     for (const id of cands) {
-      const n = matches(g, T.case, id)
+      const n = publicMatches(g, T, id)
       if (n > best) { best = n; list = [id] } else if (n === best) list.push(id)
     }
     const d = pick(g.r, list)
@@ -1393,19 +1778,22 @@
     T.ended = true
     T.phase = 'ended'
     const table = {}, desk = {}
+    aiMeals(g, g.minutes)
     for (const id of livingIds(g)) {
       table[id] = T.solved ? 10 : 5
       P(g, id).coinsTable += table[id]
+      P(g, id).coins += table[id] // 出现在各人伸手可及的圆桌上，随手收起
     }
     if (!T.solved && isLiving(g, T.murderer)) {
       desk[T.murderer] = 10
-      P(g, T.murderer).coinsDesk += 10
+      P(g, T.murderer).coinsDesk += 10 // 在他套房的书桌上，不在身上
     }
     T.case.result = { solved: T.solved, reason: T.endReason, misjudge: T.misjudge }
     T.case.record = caseRecord(g, T, { table, desk })
     g.records.push(T.case.record)
     // 存活在馆的现任受命者重新取得完整二十四小时
     if (isLiving(g, g.mandated)) g.mandateAt = g.minutes
+    g.lastCourt = g.minutes
     g.trial = null
     return { table, desk, solved: T.solved }
   }
@@ -1447,7 +1835,13 @@
       knownMurderer: T.knownMurderer || null,
       tells: (c.tellLog || []).concat(T.tellLog || []),
       rounds, log: T.log.slice(),
-      coins: { table: Object.assign({}, pay.table), desk: Object.assign({}, pay.desk) },
+      coins: { table: Object.assign({}, pay.table), desk: Object.assign({}, pay.desk), body: c.coinsTaken ? 0 : c.bodyCoins || 0, taken: c.coinsTaken ? Object.assign({}, c.coinsTaken) : null },
+      // 死亡时间：真正的时刻、看上去的时刻（偏移处理）、问话的时段；凶手两段说法
+      death: { t: c.tMurder, apparent: apparentDeath(c), shift: c.shift ? { dir: c.shift.dir, minutes: c.shift.minutes, tpl: c.shift.tpl, vi: c.shift.vi, clue: c.shift.clue } : null, span: c.span ? Object.assign({}, c.span) : null, refTime: T.refTime, refKnown: !!T.refKnown },
+      alibi: c.where && c.where[c.murderer] ? { segs: c.where[c.murderer].segs.map(x => ({ room: x.room, with: x.with.slice() })), claim: c.where[c.murderer].claim.segs.map(x => ({ room: x.room, with: x.with.slice() })), lieSeg: c.where[c.murderer].lieSeg } : null,
+      presents: (T.presents || []).map(x => Object.assign({}, x)),
+      discuss: { beats: T.beats || 0, run: T.beatsRun || 0, stop: T.stopReason || null, hands: T.handsUsed || 0, misled: !!T.misled, refuted: Object.keys(T.refuted || {}) },
+      tools: Object.assign({}, c.tools || {}),
     }
   }
   function winner(g) {
@@ -1461,6 +1855,7 @@
      AI 辩论
      ========================================================== */
   const ACCUSE_P = { 重: 0.78, 中: 0.5, 轻: 0.3 }
+  const PRESENT_MAX = 3, HAND_MAX = 3
   function aiDebate(g, T, id) {
     const out = { speaker: id, kind: 'statement', target: null, ability: null }
     const ch = charOf(g, id)
@@ -1515,10 +1910,11 @@
   const clueInfo = k => (k ? { id: k.id, name: k.name, label: k.label, tpl: k.tpl, text: k.text } : null)
   const ownClues = (T, id) => (T.case.clues || []).filter(k => k.foundBy === id)
   const canAlibi = (T, id) => !!(T.case.where && T.case.where[id]) && !T.claimed[id]
-  // 能对 target 出示的证据：已发现、且与 target 相符；先用自己找到的。mine：玩家（证物栏里的都算他手里的）
+  // 能对 target 出示的证据：已发现、且与 target 相符——看得见的特征，或当众出示时他没能反驳的；先用自己找到的。
+  // mine：玩家（证物栏里的都算他手里的）
   function clueFor(g, T, id, target, mine) {
     const ch = charOf(g, target)
-    const ks = (T.case.clues || []).filter(k => k.foundBy && pred(k.predicate)(ch))
+    const ks = (T.case.clues || []).filter(k => k.foundBy && k.predicate && pred(k.predicate)(ch) && (k.visible || (T.tested[target] && T.tested[target][k.id] === 'match')))
     if (!ks.length) return null
     const own = ks.filter(k => k.foundBy === id)
     if (own.length) return pick(g.r, own)
@@ -1551,7 +1947,7 @@
     const n = weighted(g.r, [{ v: 0, w: 3 }, { v: 1, w: 4.6 }, { v: 2, w: 2.4 }])
     if (!n) return []
     const cands = []
-    const nTarget = matches(g, T.case, target)
+    const nTarget = publicMatches(g, T, target)
     for (const a of pool) {
       let stance = null, w = 0
       if (T.knownMurderer === target) { stance = 'agree'; w = 1 }
@@ -1580,8 +1976,10 @@
   // 一条事件的精简记录（T.log）：去掉投票对象等大对象，只留编号与人
   function logEntry(g, ev) {
     const e = { t: g.minutes, type: ev.type }
-    for (const k of ['speaker', 'target', 'actor', 'against', 'accuser', 'stance', 'mode', 'room', 'time', 'truth', 'response', 'pending', 'via', 'correct', 'misjudge', 'ability', 'effect', 'holder', 'success', 'silenced', 'void', 'yes', 'seat', 'tie', 'ended', 'solved', 'reason', 'at', 'shown', 'player'])
+    for (const k of ['speaker', 'target', 'actor', 'against', 'accuser', 'stance', 'mode', 'room', 'time', 'to', 'seg', 'truth', 'response', 'pending', 'via', 'correct', 'misjudge', 'ability', 'effect', 'holder', 'success', 'silenced', 'void', 'yes', 'seat', 'tie', 'ended', 'solved', 'reason', 'at', 'shown', 'player',
+      'ok', 'liar', 'witness', 'recorded', 'a', 'b', 'beats', 'hearsay', 'visible', 'dim', 'photo', 'present', 'shift', 'from'])
       if (ev[k] !== undefined) e[k] = ev[k]
+    if (ev.claim) e.claim = { spot: ev.claim.spot, key: ev.claim.key, label: ev.claim.label }
     if (ev.with) e.with = ev.with.slice()
     if (ev.seen) e.seen = ev.seen.slice()
     if (ev.executed) e.executed = ev.executed.slice()
@@ -1604,14 +2002,21 @@
       input = yield value
     }
   }
+  // 凶手拿陈设误导时说的「证据」（排除性事实的反面）：{O} 代入陈设名；用作台词里的 {CLUE}
+  const CLAIM = {
+    'not-dragged': '{O}上的拖痕', 'not-moved': '{O}的挪动痕', 'nothing-hidden': '{O}里藏的东西', 'not-used': '{O}上的使用痕',
+    'clean': '{O}上的血', 'no-wash': '{O}里的血水', 'not-from-water': '{O}边的水痕', 'no-steps': '{O}上的脚印',
+    'untouched': '{O}上的新痕', 'time-ok': '{O}上的拨针痕', 'no-handprint': '{O}上的手印', 'weapon-not-here': '{O}上的空位',
+    'not-searched': '{O}里的翻找痕', 'no-forced': '{O}上的撬痕',
+  }
   function* trialFlowRaw(g, T) {
     const c = T.case
     const tick = n => { g.minutes += n }
-    // 破绽：本场（依次发言）每人至多判一次；判过的记进 T.tellLog，察觉者记进 T.tellSeen
+    // 破绽：本场每人至多判一次（依次发言一场，公开讨论另一场）；判过的记进 T.tellLog，察觉者记进 T.tellSeen
     const tellOf = (id, at) => {
-      const tl = rollTell(g, c, T.tells, id, livingIds(g).filter(x => x !== id), at, T)
+      const tl = rollTell(g, c, T.stage === 'open' ? T.tellsOpen : T.tells, id, livingIds(g).filter(x => x !== id), at, T)
       if (!tl) return null
-      T.tellLog.push(Object.assign({ t: g.minutes, scene: 'debate' }, tl))
+      T.tellLog.push(Object.assign({ t: g.minutes, scene: T.stage === 'open' ? 'discuss' : 'debate' }, tl))
       for (const w of tl.seen) (T.tellSeen[w] || (T.tellSeen[w] = [])).push(tl.holder)
       return tl
     }
@@ -1701,12 +2106,15 @@
     }
 
     // ---- 辩论的节拍 ----
-    // 交代去向；说法与某个在场者的真实去向相矛盾时，那人当众拆穿
+    // 交代去向（两段时间线，说的是大家正在对的那个时刻所在的一段）；说法与某个在场者的真实去向相矛盾时，那人当众拆穿
     function* alibiFlow(id, response, tell) {
-      const w = c.where[id]
+      if (!c.where || !c.where[id]) return
       T.claimed[id] = true
       tick(1)
-      yield { type: 'alibi', speaker: id, room: w.claim.room, time: c.tAlibi, with: w.claim.with.filter(x => isLiving(g, x)), response: !!response, tell: tell || null }
+      const segs = claimSegs(g, c, id)
+      const k = segAt(c, T.refTime)
+      const sg = segs[k]
+      yield { type: 'alibi', speaker: id, room: sg.room, time: sg.from, to: sg.to, seg: k, segs, with: sg.with.filter(x => isLiving(g, x)), response: !!response, tell: tell || null }
       if (T.exposed[id] || T.ended) return
       const wits = livingIds(g).filter(x => contradicts(c, id, x) && P(g, x).lover !== id)
       if (!wits.length) return
@@ -1716,21 +2124,29 @@
     }
     function* exposeFlow(wit, liar) {
       if (T.exposed[liar] || !isLiving(g, wit) || !isLiving(g, liar)) return
+      const k = contradictSeg(c, liar, wit)
+      if (k < 0) return
       T.exposed[liar] = wit
-      const w = c.where[liar]
+      T.claimed[liar] = true
       tick(1)
-      yield { type: 'expose', speaker: wit, target: liar, room: w ? w.claim.room : '', time: c.tAlibi, truth: c.where[wit] ? c.where[wit].room : '' }
+      yield { type: 'expose', speaker: wit, target: liar, seg: k, room: c.where[liar].claim.segs[k].room, time: segSpan(c, k)[0], to: segSpan(c, k)[1], truth: c.where[wit].segs[k].room }
       // 谎言被当面戳到
       const tl = tellOf(liar, 'exposed')
       if (tl && tl.shown) yield Object.assign({ type: 'tell' }, tl)
     }
     // 指认 → 旁人插话 → 被指认者回应（辩解 / 反咬 / 交代去向）→（玩家调查时问出的矛盾）当众拆穿
-    function* exchange(speaker, target, clue) {
+    function* exchange(speaker, target, clue, claim) {
       recordAccuse(T, speaker, target)
+      T.current = { accuser: speaker, target, clue: clue ? clue.id : null, claim: claim || null }
       tick(2)
-      yield { type: 'accuse', speaker, target, clue: clueInfo(clue) }
+      yield { type: 'accuse', speaker, target, clue: clueInfo(clue), claim: claim || null }
       // 被点名指认（出示的若是他自己留下的痕迹，更是直击要害）：持秘密者掷破绽，表现挂在他的回应上
       const tell = tellOf(target, clue ? 'clue' : 'accused')
+      // 误导的「证据」：看过那一处的旁人（AI 没有细查陈设的记录，按两成当作看过）当场驳回；玩家看过的，留给他举手
+      if (claim && !claim.playerSaw) {
+        const by = livingIds(g).filter(x => x !== speaker && x !== target && x !== g.player)
+        if (by.length && chance(g.r, 0.22)) yield* refuteFlow(pick(g.r, by), speaker, claim)
+      }
       for (const v of aiInterject(g, T, speaker, target)) {
         if (!isLiving(g, v.speaker)) continue
         const book = v.stance === 'agree' ? T.agree : T.doubt
@@ -1743,6 +2159,7 @@
         const a = yield { type: 'ask-respond', speaker: target, against: speaker, canAlibi: canAlibi(T, target) }
         kind = a && a.kind
       } else kind = aiRespond(g, T, target, speaker)
+      ;(T.answered[target] || (T.answered[target] = [])).push(speaker)
       tick(1)
       if (kind === 'counter' && isLiving(g, speaker)) {
         recordAccuse(T, target, speaker)
@@ -1754,8 +2171,127 @@
         if (k) yield* exposeFlow(k.witness, target)
       }
     }
+    // 当众出示（运行规则 3.2、4.6）：不相符的人拿出反证（看不见的特征只是他的说法——听说），相符的人只能辩解，持秘密者掷破绽。
+    // 让时间窗偏移的证物：识破假窗口——此后大家按真正的死亡时刻对去向，被出示的人重新交代那一段。
+    // 照片（拍立得）：尸体移走前的样子；出示时连同玩家自己框出的死亡时间窗（frame），大家按它对去向。
+    function* presentFlow(speaker, target, k, opts = {}) {
+      T.presents.push({ speaker, target: target || null, clue: k.id, t: g.minutes })
+      if (speaker === g.player) T.presentLeft = Math.max(0, T.presentLeft - 1)
+      if (target) recordAccuse(T, speaker, target)
+      T.spoken[k.id] = true
+      tick(2)
+      if (target) T.current = { accuser: speaker, target, clue: k.id, claim: null }
+      yield { type: 'present', speaker, target: target || null, clue: clueInfo(k), dim: k.dim || null, visible: !!k.visible, photo: !!opts.photo }
+      if (k.shift || opts.photo) {
+        const from = T.refTime
+        if (k.shift) { T.refTime = c.tMurder; T.refKnown = true }
+        else if (opts.frame && opts.frame.length === 2) T.refTime = Math.round((opts.frame[0] + opts.frame[1]) / 2)
+        yield { type: 'reframe', speaker, time: T.refTime, from, shift: !!k.shift, frame: opts.frame || null }
+        if (target && isLiving(g, target)) {
+          const tl = tellOf(target, 'clue')
+          yield* alibiFlow(target, true, tl)
+        }
+        return
+      }
+      if (!target || !isLiving(g, target) || !k.predicate) return
+      const ok = pred(k.predicate)(charOf(g, target))
+      ;(T.tested[target] || (T.tested[target] = {}))[k.id] = ok ? 'match' : 'rebut'
+      tick(1)
+      if (!ok) yield { type: 'rebut', speaker: target, against: speaker, clue: clueInfo(k), dim: k.dim || null, visible: !!k.visible, hearsay: !k.visible }
+      else {
+        const tell = tellOf(target, 'clue')
+        yield { type: 'defend', speaker: target, against: speaker, tell, present: true, clue: clueInfo(k) }
+      }
+    }
+    // 拿排除性事实（或看清了的疑似线索）驳回误导的「证据」
+    function* refuteFlow(speaker, claimant, claim) {
+      if (!isLiving(g, speaker)) return
+      T.refuted[claimant] = speaker
+      if (T.current && T.current.claim === claim) T.current.refuted = true
+      tick(1)
+      yield { type: 'refute', speaker, target: claimant, claim, ok: true }
+      const tl = tellOf(claimant, 'exposed')
+      if (tl && tl.shown) yield Object.assign({ type: 'tell' }, tl)
+    }
+    // 凶手的误导：拿现场的一处陈设（排除性事实的反面，或一处疑似线索）指向最像的旁人
+    function misleadSpots() {
+      return (c.spots || []).filter(s => s.kind === 'decoy' && ((s.fact && CLAIM[s.fact]) || s.herring))
+    }
+    function* misleadFlow(a) {
+      T.misled = true
+      const sps = misleadSpots()
+      const target = decoyOf(g, T, livingIds(g).filter(x => x !== a))
+      if (!sps.length || !target) return false
+      const sp = pick(g.r, sps)
+      const label = sp.herring ? sp.object : fillO(CLAIM[sp.fact], sp.object)
+      // 玩家细查过那一处（排除性事实卡；疑似线索要已看清）：留给他举手驳回
+      const playerSaw = !!(sp.done && sp.by === g.player && (!sp.herring || sp.herring.cleared))
+      const claim = { spot: sp.id, object: sp.object, key: sp.herring ? 'herring' : sp.fact, label, playerSaw }
+      yield* exchange(a, target, null, claim)
+      return true
+    }
+    // 玩家举手后的那一拍：出示 / 对质 / 追问 / 附议 / 质疑 / 驳回；返回是否真的说了（取消不算）
+    function findClue(id) {
+      if (id === 'photo') return c.photo ? { id: 'photo', name: '尸体照片', label: '尸体照片', tpl: 'photo', text: '', predicate: null } : null
+      if (id === 'body') return c.cause.needs ? { id: 'body', name: c.cause.name, label: c.cause.name, tpl: 'body', predicate: c.cause.needs, dim: dimOf(c.cause), visible: !!c.cause.visible } : null
+      return (c.clues || []).find(k => k.id === id && k.foundBy) || null
+    }
+    function* interjectFlow(a) {
+      const me = g.player
+      switch (a.kind) {
+        case 'present': {
+          if (T.presentLeft <= 0) return false
+          const k = findClue(a.clue)
+          if (!k || (a.target && (!isLiving(g, a.target) || a.target === me))) return false
+          yield* presentFlow(me, a.target || null, k, { photo: k.id === 'photo', frame: a.frame })
+          return true
+        }
+        case 'confront': {
+          if (!a.a || !a.b || a.a === a.b) return false
+          let liar = null, wit = null
+          if (contradicts(c, a.a, a.b)) { liar = a.a; wit = a.b } else if (contradicts(c, a.b, a.a)) { liar = a.b; wit = a.a }
+          const recorded = !!(a.recorded && c.recorded && [a.a, a.b].some(x => c.recorded.includes(x)))
+          tick(1)
+          yield { type: 'confront', speaker: me, a: a.a, b: a.b, ok: !!liar, liar, witness: wit, recorded }
+          if (liar && isLiving(g, wit) && isLiving(g, liar) && !T.exposed[liar]) {
+            yield* exposeFlow(wit, liar)
+            // 放录音：说过的话抵赖不掉，旁人跟着附议
+            if (recorded) {
+              const by = shuffle(g.r, livingIds(g).filter(x => x !== me && x !== liar && x !== wit && P(g, x).lover !== liar)).slice(0, 2)
+              for (const v of by) { (T.agree[liar] || (T.agree[liar] = [])).push(v); yield { type: 'interject', speaker: v, stance: 'agree', target: liar, accuser: me } }
+            }
+          }
+          return true
+        }
+        case 'question': {
+          if (!a.target || a.target === me || !isLiving(g, a.target)) return false
+          tick(1)
+          yield { type: 'question', speaker: me, target: a.target }
+          yield* alibiFlow(a.target, true)
+          return true
+        }
+        case 'agree': case 'doubt': {
+          const cur = T.current
+          if (!cur || !isLiving(g, cur.target) || cur.target === me) return false
+          const book = a.kind === 'agree' ? T.agree : T.doubt
+          ;(book[cur.target] || (book[cur.target] = [])).push(me)
+          yield { type: 'interject', speaker: me, stance: a.kind, target: cur.target, accuser: cur.accuser }
+          return true
+        }
+        case 'refute': {
+          const cur = T.current
+          if (!cur) return false
+          const sp = cur.claim && (c.spots || []).find(x => x.id === cur.claim.spot)
+          const ok = !!(sp && a.card === sp.id && sp.done && (!sp.herring || sp.herring.cleared) && !cur.refuted)
+          if (ok) yield* refuteFlow(me, cur.accuser, cur.claim)
+          else { tick(1); yield { type: 'refute', speaker: me, target: cur.accuser, claim: cur.claim || null, ok: false } }
+          return true
+        }
+      }
+      return false
+    }
 
-    // ---- 辩论：从一号席起，在席的人依次各发言一次 ----
+    // ---- 第一段：从一号席起，在席的人依次各发言一次 ----
     T.phase = 'debate'
     const order = livingIds(g)
     for (const id of order) {
@@ -1765,16 +2301,19 @@
       if (!isLiving(g, id)) continue
       yield { type: 'turn', speaker: id }
       if (id === g.player) {
-        // 轮到玩家：可以先发动辩论能力（发动后仍轮到他发言），再指认或沉默
+        // 轮到玩家：可以先发动辩论能力（发动后仍轮到他发言），再指认、出示、交代去向或沉默
         let act = null, n = 0
         while (n++ < 8) {
-          act = yield { type: 'ask-debate', speaker: id, canAlibi: canAlibi(T, id) }
+          act = yield { type: 'ask-debate', speaker: id, canAlibi: canAlibi(T, id), presentLeft: T.presentLeft }
           yield* checkpoint()
           if (!act || act.kind !== 'ability' || T.ended || T.phase !== 'debate' || !isLiving(g, id)) break
         }
         if (T.ended || T.phase !== 'debate' || !isLiving(g, id)) break
-        if (act && act.kind === 'accuse' && isLiving(g, act.target) && act.target !== id) {
-          yield* exchange(id, act.target, clueFor(g, T, id, act.target, true))
+        const pk = act && act.kind === 'present' && T.presentLeft > 0 ? findClue(act.clue) : null
+        if (pk && (!act.target || (isLiving(g, act.target) && act.target !== id))) {
+          yield* presentFlow(id, act.target || null, pk, { photo: pk.id === 'photo', frame: act.frame })
+        } else if (act && act.kind === 'accuse' && isLiving(g, act.target) && act.target !== id) {
+          yield* exchange(id, act.target, null)
         } else if (act && act.kind === 'alibi' && canAlibi(T, id)) {
           T.lastMode = 'alibi'
           yield* alibiFlow(id, false)
@@ -1792,6 +2331,7 @@
           else {
             tick(2)
             const mode = d.say === 'clue' && d.clue ? 'clue' : 'statement'
+            if (mode === 'clue') T.spoken[d.clue.id] = true
             yield { type: 'speech', speaker: id, mode, clue: mode === 'clue' ? clueInfo(d.clue) : null }
             // 看见自己留下的痕迹被人当众谈起
             if (mode === 'clue' && id !== c.murderer) {
@@ -1812,10 +2352,137 @@
     }
     yield* checkpoint()
 
+    // ---- 第二段：公开讨论（每拍由最有话说的人发言；玩家举手插话；没有新论点时主持人喊停） ----
+    function pickBeat(last) {
+      const living = livingIds(g)
+      const cands = []
+      for (const a of living) {
+        if (a === g.player || a === last) continue
+        let best = null
+        const add = (score, beat) => { if (!best || score > best.score) best = Object.assign({ score, speaker: a }, beat) }
+        // 知道谁当众交代的去向与自己的真实去向矛盾：当众拆穿
+        for (const L of living) if (L !== a && T.claimed[L] && !T.exposed[L] && contradicts(c, L, a) && P(g, a).lover !== L) add(3.4, { kind: 'expose', target: L })
+        // 刚被指认、还没回应过
+        const acc = (T.accuse[a] || []).filter(x => isLiving(g, x) && !(T.answered[a] || []).includes(x))
+        if (acc.length) add(2.3, { kind: 'respond', target: acc[acc.length - 1] })
+        // 凶手：拿现场的一处陈设误导（每场一次）
+        if (a === T.murderer && !T.misled && misleadSpots().length && !T.knownMurderer) add(2.0, { kind: 'mislead' })
+        const rk = ranked(g, T, a, living)
+        const top = rk[0], margin = rk.length > 1 ? rk[0].s - rk[1].s : 9
+        // 手里有让时间窗偏移的证物、还没人识破：出示（凶手自己不会）
+        const sk = ownClues(T, a).find(k => k.shift)
+        if (sk && !T.refKnown && a !== T.murderer && top) add(2.7, { kind: 'present', clue: sk, target: top.t })
+        // 手里有看不见特征的证物：出示给最怀疑、还没对这件证物回应过的人
+        const hidden = ownClues(T, a).filter(k => k.predicate && !k.visible && !T.presents.some(p => p.clue === k.id && p.speaker === a))
+        if (hidden.length && a !== T.murderer) {
+          const t = rk.find(x => !(T.tested[x.t] && T.tested[x.t][hidden[0].id]))
+          if (t) add(2.1, { kind: 'present', clue: hidden[0], target: t.t })
+        }
+        // 自己找到、还没谈过的证物
+        const fresh = ownClues(T, a).filter(k => !T.spoken[k.id])
+        if (fresh.length) add(1.5, { kind: 'clue', clue: fresh[0] })
+        // 有把握的怀疑：指认（还没指认过这个人）
+        if (top && top.s > 0.9 && margin >= 0.5 && !(T.accuse[top.t] || []).includes(a)) add(1.2 + Math.min(1, margin * 0.3), { kind: 'accuse', target: top.t })
+        // 追问去向：还没交代过的人里最可疑的
+        const q = rk.find(x => !T.claimed[x.t] && canAlibi(T, x.t))
+        if (q) add(0.9 + Math.max(0, Math.min(0.6, q.s * 0.2)), { kind: 'question', target: q.t })
+        // 当前的指认：附议或质疑
+        const cur = T.current
+        if (cur && isLiving(g, cur.target) && cur.accuser !== a && cur.target !== a &&
+          !(T.agree[cur.target] || []).includes(a) && !(T.doubt[cur.target] || []).includes(a)) add(0.95, { kind: 'interject', target: cur.target })
+        if (!best) continue
+        best.score += g.r() * 0.8 - 0.7 * (T.spokeOpen[a] || 0)
+        cands.push(best)
+      }
+      cands.sort((x, y) => y.score - x.score)
+      return cands.length && cands[0].score >= 1.05 ? cands[0] : null
+    }
+    function* runBeat(bt) {
+      const a = bt.speaker
+      T.spokeOpen[a] = (T.spokeOpen[a] || 0) + 1
+      switch (bt.kind) {
+        case 'expose': yield* exposeFlow(a, bt.target); break
+        case 'respond': {
+          ;(T.answered[a] || (T.answered[a] = [])).push(bt.target)
+          const kind = aiRespond(g, T, a, bt.target)
+          tick(1)
+          if (kind === 'counter' && isLiving(g, bt.target)) { recordAccuse(T, a, bt.target); T.current = { accuser: a, target: bt.target, clue: null, claim: null }; yield { type: 'counter', speaker: a, target: bt.target, tell: null } }
+          else if (kind === 'alibi' && canAlibi(T, a)) yield* alibiFlow(a, true)
+          else yield { type: 'defend', speaker: a, against: bt.target, tell: null }
+          break
+        }
+        case 'mislead': yield* misleadFlow(a); break
+        case 'present': yield* presentFlow(a, bt.target, bt.clue); break
+        case 'clue': {
+          T.spoken[bt.clue.id] = true
+          tick(2)
+          yield { type: 'speech', speaker: a, mode: 'clue', clue: clueInfo(bt.clue) }
+          if (a !== c.murderer) { const tl = tellOf(c.murderer, 'traces'); if (tl && tl.shown) yield Object.assign({ type: 'tell' }, tl) }
+          break
+        }
+        case 'accuse': yield* exchange(a, bt.target, clueFor(g, T, a, bt.target, false)); break
+        case 'question': {
+          tick(1)
+          yield { type: 'question', speaker: a, target: bt.target }
+          yield* alibiFlow(bt.target, true)
+          break
+        }
+        case 'interject': {
+          const cur = T.current
+          const sT = suspicion(g, T, a, cur.target), rk = ranked(g, T, a, livingIds(g))
+          let stance = rk.length && sT >= rk[0].s - 0.6 ? 'agree' : 'doubt'
+          if (P(g, a).lover === cur.target) stance = 'doubt'
+          if (a === T.murderer && cur.target !== a) stance = 'agree'
+          const book = stance === 'agree' ? T.agree : T.doubt
+          ;(book[cur.target] || (book[cur.target] = [])).push(a)
+          yield { type: 'interject', speaker: a, stance, target: cur.target, accuser: cur.accuser }
+          break
+        }
+      }
+    }
+    if (!T.ended && T.phase === 'debate' && livingIds(g).length > 2) {
+      T.stage = 'open'
+      const n = livingIds(g).length
+      let beats = n <= 8 ? randInt(g.r, 4, 6) : n >= 13 ? randInt(g.r, 6, 8) : randInt(g.r, 5, 7)
+      T.beats = beats
+      yield { type: 'discuss', beats }
+      let b = 0, extra = 0, last = null, guardB = 0
+      while (b < beats && guardB++ < 40) {
+        yield* checkpoint()
+        if (T.ended || T.phase !== 'debate') break
+        // 玩家举手：这一拍归他（不占 AI 的拍数，最多多出两拍）
+        if (T.handUp && g.player && isLiving(g, g.player) && T.hands > 0) {
+          T.handUp = false
+          const cur = T.current
+          const a = yield { type: 'ask-interject', speaker: g.player, hands: T.hands, presentLeft: T.presentLeft, current: cur ? { accuser: cur.accuser, target: cur.target, claim: cur.claim || null, refuted: !!cur.refuted } : null }
+          if (a && a.kind) {
+            const said = yield* interjectFlow(a)
+            if (said) {
+              T.hands--
+              T.handsUsed = (T.handsUsed || 0) + 1
+              if (extra < 2) { beats++; extra++ }
+              b++
+              last = g.player
+            }
+          }
+          continue
+        }
+        const bt = pickBeat(last)
+        if (!bt) { T.stopReason = 'exhausted'; break } // 论点说尽：主持人喊停
+        yield* runBeat(bt)
+        last = bt.speaker
+        b++
+      }
+      T.beatsRun = b
+      if (!T.stopReason) T.stopReason = 'beats'
+      T.handUp = false
+    }
+    yield* checkpoint()
+
     // ---- 投票 ----
     if (!T.ended) {
       T.phase = 'vote'
-      yield { type: 'debate-end' }
+      yield { type: 'debate-end', reason: T.stopReason || null }
     }
     let guard = 0
     while (!T.ended && guard++ < 40) {
@@ -1848,6 +2515,12 @@
     }
     yield { type: 'end', solved: T.solved, reason: T.endReason, misjudge: T.misjudge }
   }
+  // 玩家举手（界面在公开讨论时调用）：下一拍归他
+  function raiseHand(T) {
+    if (!T || T.ended || T.stage !== 'open' || T.phase !== 'debate' || T.hands <= 0) return false
+    T.handUp = true
+    return true
+  }
 
   // 自动推进一场庭审（测试与旁观）：ask-* 由 AI 代答
   function autoTrial(g, T, onEvent) {
@@ -1862,7 +2535,8 @@
       if (value.type === 'ask-debate') {
         const d = aiDebate(g, T, value.speaker)
         input = d.kind === 'accuse' ? { kind: 'accuse', target: d.target } : d.say === 'alibi' && value.canAlibi ? { kind: 'alibi' } : { kind: 'silent' }
-      } else if (value.type === 'ask-respond') input = { kind: aiRespond(g, T, value.speaker, value.against) }
+      } else if (value.type === 'ask-interject') input = null
+      else if (value.type === 'ask-respond') input = { kind: aiRespond(g, T, value.speaker, value.against) }
       else if (value.type === 'ask-vote') input = value.forced || aiBallot(g, T, value.vote, value.voter)
       else if (value.type === 'ask-idiot') input = aiIdiot(g, T, value.pending)
       else if (value.type === 'ask-hope') input = aiHope(g, T, value.holder, value.pending)
@@ -1893,11 +2567,13 @@
   }
 
   const TrialEngine = {
-    version: 2, ID, LABELS, DIM_VISIBLE, RAKING,
+    version: 3, ID, LABELS, DIM_VISIBLE, RAKING, CLAIM, START_COINS, PRESENT_MAX, HAND_MAX,
     texts: { FACTS, DECOY_TEXT, DECOY_DETAIL, HERRINGS, BODY_TEXT, CLUE_LEAD },
     rng, pred, tally,
     create, newCase, buildClues, buildSpots, bodyStage, inspect, reexamine, spend, aiInvestigation,
     caseFacts, floorWord, dimOf,
+    bodyReadings, readingsWindow, medWindow, apparentDeath, knowsShift, segAt, segSpan, claimSegs, contradictSeg, raiseHand, publicMatches,
+    bodyState, eat, rest, nightRest, aiMeals, payCoins, gainCoins, takeBodyCoins, useTool, hasBlood, leave,
     buildWhere, contradicts, interview, interviewCost, flavorKind, aiRespond, aiInterject, clueFor,
     secretHolders, tellChance, noticeChance, rollTell, decisiveBallot, logEntry, callOf,
     fortune, shapeshift, magic, cupid,

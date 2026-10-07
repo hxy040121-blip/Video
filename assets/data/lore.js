@@ -9,6 +9,10 @@
                   era 年代与器械、items 随身物；visible 这一维度别人看不看得见（身高、性别、体格、随身物看得见）
                   predicate 是对角色 c（CHARACTERS 的一项）的 JS 表达式字符串，如 "c.heightCm >= 178"
    bodyStages     尸体随死后分钟数的变化（§7.4）
+   bodyReadings   验尸的三格读数（§7.4 表的三列：体温、僵硬、尸斑）：{key, name, steps[{to 死后不足多少分钟（null 为此后）, text 原文}]}
+                  庭审引擎据此画出每一格读数对应的死亡时段，玩家在时间刻度上自己框出死亡时间窗
+   clueTemplates 的 shift  让死亡时间窗偏移的处理（§7.4 环境干扰：冷池、蚕丝被、热池、冷冻柜）：[{vi 变体, dir −1 看上去死得更早 / +1 更晚,
+                  reads 被干扰的读数}]；这几条不再筛人，凶手借它让自己的不在场证明落进假的时间窗（模板的 predicate 只是「想得到这样做」的条件）
    causes         死因：{id, name, sign 体表特征, needs 对凶手的要求（predicate 或空）, glyph/visible 同上（needs 不空时）}
    phases         一局游戏的循环阶段：{key, title, line, broadcast}
    coins          金币规则摘要      startState  开局初态摘要
@@ -2002,7 +2006,14 @@ window.LORE = {
      "predicate": "c.knowsModernDevices === false"
     }
    ],
-   "source": "洋馆物理层 7.4（冷冻柜结冻干扰读尸）、7.1（保养机重新分布球道油）；卡司总则 4（馆里多半没见过的器物）"
+   "source": "洋馆物理层 7.4（冷冻柜结冻干扰读尸）、7.1（保养机重新分布球道油）；卡司总则 4（馆里多半没见过的器物）",
+   "shift": [
+    {
+     "vi": 0,
+     "dir": -1,
+     "reads": ["temp", "rigor"]
+    }
+   ]
   },
   {
    "id": "coldpool",
@@ -2022,7 +2033,24 @@ window.LORE = {
      "predicate": "c.stats.medical !== \"无\""
     }
    ],
-   "source": "洋馆物理层 7.4 环境干扰、7.5（医护者才能综合读出死亡时间段）"
+   "source": "洋馆物理层 7.4 环境干扰、7.5（医护者才能综合读出死亡时间段）",
+   "shift": [
+    {
+     "vi": 0,
+     "dir": -1,
+     "reads": ["temp"]
+    },
+    {
+     "vi": 1,
+     "dir": 1,
+     "reads": ["temp"]
+    },
+    {
+     "vi": 2,
+     "dir": 1,
+     "reads": ["temp"]
+    }
+   ]
   },
   {
    "id": "vessel",
@@ -2145,6 +2173,39 @@ window.LORE = {
   {
    "minutes": 1440,
    "text": "僵硬开始缓解"
+  }
+ ],
+ "bodyReadings": [
+  {
+   "key": "temp",
+   "name": "体温",
+   "steps": [
+    { "to": 120, "text": "仍温" },
+    { "to": 360, "text": "四肢先凉，躯干仍有余温" },
+    { "to": 720, "text": "已冷，逐渐接近环境温度" },
+    { "to": null, "text": "通常与环境接近" }
+   ]
+  },
+  {
+   "key": "rigor",
+   "name": "僵硬",
+   "steps": [
+    { "to": 60, "text": "起初无" },
+    { "to": 120, "text": "下颌与颈部开始发紧" },
+    { "to": 360, "text": "向上肢、躯干扩展" },
+    { "to": 1440, "text": "全身僵硬" },
+    { "to": null, "text": "开始缓解" }
+   ]
+  },
+  {
+   "key": "livor",
+   "name": "尸斑",
+   "steps": [
+    { "to": 30, "text": "尚无" },
+    { "to": 120, "text": "出现，按压褪色" },
+    { "to": 480, "text": "逐渐明显，按压仍可褪色" },
+    { "to": null, "text": "固定，按压不再明显褪色" }
+   ]
   }
  ],
  "causes": [

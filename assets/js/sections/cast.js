@@ -212,7 +212,6 @@
     S.trackW = Math.round(lastC + (S.mob ? S.vw * 0.62 : S.vw * 0.5))
     S.travel = Math.max(1, S.trackW - S.vw)
     S.k = S.mob ? 0.7 : 0.65 // 竖向滚动 1px → 横向推进 1/k px（38 幅时是 0.85 / 0.78）
-    S.farM = Math.max(1200, S.vw) // 离视口左右多远以外的画先不画（setFar）
     sec.style.height = Math.round(vh + S.travel * S.k) + 'px'
     wall.style.width = fore.style.width = S.trackW + 'px'
     for (const it of S.items) placeItem(it)
@@ -243,12 +242,7 @@
       Object.assign(th.style, { left: bx + 'px', top: by + 'px', width: bw + 'px', height: bh + 'px' })
       th.querySelector('path').setAttribute('d', `M${x0} ${y0}C${x0 + 60} ${y0 + vh * 0.5} ${x1 - 220} ${vh * 0.62} ${x1} ${y1b}`)
     }
-    // 一进来就只画视口附近的（帧循环里再随滚动更新）
-    for (const it of S.items.concat([voidIt])) {
-      const sx = it.x + S.x
-      const far = sx > S.vw + S.farM || sx + it.w < -S.farM
-      if (far !== it.far) setFar(it, far)
-    }
+    buildSegs(colW)
     S.measured = false
     measureSec()
   }
@@ -387,15 +381,39 @@
     const t = `translate3d(${(px * TURN.x * it.pw).toFixed(2)}px,${(py * TURN.y * it.ph).toFixed(2)}px,0) perspective(900px) rotateY(${(px * 5).toFixed(2)}deg)`
     if (t !== it.tw) { it.tw = t; it.turn.style.transform = t }
   }
-  /* 长廊比合成器的「绘制范围」长：墙这一层只录视口左右各约 4000px 以内的内容（cull rect），
-     53 幅时两头的画落在范围外，长廊一动，范围一变，墙就成片重画（滚动时每屏 20MP 以上）。
-     所以离视口远的画先藏起来（visibility，不重排），留下的都在范围里；只有透明的点击区还在（Tab 照样能走到）。
-     眼睛的光点在前景层里，同样处理；尽头的红线跟着空框。 */
-  function setFar(it, far) {
-    it.far = far
-    it.node.classList.toggle('is-far', far)
-    it.eyesBox.classList.toggle('is-far', far)
-    if (it.void) { const th = wall.querySelector('.cast-thread'); if (th) th.classList.toggle('is-far', far) }
+  /* 墙分段：合成器只录墙这一层视口左右约 4000px 以内的内容（cull rect）。
+     墙比这长时，两头的画落在范围外，长廊一动、范围一变，墙就成片重录、重画（53 幅时滚动每屏 20MP 以上；38 幅时墙还短，碰不到）。
+     所以墙按列分成几段，每段不长于那个范围：一段只在「要在屏幕上露脸」或「整段都落在范围里」时才画，
+     否则 visibility: hidden（不重排；透明的点击区留着，Tab 照样走得到）。要露脸的段总是整段在范围里，
+     一趟滚完每段只切一两次。尽头的红线跟着空框那一段。前景层（标题、眼睛的光点）不分段：实测它不重画，
+     分了段反而要跟着切（切的那一帧与眼前光点的变化并在一起，成片重画）。 */
+  function buildSegs(colW) {
+    S.cull = 4000 - 800 // 留 800px 的余量：范围要挪够一段距离才会更新（实测 DPR 2 时范围更宽，不会更窄）
+    const span = Math.max(2.2 * colW, S.cull - 400)
+    S.segs = []
+    let seg = null
+    for (const it of S.items.concat([voidIt])) {
+      const x0 = it.x - 60, x1 = it.void ? S.trackW : it.x + it.w + 60
+      if (!seg || x1 - seg.x0 > span) { seg = { items: [], x0: S.segs.length ? x0 : 0, x1, far: null }; S.segs.push(seg) }
+      seg.items.push(it)
+      seg.x1 = Math.max(seg.x1, x1)
+    }
+    for (const sg of S.segs) setSegFar(sg, segFar(sg, S.x))
+  }
+  function segFar(sg, x) {
+    const m = sg.far === false ? 150 : 0 // 滞回：画着的段要再远 150px 才藏
+    const L = sg.x0 + x, R = sg.x1 + x
+    const needed = R > -400 - m && L < S.vw + 400 + m
+    const inCull = L >= -(S.cull + m) && R <= S.vw + S.cull + m
+    return !(needed || inCull)
+  }
+  function setSegFar(sg, far) {
+    if (sg.far === far) return
+    sg.far = far
+    for (const it of sg.items) {
+      it.node.classList.toggle('is-far', far)
+      if (it.void) { const th = wall.querySelector('.cast-thread'); if (th) th.classList.toggle('is-far', far) }
+    }
   }
 
   // 回到墙里：停在当时的姿态（二维平移，不再成层）
@@ -448,7 +466,7 @@
      ===================================================================== */
   function makeItem(i, c) {
     const isVoid = !c
-    const it = { i, k: isVoid ? 'v' : i, c, lit: 0, heat: 0, pf: 0, on: false, live: false, warm: false, sway: null, decoded: false, void: isVoid, gaze: { x: 0, y: 0 }, fixed: false, ox: 0, oy: 0, halos: [], far: false }
+    const it = { i, k: isVoid ? 'v' : i, c, lit: 0, heat: 0, pf: 0, on: false, live: false, warm: false, sway: null, decoded: false, void: isVoid, gaze: { x: 0, y: 0 }, fixed: false, ox: 0, oy: 0, halos: [] }
     const node = el('div.item' + (isVoid ? '.item--void' : ''), { 'data-i': i })
     if (c) node.style.setProperty('--accent', (c.art && c.art.accent) || App.color.blood)
     // —— 静态版（墙里画一次）——
@@ -856,13 +874,10 @@
     const qe = moving ? 1 : 2
     S.fno = (S.fno + 1) | 0
     let nearest = -1, nd = 1e9
+    for (const sg of S.segs) { const f = segFar(sg, x); if (f !== sg.far) setSegFar(sg, f) } // 墙分段（见 buildSegs）
     for (let i = 0; i <= all.length; i++) {
       const it = i < all.length ? all[i] : voidIt
       const sx = it.x + x
-      // 远处的画先不画（见 setFar）：滞回 200px，免得在门槛上来回切
-      const fm = S.farM + (it.far ? -200 : 0)
-      const far = sx > vw + fm || sx + it.w < -fm
-      if (far !== it.far) setFar(it, far)
       if (sx > vw + 260 || sx + it.w < -260) {
         if (it.live && hot !== it) demote(it)
         it.on = false
@@ -1041,6 +1056,7 @@
     kiritsugu: { mb0: 56, mb1: 72, rb: 52 },
     shinobu: { mb0: 58, mb1: 73, rb: 54 },
     itachi: { mb0: 60, mb1: 75, rb: 54 },
+    homelander: { mt0: 17.7, mt1: 18.5, rt: 17.8 }, // 头顶上方 17.3% 处原图留下一道细横线（肖像文件本身的瑕疵），描边会把它描亮
   }
 
   /* 右下角的大编号：落在随身物与翻页之间，字身（Cinzel 数字的墨迹约占字号的 6%–87%）不压翻页 */
