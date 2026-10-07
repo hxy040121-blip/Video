@@ -256,15 +256,15 @@
 .cast-dos-por { width: 100%; height: 100%; }
 .cast-dos-por > svg { filter: drop-shadow(-3px -2px 0 rgba(236,198,128,.85)) drop-shadow(0 30px 40px rgba(0,0,0,.6)); }
 /* 位图：原图的裁切直边（胸口的裁线、贴边的肩、个别人的头顶）用渐隐遮罩化开；
-   --mt0/--mt1、--mb0/--mb1、--mx 由 cast.js 按人覆写（EDGE） */
+   --cast-mt0/--cast-mt1、--cast-mb0/--cast-mb1、--cast-mx 由 cast.js 按人覆写（EDGE） */
 .cast-dos-por.is-photo {
   overflow: visible;
-  --cast-mv: linear-gradient(180deg, transparent var(--mt0, 0%), #000 var(--mt1, 0%), #000 var(--mb0, 66%), transparent var(--mb1, 83%));
+  --cast-mv: linear-gradient(180deg, transparent var(--cast-mt0, 0%), #000 var(--cast-mt1, 0%), #000 var(--cast-mb0, 66%), transparent var(--cast-mb1, 83%));
   --cast-mh: linear-gradient(90deg, transparent 0%, #000 6%, #000 84%, transparent 97%);
-  -webkit-mask-image: var(--cast-mv), var(--cast-mh), var(--mx, linear-gradient(#000, #000));
+  -webkit-mask-image: var(--cast-mv), var(--cast-mh), var(--cast-mx, linear-gradient(#000, #000));
   -webkit-mask-composite: source-in;
   -webkit-mask-repeat: no-repeat;
-  mask-image: var(--cast-mv), var(--cast-mh), var(--mx, linear-gradient(#000, #000));
+  mask-image: var(--cast-mv), var(--cast-mh), var(--cast-mx, linear-gradient(#000, #000));
   mask-composite: intersect;
   mask-repeat: no-repeat;
 }
@@ -275,8 +275,8 @@
   transform: translate3d(calc(var(--pvx, 0) * 1.4% - 8px), calc(var(--pvy, 0) * 1% - 2px), 0) scale(1.035);
   filter: brightness(0) invert(.9) sepia(.75) saturate(1.9);
   opacity: .92;
-  -webkit-mask-image: linear-gradient(180deg, transparent var(--rt, 0%), #000 calc(var(--rt, 0%) + 9%), #000 var(--rb, 57%), transparent calc(var(--rb, 57%) + 12%));
-  mask-image: linear-gradient(180deg, transparent var(--rt, 0%), #000 calc(var(--rt, 0%) + 9%), #000 var(--rb, 57%), transparent calc(var(--rb, 57%) + 12%));
+  -webkit-mask-image: linear-gradient(180deg, transparent var(--cast-rt, 0%), #000 calc(var(--cast-rt, 0%) + 9%), #000 var(--cast-rb, 57%), transparent calc(var(--cast-rb, 57%) + 12%));
+  mask-image: linear-gradient(180deg, transparent var(--cast-rt, 0%), #000 calc(var(--cast-rt, 0%) + 9%), #000 var(--cast-rb, 57%), transparent calc(var(--cast-rb, 57%) + 12%));
 }
 
 .cast-dos-name {

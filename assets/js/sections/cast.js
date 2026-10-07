@@ -726,7 +726,7 @@
   /* 档案大图：原图自带裁切直边的几位（斑的头顶、阿尔敏的方肩、几位偏高的胸口裁线），用渐隐遮罩化开。
      画面百分比；mt/mb = 上/下渐隐起止，rt/rb = 骨白硬描边的上/下收束，mx = 额外一层椭圆遮罩。见 cast.css .cast-dos-por */
   const EDGE = {
-    madara: { mt0: 15, mt1: 27, mb0: 54, mb1: 70, rt: 17, rb: 48 },
+    madara: { mt0: 14, mt1: 32, mb0: 54, mb1: 70, rt: 17, rb: 48 },
     armin: { mb0: 56, mb1: 74, rb: 50, mx: 'radial-gradient(ellipse 36% 44% at 48% 40%, #000 70%, transparent 100%)' },
     kaiji: { mb0: 56, mb1: 72, rb: 52 },
     kiritsugu: { mb0: 56, mb1: 72, rb: 52 },
@@ -849,7 +849,7 @@
     const fig = el('div.dos-fig')
     const por = App.portrait(c.id, { className: 'cast-dos-por', eyeRange: 8 })
     const edge = EDGE[c.id]
-    if (edge) for (const k in edge) por.style.setProperty('--' + k, k === 'mx' ? edge[k] : edge[k] + '%')
+    if (edge) for (const k in edge) por.style.setProperty('--cast-' + k, k === 'mx' ? edge[k] : edge[k] + '%')
     const pimg = por.querySelector('img')
     if (pimg) {
       // 弹丸论破式的硬描边：同一幅画的剪影错开几像素垫在后面

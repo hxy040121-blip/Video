@@ -917,6 +917,9 @@
 .trial-me.is-open .trial-me-text { opacity: 1; visibility: inherit; transform: none; transition: opacity .3s, transform .45s var(--ease-out), visibility 0s; pointer-events: auto; }
 /* 高度由 JS 按顶栏与卡之间的空隙限定；超出时在框内滚动，底边渐隐 */
 .trial-me-text { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--brass-dim) transparent; }
+.trial-me-text.is-dense { padding: 14px 18px 16px; }
+.trial-me-text.is-dense b { font-size: 16px; margin-bottom: 6px; }
+.trial-me-text.is-dense p { font-size: 12px; line-height: 1.65; }
 .trial-me-text::-webkit-scrollbar { width: 4px; }
 .trial-me-text::-webkit-scrollbar-thumb { background: var(--brass-dim); }
 .trial-me-text.is-scroll::after {
@@ -1219,6 +1222,8 @@
   /* 发牌大卡按高度取尺寸：顶栏与「继续」之间的空隙里放到最大（与 1440×900 时同宽，长文不再被截） */
   .trial-idcard { --ch: clamp(300px, 62vh, 440px); --cw: calc(var(--ch) / 1.5); top: 50%; }
   .trial-inv-room { font-size: 34px; max-height: 44vh; }
+  /* 发现者的肖像：夹在顶上的时刻与底部「调查」之间 */
+  .trial-cine-face { width: clamp(200px, min(24vw, 44vh), 340px); }
   /* 终局 / 死亡：肖像与名字按高度收一点，整列不顶进顶栏 */
   .trial-end { gap: 12px; padding-bottom: 28px; }
   .trial-end-face { width: clamp(130px, 25vh, 200px); }

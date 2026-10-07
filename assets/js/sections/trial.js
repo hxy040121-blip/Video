@@ -663,6 +663,7 @@
     if (!box || !S.stage) return
     box.style.width = ''
     box.style.maxHeight = ''
+    box.classList.remove('is-dense')
     const sr = S.stage.getBoundingClientRect()
     const mr = E.me.getBoundingClientRect()
     const tr = E.top.getBoundingClientRect()
@@ -671,12 +672,13 @@
     const room = Math.max(150, Math.floor(bottom - ceil))
     const gutter = mr.left - sr.left
     const maxW = Math.min(600, S.stage.clientWidth - 2 * gutter)
-    if (box.scrollHeight > room) {
-      for (const w of [420, 500, 600]) {
-        if (w > maxW || w <= box.offsetWidth) continue
-        box.style.width = w + 'px'
-        if (box.scrollHeight <= room) break
-      }
+    // 依次尝试：加宽 → 字距收紧 → 再加宽；都不够才滚动
+    const base = box.offsetWidth
+    for (const [w, dense] of [[420, false], [420, true], [500, true], [600, true]]) {
+      if (box.scrollHeight <= room) break
+      if (w > maxW && !(dense && !box.classList.contains('is-dense'))) continue
+      if (w <= maxW && w > base) box.style.width = w + 'px'
+      box.classList.toggle('is-dense', dense)
     }
     box.style.maxHeight = room + 'px'
     box.scrollTop = 0
