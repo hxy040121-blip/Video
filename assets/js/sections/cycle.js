@@ -134,10 +134,11 @@
     const walk = p => { const c = App.char(p.id); return !c || c.canWalk !== false }
     const swing = ppl[ppl.length - 1] // 最后一个投票的人
     const rest = ppl.filter(p => p !== swing)
-    const kPool = rest.filter(p => side(p) < -0.2 && walk(p))
+    // 凶手坐在圆桌左半、错指者坐在右半：最后一票随光标左右摆时两头分得开
+    const kPool = rest.filter(p => side(p) < -0.45 && walk(p))
     const K = pick(kPool.length ? kPool : rest.filter(walk).length ? rest.filter(walk) : rest)
     const r2 = rest.filter(p => p !== K)
-    const wPool = r2.filter(p => side(p) > 0.2)
+    const wPool = r2.filter(p => side(p) > 0.45)
     const Wp = pick(wPool.length ? wPool : r2)
     const r3 = r2.filter(p => p !== Wp)
     const V = pick(r3.length ? r3 : r2)
@@ -379,18 +380,31 @@
   Ink.prototype.add = function (x, y, R, o = {}) {
     if (this.blobs.length > 240) this.bake(this.blobs.shift())
     this.blobs.push({
-      x, y, R, t: 0, sq: o.sq || 1,
+      x, y, R, t: 0, sq: o.sq || 1, x2: o.x2, y2: o.y2,
       grow: o.grow || U.rand(0.35, 0.8), wet: o.wet || U.rand(1.1, 1.9),
       s1: Math.random() * TAU, s2: Math.random() * TAU, s3: Math.random() * TAU,
     })
   }
+  // 画布元素整体半透明（CSS），这里一律不透明地画：重叠处不会叠深成一颗颗“珠子”
   Ink.prototype.paint = function (c, b, final) {
     const t = final ? 99 : b.t
     const g = 1 - Math.exp(-t / b.grow)
     const r = b.R * (0.3 + 0.7 * g)
     if (r < 0.3) return
     const d = final ? 1 : clamp((t - b.wet) / 2.6)
-    const cr = lerp(146, 96, d) | 0, cg = lerp(8, 20, d) | 0, cb = lerp(44, 18, d) | 0
+    const cr = lerp(150, 92, d) | 0, cg = lerp(8, 18, d) | 0, cb = lerp(46, 17, d) | 0
+    if (b.x2 != null) {
+      // 拖痕：一段圆头粗线，越往后越细
+      c.save()
+      c.lineCap = 'round'
+      c.strokeStyle = `rgb(${cr},${cg},${cb})`
+      c.lineWidth = r * 2
+      c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(b.x2, b.y2); c.stroke()
+      c.lineWidth = r * 1.1
+      c.beginPath(); c.moveTo(b.x2, b.y2); c.lineTo(b.x2 + (b.x2 - b.x) * 0.25, b.y2 + (b.y2 - b.y) * 0.25); c.stroke()
+      c.restore()
+      return
+    }
     const ph = b.s3 + Math.min(t, 3) * 0.35
     c.save()
     if (b.sq !== 1) { c.translate(b.x, b.y); c.scale(1, b.sq); c.translate(-b.x, -b.y) }
@@ -408,9 +422,9 @@
       if (i) c.lineTo(x, y); else c.moveTo(x, y)
     }
     c.closePath()
-    c.fillStyle = `rgba(${cr},${cg},${cb},${(0.82 - d * 0.1).toFixed(3)})`
+    c.fillStyle = `rgb(${cr},${cg},${cb})`
     c.fill()
-    if (d > 0.05) { c.lineWidth = 1.1; c.strokeStyle = `rgba(48,7,9,${(0.62 * d).toFixed(3)})`; c.stroke() }
+    if (d > 0.05 && b.R > 7) { c.lineWidth = 1; c.strokeStyle = `rgba(52,8,10,${(0.3 * d).toFixed(3)})`; c.stroke() }
     if (d < 0.95 && r > 3) {
       c.fillStyle = `rgba(255,46,126,${(0.26 * (1 - d)).toFixed(3)})`
       c.beginPath(); c.ellipse(b.x - r * 0.3, b.y - r * 0.32, r * 0.3, r * 0.15, -0.6, 0, TAU); c.fill()
@@ -757,7 +771,10 @@
       const sp = S.cur.speed
       if (d > 11) {
         if (SK.lastX > -900 && d < 160) {
-          SK.ink.add(cx, cy, clamp(4 + sp * 0.75, 4, 26) * SK.inkK)
+          // 拖痕：慢拖粗、快甩细；不时积成一小滩
+          const wr = clamp(8.5 - sp * 0.22, 2.2, 8.5) * SK.inkK
+          SK.ink.add(SK.lastX, SK.lastY, wr, { x2: cx, y2: cy, grow: 0.18 })
+          if (sp < 9 && Math.random() < 0.3) SK.ink.add(cx, cy, U.rand(7, 14) * SK.inkK, { grow: 0.6 })
           if (sp > 10 && Math.random() < 0.55) {
             const a = Math.atan2(cy - SK.lastY, cx - SK.lastX)
             for (let i = 0; i < 2; i++) {
@@ -848,9 +865,10 @@
     SD.body.style.width = fx(len) + 'px'
     SD.body.style.height = fx(len * 0.545) + 'px'
     SD.body.style.transform = `translate(${fx(c[0] - len / 2)}px, ${fx(c[1] - len * 0.545 / 2)}px) rotate(-4deg) scaleY(.36)`
-    SD.pool.style.width = fx(len * 0.9) + 'px'
-    SD.pool.style.height = fx(len * 0.2) + 'px'
-    SD.pool.style.transform = `translate(${fx(c[0] - len * 0.55)}px, ${fx(c[1] - len * 0.08)}px)`
+    // 血泊：比尸体宽，偏向头部一侧（人形头朝左）
+    SD.pool.style.width = fx(len * 1.05) + 'px'
+    SD.pool.style.height = fx(len * 0.36) + 'px'
+    SD.pool.style.transform = `translate(${fx(c[0] - len * 0.78)}px, ${fx(c[1] - len * 0.15)}px) rotate(-4deg)`
     SD.el.style.setProperty('--bx', fx(c[0]) + 'px')
     SD.el.style.setProperty('--by', fx(c[1]) + 'px')
     // 墨迹快照：与行凶镜头同一位置，已经干透
@@ -883,6 +901,7 @@
     SD.el.style.setProperty('--dx', fx((S.cur.nx - 0.5) * -24) + 'px')
     SD.el.style.setProperty('--dy', fx((S.cur.ny - 0.5) * -18) + 'px')
     SD.el.style.setProperty('--fade', (1 - sstep(0.8, 1, lp) * 0.65).toFixed(3))
+    SD.el.style.setProperty('--pg', (0.45 + 0.55 * eo3(seg(0, 0.7, lp))).toFixed(3))
     setPhaseFill(lp)
   }
   SD.beats = [
@@ -913,7 +932,7 @@
   SI.layout = function () {
     const W = S.W, H = S.H
     const C = [W * 0.5, H * (S.mob ? 0.47 : 0.5)]
-    const R = Math.min(W, H) * (S.mob ? 0.4 : 0.35)
+    const R = Math.min(W, H) * (S.mob ? 0.335 : 0.35)
     SI.C = C; SI.R = R
     SI.LR = clamp(Math.min(W, H) * 0.15, 66, 128)
     const rnd = U.seeded(S.seed + 77)
@@ -1025,7 +1044,7 @@
     }
     let nums = ''
     for (const [m0, lab] of [[0, '120'], [30, '90'], [60, '60'], [90, '30']]) {
-      const a = (m0 / 120) * TAU, r = R + 40
+      const a = (m0 / 120) * TAU, r = R + (S.mob ? 30 : 40)
       nums += `<text class="r-num" x="${fx(C[0] + Math.sin(a) * r)}" y="${fx(C[1] - Math.cos(a) * r + 4)}">${lab}</text>`
     }
     const bodyLen = R * 0.98
@@ -1621,8 +1640,11 @@
     SA.k = k
     SA.cv.width = Math.round(W * k)
     SA.cv.height = Math.round(H * k)
-    const rx = Math.min(W * (S.mob ? 0.43 : 0.33), 620), ry = rx * (S.mob ? 0.46 : 0.4)
-    const cx = W * 0.5, cy = H * (S.mob ? 0.52 : 0.56)
+    // 桌子避开左侧竖排的阶段名（桌面），手机上阶段名在顶上，桌子用满宽度
+    const fNo = S.mob ? 1.3 : 1.32
+    const cx = S.mob ? W * 0.5 : W * 0.535, cy = H * (S.mob ? 0.55 : 0.56)
+    const rx = S.mob ? Math.min(W * 0.36, (W * 0.5 - 14) / fNo) : Math.max(160, Math.min(W * 0.29, (cx - 300) / fNo, 600, H * 0.62))
+    const ry = rx * (S.mob ? 0.6 : 0.4)
     const seats = []
     for (let s = 1; s <= 15; s++) {
       const a = ((s - 1) / 15) * TAU
@@ -1631,7 +1653,7 @@
         k: s, sx, sy, depth: (sy + 1) / 2,
         chair: [cx + sx * rx * 1.17, cy + sy * ry * 1.2],
         spot: [cx + sx * rx * 0.76, cy + sy * ry * 0.72],
-        no: [cx + sx * rx * 1.36, cy + sy * ry * 1.5],
+        no: [cx + sx * rx * fNo, cy + sy * ry * (S.mob ? 1.42 : 1.5)],
       })
     }
     SA.G = { cx, cy, rx, ry, seats, r: clamp(rx * 0.034, 7, 14) }
@@ -2087,10 +2109,19 @@
   /* =========================================================
      布局与帧循环
      ========================================================= */
+  // 舞台尺寸只取视口（钉住的框由内联样式锁成 100vh 且 contain: strict），
+  // 绝不取内容高度——否则画布按高度设尺寸 → 框被撑高 → 再次布局，会指数级失控。
+  function viewSize() {
+    const vw = document.documentElement.clientWidth || window.innerWidth || 1
+    const vh = window.innerHeight || document.documentElement.clientHeight || 1
+    const w = S.sticky.clientWidth || vw
+    const h = S.sticky.clientHeight || vh
+    return [Math.round(clamp(w, 1, Math.max(vw, 320) * 1.05)), Math.round(clamp(h, 1, Math.max(vh, 320) * 1.25))]
+  }
   function layout() {
-    const r = S.sticky.getBoundingClientRect()
-    S.W = Math.max(1, Math.round(r.width))
-    S.H = Math.max(1, Math.round(r.height))
+    const [w, h] = viewSize()
+    S.W = w
+    S.H = h
     S.mob = S.W < 760
     S.stage.classList.toggle('is-mob', S.mob)
     for (const sh of SH) { try { if (sh.layout) sh.layout() } catch (e) { console.error('[cycle]', e) } }
@@ -2102,7 +2133,11 @@
     S.tPrev = time
     try {
       S.rect = S.sticky.getBoundingClientRect()
-      if (Math.abs(S.rect.width - S.W) > 1 || Math.abs(S.rect.height - S.H) > 1) layout()
+      if (time - (S.lastSizeCheck || 0) > 0.25) {
+        S.lastSizeCheck = time
+        const [w, h] = viewSize()
+        if (Math.abs(w - S.W) > 1 || Math.abs(h - S.H) > 1) layout()
+      }
       const p = S.st ? S.st.progress : 0
       S.p = p
       S.fast = S.st ? Math.abs(S.st.getVelocity()) > S.H * 3.2 : false
@@ -2139,10 +2174,17 @@
   function mount(sec) {
     S.sec = sec
     sec.classList.add('cycle')
-    sec.style.setProperty('--cycle-h', ((TOTAL + 1) * 100).toFixed(0) + 'vh')
+    // 结构尺寸写成内联样式：即使样式表缺失或没加载完，板块也只有 (TOTAL+1) 屏高
+    const secH = ((TOTAL + 1) * 100).toFixed(0) + 'vh'
+    sec.style.setProperty('--cycle-h', secH)
+    Object.assign(sec.style, { height: secH, minHeight: '0', position: 'relative' })
     S.sticky = el('div.cycle-sticky')
+    Object.assign(S.sticky.style, { position: 'sticky', top: '0', width: '100%', height: '100vh', overflow: 'hidden', contain: 'strict' })
     S.stage = el('div.cycle-stage', { 'data-shot': 'mandate' })
+    Object.assign(S.stage.style, { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', overflow: 'hidden' })
     for (const sh of SH) S.stage.appendChild(sh.build())
+    // 画布的位图尺寸随舞台走，但它们的盒子永远是 100% × 100%，不参与撑高
+    for (const cv of S.stage.querySelectorAll('canvas')) Object.assign(cv.style, { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%' })
     S.stage.append(
       buildPhase(), buildBC(),
       el('div.cycle-lb', { 'aria-hidden': 'true' }, [el('i.t'), el('i.b')]),

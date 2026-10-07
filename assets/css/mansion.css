@@ -9,6 +9,8 @@
   position: sticky; top: 0; height: 100vh; overflow: hidden;
   --mz-dim: 1; --mz-px: 0px; --mz-py: 0px; --mz-col: 300px; --mz-g: 64px; --mz-10m: 180px;
 }
+/* 别处停下 Lenis（<html> 得 overflow:clip，body 变成滚动容器）时 sticky 失效；钉住区间内改用 fixed 顶住 */
+html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left: 0; right: 0; top: 0; }
 .mansion-stage { position: absolute; inset: 0; }
 .mansion-stage::after {
   content: ''; position: absolute; inset: 0; z-index: 35; pointer-events: none;
@@ -39,6 +41,8 @@
   border: 1px solid rgba(194, 154, 91, .3);
 }
 .mansion-floor.is-hover .mz-base { filter: brightness(1.6); }
+/* 放大期间裁在楼板框内（JS 在缩回动画结束后才去掉） */
+.mz-floor.is-clip, .mz-floor.is-clip .mz-svg { overflow: hidden; }
 
 /* 每层的叠层：底图 / 暖光池 / 穹顶脉冲 / 灯照圆窗 / 动效与命中 */
 .mz-floor > .mz-base, .mz-floor > .mz-fx { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
@@ -128,6 +132,8 @@
 
 /* ---------- 线框（屏幕空间） ---------- */
 .mansion-wire { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; overflow: visible; }
+.mz-w-stack { transition: opacity .5s var(--ease-out); }
+.mansion-sticky.is-zoom .mz-w-stack { opacity: 0; }
 .mz-w-shaft { fill: none; stroke: #c29a5b; stroke-width: 1; stroke-opacity: .5; }
 .mz-w-post { fill: none; stroke: #c29a5b; stroke-width: 1; stroke-opacity: .2; stroke-dasharray: 2 6; }
 .mz-w-ghost { fill: none; stroke: #c29a5b; stroke-width: 1; stroke-opacity: .55; stroke-dasharray: 3 5; }
@@ -152,7 +158,7 @@
 .mansion-flabel:hover .mansion-flabel-code, .mansion-flabel.is-hover .mansion-flabel-code { color: var(--brass); transform: scale(1.14); }
 
 /* ---------- 左上：标题 / 楼层 ---------- */
-.mansion-head { position: absolute; left: var(--mz-g); top: 96px; z-index: 40; width: calc(var(--mz-col) - var(--mz-g)); pointer-events: none; }
+.mansion-head { position: absolute; left: var(--mz-g); top: 96px; z-index: 40; width: calc(var(--mz-col) - var(--mz-g)); pointer-events: none; transition: opacity .6s var(--ease-out); }
 .mansion-head-title { transition: opacity .7s var(--ease-out) .32s, transform .9s var(--ease-out) .32s; }
 .mansion-title { font-family: var(--f-display); font-weight: 900; font-size: clamp(60px, 7.2vw, 118px); line-height: .9; letter-spacing: -0.02em; color: var(--bone); white-space: nowrap; }
 .mansion-line { margin-top: 22px; font-family: var(--f-serif); font-size: 13px; letter-spacing: .5em; color: var(--bone-dim); white-space: nowrap; }
@@ -172,6 +178,7 @@
 /* 比例尺 */
 .mansion-scale { position: absolute; z-index: 31; display: flex; align-items: flex-end; gap: 12px; opacity: 0; pointer-events: none; color: var(--brass-dim); }
 .mansion-sticky.is-focus .mansion-scale { opacity: 1; }
+.mansion-sticky.is-focus.is-zoom .mansion-scale { opacity: 0; }
 .mansion-scale .n { width: 10px; height: 16px; fill: var(--blood); }
 .mansion-scale .bar { position: relative; display: flex; width: var(--mz-10m); height: 4px; border: 1px solid var(--brass-dim); margin-bottom: 14px; }
 .mansion-scale .bar b { flex: 1; }
@@ -262,6 +269,55 @@
 .mansion-tag-no { font-family: var(--f-latin); font-weight: 700; font-size: 11px; letter-spacing: .3em; color: #8a6a3e; }
 .mansion-tag.is-weapon .mansion-tag-no { color: var(--blood-deep); }
 .mansion-tag-name { font-family: var(--f-serif); font-size: 16px; line-height: 1.35; letter-spacing: .1em; color: #1a1214; }
+
+/* ---------- 终幕：黑钻石封墙合拢 ---------- */
+.mansion-seal { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.mansion-seal-half {
+  position: absolute; top: 0; bottom: 0; width: calc(50% + 40px); overflow: hidden;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='28'%3E%3Cpath d='M12 .6L23.4 14L12 27.4L.6 14Z' fill='%23060505' stroke='%23f0d6a2' stroke-opacity='.085' stroke-width='.8'/%3E%3Cpath d='M12 .6V27.4M.6 14H23.4' stroke='%23f0d6a2' stroke-opacity='.03' stroke-width='.6'/%3E%3Cpath d='M12 3.4L20.6 14' stroke='%23f0d6a2' stroke-opacity='.05' stroke-width='.6'/%3E%3C/svg%3E") 0 0 / 24px 28px, #060505;
+  will-change: transform;
+}
+.mansion-seal-half.is-l { left: -40px; }
+.mansion-seal-half.is-r { left: 50%; }
+.mansion-seal-half::before {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(180deg, rgba(6, 5, 5, .9), rgba(6, 5, 5, 0) 26%, rgba(6, 5, 5, 0) 70%, rgba(6, 5, 5, .95));
+}
+.mansion-seal-lens {
+  position: absolute; left: 0; top: 0; width: 380px; height: 380px; border-radius: 50%; z-index: 1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='28'%3E%3Cpath d='M12 .6L23.4 14L12 27.4L.6 14Z' fill='%230f0c0a' stroke='%23ffe2ad' stroke-opacity='.55' stroke-width='.8'/%3E%3Cpath d='M12 .6V27.4M.6 14H23.4' stroke='%23ffe2ad' stroke-opacity='.16' stroke-width='.6'/%3E%3Cpath d='M12 3.4L20.6 14' stroke='%23fff3dc' stroke-opacity='.4' stroke-width='.7'/%3E%3C/svg%3E") 0 0 / 24px 28px;
+  -webkit-mask-image: radial-gradient(closest-side, #000 14%, rgba(0, 0, 0, .55) 48%, rgba(0, 0, 0, .12) 78%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 14%, rgba(0, 0, 0, .55) 48%, rgba(0, 0, 0, .12) 78%, transparent 100%);
+  will-change: transform;
+}
+.mansion-seal-edge { position: absolute; top: 0; bottom: 0; width: 1px; z-index: 3; background: linear-gradient(180deg, transparent, rgba(194, 154, 91, .75) 22%, rgba(194, 154, 91, .75) 78%, transparent); }
+.mansion-seal-half.is-l .mansion-seal-edge { right: 0; }
+.mansion-seal-half.is-r .mansion-seal-edge { left: 0; }
+.mansion-glint {
+  position: absolute; left: 0; top: 0; width: 24px; height: 28px; z-index: 1;
+  clip-path: polygon(50% 3%, 96% 50%, 50% 97%, 4% 50%);
+  background: linear-gradient(140deg, rgba(255, 244, 222, .95), rgba(214, 176, 110, .35) 45%, rgba(10, 8, 9, 0) 75%);
+  opacity: 0; animation: mzGlint 3.3s ease-in-out infinite; animation-play-state: paused;
+}
+.mansion-glint.is-blood { background: linear-gradient(140deg, #ff7aae, rgba(255, 46, 126, .55) 45%, rgba(163, 16, 74, 0) 80%); }
+.mansion-sticky.is-end .mansion-glint { animation-play-state: running; }
+.mansion-sticky.is-paused .mansion-glint { animation-play-state: paused; }
+@keyframes mzGlint { 0%, 64%, 100% { opacity: 0; } 72% { opacity: .95; } 80% { opacity: .3; } }
+.mansion-seal-seam {
+  position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; margin-left: -.5px; z-index: 4; opacity: 0;
+  background: linear-gradient(180deg, transparent, #ff2e7e 20%, #ff2e7e 80%, transparent);
+  box-shadow: 0 0 14px 1px rgba(255, 46, 126, .55);
+}
+.mansion-sticky.is-end .mansion-head,
+.mansion-sticky.is-end .mansion-flabels { opacity: 0; transition: opacity .6s var(--ease-out); }
+.mansion-sticky.is-end .mansion-flabels { pointer-events: none; }
+.mz-w-door { opacity: 0; }
+.mz-w-door-lead { fill: none; stroke: #ff2e7e; stroke-width: 1; stroke-opacity: .7; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.mz-w-door-dia { fill: #ff2e7e; }
+.mz-w-door-ring { fill: none; stroke: #ff2e7e; stroke-width: 1; transform-origin: 0 0; }
+.mansion-sticky.is-end .mz-w-door-ring { animation: mzDoorRing 2.2s cubic-bezier(.15, .6, .3, 1) infinite; }
+.mansion-sticky.is-paused .mz-w-door-ring { animation-play-state: paused; }
+@keyframes mzDoorRing { 0% { transform: scale(.5); opacity: .95; } 100% { transform: scale(2.6); opacity: 0; } }
 
 /* ---------- 终句 ---------- */
 .mansion-outro {

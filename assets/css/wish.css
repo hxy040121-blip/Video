@@ -45,10 +45,24 @@
 .wish-face .portrait > svg { transition: filter 1.8s var(--ease-out); }
 .wish-face-wrap.is-sil { filter: drop-shadow(0 -1px 0 rgba(240, 214, 160, .95)) drop-shadow(0 0 1px rgba(214, 178, 110, .9)) drop-shadow(0 -6px 14px rgba(240, 233, 220, .22)); }
 .wish-face-wrap.is-sil .portrait > svg { filter: brightness(0); }
+/* 下沿与两侧都化进黑暗（位图的身体常被裁成直边） */
 .wish-face {
-  -webkit-mask-image: linear-gradient(to bottom, #000 58%, rgba(0, 0, 0, .55) 74%, transparent 94%);
-  mask-image: linear-gradient(to bottom, #000 58%, rgba(0, 0, 0, .55) 74%, transparent 94%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 52%, rgba(0, 0, 0, .5) 70%, transparent 90%), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(to bottom, #000 52%, rgba(0, 0, 0, .5) 70%, transparent 90%), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  -webkit-mask-composite: source-in; mask-composite: intersect;
 }
+/* 位图肖像：剪影是同一张图压成纯黑、只留发光的眼睛；显形时剪影褪去，原图从暗处亮起 */
+.wish-face .portrait.is-photo > img { transition: filter 2.6s var(--ease-out); }
+.wish-face-wrap.is-sil .portrait.is-photo > img { filter: brightness(.12) contrast(1.2); }
+.wish-sil {
+  position: absolute; inset: 0; pointer-events: none; will-change: transform, opacity;
+  transform: translate3d(calc(var(--pvx, 0) * 1.4%), calc(var(--pvy, 0) * 1%), 0) scale(1.035);
+  opacity: 0; transition: opacity 2.2s var(--ease-out);
+}
+.wish-sil img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; filter: url(#wish-silf); user-select: none; -webkit-user-drag: none; }
+.wish-face-wrap.is-sil .wish-sil { opacity: 1; transition-duration: 1.2s; }
+.wish-face-wrap.is-empty { visibility: hidden; }
+.wish-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 /* 身后的那束光：从画面顶端落到头上 */
 .wish-face-wrap::before {
   content: ''; position: absolute; left: 50%; bottom: 52%; width: 46%; height: 140vh; transform: translateX(-50%);
@@ -60,12 +74,10 @@
 }
 .wish-eyes { position: absolute; inset: 0; pointer-events: none; }
 .wish-eyes i {
-  position: absolute; top: 41%; width: 1.7%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
+  position: absolute; top: 41%; left: 50%; width: 1.7%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
   background: #fff; box-shadow: 0 0 6px 2px var(--acc, var(--bone)), 0 0 22px 6px var(--acc, var(--bone));
   opacity: 0; transition: opacity 1.2s var(--ease-out);
 }
-.wish-eyes i:first-child { left: 41.7%; }
-.wish-eyes i:last-child { left: 58.3%; }
 .wish-face-wrap.is-sil .wish-eyes i { opacity: .85; }
 
 .wish-who {
@@ -108,8 +120,10 @@
 .wish-end-ring {
   position: absolute; left: 50%; top: 50%; width: min(64vmin, 560px); aspect-ratio: 1;
   transform: translate(-50%, -50%) rotate(calc((var(--mx) - .5) * 18deg + var(--ring-rot, 0deg)));
-  pointer-events: none; opacity: .9;
+  pointer-events: none; opacity: 0; scale: .84;
+  transition: opacity 1.8s var(--ease-out), scale 3s var(--ease-out);
 }
+.wish-end.is-shown .wish-end-ring { opacity: .9; scale: 1; }
 .wish-end-ring svg { width: 100%; height: 100%; overflow: visible; }
 .wish-end-ring circle { fill: none; stroke: rgba(111, 85, 50, .35); stroke-width: .35; }
 .wish-end-ring .wish-end-ring-in { stroke: rgba(111, 85, 50, .18); stroke-dasharray: 1 3; }

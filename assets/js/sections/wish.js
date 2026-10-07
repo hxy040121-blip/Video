@@ -53,13 +53,22 @@
     E.who = U.el('div.wish-who', null, [U.el('div.wish-who-head', null, [E.no, E.name]), E.line])
     E.last = U.el('figure.wish-last', null, [E.faceAnim])
     E.rule = U.el('p.wish-rule', { text: RULE })
-    E.sticky.append(E.stage, E.whis, E.last, E.who, E.count, E.rule)
+    // 位图肖像的剪影：身体压成纯黑，只留下画里血粉色的眼睛（蓝 − 绿 > 0 的像素）并让它发光
+    E.defs = U.el('div.wish-defs', { 'aria-hidden': 'true', html:
+      '<svg width="0" height="0" focusable="false"><filter id="wish-silf" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">' +
+      '<feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0.02  0 0 0 0 0.016  0 0 0 0 0.016  0 0 0 1 0" result="body"/>' +
+      '<feColorMatrix in="SourceGraphic" type="matrix" values="1.5 0 0 0 0.08  0 1.3 0 0 0.02  0 0 1.4 0 0.06  0 -7 7 0 -0.18" result="hue"/>' +
+      '<feComposite in="hue" in2="SourceAlpha" operator="in" result="eyes"/>' +
+      '<feGaussianBlur in="eyes" stdDeviation="5" result="glow"/>' +
+      '<feMerge><feMergeNode in="body"/><feMergeNode in="glow"/><feMergeNode in="glow"/><feMergeNode in="eyes"/></feMerge>' +
+      '</filter></svg>' })
+    E.sticky.append(E.defs, E.stage, E.whis, E.last, E.who, E.count, E.rule)
     E.track.appendChild(E.sticky)
 
     E.sleep = U.el('button.wish-sleep', { type: 'button', 'data-cursor': '闭眼' }, [U.el('span.wish-sleep-label', { text: '再睡一次' })])
     E.foot = U.el('footer.wish-foot', null, [
       U.el('span.wish-foot-mark', { 'aria-hidden': 'true', html: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15"/><circle cx="20" cy="20" r="3.2"/></svg>' }),
-      U.el('span.wish-foot-name', { text: '十五席' }),
+      U.el('span.wish-foot-name', { text: '夙与愿' }),
     ])
     // 十五道刻度围成的环：十四道锈红，一道骨白（还亮着的那把椅子）
     let ticks = ''
@@ -204,11 +213,26 @@
     W.H.setPerson(W.fk, id)
     if (W.untrack) { W.untrack(); W.untrack = null }
     E.face.innerHTML = ''
-    const pt = App.portrait(id, { track: false, className: 'wish-portrait' })
-    E.face.appendChild(pt)
-    W.untrack = App.trackEyes(pt, { eyeRange: 9 })
-    W.pt = pt
+    W.pt = null
+    // 三种情况：位图肖像（正式）、矢量旧稿、还没有肖像（只用画布里那团黑影）
+    W.kind = App.hasPortrait && App.hasPortrait(id) ? 'art' : 'none'
+    if (W.kind === 'art') {
+      const pt = App.portrait(id, { track: false, className: 'wish-portrait' })
+      const img = pt.classList.contains('is-photo') && pt.querySelector('img')
+      if (img) {
+        W.kind = 'photo'
+        pt.appendChild(U.el('div.wish-sil', { 'aria-hidden': 'true' }, [U.el('img', { src: img.getAttribute('src'), alt: '', decoding: 'async', draggable: 'false' })]))
+      }
+      E.face.appendChild(pt)
+      W.untrack = App.trackEyes(pt, { eyeRange: 9 })
+      W.pt = pt
+    }
     E.faceWrap.classList.add('is-sil')
+    E.faceWrap.classList.toggle('is-photo', W.kind === 'photo')
+    E.faceWrap.classList.toggle('is-empty', W.kind === 'none')
+    placeEyes()
+    // 有肖像时画布里那团黑影让位给肖像；没有时它就是那个人
+    if (W.finaleOn) gsap.to(W.H.seats[W.fk - 1], { gone: W.kind === 'none' ? 0 : 0.92, duration: 1.2, ease: 'power2.inOut', overwrite: 'auto' })
     const acc = c.art && c.art.accent ? c.art.accent : '#c29a5b'
     E.faceWrap.style.setProperty('--acc', acc)
     E.who.style.setProperty('--acc', acc)
@@ -220,11 +244,31 @@
     gsap.fromTo(E.no, { opacity: 0 }, { opacity: 1, duration: 1, delay: 0.1 })
     if (reveal) later(1.5, () => manifest(id))
   }
+  // 矢量旧稿：剪影时的两点眼光放在 .p-eye 实际所在处；量不到（或是位图）就不放
+  function placeEyes() {
+    const E = W.E
+    const dots = E.eyes.children
+    const eyes = W.kind === 'art' && W.pt ? Array.from(W.pt.querySelectorAll('.p-eye')).slice(0, 2) : []
+    const pr = W.pt && W.pt.getBoundingClientRect()
+    W.eyeOk = false
+    if (eyes.length === 2 && pr && pr.width > 0) {
+      eyes.forEach((e, i) => {
+        const r = e.getBoundingClientRect()
+        dots[i].style.left = ((r.left + r.width / 2 - pr.left) / pr.width * 100).toFixed(2) + '%'
+        dots[i].style.top = ((r.top + r.height / 2 - pr.top) / pr.height * 100).toFixed(2) + '%'
+        dots[i].style.width = Math.max(1.2, Math.min(2.4, r.width / pr.width * 40)).toFixed(2) + '%'
+      })
+      W.eyeOk = true
+    }
+    E.eyes.style.display = W.eyeOk ? '' : 'none'
+  }
   // 显形：剪影亮起，浮出他的愿望
   function manifest(id) {
     const E = W.E, c = App.char(id)
     if (!c || W.cur !== id) return
     E.faceWrap.classList.remove('is-sil')
+    // 没有肖像的人：画布里那双眼睛猛地亮一下
+    if (W.kind === 'none') W.H.seats[W.fk - 1].flash = 1
     App.audio.sfx('whoosh', { volume: 0.35, pitch: 0.7 })
     const tok = ++W.lineToken
     gsap.set(E.line, { opacity: 1, filter: 'blur(0px)', letterSpacing: '0.04em' })
@@ -268,7 +312,6 @@
     E.who.classList.add('is-on')
     gsap.to(E.rule, { opacity: 1, duration: 2.2, delay: 1.2, ease: 'power2.out' })
     if (E.rule._chars) App.text.reveal(E.rule, { stagger: 0.07, duration: 1.6, y: 20, delay: 1.2 })
-    gsap.to(W.H.seats[W.fk - 1], { gone: 0.92, duration: 1.4, ease: 'power2.inOut' })
     const id = W.winner && App.char(W.winner) ? W.winner : W.cur
     showPerson(id, true)
     if (!W.winner) {
@@ -386,6 +429,8 @@
     v.yaw = mix(Math.sin(H.time * 0.05) * 0.05, W.yawT, t)
     v.oy = mix(W.oy0, W.oy0 + H.H * (W.mob ? 0.1 : 0.06), t)
     H.lensA = 0.85 - 0.35 * t
+    // 镜头落下时，四壁与陈设退进黑暗，只留圆桌与那束光
+    H.wallA = 1 - 0.85 * t
     // 熄灭后的厅更暗
     H.o.amb = mix(0.06, 0.03, sstep(T.out0, T.out0 + T.outSpan, p))
     // 计数与最后的那个人
@@ -403,8 +448,12 @@
     const sec = Math.min(0.1, (dt || 1) / 60)
     // 进度直接取自钉住段的位置（不依赖可能过期的 ScrollTrigger 缓存）
     const tr = E.track.getBoundingClientRect()
+    if (tr.bottom < 0 || tr.top > window.innerHeight) { W.lastNow = 0; return } // 观察器回调可能迟到：完全离开视口就不画
     W.p = clamp01(-tr.top / Math.max(1, tr.height - window.innerHeight))
-    W.ps += (W.p - W.ps) * (1 - Math.pow(0.88, dt || 1))
+    // 平滑跟随用真实时间（与帧率无关；隔了很久才回来就直接到位）
+    const rdt = Math.min(1, (now - (W.lastNow || now)) / 1000)
+    W.lastNow = now
+    W.ps += (W.p - W.ps) * (1 - Math.exp(-rdt / 0.12))
     if (Math.abs(W.p - W.ps) < 0.0004) W.ps = W.p
     applyScroll(W.ps)
     const r = E.stage.getBoundingClientRect()
@@ -436,10 +485,12 @@
       x = U.clamp(x, fw * 0.5 + 8, H.W - fw * 0.5 - 8)
       y = W.mob ? U.clamp(y, fh * 0.41 + 64, H.H * 0.34) : U.clamp(y, fh * 0.41 + 70, H.H - fh * 0.59 - 20)
       E.last.style.transform = 'translate3d(' + (x - fw / 2).toFixed(1) + 'px,' + (y - fh * 0.41).toFixed(1) + 'px,0)'
-      if (W.mob) E.who.style.transform = 'translate3d(0,' + (y + fh * 0.5).toFixed(1) + 'px,0)'
-      else E.who.style.transform = 'translate3d(' + (x - fw * 0.5 - 28).toFixed(1) + 'px,' + (y + fh * 0.12).toFixed(1) + 'px,0)'
-      // 剪影时的两点眼光，跟着肖像的视线走
-      const ew = W.pt && W.pt._eyes
+      // 没有肖像时，名字贴着画布里那颗头
+      const gap = W.kind === 'none' ? Math.max(70, (hs ? hs.s : 100) * 0.45) : fw * 0.5 + 28
+      if (W.mob) E.who.style.transform = 'translate3d(0,' + (y + (W.kind === 'none' ? gap * 0.9 : fh * 0.5)).toFixed(1) + 'px,0)'
+      else E.who.style.transform = 'translate3d(' + (x - gap).toFixed(1) + 'px,' + (y + (W.kind === 'none' ? -10 : fh * 0.12)).toFixed(1) + 'px,0)'
+      // 矢量旧稿剪影时的两点眼光，跟着肖像的视线走
+      const ew = W.eyeOk && W.pt && W.pt._eyes
       if (ew) E.eyes.style.transform = 'translate(' + (ew.ox * fw / 600).toFixed(2) + 'px,' + (ew.oy * fh / 800).toFixed(2) + 'px)'
     }
   }
@@ -454,9 +505,6 @@
     if (W.sleeping) return
     W.sleeping = true
     const E = W.E
-    const world = document.getElementById('world')
-    // 震屏留下的 transform 会让 fixed 的眼睑跟着 #world 走：先清掉
-    if (world && !gsap.isTweening(world) && getComputedStyle(world).transform !== 'none') gsap.set(world, { clearProps: 'transform' })
     E.lids.style.display = 'block'
     gsap.set(E.lidT, { yPercent: -102 })
     gsap.set(E.lidB, { yPercent: 102 })
@@ -518,13 +566,22 @@
       if (w0 && App.char(w0)) W.winner = w0
       setup()
       App.onVisible(W.E.track, setVis, { rootMargin: '0px' })
-      let endShown = false
-      App.onVisible(W.E.end, v => {
-        if (v && !endShown) {
+      // 结尾：滚到时浮出「再睡一次」与落款（每隔几帧量一次位置，不依赖可能迟到的观察器回调）
+      let endShown = false, endSkip = 0
+      App.tick(() => {
+        if ((endSkip = (endSkip + 1) % 2)) return
+        const r = W.E.end.getBoundingClientRect(), vh = window.innerHeight
+        if (!endShown && r.top < vh * 0.72 && r.bottom > vh * 0.3) {
           endShown = true
-          gsap.fromTo([W.E.sleep, W.E.foot], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1.6, stagger: 0.25, ease: 'expo.out', delay: 0.3 })
+          W.E.end.classList.add('is-shown')
+          gsap.fromTo([W.E.sleep, W.E.foot], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1.6, stagger: 0.25, ease: 'expo.out', delay: 0.5, overwrite: true })
+          App.audio.sfx('chime', { volume: 0.35, pitch: 0.5 })
+        } else if (endShown && (r.top > vh * 1.05 || r.bottom < 0)) {
+          endShown = false
+          W.E.end.classList.remove('is-shown')
+          gsap.set([W.E.sleep, W.E.foot], { opacity: 0 })
         }
-      }, { rootMargin: '0px 0px -30% 0px' })
+      })
       App.bus.on('trial:winner', setWinner)
       App.bus.on('cast:change', () => setup())
       const onMove = e => {

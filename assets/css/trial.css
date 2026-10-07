@@ -142,8 +142,14 @@
   transform: rotate(45deg);
 }
 .trial-seat-x::after { transform: rotate(-45deg); }
-.trial-seat-lock { left: 50%; bottom: -8px; width: 16px; height: 16px; margin-left: -8px; z-index: 3; border-radius: 50%; background: var(--ink); border: 1px solid var(--ash); }
-.trial-seat-lock::before { content: ''; position: absolute; left: 3px; right: 3px; top: 7px; height: 1px; background: var(--bone-dim); transform: rotate(-35deg); }
+/* 锁：扣在胸前（远端席位的下半截被桌面挡住，所以不放底部；两侧与顶上留给票数、标记与「你」） */
+.trial-seat-lock {
+  left: 50%; top: 56%; margin-left: -12px; z-index: 7; width: 24px; height: 24px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--ink); box-shadow: 0 0 0 1px var(--blood), 0 0 14px rgba(255, 46, 126, .55);
+  color: var(--bone); transform: scale(2.2) rotate(-30deg);
+}
+.trial-seat-lock svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .trial-seat-no {
   position: absolute; left: 0; right: 0; top: calc(100% + 4px);
@@ -182,6 +188,10 @@
 }
 .trial-seat-count.is-on { opacity: 1; transform: none; }
 .trial-seat-count.is-neg { background: var(--ink-3); color: var(--bone-dim); box-shadow: 0 0 0 1px var(--ash); }
+/* 领先者：票数牌放大并脉动 */
+.trial-seat-count.is-lead { width: 38px; height: 38px; margin-left: -19px; top: -20px; font-size: 19px; animation: trial-lead 1s ease-in-out infinite; }
+.trial-seat.is-far .trial-seat-count.is-lead { margin-left: 0; top: 30%; right: -20px; }
+@keyframes trial-lead { 50% { box-shadow: 0 0 0 2px var(--ink), 0 0 0 7px rgba(255, 46, 126, .22), 0 0 30px rgba(255, 46, 126, .95); } }
 
 .trial-seat-mark { position: absolute; right: -10px; top: -8px; z-index: 6; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; pointer-events: none; }
 .trial-mark {
@@ -255,14 +265,43 @@
 }
 
 .trial-seat.is-banned .trial-seat-lock,
-.trial-seat.is-out .trial-seat-lock { opacity: 1; }
+.trial-seat.is-out .trial-seat-lock,
+.trial-seat.is-novote .trial-seat-lock { opacity: 1; transform: none; transition: opacity .15s, transform .45s cubic-bezier(.3, 1.8, .5, 1); }
+.trial-seat.is-novote .trial-seat-lock { box-shadow: 0 0 0 1px var(--rust); color: var(--bone-dim); }
+.trial-seat.is-out .trial-seat-lock { box-shadow: 0 0 0 1px var(--ash); color: var(--ash); }
 .trial-seat.is-banned .trial-seat-no { color: var(--ash); }
+.trial-seat.is-banned .trial-chair-inlay { stroke: var(--blood); stroke-dasharray: 2 3; opacity: .8; }
+/* 并列：两人一同闪红 */
+.trial-seat.is-tie .trial-seat-card { animation: trial-tie .5s steps(2) 3; }
+@keyframes trial-tie { 50% { filter: brightness(1.6) drop-shadow(0 0 18px rgba(255, 46, 126, .95)); } }
 .trial-seat.is-out .trial-seat-card { opacity: .45; filter: grayscale(.8); }
 .trial-seat.is-novote .trial-seat-no { color: var(--rust); text-decoration: line-through; }
 .trial-seat.is-hope .trial-chair-back { stroke: var(--bone-dim); stroke-dasharray: 3 3; }
 .trial-seat.is-hope .trial-seat-pt { opacity: .6; }
 
 .trial-seat.is-target .trial-seat-hit { cursor: pointer; }
+/* 可选的席位：四角准星（入座时为黄铜色，其余为血粉）；悬停时收紧锁定 */
+.trial-seat-hit::before {
+  content: ''; position: absolute; inset: -6px -5px -2px; pointer-events: none;
+  --c: var(--blood); --l: 11px; --t: 2px;
+  background:
+    linear-gradient(var(--c), var(--c)) 0 0 / var(--l) var(--t),
+    linear-gradient(var(--c), var(--c)) 0 0 / var(--t) var(--l),
+    linear-gradient(var(--c), var(--c)) 100% 0 / var(--l) var(--t),
+    linear-gradient(var(--c), var(--c)) 100% 0 / var(--t) var(--l),
+    linear-gradient(var(--c), var(--c)) 0 100% / var(--l) var(--t),
+    linear-gradient(var(--c), var(--c)) 0 100% / var(--t) var(--l),
+    linear-gradient(var(--c), var(--c)) 100% 100% / var(--l) var(--t),
+    linear-gradient(var(--c), var(--c)) 100% 100% / var(--t) var(--l);
+  background-repeat: no-repeat;
+  opacity: 0; transform: scale(1.25);
+  transition: opacity .25s, transform .45s var(--ease-out);
+}
+.trial-stage[data-scene="intro"] .trial-seat-hit::before { --c: var(--brass); }
+.trial-seat.is-target .trial-seat-hit::before { opacity: .55; transform: scale(1); animation: trial-lockon 1.8s ease-in-out infinite; }
+.trial-seat.is-target .trial-seat-hit:hover::before,
+.trial-seat.is-picked .trial-seat-hit::before { opacity: 1; transform: scale(.9); animation: none; transition-duration: .2s, .25s; }
+@keyframes trial-lockon { 50% { opacity: .85; transform: scale(1.07); } }
 .trial-seat.is-target .trial-seat-card { animation: trial-breath 2.2s ease-in-out infinite; }
 .trial-seat.is-target .trial-seat-hit:hover ~ .trial-seat-name,
 .trial-seat.is-target:hover .trial-seat-name { color: var(--bone); }
@@ -686,11 +725,11 @@
 }
 .trial-end-face {
   position: relative; z-index: 1; width: clamp(180px, 22vh, 260px); aspect-ratio: 3 / 4;
-  transform: translate(calc(var(--tx) * 16px), calc(var(--ty) * 10px));
   -webkit-mask-image: linear-gradient(to bottom, #000 75%, transparent);
           mask-image: linear-gradient(to bottom, #000 75%, transparent);
 }
-.trial-end-face .portrait { width: 100%; }
+/* 视差挂在里层：外层的变换留给入场、倒下等动画 */
+.trial-end-face .portrait { width: 100%; transform: translate(calc(var(--tx) * 16px), calc(var(--ty) * 10px)); }
 .trial-end-text { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 640px; }
 .trial-end-tag { font-family: var(--f-latin); font-size: 12px; letter-spacing: .5em; padding-left: .5em; color: var(--brass); }
 .trial-end-tag:empty { display: none; }
@@ -701,6 +740,13 @@
 .trial-end-row:empty { display: none; }
 .trial-end-mini { width: 64px; aspect-ratio: 3 / 4; opacity: .85; }
 .trial-end-mini .portrait { width: 100%; }
+/* 终局：其余的人在胜者脚下排成一行，熄灭 */
+.trial-end.is-win .trial-end-row { gap: 8px; margin: 2px 0 14px; max-width: min(760px, 100%); }
+.trial-end.is-win .trial-end-mini { position: relative; width: 40px; opacity: .5; border-bottom: 1px solid var(--rust); }
+.trial-end-mini[data-seat]::after {
+  content: attr(data-seat); position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+  font-family: var(--f-latin); font-size: 8px; line-height: 1; letter-spacing: .1em; color: var(--brass-dim); text-align: center;
+}
 .trial-end-actions { position: relative; z-index: 1; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; min-height: 48px; }
 
 .trial-end.is-win { background: radial-gradient(ellipse at 50% 40%, rgba(40, 28, 16, .7), rgba(10, 8, 9, .9) 70%); }
@@ -1032,6 +1078,7 @@
   .trial-seat.is-me .trial-seat-pips { top: calc(100% + 26px); }
   .trial-pip { width: 5px; height: 5px; }
   .trial-seat-count { width: 22px; height: 22px; margin-left: -11px; top: -10px; font-size: 11px; }
+  .trial-seat-count.is-lead { width: 28px; height: 28px; margin-left: -14px; top: -14px; font-size: 14px; }
   .trial-seat-tag { font-size: 9px; padding: 1px 4px; left: -4px; }
   .trial-seat-mark { right: -8px; }
   .trial-mark { min-width: 16px; height: 16px; font-size: 9px; }
@@ -1088,6 +1135,9 @@
   .trial-end-name { font-size: 36px; }
   .trial-end-line { font-size: 15px; }
   .trial-end-mini { width: 48px; }
+  .trial-end.is-win .trial-end-row { gap: 5px 4px; margin-bottom: 8px; }
+  .trial-end.is-win .trial-end-mini { width: 30px; }
+  .trial-end-mini[data-seat]::after { font-size: 7px; top: calc(100% + 2px); }
 
   .trial-top { gap: 14px; height: 40px; padding: 0 14px; }
   .trial-top-case b { font-size: 14px; }
@@ -1132,6 +1182,6 @@
 /* ---------- 降低动效 ---------- */
 @media (prefers-reduced-motion: reduce) {
   .trial-fx-lines, .trial-exec-rays, .trial-end-halo::after, .trial-veil-sigil i { animation: none !important; }
-  .trial-seat.is-target .trial-seat-card, .trial-btn.is-breath, .trial-me-act.is-on, .trial-card, .trial-me.is-choice .trial-me-card { animation: none !important; }
+  .trial-seat.is-target .trial-seat-card, .trial-seat.is-target .trial-seat-hit::before, .trial-seat.is-tie .trial-seat-card, .trial-seat-count.is-lead, .trial-btn.is-breath, .trial-me-act.is-on, .trial-card, .trial-me.is-choice .trial-me-card { animation: none !important; }
   .trial-idcard-inner { transition-duration: .3s; }
 }

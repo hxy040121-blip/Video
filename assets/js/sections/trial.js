@@ -361,7 +361,8 @@
     const root = el('div.trial-seat.is-empty', { 'data-seat': k })
     const card = el('div.trial-seat-card', { html: chairSVG() })
     const pt = el('div.trial-seat-pt')
-    card.append(pt, el('i.trial-seat-x'), el('i.trial-seat-lock'))
+    // 锁：并列者在紧接着的重投里不能投票（仍可被投）；白痴发动后出局
+    card.append(pt, el('i.trial-seat-x'), el('i.trial-seat-lock', { html: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3"/><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M12 15v2.5"/></svg>' }))
     const no = el('div.trial-seat-no', { text: U.roman(k) })
     const name = el('div.trial-seat-name')
     const cnt = el('div.trial-seat-count', null, [el('span')])
@@ -481,7 +482,7 @@
   function resetSeatStates() {
     for (let k = 1; k <= 15; k++) {
       const s = S.seat[k]
-      s.root.classList.remove('is-dead', 'is-me', 'is-speaking', 'is-dim', 'is-voter', 'is-pending', 'is-banned', 'is-novote', 'is-out', 'is-target', 'is-picked', 'is-hope', 'is-lit', 'is-gone', 'is-shake')
+      s.root.classList.remove('is-dead', 'is-me', 'is-speaking', 'is-dim', 'is-voter', 'is-pending', 'is-banned', 'is-novote', 'is-out', 'is-target', 'is-picked', 'is-hope', 'is-lit', 'is-gone', 'is-shake', 'is-tie')
       setCount(k, 0, true)
       s.pips.innerHTML = ''
       s.mark.innerHTML = ''
@@ -514,6 +515,10 @@
     s.cnt.classList.toggle('is-on', n !== 0)
     s.cnt.classList.toggle('is-neg', n < 0)
     if (!silent && window.gsap) gsap.fromTo(s.cnt, { scale: 1.9 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' })
+    // 当前领先者的票数牌放大、脉动（并列时一起）
+    let max = 0
+    for (let i = 1; i <= 15; i++) if (S.seat[i] && S.seat[i].count > max) max = S.seat[i].count
+    for (let i = 1; i <= 15; i++) if (S.seat[i]) S.seat[i].cnt.classList.toggle('is-lead', max > 0 && S.seat[i].count === max)
   }
   function bumpCount(id) {
     const k = seatOf(id)
@@ -670,15 +675,19 @@
   }
   function updateMe() {
     if (!S.E.me) return
-    // 能力结算中（选完人、正在揭示）先收起按钮；选人时保留，可再点一次取消
-    const a = abilityBusy && !(S.targeting && S.targeting.ability) ? null : myAbility()
+    // ① 正在为能力选人：按钮先变成「取消」（优先于一切判断，阶段变了也能退出）
+    // ② 选完人、能力正在结算或揭示：收起按钮
+    // ③ 其余时候：当前可用、且没有排队等待结算的能力
+    const arming = !!(S.targeting && S.targeting.ability)
+    const a = arming ? 'cancel' : abilityBusy ? null : myAbility()
+    const label = a === 'cancel' ? '取消' : a ? VERB[a] : ''
     const btn = S.E.me.querySelector('.trial-me-act')
     const was = btn.classList.contains('is-on')
     btn.classList.toggle('is-on', !!a)
-    btn.classList.toggle('is-armed', !!(S.targeting && S.targeting.ability))
-    btn.textContent = a ? VERB[a] : ''
-    btn.setAttribute('data-cursor', a ? VERB[a] : '')
-    btn.setAttribute('aria-label', a ? VERB[a] : '')
+    btn.classList.toggle('is-armed', arming)
+    if (btn.textContent !== label) btn.textContent = label
+    btn.setAttribute('data-cursor', label)
+    btn.setAttribute('aria-label', label)
     if (a && !was && window.gsap) gsap.fromTo(btn, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(2.4)', clearProps: 'transform,opacity' })
     S.E.me.classList.toggle('is-dead', !!(S.G && S.me && !meAlive()))
   }
@@ -854,6 +863,7 @@
     const E = S.E
     const box = E.cast
     const p = box.querySelector('.trial-cast-text')
+    p.textContent = '' // 不让上一条广播在横幅展开时闪一下
     box.classList.add('is-on')
     box.classList.toggle('is-alarm', !!opts.alarm)
     App.audio.sfx(opts.sfx || 'chime', { volume: 0.7 })
@@ -1333,6 +1343,7 @@
       Inv.stop()
       clearFaces(S.E.say.querySelector('.trial-say-face'))
       clearFaces(S.E.end.querySelector('.trial-end-face'))
+      clearFaces(S.E.end.querySelector('.trial-end-row'))
       if (window.gsap) gsap.set(S.E.end.querySelector('.trial-end-face'), { clearProps: 'transform,opacity' })
       clearFaces(S.E.exec.querySelector('.trial-exec-who'))
     }
@@ -1481,23 +1492,35 @@
   }
 
   /* ---------- 受命 → 行凶 → 发现 ---------- */
+  function setDial(m) {
+    const E = S.E
+    const mm = Math.floor(m)
+    E.cine.querySelector('.trial-cine-day').textContent = dayText(mm)
+    E.cine.querySelector('.trial-cine-time').textContent = hhmm(mm)
+    const hands = E.cine.querySelectorAll('.trial-dial-hand')
+    hands[1].setAttribute('transform', `rotate(${(mm % 60) * 6} 500 500)`)
+    hands[0].setAttribute('transform', `rotate(${((mm % 720) / 60) * 30} 500 500)`)
+  }
   async function caseScene(c, t0) {
     const E = S.E
+    const hands = E.cine.querySelectorAll('.trial-dial-hand')
+    const dots = E.cine.querySelectorAll('.trial-dial-dots circle')
+    const moodEl = E.cine.querySelector('.trial-cine-mood')
     await slash(() => {
       setScene('cine')
       mood('cine')
       hideSay()
       E.cine.classList.remove('is-found')
       clearFaces(E.cine.querySelector('.trial-cine-face'))
+      // 幕布揭开时表盘已经就位：十五颗席位点（空席、死者熄灭）、指针、时刻
+      dots.forEach((d, i) => d.classList.toggle('is-off', !S.G.seats[i] || !TE.isLiving(S.G, S.G.seats[i]) && S.G.seats[i] !== c.victim))
+      setDial(t0)
+      moodEl.textContent = ''
     })
     const day = E.cine.querySelector('.trial-cine-day')
     const time = E.cine.querySelector('.trial-cine-time')
-    const moodEl = E.cine.querySelector('.trial-cine-mood')
     moodEl.textContent = c.no === 1 ? '钟在走，有人在动' : '又一个二十四小时'
     if (window.gsap) gsap.fromTo(moodEl, { opacity: 0, letterSpacing: '1.2em' }, { opacity: 1, letterSpacing: '.6em', duration: 2.2, ease: 'power2.out' })
-    const hands = E.cine.querySelectorAll('.trial-dial-hand')
-    const dots = E.cine.querySelectorAll('.trial-dial-dots circle')
-    dots.forEach((d, i) => d.classList.toggle('is-off', !S.G.seats[i] || !TE.isLiving(S.G, S.G.seats[i]) && S.G.seats[i] !== c.victim))
     const t1 = c.tDiscover || c.tMurder
     const seer = S.G.people[S.me] && S.G.people[S.me].ident.name === '先知' && (meAlive())
     const dur = 4200
@@ -1565,18 +1588,21 @@
   /* ---------- 逾期 ---------- */
   async function overdueScene(c, t0) {
     const E = S.E
-    await slash(() => { setScene('cine'); mood('cine'); E.cine.classList.remove('is-found'); clearFaces(E.cine.querySelector('.trial-cine-face')) })
-    const time = E.cine.querySelector('.trial-cine-time')
-    const day = E.cine.querySelector('.trial-cine-day')
+    const dots = E.cine.querySelectorAll('.trial-dial-dots circle')
+    await slash(() => {
+      setScene('cine'); mood('cine'); E.cine.classList.remove('is-found'); clearFaces(E.cine.querySelector('.trial-cine-face'))
+      dots.forEach((d, i) => d.classList.toggle('is-off', !S.G.seats[i] || !TE.isLiving(S.G, S.G.seats[i])))
+      setDial(t0)
+    })
     E.cine.querySelector('.trial-cine-mood').textContent = '二十四小时'
     const steps = 40
     for (let i = 0; i <= steps; i++) {
       const m = t0 + (c.at - t0) * (i / steps)
-      time.textContent = hhmm(m)
-      day.textContent = dayText(m)
+      setDial(m)
       if (i % 4 === 0) App.audio.sfx('tick', { volume: 0.4 })
       await wait(60, false)
     }
+    c.executed.forEach(id => { const k = S.G.seats.indexOf(id); if (dots[k]) dots[k].classList.add('is-off') })
     S.G.minutes = c.at
     updateTop()
     await broadcast(bcText('受命者逾期', { 某某: nameOf(c.mandated) }), { alarm: true })
@@ -2582,6 +2608,7 @@
         return v
       }
       case 'knight': {
+        focusActor(ev.actor)
         await banner('骑士', ev.actor)
         drawLine(ev.actor, ev.target, { cls: 'is-accuse', kind: 'accuse' })
         shakeSeat(ev.target)
@@ -2599,6 +2626,7 @@
       case 'executor':
         S.phase = 'special'
         updateMe()
+        focusActor(ev.actor)
         await banner('执行者', ev.actor)
         drawLine(ev.actor, ev.target, { cls: 'is-accuse', kind: 'accuse' })
         if (ev.silenced) { await say(ev.actor, '……', { hold: 900 }); clearLines('accuse'); S.phase = 'debate'; return }
@@ -2736,12 +2764,26 @@
       }
       case 'noresult': {
         S.seat.forEach(s => s && s.root.classList.remove('is-pending'))
+        const res = ev.vote && ev.vote.result
+        const tied = res && res.tie ? res.top.filter(id => TE.isLiving(G, id)) : []
+        if (tied.length) {
+          // 并列：并列者一同闪红，桌心盖章
+          seatClass('is-tie', tied)
+          for (const id of tied) shakeSeat(id)
+          await stamp('并列', { hold: 800, sfx: 'glitch' })
+          seatClass('is-tie', [], false)
+        }
         if (ev.ended) {
           await broadcast(bcPart('未产生唯一结果', 1), { sfx: 'wrong' })
           S.stage.classList.remove('is-vote')
         } else {
           await broadcast(bcPart('未产生唯一结果', 0))
-          seatClass('is-banned', ev.banned || [])
+          // 并列者在紧接着的重投里不能投票：锁扣上
+          if ((ev.banned || []).length) {
+            seatClass('is-banned', ev.banned)
+            App.audio.sfx('door', { volume: 0.5 })
+            await wait(500)
+          }
         }
         return
       }
@@ -2763,6 +2805,7 @@
         return v
       }
       case 'idiot': {
+        focusActor(ev.holder)
         await banner('白痴', ev.holder)
         if (ev.effect === 'cancel') {
           await broadcast(bcPart('白痴发动', 0, { 某某: nameOf(ev.holder) }))
@@ -2783,6 +2826,7 @@
         return v
       }
       case 'hope': {
+        focusActor(ev.holder)
         await banner('身怀希望之人', ev.holder)
         if (ev.effect === 'cancel') {
           S.seat[seatOf(ev.pending)].root.classList.remove('is-pending')
@@ -2818,6 +2862,11 @@
       default:
         return
     }
+  }
+  // 公开发动能力的人：上一位发言者的台词收起，聚光转到发动者身上
+  function focusActor(id) {
+    if (sayFaceId !== id || !S.E.say.classList.contains('is-on')) hideSay()
+    spotlight(id)
   }
   async function stampFace(id) {
     spotlight(id)
@@ -3031,7 +3080,17 @@
       E.end.className = 'trial-end is-win'
       const fc = E.end.querySelector('.trial-end-face')
       clearFaces(fc)
-      E.end.querySelector('.trial-end-row').innerHTML = ''
+      const row = E.end.querySelector('.trial-end-row')
+      clearFaces(row)
+      // 胜者脚下：其余的人按席位排成一行，全部熄灭
+      if (winner && S.G) {
+        for (const id of S.G.order.slice().sort((a, b) => seatOf(a) - seatOf(b))) {
+          if (id === winner) continue
+          const m = el('div.trial-end-mini.is-gone', { 'data-seat': U.roman(seatOf(id)) })
+          m.appendChild(face(id, { dead: true, eyeRange: 2 }))
+          row.appendChild(m)
+        }
+      }
       if (winner) fc.appendChild(face(winner, { eyeRange: 9 }))
       E.end.querySelector('.trial-end-tag').textContent = winner ? U.roman(seatOf(winner)) : ''
       E.end.querySelector('.trial-end-name').textContent = winner ? nameOf(winner) : '—'
@@ -3044,8 +3103,10 @@
     App.audio.sfx('chimes5')
     if (window.gsap) {
       // 死亡场景留下的倒地姿态要清掉（同一个肖像框）
-      gsap.fromTo(E.end.querySelector('.trial-end-face'), { scale: 0.7, opacity: 0, x: 0, y: 40, rotate: 0 }, { scale: 1, opacity: 1, y: 0, duration: 1.6, ease: 'expo.out' })
+      gsap.fromTo(E.end.querySelector('.trial-end-face'), { scale: 0.7, opacity: 0, x: 0, y: 40, rotate: 0, rotationX: 0, transformOrigin: '50% 50%' }, { scale: 1, opacity: 1, y: 0, duration: 1.6, ease: 'expo.out' })
       gsap.fromTo(E.end.querySelector('.trial-end-halo'), { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 2.4, ease: 'expo.out' })
+      const minis = E.end.querySelectorAll('.trial-end-row > *')
+      if (minis.length) gsap.fromTo(minis, { y: 14, opacity: 0 }, { y: 0, opacity: 0.5, duration: 0.7, stagger: 0.05, delay: 0.9, ease: 'expo.out' })
     }
     await wait(1200)
     if (winner) await typeIn(E.end.querySelector('.trial-end-line'), charOf(winner).lines.wish || '……', 46)
@@ -3065,7 +3126,7 @@
       E.end.className = 'trial-end is-dead'
       const fc = E.end.querySelector('.trial-end-face')
       clearFaces(fc)
-      E.end.querySelector('.trial-end-row').innerHTML = ''
+      clearFaces(E.end.querySelector('.trial-end-row'))
       fc.appendChild(face(S.me, { dead: true, eyeRange: 2 }))
       E.end.querySelector('.trial-end-tag').textContent = U.roman(seatOf(S.me))
       E.end.querySelector('.trial-end-name').textContent = nameOf(S.me)
@@ -3074,13 +3135,13 @@
     App.audio.sfx('dark')
     App.bg && App.bg.setDark(0.6, 1.2)
     if (window.gsap) {
-      // 肖像向右倒下，横躺在原来的「地面」上（不压住名字），整体回到正中
+      // 肖像像一张立着的牌，向后仰倒、拍在地上（以底边为轴的透视翻倒：位图与矢量都成立，不露出裁切边）
       const fc = E.end.querySelector('.trial-end-face')
-      const w = fc.offsetWidth, h = fc.offsetHeight
-      gsap.set(fc, { rotate: 0, x: 0, y: 0, opacity: 1 })
+      gsap.set(fc, { rotate: 0, rotationX: 0, x: 0, y: 0, opacity: 1, transformPerspective: 760, transformOrigin: '50% 100%' })
       gsap.timeline({ delay: 0.35 })
-        .to(fc, { rotate: -5, duration: 0.28, ease: 'power2.out' })
-        .to(fc, { rotate: 90, x: -h / 2, y: -w / 2, opacity: 0.9, duration: 1.1, ease: 'bounce.out', onStart: () => setTimeout(() => App.audio.sfx('drop'), 420) })
+        .to(fc, { rotationX: -9, y: -4, duration: 0.32, ease: 'power2.out' })
+        .to(fc, { rotationX: 74, y: 0, duration: 1.0, ease: 'bounce.out', onStart: () => setTimeout(() => { App.audio.sfx('drop'); App.shake(S.stage, 6, 0.3) }, 380) })
+        .to(fc, { opacity: 0.7, duration: 0.8, ease: 'power2.out' }, '<0.5')
     }
     await wait(1400)
     E.end.querySelector('.trial-end-line').textContent = '你的席位熄灭了'

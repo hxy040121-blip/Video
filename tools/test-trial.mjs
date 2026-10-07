@@ -218,6 +218,20 @@ section('执行者、骑士、沉默者、河豚')
   ok(!v.correct && TE.person(g, ex).ident.noVote === true, '处刑后若非真凶，执行者永久失去投票权')
 }
 {
+  // 被表决者本人（AI）：自投或弃票都会计入指定对象，所以他会改投旁人
+  let bad = 0
+  for (let s = 1; s <= 40; s++) {
+    const { g, ids } = game(8, { [ALL[0]]: '执行者' }, { seed: s })
+    const T = trial(g, ids[7])
+    T.phase = 'debate'
+    const target = ids[1 + (s % 6)]
+    const V = TE.beginVote(g, T, 'special', { actor: ids[0], target })
+    const t = TE.aiBallot(g, T, V, target)
+    if (t === target) bad++
+  }
+  ok(bad === 0, '特殊表决中，被指定者本人不会把票投给自己')
+}
+{
   const { g, ids } = game(6, { [ALL[0]]: '骑士', [ALL[1]]: '骑士' })
   const T = trial(g, ids[5])
   T.phase = 'debate'

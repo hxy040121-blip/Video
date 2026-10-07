@@ -33,6 +33,7 @@
 /* ---------- 圆桌（俯视；扇面绕桌心转动） ---------- */
 .identities-table {
   position: absolute; left: 0; top: 0; z-index: 2; border-radius: 50%; pointer-events: none;
+  opacity: var(--in, 1);
   background:
     radial-gradient(closest-side, rgba(8, 6, 8, .2) 0%, rgba(8, 6, 8, .5) 78%, rgba(10, 7, 9, .74) 97.5%, rgba(10, 7, 9, 0) 100%);
   transition: opacity 1s var(--ease-out);
@@ -42,13 +43,14 @@
   position: absolute; inset: 0; border-radius: 50%;
   background: radial-gradient(circle 420px at var(--lx, 50%) var(--ly, 6%), rgba(214, 170, 104, .13), rgba(214, 170, 104, .04) 45%, rgba(214, 170, 104, 0) 72%);
 }
-.identities-stage.is-focus .identities-table { opacity: .45; }
+.identities-stage.is-focus .identities-table { opacity: calc(var(--in, 1) * .45); }
 
 /* ---------- 名牌 ---------- */
 .identities-plate {
   position: absolute; left: 50%; top: calc(var(--hud-h) + 1.2vh); z-index: 3;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  transform: translateX(-50%); text-align: center; pointer-events: none;
+  transform: translate(-50%, calc((1 - var(--in, 1)) * 18px)); opacity: var(--in, 1);
+  text-align: center; pointer-events: none;
   transition: opacity .5s var(--ease-out), transform .7s var(--ease-out);
 }
 .identities-plate-num {
@@ -74,7 +76,7 @@
   position: absolute; left: 0; right: 0; bottom: 20px; z-index: 3;
   display: flex; justify-content: center; align-items: baseline; gap: 30px;
   font-family: var(--f-mono); font-size: 11px; letter-spacing: .32em; color: var(--ash);
-  pointer-events: none; transition: opacity .5s var(--ease-out);
+  pointer-events: none; opacity: var(--in, 1); transition: opacity .5s var(--ease-out);
 }
 .identities-foot-mm { color: rgba(194, 154, 91, .55); letter-spacing: .2em; }
 .identities-stage.is-focus .identities-foot { opacity: 0; }

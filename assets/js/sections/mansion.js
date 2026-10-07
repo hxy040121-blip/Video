@@ -845,6 +845,29 @@
     stage.append(bgword)
     S.bgword = bgword
 
+    // 终幕：两扇黑钻石封墙从两侧合拢（光标是灯：照亮菱形、溅起闪光）
+    const sealEl = U.el('div.mansion-seal', { 'aria-hidden': 'true' })
+    S.sealWall = { el: sealEl, halves: [], k: -1, shut: false }
+    for (const side of ['l', 'r']) {
+      const half = U.el('div.mansion-seal-half.is-' + side)
+      const lens = U.el('i.mansion-seal-lens')
+      half.append(lens, U.el('b.mansion-seal-edge'))
+      const glints = []
+      for (let i = 0; i < 9; i++) {
+        const g = U.el('i.mansion-glint')
+        g.style.animationDelay = (-i * 0.37).toFixed(2) + 's'
+        g.addEventListener('animationiteration', () => placeGlint(S.sealWall.halves[side === 'l' ? 0 : 1], g))
+        half.appendChild(g)
+        glints.push(g)
+      }
+      sealEl.appendChild(half)
+      S.sealWall.halves.push({ el: half, lens, glints, side, x: 0, lx: -9999, ly: -9999 })
+    }
+    S.sealWall.seam = U.el('i.mansion-seal-seam')
+    sealEl.appendChild(S.sealWall.seam)
+    sealEl.style.visibility = 'hidden'
+    stage.appendChild(sealEl)
+
     // 场景
     const scene = U.el('div.mansion-scene')
     stage.appendChild(scene)
@@ -868,14 +891,24 @@
 
     // 线框（楼梯井、角柱、引线、证物线）
     const wire = mk('svg', { class: 'mansion-wire', 'aria-hidden': 'true' })
+    const gw = mk('g', { class: 'mz-w-stack' }, wire)
     S.wire = {
       svg: wire,
-      shafts: [0, 1, 2].map(() => mk('path', { class: 'mz-w-shaft' }, wire)),
-      posts: [0, 1, 2].map(() => mk('path', { class: 'mz-w-post' }, wire)),
-      ghost: mk('path', { class: 'mz-w-ghost' }, wire),
-      hover: mk('path', { class: 'mz-w-hover' }, wire),
-      leads: FIDS.map(() => mk('path', { class: 'mz-w-lead' }, wire)),
+      shafts: [0, 1, 2].map(() => mk('path', { class: 'mz-w-shaft' }, gw)),
+      posts: [0, 1, 2].map(() => mk('path', { class: 'mz-w-post' }, gw)),
+      ghost: mk('path', { class: 'mz-w-ghost' }, gw),
+      hover: mk('path', { class: 'mz-w-hover' }, gw),
+      leads: FIDS.map(() => mk('path', { class: 'mz-w-lead' }, gw)),
       strings: mk('g', { class: 'mz-w-strings' }, wire),
+    }
+    // 终幕：一层正门（唯一的门，已封死）→ 引线 → 终句
+    const gd = mk('g', { class: 'mz-w-door' }, wire)
+    const gpos = mk('g', {}, gd)
+    S.wire.door = {
+      g: gd, pos: gpos,
+      lead: mk('path', { class: 'mz-w-door-lead', pathLength: 1 }, gd),
+      ring: mk('circle', { class: 'mz-w-door-ring', r: 9 }, gpos),
+      dia: mk('path', { class: 'mz-w-door-dia', d: 'M0 -6L4.2 0L0 6L-4.2 0Z' }, gpos),
     }
     stage.appendChild(wire)
 
@@ -937,7 +970,9 @@
     layoutDesk()
 
     // 滚动
-    const st1 = ScrollTrigger.create({ trigger: sec, start: 'top top', end: 'bottom bottom', onUpdate: self => { S.p = self.progress } })
+    // is-pinned：舞台处于钉住区间。别处（浮层）停下 Lenis 时，CSS 改用 position:fixed 顶住，舞台不会跳走
+    const st1 = ScrollTrigger.create({ trigger: sec, start: 'top top', end: 'bottom bottom', onUpdate: self => { S.p = self.progress }, onToggle: self => sec.classList.toggle('is-pinned', self.isActive) })
+    sec.classList.toggle('is-pinned', st1.isActive)
     const st2 = ScrollTrigger.create({ trigger: sec, start: 'top bottom', end: 'top top', onUpdate: self => { S.enter = self.progress }, onLeave: () => { S.enter = 1 }, onLeaveBack: () => { S.enter = 0 } })
     S.cleanup.push(() => { st1.kill(); st2.kill() })
     S.p = st1.progress || 0
@@ -985,6 +1020,7 @@
     // 比例尺：10 m 对应的像素
     const px10 = S.L.flatS * S.L.ppm * 10
     S.root.style.setProperty('--mz-10m', px10.toFixed(1) + 'px')
+    if (S.outro) { const ls = S.outro.style.letterSpacing; S.outro.style.letterSpacing = '0.5em'; S.outroW = S.outro.offsetWidth; S.outro.style.letterSpacing = ls }
     S.scaleEl.style.left = (S.L.flatCx - fw / 2 + 4) + 'px'
     S.scaleEl.style.top = (S.L.flatCy + (fw / ratio) / 2 - 30) + 'px'
   }
@@ -1017,7 +1053,9 @@
     const sp = sstep(PH.spread[0], PH.spread[1], p) * (1 - sstep(PH.close[0], PH.close[1], p))
     const mini = sstep(PH.segs[0].a, PH.segs[0].b, p) * (1 - sstep(PH.out[0], PH.out[1], p))
     const px = S.par.x, py = S.par.y
-    const drift = App.reduced ? 0 : sstep(PH.close[0], PH.close[1], p) * Math.sin(time * 0.16) * 5
+    const end = sstep(PH.close[0], PH.close[1], p)
+    S.end = end
+    const drift = App.reduced ? 0 : end * Math.sin(time * 0.16) * 5
     S.zk += ((S.zoom ? 1 : 0) - S.zk) * ek(0.08, dt)
     if (Math.abs((S.zoom ? 1 : 0) - S.zk) < 0.002) S.zk = S.zoom ? 1 : 0
     const zoomed = S.zk
@@ -1029,7 +1067,7 @@
       const fid = FIDS[i]
       const real = (FMETA[fid].level - 4.5) * L.ppm * L.stackS
       const expl = (i - 1.5) * L.gap
-      const stack = { cx: L.stackCx, cy: L.stackCy, s: L.stackS, rx: 57 - py * 7, ry: 0, rz: -36 + px * 12 + drift, z: U.lerp(real, expl, sp), slide: 0 }
+      const stack = { cx: U.lerp(L.stackCx, L.vw * 0.5, end), cy: U.lerp(L.stackCy, L.vh * 0.45, end), s: L.stackS * (1 - 0.12 * end), rx: 57 - py * 7, ry: 0, rz: -36 + px * 12 + drift, z: U.lerp(real, expl, sp) * (1 - 0.12 * end), slide: 0 }
       const mp = { cx: L.miniCx, cy: L.miniCy, s: L.miniS, rx: 58 - py * 5, ry: 0, rz: -36 + px * 9, z: (i - 1.5) * L.miniGap, slide: 0 }
       let base = lerpPose(stack, mp, mini)
       // 入场：自上方依次落下
@@ -1067,7 +1105,7 @@
       if (tre !== fl._tre) { fl.edge.style.transform = tre; fl.edge.style.visibility = thick > 0.2 ? 'visible' : 'hidden'; fl._tre = tre }
       let op = f.k
       if (S.active && S.active !== fid) op *= 0.8
-      if (S.zoom && S.zoom.fid !== fid) op *= 0.12
+      if (S.zoom && S.zoom.fid !== fid) op *= 0.06
       const ops = op.toFixed(3)
       if (ops !== fl._op) { fl.el.style.opacity = ops; fl.edge.style.opacity = ops; fl.el.style.visibility = op < 0.005 ? 'hidden' : 'visible'; fl._op = ops }
       const z = f.a > 0.01 ? 20 : i + 1
@@ -1209,6 +1247,22 @@
       setD(S.wire.leads[i], ld)
       setO(S.wire.leads[i], os)
     })
+    // 终幕：正门标记与引线
+    const D = S.wire.door
+    const dk = sstep(PH.close[0] + 0.03, PH.close[1] - 0.01, S.p)
+    if (dk > 0.002) {
+      const q = P('1F', 26, -0.4)
+      const tr = `translate(${q[0].toFixed(1)} ${q[1].toFixed(1)})`
+      if (tr !== D._tr) { D._tr = tr; D.pos.setAttribute('transform', tr) }
+      const ow = S.outroW || 300, oy = L.vh * 0.88 - 8
+      const sx0 = L.vw / 2 - ow / 2 - 18, sx1 = L.vw / 2 + ow / 2 + 18
+      let d
+      if (q[0] > sx0 && q[0] < sx1) d = `M${q[0].toFixed(1)} ${(q[1] + 12).toFixed(1)}V${(oy - 30).toFixed(1)}`
+      else { const ex = q[0] >= sx1 ? sx1 : sx0; d = `M${q[0].toFixed(1)} ${(q[1] + 12).toFixed(1)}V${(oy - 14).toFixed(1)}H${ex.toFixed(1)}` }
+      setD(D.lead, d)
+      D.lead.style.strokeDashoffset = (1 - dk).toFixed(3)
+    }
+    setO(D.g, dk.toFixed(3))
   }
 
   // 特殊动效：黑钻石封墙（菱形阵列随光标闪光；靠近时转为血粉并震动）
@@ -1270,6 +1324,8 @@
       S.lastActive = S.active
       S.root.classList.toggle('is-focus', !!S.active)
     }
+    // 放大时页面被拖走（触屏、滚动条、键盘以外的途径）：收起房间
+    if (S.zoom && (S.flat !== S.zoom.fid || Math.abs(S.p - S.zoom.p0) > 0.004)) closeRoom()
     // 放平的楼层变了：旧提示作废；新平面若正好在光标下，直接点亮光标下的房间
     if (S.flat !== S._lastFlat) {
       S._lastFlat = S.flat
@@ -1281,8 +1337,9 @@
     }
     const isMini = S.mini > 0.5
     if (isMini !== S._isMini) { S._isMini = isMini; S.root.classList.toggle('is-mini', isMini) }
-    const outroK = sstep(PH.close[0] + 0.02, PH.close[0] + 0.07, S.p)
+    const outroK = sstep(PH.close[0] + 0.03, PH.close[1] - 0.01, S.p)
     if (Math.abs(outroK - (S._ok || 0)) > 0.002) { S._ok = outroK; S.outro.style.opacity = outroK.toFixed(3); S.outro.style.transform = `translate(-50%, ${(1 - outroK) * 16}px)`; S.outro.style.letterSpacing = (0.9 - outroK * 0.4).toFixed(3) + 'em' }
+    updateSealWall(mx, my, inside)
 
     // 叠放时：光标悬停楼层
     let hf = null
@@ -1325,6 +1382,61 @@
       const t = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`
       if (t !== S._tipT) { S._tipT = t; S.tip.style.transform = t }
     }
+  }
+
+  /* —— 终幕封墙 —— */
+  const SEAL_TW = 24, SEAL_TH = 28, SEAL_R = 190
+  function updateSealWall(mx, my, inside) {
+    const W = S.sealWall
+    if (!W) return
+    const e = sstep(PH.close[0] + 0.01, PH.close[1] - 0.012, S.p)
+    const isEnd = e > 0.001
+    if (isEnd !== S._isEnd) { S._isEnd = isEnd; S.root.classList.toggle('is-end', isEnd); W.el.style.visibility = isEnd ? 'visible' : 'hidden' }
+    if (!isEnd) { W.k = 0; return }
+    const L = S.L
+    const px = S.par.x * 16
+    for (const h of W.halves) {
+      const dir = h.side === 'l' ? -1 : 1
+      const tx = dir * (1 - e) * (L.vw * 0.5 + 60) - px
+      const t = `translate3d(${tx.toFixed(1)}px, 0, 0)`
+      if (t !== h._t) { h._t = t; h.el.style.transform = t }
+      h.x0 = (h.side === 'l' ? -40 : L.vw * 0.5) + tx // 半扇左缘（屏幕坐标）
+      const lx = inside ? mx - h.x0 : -9999, ly = inside ? my : -9999
+      if (Math.abs(lx - h.lx) > 0.5 || Math.abs(ly - h.ly) > 0.5) {
+        h.lx = lx; h.ly = ly
+        const ox = lx - SEAL_R, oy = ly - SEAL_R
+        h.lens.style.transform = `translate3d(${ox.toFixed(1)}px, ${oy.toFixed(1)}px, 0)`
+        h.lens.style.backgroundPosition = `${(-ox).toFixed(1)}px ${(-oy).toFixed(1)}px`
+      }
+    }
+    const st = `translate3d(${(-px).toFixed(1)}px, 0, 0)`
+    if (st !== W._st) { W._st = st; W.seam.style.transform = st }
+    // 合拢的一瞬：一声闭门、轻震、缝里渗出一线血光
+    const shut = e > 0.985
+    if (shut !== W.shut) {
+      W.shut = shut
+      S.root.classList.toggle('is-shut', shut)
+      if (shut && S.visible && W.k > 0) {
+        App.audio.sfx('door', { volume: 0.8 })
+        if (!App.reduced) App.shake(S.stage, 5, 0.32)
+        gsap.fromTo(W.seam, { opacity: 1, scaleX: 9 }, { opacity: 0.8, scaleX: 1, duration: 0.9, ease: 'expo.out', overwrite: true })
+      } else if (!shut) gsap.to(W.seam, { opacity: 0, duration: 0.3, overwrite: true })
+    }
+    W.k = e
+  }
+  // 一粒闪光落在光标附近的一颗菱形上（偶尔落在别处）；离光标近的偶尔是血粉色
+  function placeGlint(h, g) {
+    if (!h || !S.L) return
+    const lit = h.lx > -9000
+    let cx, cy, near = false
+    if (lit && Math.random() < 0.82) {
+      const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * SEAL_R * 0.85
+      cx = h.lx + Math.cos(a) * d; cy = h.ly + Math.sin(a) * d
+      near = d < SEAL_R * 0.45
+    } else { cx = Math.random() * (S.L.vw * 0.5 + 40); cy = Math.random() * S.L.vh }
+    const x = Math.round((cx - SEAL_TW / 2) / SEAL_TW) * SEAL_TW, y = Math.round((cy - SEAL_TH / 2) / SEAL_TH) * SEAL_TH
+    g.style.transform = `translate3d(${x}px, ${y}px, 0)`
+    g.classList.toggle('is-blood', near && Math.random() < 0.34)
   }
 
   function showTip() {
@@ -1450,21 +1562,33 @@
       }
       if (S.hoverFloor) { jumpTo(S.hoverFloor); return }
     })
-    const onKey = e => { if (e.key === 'Escape' && S.zoom) closeRoom() }
+    // 房间放大时不停 Lenis：Lenis 停下会给 <html> 加 overflow:clip，body（overflow-x:hidden）随即成了滚动容器，
+    // 钉住的舞台就改为相对 body 粘附、跳回板块顶部——整个舞台从视口里消失。改为在捕获阶段截下滚轮与翻页键。
+    const SCROLL_KEYS = { ' ': 1, PageDown: 1, PageUp: 1, ArrowDown: 1, ArrowUp: 1, Home: 1, End: 1 }
+    const onKey = e => {
+      if (!S.zoom) return
+      if (e.key === 'Escape') { closeRoom(); return }
+      if (SCROLL_KEYS[e.key] && !(e.target && e.target.closest && e.target.closest('input, textarea, [contenteditable]'))) { e.preventDefault(); closeRoom() }
+    }
     window.addEventListener('keydown', onKey)
-    const onWheel = () => { if (S.zoom && performance.now() - S.zoom.t0 > 700) closeRoom() }
-    window.addEventListener('wheel', onWheel, { passive: true })
-    S.cleanup.push(() => { window.removeEventListener('keydown', onKey); window.removeEventListener('wheel', onWheel) })
+    const onWheel = e => {
+      if (!S.zoom) return
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      if (performance.now() - S.zoom.t0 > 700) closeRoom()
+    }
+    window.addEventListener('wheel', onWheel, { capture: true, passive: false })
+    S.cleanup.push(() => { window.removeEventListener('keydown', onKey); window.removeEventListener('wheel', onWheel, { capture: true }) })
   }
 
   /* =====================================================================
      点开房间：放大 + 证物标签
      ===================================================================== */
-  function vbAnimate(fl, to, dur, ease) {
+  function vbAnimate(fl, to, dur, ease, done) {
     if (!fl.vbs) fl.vbs = Object.assign({}, fl.view.vb)
     gsap.killTweensOf(fl.vbs)
     return gsap.to(fl.vbs, Object.assign({}, to, {
-      duration: dur, ease: ease || 'expo.inOut',
+      duration: dur, ease: ease || 'expo.inOut', onComplete: done,
       onUpdate: () => {
         const v = [fl.vbs.x, fl.vbs.y, fl.vbs.w, fl.vbs.h].map(q => q.toFixed(3)).join(' ')
         for (const sv of fl.svgs) sv.setAttribute('viewBox', v)
@@ -1533,14 +1657,15 @@
     const room = roomByKey[key]
     if (!fl || !room || S.zoom) return
     setHoverRoom(null)
-    if (App.scroll && App.scroll.stop) App.scroll.stop()
     const rr = fl.view.rect(room.x0, room.y0, room.x1, room.y1)
     const target = zoomTargetVB(fl, rr, 0.36, 0.54)
     const pxPerUnit = (S.L.flatW) / target.w
     const n = Math.max(1, Math.min(4, room.objects.length))
     const anchors = anchorsFor(room, n)
-    S.zoom = { fid, key, room, lx: rr.x + rr.w / 2, ly: rr.y + rr.h / 2, lr: Math.hypot(rr.w, rr.h) * 0.7 + 1.5, t0: performance.now(), anchors: [], tags: [] }
+    S.zoom = { fid, key, room, lx: rr.x + rr.w / 2, ly: rr.y + rr.h / 2, lr: Math.hypot(rr.w, rr.h) * 0.7 + 1.5, t0: performance.now(), p0: S.p, anchors: [], tags: [] }
     S.root.classList.add('is-zoom')
+    // 放大期间把平面裁在自己的框里：否则 overflow:visible 的 SVG 会把整层放大画到框外，合成层随之膨胀到数千像素
+    fl.el.classList.add('is-clip')
     // 聚光
     const vb = fl.view.vb
     fl.spot.setAttribute('d', `M${vb.x - 5} ${vb.y - 5}H${vb.x + vb.w + 5}V${vb.y + vb.h + 5}H${vb.x - 5}Z M${r3(rr.x)} ${r3(rr.y)}V${r3(rr.y + rr.h)}H${r3(rr.x + rr.w)}V${r3(rr.y)}Z`)
@@ -1586,7 +1711,9 @@
     const minX = L.colR + 18, maxX = L.vw - L.g - tw
     const sides = []
     const n = marks.length
-    for (let i = 0; i < n; i++) sides.push(i % 2 === 0 ? 'r' : 'l')
+    // 锚点在房间左半的证物挂到左边、右半的挂到右边：线不交叉
+    const cxs = (R.l + R.r) / 2
+    for (let i = 0; i < n; i++) sides.push(pts[i][0] < cxs ? 'l' : 'r')
     const roomL = R.l - minX, roomR = maxX + tw - R.r
     for (let i = 0; i < n; i++) {
       if (sides[i] === 'l' && roomL < tw + 40) sides[i] = 'r'
@@ -1646,7 +1773,6 @@
     if (!z) return
     S.zoom = null
     const fl = S.floors[z.fid]
-    if (App.scroll && App.scroll.start) App.scroll.start()
     S.root.classList.remove('is-zoom')
     S.zl.classList.remove('is-on')
     const tags = z.tags || []
@@ -1657,7 +1783,7 @@
     })
     gsap.to(fl.gZoom, { opacity: 0, duration: d * 0.6, onComplete: () => { fl.gZoom.innerHTML = '' } })
     gsap.to([fl.spot, fl.focus], { opacity: 0, duration: d })
-    vbAnimate(fl, Object.assign({}, fl.view.vb), instant ? 0.01 : 0.9, 'expo.inOut')
+    vbAnimate(fl, Object.assign({}, fl.view.vb), instant ? 0.01 : 0.9, 'expo.inOut', () => { if (!S.zoom) fl.el.classList.remove('is-clip') })
   }
 
   /* =====================================================================
@@ -1803,6 +1929,7 @@
     fl.focus.setAttribute('d', fl.outline[key])
     gsap.fromTo([fl.spot, fl.focus], { opacity: 0 }, { opacity: 1, duration: 0.6 })
     fl.hl.classList.remove('is-on')
+    fl.el.classList.add('is-clip')
     vbAnimate(fl, target, 0.9, 'expo.inOut')
     buildZoomMarks(fl, room, anchors, pxPerUnit)
     gsap.fromTo(fl.gZoom, { opacity: 0 }, { opacity: 1, duration: 0.5, delay: 0.6 })
@@ -1827,7 +1954,7 @@
     S.mzoom = null
     const fl = S.floors[z.fid]
     fl.lanS.lock = 0
-    vbAnimate(fl, Object.assign({}, fl.view.vb), instant ? 0.01 : 0.8, 'expo.inOut')
+    vbAnimate(fl, Object.assign({}, fl.view.vb), instant ? 0.01 : 0.8, 'expo.inOut', () => { if (!S.mzoom) fl.el.classList.remove('is-clip') })
     gsap.to([fl.spot, fl.focus, fl.gZoom], { opacity: 0, duration: instant ? 0 : 0.4, onComplete: () => { fl.gZoom.innerHTML = '' } })
     const box = S.mtags
     box.classList.remove('is-on')
@@ -1861,7 +1988,7 @@
      ===================================================================== */
   function teardown() {
     for (const fn of S.cleanup.splice(0)) { try { fn() } catch (e) { /* noop */ } }
-    if (S.zoom) { S.zoom = null; if (App.scroll && App.scroll.start) App.scroll.start() }
+    S.zoom = null
     S.mzoom = null
     if (App.cursor && App.cursor.clear) App.cursor.clear()
     S.floors = {}
@@ -1870,7 +1997,7 @@
     S.hoverRoom = null
     S.lightKey = ''
     S.lastActive = undefined
-    if (S.el) { S.el.innerHTML = ''; S.el.classList.remove('is-desk', 'is-mob') }
+    if (S.el) { S.el.innerHTML = ''; S.el.classList.remove('is-desk', 'is-mob', 'is-pinned') }
   }
 
   function build() {

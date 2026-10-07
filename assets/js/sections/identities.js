@@ -217,10 +217,12 @@ ${corners}${mid}
     for (const p of paras) tx.appendChild(U.el('p', { text: p }))
     const text = el('div.text', {}, [tx])
     const fine = el('div.fine', { html: fineSVG() })
-    const kids = [paper, frame, num, sig, nameEl, div]
+    // 叠放：纸 → 金色烫印（边框、编号、纹章、分隔）→ 箔光 → 墨字 → 暗化。
+    // 箔光是 color-dodge / soft-light 混合层，只能压在纸和烫金上；放在墨字之上会把黑字染成紫红。
+    const kids = [paper, frame, num, sig, div, el('div.sheen'), el('div.glare'), nameEl]
     let oathEl = null
     if (oath) { oathEl = el('div.oath', {}, [el('span', { text: oath })]); kids.push(oathEl) }
-    kids.push(text, fine, el('div.sheen'), el('div.glare'), el('div.dim'))
+    kids.push(text, fine, el('div.dim'))
     for (const k of kids) face.appendChild(k)
     return { el: face, side, neg, name, nameEl, nameT, sig, div, text, tx, num, oath: oathEl, fine, tf: 1.6, tfr: 1.9, inked: false }
   }
@@ -237,7 +239,7 @@ ${corners}${mid}
       i, def, name: def.front, burned: false,
       cur: { x: 0, y: 0, r: 0, s: 0.3 }, mode: 'deck', fly: null,
       flip: 180, flipLift: 0, tx: 0, ty: 0, swing: 0, lift: 0, foil: 0, dim: 0, heat: 0,
-      fx: 0.5, fy: 0.5, z: i + 1, jit: U.rand(-2.4, 2.4), _t: '', _c: '', _z: -1, _o: -1, _v: '',
+      fx: 0.5, fy: 0.5, z: i + 1, jit: U.rand(-2.4, 2.4), _t: '', _c: '', _z: -1, _v: '',
     }
     const slot = el('div.slot', {
       role: 'button', tabindex: '-1', 'data-i': i,
@@ -257,7 +259,7 @@ ${corners}${mid}
     slot.addEventListener('blur', () => { if (S.kb === i) S.kb = -1 })
     slot.addEventListener('keydown', e => {
       if (S.focus != null || !S.ready) return
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFocus(i) }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openFocus(i) }
       else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
         e.preventDefault()
         const j = U.clamp(i + (e.key === 'ArrowRight' ? 1 : -1), 0, N - 1)
@@ -369,6 +371,7 @@ ${corners}${mid}
       el('span.foot-mm', { text: '63 × 88 mm' }),
     ])
 
+    for (const n of [S.plate, S.foot, S.table]) n.style.setProperty('--in', '0')
     stage.append(S.bgword, S.table, S.plate, S.foot, S.cardsEl, S.scroller, S.ui, S.fx, S.ring)
     sec.appendChild(root)
     S.ctx = S.fx.getContext('2d')
@@ -672,8 +675,9 @@ ${corners}${mid}
     c.tx = approach(c.tx, ttx, 0.14, dt)
     c.ty = approach(c.ty, tty, 0.14, dt)
     c.foil = approach(c.foil, foilT, 0.12, dt)
-    const dimT = (S.hover >= 0 && !isH && S.focus == null) ? 0.34 : 0
-    c.dim = approach(c.dim, dimT, 0.1, dt)
+    const hero = S.focus === c.i || (c.mode === 'fly' && c.fly.to === 'focus') || (S.focus == null && c.i === S.lastFocus)
+    const hoverDim = (S.hover >= 0 && !isH && S.focus == null) ? 0.34 : 0
+    c.dim = Math.max(approach(c.dim, hoverDim, 0.1, dt), hero ? 0 : 0.74 * S.fa.v)
     render(c)
   }
 
@@ -687,8 +691,6 @@ ${corners}${mid}
     // 叠放次序
     const z = S.focus === c.i ? 100 : c.mode === 'fly' ? (c.fly.to === 'focus' ? 99 : 90) : c.i === S.hover ? 60 : c.i + 1
     if (z !== c._z) { c.slot.style.zIndex = z; c._z = z }
-    const o = S.focus != null && S.focus !== c.i && !(c.mode === 'fly' && c.fly.to === 'focus') ? 1 - 0.72 * S.fa.v : 1
-    if (Math.abs(o - c._o) > 0.004) { c.slot.style.opacity = o.toFixed(3); c._o = o }
     const v = `${c.fx.toFixed(3)}|${c.fy.toFixed(3)}|${c.foil.toFixed(3)}|${c.dim.toFixed(3)}|${c.lift.toFixed(3)}`
     if (v !== c._v) {
       c._v = v
@@ -852,6 +854,8 @@ ${corners}${mid}
     const c = S.cards[i]
     if (!c || S.burning) return
     S.focus = i
+    S.openAt = performance.now()
+    S.wheelArmed = false
     S.kb = -1
     setHover(-1)
     releaseCursor()
@@ -876,8 +880,10 @@ ${corners}${mid}
 
   function closeFocus(instant, nav) {
     if (S.focus == null) return
+    if (window.__idnTrace) console.log('[idn] closeFocus', instant, nav, new Error().stack.split('\n').slice(2, 6).join(' | '))
     const c = S.cards[S.focus]
     cancelHold(true)
+    S.lastFocus = c.i
     S.focus = null
     S.cardHover = false
     c.slot.classList.remove('is-focus')
@@ -987,6 +993,7 @@ ${corners}${mid}
 
   // 逆位：背景烟雾转为血红，巨字「逆」
   function setRev(on) {
+    if (window.__idnTrace) console.log('[idn] setRev', on, S.rev, new Error().stack.split('\n').slice(2, 5).join(' | '))
     if (S.rev === on) return
     S.rev = on
     S.stage.classList.toggle('is-rev', on)
@@ -1427,7 +1434,12 @@ ${corners}${mid}
     hit.addEventListener('pointerleave', () => { S.pointerIn = false; if (S.hover >= 0 && S.mode === 'desk') setHover(-1); releaseCursor() })
     hit.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') S.pointerIn = true })
     hit.addEventListener('click', e => {
-      if (S.focus != null) { if (!S.burning) closeFocus(); return }
+      if (S.focus != null) {
+        // 刚拿起的一瞬（双击的第二下、牌还在飞）不算「点空白处」
+        if (S.burning || justOpened() || e.detail > 1) return
+        closeFocus()
+        return
+      }
       if (!S.ready || S.mode !== 'desk') return
       const r = S.stage.getBoundingClientRect()
       const prevHover = S.hover
@@ -1459,7 +1471,7 @@ ${corners}${mid}
       })
       s.addEventListener('contextmenu', e => { if (S.focus === c.i) e.preventDefault() })
       s.addEventListener('pointerdown', e => {
-        if (S.focus !== c.i || S.burning || c.flipTw) return
+        if (S.focus !== c.i || S.burning || c.flipTw || justOpened()) return
         if (c.def.front === '圣女' && !c.burned) {
           const r = S.stage.getBoundingClientRect()
           startHold(c, e.clientX - r.left, e.clientY - r.top, false)
@@ -1487,7 +1499,7 @@ ${corners}${mid}
       s.addEventListener('pointercancel', () => { if (S.hold && S.hold.c === c) cancelHold() })
       s.addEventListener('click', e => {
         e.stopPropagation()
-        if (S.focus !== c.i || c._suppress || S.burning) return
+        if (S.focus !== c.i || c._suppress || S.burning || justOpened()) return
         if (c.def.front === '圣女' && !c.burned) return
         flipFromEvent(c, e)
       })
@@ -1525,11 +1537,20 @@ ${corners}${mid}
       }
     })
     // 拿在手里时滚轮：放回（页面此时不滚动）
-    S.stage.addEventListener('wheel', e => {
-      if (S.focus == null || S.burning) return
+    // 触控板的惯性滚动会在拿起之后继续送来一长串 wheel：只认拿起之后、停顿过再开始的一次新滚动
+    window.addEventListener('wheel', e => {
+      const now = performance.now()
+      const gap = now - (S.lastWheel || 0)
+      S.lastWheel = now
+      if (S.focus == null || S.burning || !S.el.contains(e.target)) return
+      if (!S.wheelArmed) {
+        if (gap > 240 && now - S.openAt > 420) { S.wheelArmed = true; S.wheel = 0 }
+        else return
+      }
+      if (gap > 400) S.wheel = 0
       S.wheel += Math.abs(e.deltaY) + Math.abs(e.deltaX) * 0.3
-      if (S.wheel > 60) { S.wheel = 0; closeFocus() }
-    }, { passive: true })
+      if (S.wheel > 90) { S.wheel = 0; closeFocus() }
+    }, { passive: true, capture: true })
     // 拿在手里时点到板块以外（HUD 等）：先放回
     document.addEventListener('pointerdown', e => {
       if (S.focus != null && !S.el.contains(e.target) && !S.burning) closeFocus()
@@ -1543,6 +1564,8 @@ ${corners}${mid}
       fitAll()
     }, 180))
   }
+
+  function justOpened() { return performance.now() - (S.openAt || 0) < 480 }
 
   function flipFromEvent(c, e) {
     const r = c.slot.getBoundingClientRect()
@@ -1569,9 +1592,10 @@ ${corners}${mid}
       ScrollTrigger.create({
         trigger: sec, start: 'top 72%', once: true,
         onEnter: () => {
-          gsap.fromTo(S.plate, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 1.4, ease: 'expo.out' })
-          gsap.fromTo(S.foot, { opacity: 0 }, { opacity: 1, duration: 2, delay: 0.6 })
-          gsap.fromTo(S.table, { opacity: 0 }, { opacity: 1, duration: 2.2, ease: 'power2.out' })
+          // 入场只动 --in（CSS 里与「拿起」状态相乘），不写内联 opacity，免得盖掉拿起时的隐藏
+          gsap.fromTo(S.plate, { '--in': 0 }, { '--in': 1, duration: 1.4, ease: 'expo.out' })
+          gsap.fromTo(S.foot, { '--in': 0 }, { '--in': 1, duration: 2, delay: 0.6 })
+          gsap.fromTo(S.table, { '--in': 0 }, { '--in': 1, duration: 2.2, ease: 'power2.out' })
         },
       })
       App.bus.on('wake', () => { S.awake = true })

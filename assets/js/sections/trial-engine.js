@@ -172,6 +172,7 @@
       cases: [],
       notices: [],
       deaths: [],
+      hooks: opts.hooks || null, // 可注入的 AI 决策（测试用），如 { ballot(g, T, V, voter, aiBallot) }
     }
     // 身份：十五组洗牌，每人一组（主持人游戏 一、五；运行规则 0）
     const groups = shuffle(r, data.identities)
@@ -712,12 +713,18 @@
     if (V.kind === 'special') {
       if (voter === T.murderer) return V.target !== voter ? V.target : (decoyOf(g, T, pool) || voter)
       const rk = ranked(g, T, voter, pool)
+      // 被表决的人自己：自投与弃票都会算作投给指定对象，所以改投旁人
+      if (voter === V.target) return rk.length ? rk[0].t : voter
       const sT = suspicion(g, T, voter, V.target)
       return rk.length && sT >= rk[0].s - 0.6 ? V.target : voter
     }
     if (voter === T.murderer) return decoyOf(g, T, pool) || pick(g.r, pool)
     const rk = ranked(g, T, voter, pool)
     return rk.length ? rk[0].t : voter
+  }
+  // AI 的一票：可由 g.hooks.ballot 接管（测试用），否则按 aiBallot
+  function ballotOf(g, T, V, voter) {
+    return g.hooks && g.hooks.ballot ? g.hooks.ballot(g, T, V, voter, aiBallot) : aiBallot(g, T, V, voter)
   }
   // 法官：普通投票期间秘密指定一人 +1
   function judge(g, T, V, actor, target) {
@@ -1013,7 +1020,7 @@
         if (v === g.player) {
           const forced = forcedTarget(g, T, V, v)
           t = yield { type: 'ask-vote', voter: v, vote: V, forced }
-        } else t = aiBallot(g, T, V, v)
+        } else t = ballotOf(g, T, V, v)
         const b = cast(g, T, V, v, t)
         if (b) { tick(1); yield { type: 'ballot', vote: V, ballot: b } }
       }
@@ -1123,7 +1130,7 @@
         if (v === g.player) {
           const forced = forcedTarget(g, T, V, v)
           t = yield { type: 'ask-vote', voter: v, vote: V, forced }
-        } else t = aiBallot(g, T, V, v)
+        } else t = ballotOf(g, T, V, v)
         const b = cast(g, T, V, v, t)
         if (b) { tick(1); yield { type: 'ballot', vote: V, ballot: b } }
       }

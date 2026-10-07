@@ -378,7 +378,7 @@
     // 席位附加的顶光（小光池 / 穹顶一束光）
     function seatExtra(s) {
       let amt = s.lamp * 0.8, col = o.lampCol
-      if (S.beam.k === s.k - 1 && S.beam.amt > 0) { amt += S.beam.amt * 1.5; col = o.beamCol }
+      if (S.beam.k === s.k - 1 && S.beam.amt > 0) { amt += S.beam.amt * 1.1; col = o.beamCol }
       return amt > 0.002 ? { amt, col } : null
     }
 
@@ -530,15 +530,33 @@
         const x0 = s.x - s.ax[0] * hw, y0 = s.y - s.ax[1] * hw, x1 = s.x + s.ax[0] * hw, y1 = s.y + s.ax[1] * hw
         const q = c.poly([[x0, y0, 0.55], [x1, y1, 0.55], [x1, y1, 3.9], [x0, y0, 3.9]])
         if (!q) continue
-        const m = near(s.x, s.y, 1.8)
+        const m = Math.min(1, near(s.x, s.y, 1.8) * 0.55)
         ctx.globalAlpha = A
         pathPts(ctx, q)
-        ctx.fillStyle = rgb(14 + 60 * m * 0.4, 16 + 52 * m * 0.4, 30 + 70 * m * 0.4)
+        // 暗色真丝：上暗下亮的一层光泽，偏暖，不是蓝色色块
+        const top = c.p(s.x, s.y, 3.9), bot = c.p(s.x, s.y, 0.55)
+        if (top && bot) {
+          const g = ctx.createLinearGradient(top[0], top[1], bot[0], bot[1])
+          g.addColorStop(0, rgb(10, 9, 13))
+          g.addColorStop(0.55, rgb(13 + 34 * m, 12 + 26 * m, 18 + 22 * m))
+          g.addColorStop(1, rgb(11 + 18 * m, 10 + 13 * m, 14 + 10 * m))
+          ctx.fillStyle = g
+        } else ctx.fillStyle = rgb(13 + 30 * m, 12 + 22 * m, 18 + 20 * m)
         ctx.fill()
-        ctx.globalAlpha = A * (0.25 + Math.min(0.6, m * 0.6))
+        ctx.globalAlpha = A * (0.22 + 0.5 * m)
         ctx.strokeStyle = rgb(150, 118, 70)
         ctx.lineWidth = 1
         ctx.stroke()
+        // 织纹：两道极细的竖线
+        if (top && bot && Math.abs(top[1] - bot[1]) > 30) {
+          ctx.globalAlpha = A * (0.06 + 0.22 * m)
+          ctx.beginPath()
+          for (const f of [-0.33, 0.33]) {
+            const a = c.p(s.x + s.ax[0] * hw * f, s.y + s.ax[1] * hw * f, 3.75), b = c.p(s.x + s.ax[0] * hw * f, s.y + s.ax[1] * hw * f, 0.7)
+            if (a && b) { ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]) }
+          }
+          ctx.stroke()
+        }
       }
       // 门（合拢）：南门 x=±1.2，东西门 y=0.1–1.5
       const doors = [[[-1.2, -G.hy], [1.2, -G.hy], 2.7, [0, 1]], [[G.hx, 0.1], [G.hx, 1.5], 2.4, [-1, 0]], [[-G.hx, 1.5], [-G.hx, 0.1], 2.4, [1, 0]]]
@@ -1323,17 +1341,24 @@
       const n = 30
       const hard = glowSprite(255, 250, 240, true)
       const A = bm.amt * (1 - S.dark * 0.5)
+      let prev = null
       for (let i = 0; i <= n; i++) {
         const t = i / n
         const x = mix(0, s.x, t), y = mix(0, s.y, t), z = mix(G.apex - 0.3, 0.2, t)
         const p = c.p(x, y, z)
-        if (!p) continue
+        if (!p) { prev = null; continue }
         const r = mix(0.16, 0.62, t)
-        drawGlow(ctx, spr, p[0], p[1], r * p[3] * 1.6, A * (0.07 + 0.09 * t))
-        drawGlow(ctx, hard, p[0], p[1], r * p[3] * 0.5, A * 0.05)
+        const rad = Math.min(r * p[3] * 1.6, 420)
+        // 采样点在屏幕上挤在一起时（正俯视、或镜头贴近光柱底部）按密度减弱，免得叠成一团白
+        const gap = prev ? Math.hypot(p[0] - prev[0], p[1] - prev[1]) : rad
+        const k = Math.min(1, 0.22 + 2.2 * gap / Math.max(1, rad))
+        prev = p
+        drawGlow(ctx, spr, p[0], p[1], rad, A * (0.07 + 0.07 * t) * k)
+        // 硬芯只在光柱上段；落到椅子上时散开（否则近景里会把椅背烧成一块白板）
+        drawGlow(ctx, hard, p[0], p[1], Math.min(r * p[3] * 0.5, 140), A * 0.05 * (1 - 0.8 * t) * k)
       }
       const p = c.p(s.x, s.y, 1.1)
-      if (p) { drawGlow(ctx, spr, p[0], p[1], 1.3 * p[3], A * 0.3); drawGlow(ctx, hard, p[0], p[1], 0.3 * p[3], A * 0.25) }
+      if (p) { drawGlow(ctx, spr, p[0], p[1], Math.min(1.3 * p[3], 520), A * 0.16); drawGlow(ctx, hard, p[0], p[1], Math.min(0.3 * p[3], 90), A * 0.06) }
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
     }
@@ -1344,9 +1369,11 @@
       if (!ls || S.glowA <= 0.01) return
       const L = S.light, lc = o.lightCol
       const k = Math.min(1.2, L.power * L.flick) * S.glowA * S.poolA
+      // 光升到穹顶时是一片散光，不是一团火：火芯随高度淡去；尺寸封顶，镜头再近也只是一点烛火
+      const core = 1 - sstep(3.2, 5.2, L.z)
       ctx.globalCompositeOperation = 'lighter'
-      drawGlow(ctx, glowSprite(lc[0], lc[1], lc[2]), ls[0], ls[1], 1.5 * ls[3], 0.16 * k)
-      drawGlow(ctx, glowSprite(255, 236, 205, true), ls[0], ls[1], 0.13 * ls[3], 0.5 * k)
+      drawGlow(ctx, glowSprite(lc[0], lc[1], lc[2]), ls[0], ls[1], Math.min(1.5 * ls[3], 260), 0.16 * k)
+      drawGlow(ctx, glowSprite(255, 236, 205, true), ls[0], ls[1], Math.min(0.13 * ls[3], 20), 0.5 * k * core)
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
     }
@@ -1625,9 +1652,9 @@
     E.cv = U.el('canvas.prologue-cv', { 'aria-hidden': 'true' })
     E.ribs = U.el('canvas.prologue-ribs', { 'aria-hidden': 'true' })
     E.stage.append(E.cv, E.ribs)
-    E.title = U.el('h1.prologue-title', { text: '十五席' })
+    E.title = U.el('h1.prologue-title', { text: '夙与愿' })
     E.seal = U.el('i.prologue-seal', { 'aria-hidden': 'true' })
-    E.latin = U.el('div.prologue-latin', { text: 'Fifteen Seats', 'aria-hidden': 'true' })
+    E.latin = U.el('div.prologue-latin', { text: 'XV Sedes · Vnvm Votvm', 'aria-hidden': 'true' })
     E.head = U.el('div.prologue-head', null, [E.title, E.seal, E.latin])
     E.time = U.el('span.prologue-time', { text: '17:00' })
     E.clock = U.el('div.prologue-clock', { 'aria-hidden': 'true' }, [U.el('span.prologue-day', { text: '第一日' }), E.time, E.tick = U.el('i.prologue-clock-tick')])
@@ -1661,6 +1688,8 @@
   function setClock(m, instant) {
     const t = '17:0' + m
     P.H.clock = 17 * 60 + m
+    // 让 HUD 的馆内时钟与大钟同步（只在板块顶端时；滚动后由核心按进度接管）
+    if (P.p < 0.02) { App.state.minutes = 17 * 60 + m; App.bus.emit('time', 17 * 60 + m) }
     const E = P.E
     if (instant || App.reduced) { E.time.textContent = t; return }
     App.text.scramble(E.time, t, { duration: 0.5, chars: '0123456789', revealDelay: 0.1 })
@@ -1862,8 +1891,12 @@
     const sec = Math.min(0.1, (dt || 1) / 60)
     // 进度直接取自板块的位置（不依赖可能过期的 ScrollTrigger 缓存）
     const er = P.el.getBoundingClientRect()
+    if (er.bottom < 0 || er.top > window.innerHeight) return // 观察器回调可能迟到：完全离开视口就不画
     P.p = clamp01(-er.top / Math.max(1, er.height - window.innerHeight))
-    P.ps += (P.p - P.ps) * (1 - Math.pow(0.88, dt || 1))
+    // 平滑跟随用真实时间（与帧率无关；隔了很久才回来就直接到位）
+    const rdt = Math.min(1, (now - (P.lastNow || now)) / 1000)
+    P.lastNow = now
+    P.ps += (P.p - P.ps) * (1 - Math.exp(-rdt / 0.12))
     if (Math.abs(P.p - P.ps) < 0.0004) P.ps = P.p
     applyScroll(P.ps)
     // 光标 → 光源
