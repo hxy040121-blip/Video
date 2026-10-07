@@ -274,7 +274,7 @@
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet')
       }
     }
-    if (opts.track !== false) App.trackEyes(wrap, opts)
+    if (opts.track !== false) wrap._untrack = App.trackEyes(wrap, opts)
     return wrap
   }
 
@@ -298,13 +298,25 @@
     return () => { watchers.delete(w); w.unobserve() }
   }
 
+  const live = [] // 本帧要更新的肖像（先统一读位置，再统一写，避免反复触发排版）
   App.tick(() => {
     if (!watchers.size) return
     const now = performance.now()
+    live.length = 0
     for (const w of watchers) {
-      if (!w.visible || !w.wrap.isConnected) continue
+      if (!w.wrap.isConnected) {
+        // 已从页面移除超过 2 秒（比如档案页换人）就不再追踪
+        if (!w.gone) w.gone = now
+        else if (now - w.gone > 2000) { watchers.delete(w); w.unobserve() }
+        continue
+      }
+      w.gone = 0
+      if (!w.visible) continue
       const r = w.wrap.getBoundingClientRect()
-      if (!r.width) continue
+      if (r.width) live.push(w, r)
+    }
+    for (let n = 0; n < live.length; n += 2) {
+      const w = live[n], r = live[n + 1]
       // 眼睛大约在肖像的 (50%, 41%)
       const ex = r.left + r.width * 0.5
       const ey = r.top + r.height * 0.41
