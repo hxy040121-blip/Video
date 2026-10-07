@@ -169,6 +169,17 @@
   window.addEventListener('pointerdown', () => { mouse.down = true }, { passive: true })
   window.addEventListener('pointerup', () => { mouse.down = false }, { passive: true })
 
+  // 需要光标坐标 CSS 变量（--mx/--my，0–1）的元素；用 App.trackMouseVars(el) 登记
+  const mouseVarEls = new Set()
+  let lastMx = '', lastMy = ''
+  App.trackMouseVars = el => {
+    if (!el) return () => {}
+    mouseVarEls.add(el)
+    el.style.setProperty('--mx', mouse.nx.toFixed(3)); el.style.setProperty('--my', mouse.ny.toFixed(3))
+    return () => mouseVarEls.delete(el)
+  }
+  App.trackMouseVars(document.getElementById('vignette'))
+
   /* ---------- 帧循环（统一使用 gsap.ticker） ---------- */
   const tickers = new Set()
   App.tick = fn => { tickers.add(fn); return () => tickers.delete(fn) }
@@ -183,8 +194,12 @@
     mouse.sy = U.lerp(mouse.sy, mouse.y, 0.14 * dt)
     mouse.nx = mouse.x / window.innerWidth
     mouse.ny = mouse.y / window.innerHeight
-    root.style.setProperty('--mx', mouse.nx.toFixed(4))
-    root.style.setProperty('--my', mouse.ny.toFixed(4))
+    // 光标坐标只写给真正用到它的元素：写在根元素上会让上万个节点每帧重算样式
+    const mxs = mouse.nx.toFixed(3), mys = mouse.ny.toFixed(3)
+    if (mxs !== lastMx || mys !== lastMy) {
+      lastMx = mxs; lastMy = mys
+      for (const el of mouseVarEls) { el.style.setProperty('--mx', mxs); el.style.setProperty('--my', mys) }
+    }
     for (const fn of tickers) { try { fn(time, dt) } catch (e) { console.error('[tick]', e); tickers.delete(fn) } }
   }
   if (window.gsap) gsap.ticker.add(frame)

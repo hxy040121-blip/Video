@@ -83,6 +83,7 @@
     }
     E.ring = U.el('div.wish-end-ring', { 'aria-hidden': 'true', html: '<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="90"/><circle class="wish-end-ring-in" cx="100" cy="100" r="58"/>' + ticks + '</svg>' })
     E.end = U.el('div.wish-end', null, [U.el('div.wish-end-glow', { 'aria-hidden': 'true' }), E.ring, E.sleep, E.foot])
+    if (App.trackMouseVars) App.trackMouseVars(E.ring)
 
     E.lidT = U.el('i.wish-lid.wish-lid--top')
     E.lidB = U.el('i.wish-lid.wish-lid--bottom')
