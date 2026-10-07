@@ -111,6 +111,11 @@
 .trial-line.is-void { stroke: var(--ash); stroke-dasharray: 4 6; filter: none; opacity: .8; }
 .trial-line.is-thread { stroke: #ff8db8; stroke-width: 1.2; stroke-dasharray: 1 5; filter: none; }
 .trial-line.is-reflect { stroke: var(--brass); stroke-dasharray: 6 4; filter: drop-shadow(0 0 5px rgba(194, 154, 91, .6)); }
+/* 反咬：反向的一条断续红线；附议：细线连向被指认者；质疑：骨白虚线连向指认者 */
+.trial-line.is-counter { stroke-dasharray: 14 6; }
+.trial-line.is-agree { stroke-width: 1.3; opacity: .8; filter: none; }
+.trial-line.is-doubt { stroke: var(--bone); stroke-width: 1.2; stroke-dasharray: 2 6; opacity: .75; filter: none; }
+.trial-line-dot.is-doubt { fill: var(--bone); }
 .trial-line-dot { fill: var(--blood); }
 .trial-line-dot.is-void { fill: var(--ash); }
 .trial-line-dot.is-thread { fill: #ff8db8; }
@@ -226,6 +231,7 @@
 .trial-mark.is-lock { background: var(--ink); color: var(--bone); box-shadow: 0 0 0 1px var(--bone-dim); }
 .trial-mark.is-puffer { background: var(--ink-2); color: var(--bone); box-shadow: 0 0 0 1px var(--ash); padding: 0 6px; }
 .trial-mark.is-puffer.is-yes { background: var(--blood); color: var(--ink); box-shadow: 0 0 10px var(--blood); }
+.trial-mark.is-lie { background: var(--blood); color: var(--ink); box-shadow: 0 0 0 1px var(--ink), 0 0 10px rgba(255, 46, 126, .8); }
 .trial-mark.is-known {
   min-width: 26px; height: 26px; border-radius: 13px;
   background: var(--blood); font-family: var(--f-display); font-weight: 900; font-size: 16px;
@@ -454,11 +460,26 @@
 .trial-say.is-accuse .trial-say-body::before { border-top-color: var(--blood); background: linear-gradient(100deg, rgba(26, 6, 14, .97), rgba(22, 12, 16, .93)); }
 .trial-say.is-accuse .trial-say-name b { background: var(--blood); }
 .trial-say.is-accuse .trial-say-line { font-weight: 900; font-family: var(--f-display); letter-spacing: .02em; }
-.trial-say.is-defend { flex-direction: row-reverse; }
-.trial-say.is-defend .trial-say-face { margin-right: 0; margin-left: -22px; }
-.trial-say.is-defend .trial-say-body { padding: 18px 42px 18px 30px; }
-.trial-say.is-defend .trial-say-body::before { clip-path: polygon(22px 0, 100% 0, 100% 100%, 0 100%); }
-.trial-say.is-defend .trial-say-name { left: auto; right: 30px; }
+.trial-say.is-right { flex-direction: row-reverse; }
+.trial-say.is-right .trial-say-face { margin-right: 0; margin-left: -22px; }
+.trial-say.is-right .trial-say-body { padding: 18px 42px 18px 30px; }
+.trial-say.is-right .trial-say-body::before { clip-path: polygon(22px 0, 100% 0, 100% 100%, 0 100%); }
+.trial-say.is-right .trial-say-name { left: auto; right: 30px; }
+/* 反咬：站在辩解的一侧，却是指认的颜色 */
+.trial-say.is-counter .trial-say-body::before { border-top-color: var(--blood); background: linear-gradient(260deg, rgba(26, 6, 14, .97), rgba(22, 12, 16, .93)); }
+.trial-say.is-counter .trial-say-name b { background: var(--blood); }
+.trial-say.is-counter .trial-say-line { font-weight: 900; font-family: var(--f-display); letter-spacing: .02em; }
+/* 去向的小标：房间 · 时刻 */
+.trial-say-tag {
+  position: absolute; left: 30px; bottom: -12px; max-width: calc(100% - 40px); overflow: hidden; text-overflow: ellipsis;
+  padding: 2px 10px; font-family: var(--f-mono); font-style: normal; font-size: 11px; line-height: 1.5; letter-spacing: .1em; white-space: nowrap;
+  color: var(--ink); background: var(--brass); transform: skewX(-12deg);
+}
+.trial-say-tag:empty { display: none; }
+.trial-say.is-right .trial-say-tag { left: auto; right: 30px; }
+/* 动作描写（格里菲斯不能说话）：不加引号，斜体淡色 */
+.trial-say.is-act .trial-say-line { font-family: var(--f-serif); font-weight: 400; font-style: italic; letter-spacing: .02em; color: var(--bone-dim); }
+.trial-cine-who p.is-act, .trial-end-line.is-act { font-style: italic; color: var(--bone-dim) !important; }
 .trial-say.is-exec .trial-say-body::before { border-top-color: var(--rust); background: linear-gradient(100deg, rgba(40, 6, 10, .96), rgba(18, 14, 16, .93)); }
 .trial-say.is-exec .trial-say-name b { background: var(--rust); color: var(--bone); }
 .trial-say.is-me .trial-say-name b { background: var(--brass); }
@@ -710,8 +731,25 @@
 .trial-inv-pop-body p { font-size: 14px; line-height: 1.7; color: var(--bone); }
 .trial-inv-pop-sub { font-family: var(--f-mono); font-size: 12px !important; letter-spacing: .14em; color: var(--brass) !important; }
 .trial-inv-pop-sub:empty { display: none; }
+/* 发现时的动作（斜体一行）、疑似线索看清之后的一句、角标（疑似 → 无关 / 矛盾） */
+.trial-inv-pop-lead { font-family: var(--f-serif); font-style: italic; font-size: 12px; line-height: 1.5; letter-spacing: .06em; color: var(--bone-dim); }
+.trial-inv-pop-lead:empty, .trial-inv-pop-more:empty { display: none; }
+.trial-inv-pop-body .trial-inv-pop-more { color: var(--bone-dim); border-top: 1px dashed rgba(235, 227, 214, .18); padding-top: 6px; }
+.trial-inv-pop.is-act .trial-inv-pop-text { font-style: italic; color: var(--bone-dim); }
+.trial-inv-pop-tag {
+  position: absolute; right: -8px; top: -14px; padding: 3px 10px 3px calc(10px + .2em);
+  font-family: var(--f-display); font-weight: 900; font-style: normal; font-size: 14px; line-height: 1.3; letter-spacing: .2em;
+  color: var(--ink); background: var(--blood); transform: rotate(-8deg);
+  box-shadow: 0 0 0 2px var(--ink), 0 6px 18px rgba(0, 0, 0, .5);
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.trial-inv-pop-tag.is-on { opacity: 1; visibility: inherit; }
+.trial-inv-pop-tag.is-clear { background: var(--ash); color: var(--bone); }
+.trial-inv-pop-ico.is-face { width: 54px; height: 72px; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #4a3a36, #160f10 75%); box-shadow: 0 0 0 1px rgba(235, 227, 214, .14); }
+.trial-inv-pop-ico.is-face .portrait { width: 100%; }
 
-.trial-inv-go { position: absolute; right: var(--gutter); bottom: calc(var(--bar-h) + 22px); z-index: 7; display: flex; }
+.trial-inv-go { position: absolute; right: var(--gutter); bottom: calc(var(--bar-h) + 22px); z-index: 7; display: flex; gap: 10px; }
+.trial-inv-go .trial-btn:disabled { opacity: .35; pointer-events: none; }
 .trial-inv-word {
   position: absolute; z-index: 5; transform: translate(-50%, -100%);
   font-family: var(--f-sans); font-size: 12px; letter-spacing: .3em; padding: 3px 8px 3px calc(8px + .3em);
@@ -921,6 +959,18 @@
 }
 .trial-card.is-armed .trial-card-ico, .trial-card.is-armed .trial-card-label, .trial-card.is-armed .trial-card-no { color: var(--ink); }
 .trial-card.is-armed::before { background: var(--ink); }
+/* 证言卡：调查时问到的去向；与所知相矛盾的标出来 */
+.trial-card.is-talk { background: linear-gradient(110deg, #17140f, #0d0b0a); }
+.trial-card.is-talk::before { background: var(--brass-dim); }
+.trial-card.is-talk .trial-card-ico { color: var(--brass); }
+.trial-card.is-conflict { border-color: rgba(255, 46, 126, .7); }
+.trial-card.is-conflict::before { background: var(--blood); }
+.trial-card.is-conflict::after {
+  content: '矛盾'; position: absolute; right: 16px; top: 4px; padding: 1px 5px 1px calc(5px + .2em);
+  font-family: var(--f-sans); font-size: 9px; line-height: 1.4; letter-spacing: .2em; color: var(--ink); background: var(--blood);
+}
+/* 出示中的证物卡 */
+.trial-card.is-shown { transform: translateY(-12px); border-color: var(--blood); }
 .trial-stage[data-scene="court"] .trial-card:not(.is-info) { cursor: pointer; }
 .trial-stage[data-scene="court"] .trial-card:not(.is-info):not(.is-armed) { animation: trial-card-breath 3s ease-in-out infinite; }
 @keyframes trial-card-breath { 50% { border-color: rgba(255, 46, 126, .45); } }
@@ -1174,6 +1224,46 @@
 .trial-spot.is-body:hover::before { border-color: rgba(255, 46, 126, .7); animation: trial-spin 8s linear infinite; }
 
 /* ==========================================================
+   插话气泡 / 出示证据
+   ========================================================== */
+.trial-quips { position: absolute; inset: 0; z-index: 50; pointer-events: none; overflow: hidden; }
+.trial-quip { position: absolute; left: 0; top: 0; display: flex; align-items: flex-end; max-width: min(260px, 46vw); will-change: transform, opacity; }
+.trial-quip-face {
+  position: relative; z-index: 1; flex: 0 0 auto; width: 34px; aspect-ratio: 3 / 4; margin-right: -4px; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 40%, #4a3a36, #160f10 75%); border-bottom: 1px solid var(--bone-dim);
+}
+.trial-quip-face .portrait { width: 100%; }
+.trial-quip-body {
+  position: relative; min-width: 0; padding: 6px 12px 7px 13px;
+  background: rgba(10, 8, 9, .93); border-left: 2px solid var(--bone-dim); box-shadow: 0 10px 24px rgba(0, 0, 0, .55);
+}
+.trial-quip-body b { display: block; margin-bottom: 1px; font-family: var(--f-sans); font-weight: 500; font-size: 10px; line-height: 1.3; letter-spacing: .2em; color: var(--bone-dim); white-space: nowrap; }
+.trial-quip-body p { font-family: var(--f-serif); font-size: 13px; line-height: 1.5; color: var(--bone); }
+.trial-quip.is-me .trial-quip-body b::after { content: '·'; margin-left: 4px; color: var(--blood); }
+.trial-quip.is-agree .trial-quip-body { border-left-color: var(--blood); }
+.trial-quip.is-agree .trial-quip-body b { color: var(--blood); }
+.trial-quip.is-doubt .trial-quip-body { border-left-color: var(--bone); background: rgba(24, 22, 24, .95); }
+.trial-quip.is-vote .trial-quip-body { border-left-color: var(--blood-deep); }
+.trial-quip.is-wake .trial-quip-body, .trial-quip.is-voice .trial-quip-body { border-left-color: var(--brass-dim); }
+.trial-quip.is-react .trial-quip-body { border-left-color: var(--rust); }
+.trial-quip.is-watch .trial-quip-body { background: rgba(10, 8, 9, .9); border-left-color: var(--ink); }
+.trial-quip.is-right .trial-quip-body { border-left-color: var(--brass); }
+.trial-quip.is-wrong .trial-quip-body { border-left-color: var(--rust); }
+.trial-quip.is-act .trial-quip-body p { font-style: italic; color: var(--bone-dim); }
+.trial-quip-face .portrait.is-photo > img { transform: scale(1.035); }
+
+.trial-proof {
+  position: absolute; left: 0; top: 0; translate: -50% -50%;
+  display: flex; align-items: center; gap: 10px; padding: 9px 18px 9px 12px; white-space: nowrap;
+  color: var(--ink); background: linear-gradient(110deg, var(--blood), var(--blood-deep));
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  will-change: transform, opacity;
+}
+.trial-proof-ico { display: block; width: 28px; height: 28px; }
+.trial-proof-ico svg { display: block; width: 100%; height: 100%; }
+.trial-proof b { font-family: var(--f-display); font-weight: 900; font-size: clamp(15px, 1.4vw, 20px); letter-spacing: .06em; }
+
+/* ==========================================================
    手机
    ========================================================== */
 @media (max-width: 760px) {
@@ -1197,11 +1287,11 @@
   .trial-say { width: min(366px, calc(100vw - 24px)); translate: -50% -50%; }
   .trial-core { z-index: 45; }
   .trial-say-face { width: 84px; margin-right: -14px; }
-  .trial-say.is-defend .trial-say-face { margin-left: -14px; }
+  .trial-say.is-right .trial-say-face { margin-left: -14px; }
   .trial-say-body { padding: 14px 14px 12px 24px; margin-bottom: 4px; }
-  .trial-say.is-defend .trial-say-body { padding: 14px 24px 12px 14px; }
+  .trial-say.is-right .trial-say-body { padding: 14px 24px 12px 14px; }
   .trial-say-name { left: 16px; top: -12px; }
-  .trial-say.is-defend .trial-say-name { right: 16px; }
+  .trial-say.is-right .trial-say-name { right: 16px; }
   .trial-say-name b { font-size: 13px; padding: 2px 10px; }
   .trial-say-line { font-size: 14px; line-height: 1.55; }
   .trial-stamp { font-size: 54px; }
@@ -1288,6 +1378,20 @@
   .trial-stage[data-scene="inv"] .trial-notes { top: calc(var(--hud-h) + 128px); }
   .trial-note { max-width: 220px; }
   .trial-desk { right: 18%; }
+}
+
+@media (max-width: 760px) {
+  .trial-quip { max-width: 64vw; }
+  .trial-quip-face { width: 26px; }
+  .trial-quip-body { padding: 5px 9px 6px 10px; }
+  .trial-quip-body p { font-size: 12px; line-height: 1.45; }
+  .trial-quip-body b { font-size: 9px; letter-spacing: .1em; }
+  .trial-proof { padding: 7px 14px 7px 10px; gap: 8px; }
+  .trial-proof-ico { width: 22px; height: 22px; }
+  .trial-say-tag { left: 16px; font-size: 10px; padding: 1px 8px; }
+  .trial-say.is-right .trial-say-tag { right: 16px; }
+  .trial-inv-go { gap: 8px; }
+  .trial-inv-pop-ico.is-face { width: 42px; height: 56px; }
 }
 
 @media (max-height: 760px) and (min-width: 761px) {

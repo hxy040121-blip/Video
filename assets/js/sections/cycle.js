@@ -2670,8 +2670,12 @@
       if (!v) { clearLater(); hush() }
     }, { rootMargin: '0px' })
     S.visible = (() => { const r = sec.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight })()
+    { const r = sec.getBoundingClientRect(); S.secTop = r.top + window.scrollY; S.secH = r.height } // 供 frame() 粗估远近（之后每帧在视口里时更新）
     // 「近」：离视口半屏多一点以内（决定舞台锁不锁）
-    App.onVisible(sec, v => { S.near = v }, { rootMargin: '60% 0px' })
+    App.onVisible(sec, (v, e) => {
+      S.near = v
+      if (e && e.boundingClientRect) { S.secTop = e.boundingClientRect.top + window.scrollY; S.secH = e.boundingClientRect.height }
+    }, { rootMargin: '60% 0px' })
     S.near = (() => { const r = sec.getBoundingClientRect(), h = window.innerHeight; return r.bottom > -0.6 * h && r.top < 1.6 * h })()
     // 离视口很远（scroll.js 的 is-far）：释放可以重画出来的画布（余波的金币画布、发现镜头的走廊画布），回来时重画
     App.bus.on('section:far', id => { if (id === 'cycle' && !S.far) { S.far = true; S.restore = false; SA.release(); SD.release() } })

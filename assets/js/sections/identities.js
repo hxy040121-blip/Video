@@ -299,11 +299,12 @@ ${corners}${mid}
     const shadow = el('div.shadow')
     const glitch = el('div.glitch')
     const card = el('div.card')
-    const edge = el('div.edge', {}, [U.el('i'), U.el('i'), U.el('i')])
+    // 三层牌边直接放在牌里（不再套一层容器：3D 时每多一层容器就多一个要合成的图层）
+    const edges = [0, 1, 2].map(() => el('i.edge'))
     c.slot = slot; c.shadow = shadow; c.glitch = glitch; c.card = card
     c.front = buildFace(c, 'front')
     c.back = buildFace(c, 'back')
-    card.append(edge, c.front.el, c.back.el)
+    card.append(...edges, c.front.el, c.back.el)
     glitch.appendChild(card)
     slot.append(shadow, glitch)
     slot.addEventListener('focus', () => { if (S.ready && S.focus == null) S.kb = i })
@@ -817,11 +818,13 @@ ${corners}${mid}
 
   // 一张牌在画面上的三种画法：
   //   平放（扇面里静止的牌，绝大多数时候）：不做 3D，只画朝上的那一面，整张牌（连同影子）只占一个合成层；
-  //   整张转（发牌时飞进来的倾斜、收拢后逐张扣过去）：仍是那一个合成层，把透视与转角接在牌位的 transform 上，
-  //     不建 3D 结构、不重画（只在翻过 90° 换面时重画一次）。这两段都是一闪而过的，牌在扇面尺寸，看不出牌边厚度；
-  //   立体（抬起、倾斜、拿在手里、飞去 / 飞回、发牌后的翻面浪、拿起后翻面）：原来的 3D 结构（两面 backface-visibility、三层牌边、影子单独成层）。
+  //   整张转（发牌时一张张飞进来、带一点前后倾）：仍是那一个合成层，把透视与倾角接在牌位的 transform 上，
+  //     不建 3D 结构、飞行途中不重画。飞得快、牌在扇面尺寸，倾角最大 24°，牌边厚度不到 1px，看不出差别；
+  //   立体（抬起、倾斜、拿在手里、飞去 / 飞回、发牌后的翻面浪、收拢后逐张扣过去、拿起后翻面）：
+  //     原来的 3D 结构（两面 backface-visibility、三层鎏金牌边）。
   // 几种画法画面一致：rotateY(180°) 的牌 × rotateY(180°) 的背面 = 不转的背面；
-  // 牌位 scale 之后的 perspective(230mm) 与原先 .identities-glitch 上的 perspective 等价（都以牌心为原点，单位是牌自身的像素）。
+  // perspective(230mm) 接在牌（或牌位 scale 之后）的 transform 最前面，与原先父元素上的 perspective 属性等价
+  // （都以牌心为原点，单位是牌自身的像素），省掉一层 3D 容器。
   function render(c) {
     const p = c.cur
     // 收拢成一叠之后，牌由下往上逐张扣过去（牌背朝上，字隐去）
@@ -830,17 +833,17 @@ ${corners}${mid}
     const s = p.s * (1 + (c.flipLift + bump * 0.8) * 0.06)
     const lift = bump * S.fanW * 0.1
     const fl = c.flip + (c.peek ? 180 : 0) + gk * 180
-    const dealFly = c.mode === 'fly' && c.fly.deal
-    const deep = (c.mode !== 'fan' && !dealFly) || c.lift > 0.04 || c.flipLift > 0.001 || Math.abs(c.tx) + Math.abs(c.ty) > 0.6
-    const whole = !deep && (dealFly || (gk > 0.001 && gk < 0.999) || Math.abs(c.swing) > 0.01)
+    const persp = `perspective(${(S.mm * 230).toFixed(1)}px)`
+    const dealFly = c.mode === 'fly' && c.fly.deal && c.flipLift < 0.001
+    const deep = (c.mode !== 'fan' && !dealFly) || c.lift > 0.04 || c.flipLift > 0.001 || (gk > 0.001 && gk < 0.999) || Math.abs(c.tx) + Math.abs(c.ty) > 0.6
     let t = `translate3d(${(p.x - S.W / 2).toFixed(2)}px,${(p.y - S.H / 2 - lift).toFixed(2)}px,0) rotate(${p.r.toFixed(3)}deg) scale(${s.toFixed(4)})`
-    if (whole) {
+    if (!deep && Math.abs(c.swing) > 0.005) {
       const res = fl - 180 * Math.round(fl / 180) // 朝上那一面自身的转角（-90°–90°）
-      t += ` perspective(${(S.mm * 230).toFixed(1)}px) rotateX(${c.swing.toFixed(2)}deg) rotateY(${res.toFixed(2)}deg)`
+      t += ` ${persp} rotateX(${c.swing.toFixed(2)}deg) rotateY(${res.toFixed(2)}deg)`
     }
     if (t !== c._t) { c.slot.style.transform = t; c._t = t }
     if (deep !== c._deep) { c._deep = deep; c.slot.classList.toggle('is-3d', deep) }
-    const ct = deep ? `rotateX(${(c.tx + c.swing).toFixed(2)}deg) rotateY(${(fl + c.ty).toFixed(2)}deg)` : 'none'
+    const ct = deep ? `${persp} rotateX(${(c.tx + c.swing).toFixed(2)}deg) rotateY(${(fl + c.ty).toFixed(2)}deg)` : 'none'
     if (ct !== c._c) { c.card.style.transform = ct; c._c = ct }
     // 朝向观者的那一面；另一面不画（翻到一半、两面都可能露出来时才都画，由 backface-visibility 决定显示哪面）
     const ry = fl + (deep ? c.ty : 0)
@@ -857,6 +860,9 @@ ${corners}${mid}
     if (z !== c._z) { c.slot.style.zIndex = z; c._z = z }
     // 影子、暗化、箔光：数值没变就不写。平放时影子固定不动（与牌同在一个合成层里）
     const L = deep ? Math.max(c.lift, S.focus === c.i ? 1 : 0) : 0
+    // 影子只在真会动的时候（抬起、随光标偏移、拿在手里）才单独成层；翻面、飞行时它不动，留在牌位的层里
+    const shLive = deep && (L > 0.001 || Math.abs(c.ty) > 0.05 || c.mode !== 'fan')
+    if (shLive !== c._shLive) { c._shLive = shLive; c.shadow.classList.toggle(PX + 'live', shLive) }
     const sh = `translate(${(deep ? -c.ty * 0.6 : 0).toFixed(1)}px, ${(10 + L * 28).toFixed(1)}px) scale(${(1 + L * 0.05).toFixed(3)})`
     if (sh !== c._sh) { c.shadow.style.transform = sh; c._sh = sh }
     const sho = (0.55 - L * 0.12).toFixed(3)
@@ -1028,6 +1034,8 @@ ${corners}${mid}
     const span = dur * 0.55
     P.strokes.forEach(s => { s.style.strokeDasharray = `${s._len} ${s._len + 4}`; s.style.strokeDashoffset = s._len + 2; s.style.opacity = '0' })
     P.fills.forEach(s => { s.style.opacity = '0' })
+    // 画的过程中纹章逐帧变化：让它暂时自成一个小图层，只重画纹章这一小块，不重画整面牌
+    wrap.classList.add(PX + 'drawing')
     const o = { t: 0 }
     gsap.to(o, {
       t: 1, duration: dur, delay, ease: 'none',
@@ -1046,6 +1054,7 @@ ${corners}${mid}
       onComplete: () => {
         P.strokes.forEach(s => { s.style.strokeDasharray = ''; s.style.strokeDashoffset = ''; s.style.opacity = '' })
         P.fills.forEach(s => { s.style.opacity = '' })
+        wrap.classList.remove(PX + 'drawing')
       },
     })
   }

@@ -97,12 +97,13 @@
     App.bus.on('section:near', id => { if (id === 'screening') { layoutAir(); S.dirty = true } })
     App.bus.on('quality', () => { layoutAir(); S.dirty = true })
 
+    // 幕布拉开后两侧帷幕留下的宽度（画布据此让开两边）
+    S.curtainK = window.innerWidth < 760 ? 0.05 : 0.13
+    S.show = { k: 0, s: 0.94 }
     initAir()
     App.tick(tick)
 
     // 幕布拉开：第一次进入视野时（画布上的投影与光晕跟着幕布一起浮现）
-    S.curtainK = window.innerWidth < 760 ? 0.05 : 0.13
-    S.show = { k: 0, s: 0.94 }
     gsap.set(el.querySelectorAll('.scr-curtain'), { scaleX: 1 })
     App.onVisible(el, v => {
       if (!v || S.opened) return
@@ -132,8 +133,10 @@
     S.lastNow = now
     const m = App.mouse
     const r = S.room.getBoundingClientRect()
-    if (r.top !== S._rt) { S._rt = r.top; S.scrollAt = now }
-    const scrolling = now - (S.scrollAt || -1e4) < 180
+    // 「在滚动」：最近 180ms 或最近 4 帧里放映室挪过位置（机器很忙、帧很稀时按帧数算）
+    S.frameNo = (S.frameNo || 0) + 1
+    if (r.top !== S._rt) { S._rt = r.top; S.scrollAt = now; S.scrollFrame = S.frameNo }
+    const scrolling = now - (S.scrollAt || -1e4) < 180 || S.frameNo - (S.scrollFrame || -99) < 4
     const nx = clamp((m.sx - r.left) / r.width, 0, 1) - 0.5
     const ny = clamp((m.sy - r.top) / r.height, 0, 1) - 0.5
     const k = App.reduced ? 0 : 1
@@ -185,12 +188,18 @@
   // 尺寸与预渲染：只在尺寸/画质变化时做
   function layoutAir() {
     if (!S.room) return
+    const wasFreed = S.freed
     S.freed = false
     const RW = S.room.clientWidth, RH = S.room.clientHeight
     if (!RW || !RH) return
     const vw = window.innerWidth
     S.vw = vw; S.RW = RW; S.RH = RH
     const q = App.quality ? App.quality.level : 2
+    // 尺寸、画质、幕布位置都没变就不重建（预渲染的几张离屏图只在真正需要时画一次）
+    const sc0 = S.screen
+    const key = [RW, RH, vw, q, S.curtainK, sc0.offsetLeft, sc0.offsetTop, sc0.offsetWidth, sc0.offsetHeight].join(',')
+    if (key === S.layoutKey && S.beamImg && !wasFreed) return
+    S.layoutKey = key
     S.res = q >= 2 ? 1 : q === 1 ? 0.75 : 0.5 // 光束与浮尘都是柔的，按 CSS 像素（或更低）画即可
     // 拉开后的帷幕盖住的两边不画（画布也就不与帷幕重叠，帷幕不必另起合成层）
     const ix = Math.ceil(RW * 0.5 * (S.curtainK || 0.13)) + 1

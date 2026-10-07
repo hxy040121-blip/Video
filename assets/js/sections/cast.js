@@ -711,18 +711,22 @@
     App.scroll.to(y, { duration: 0.9 })
   }
 
+  // 被风吹得晃一下：同原来那条 GSAP 时间线（.32s sine.out，其后四段 sine.inOut 衰减），改用 Web Animations 交给合成器跑，
+  // 晃的两秒半里主线程不必每帧改样式
+  const SINE_OUT = 'cubic-bezier(0.61, 1, 0.88, 1)', SINE_IO = 'cubic-bezier(0.37, 0, 0.63, 1)'
   function sway(it, v) {
     if (RM) return
     const dir = (v || 0) >= 0 ? 1 : -1
     const amp = U.clamp(1.6 + Math.abs(v || 0) * 0.12, 1.6, 3.4)
-    if (it.sw) it.sw.kill()
-    it.sw = gsap.timeline()
-      .to(it.swing, { rotation: dir * amp, duration: 0.32, ease: 'sine.out' })
-      .to(it.swing, { rotation: -dir * amp * 0.62, duration: 0.6, ease: 'sine.inOut' })
-      .to(it.swing, { rotation: dir * amp * 0.34, duration: 0.55, ease: 'sine.inOut' })
-      .to(it.swing, { rotation: -dir * amp * 0.14, duration: 0.5, ease: 'sine.inOut' })
-      .to(it.swing, { rotation: 0, duration: 0.5, ease: 'sine.inOut' })
+    if (it.sw) it.sw.cancel()
+    const seg = [[0.32, dir * amp, SINE_OUT], [0.6, -dir * amp * 0.62, SINE_IO], [0.55, dir * amp * 0.34, SINE_IO], [0.5, -dir * amp * 0.14, SINE_IO], [0.5, 0, SINE_IO]]
+    const total = seg.reduce((a, s) => a + s[0], 0)
+    const frames = [{ transform: 'rotate(0deg)', offset: 0, easing: seg[0][2] }]
+    let t = 0
+    seg.forEach(([d, r], k) => { t += d; frames.push({ transform: `rotate(${r.toFixed(3)}deg)`, offset: Math.min(1, t / total), easing: seg[k + 1] ? seg[k + 1][2] : 'linear' }) })
+    it.sw = it.swing.animate(frames, { duration: total * 1000, easing: 'linear' })
   }
+  const swaying = it => !!(it.sw && it.sw.playState === 'running')
 
   /* =====================================================================
      「整条长廊的眼睛同时转向你」
@@ -837,8 +841,9 @@
       it.pf = approach(it.pf, pfT, 0.085, dt)
       if (Math.abs(it.pf - pfT) < 0.004) it.pf = pfT
       // 烛光够得着才换成动态层（带滞回，免得在门槛上来回切）
-      const warm = hot === it || h > 0.004 || !!(it.sw && it.sw.isActive())
-      const want = warm || hot === it || L > (it.live ? 0.03 : 0.05)
+      const warm = hot === it || h > 0.004 || swaying(it)
+      // 「一齐亮起」那一下烛光会先缩一大圈再回来：这期间已有动态层的不撤（否则一圈画都要撤了又建、各重画一遍）
+      const want = warm || hot === it || L > (it.live ? 0.03 : 0.05) || (it.live && S.dip > 0.01)
       if (want !== it.live) { if (want) promote(it); else demote(it) }
       if (warm !== it.warm && it.live) setWarm(it, warm)
 
@@ -871,7 +876,7 @@
         }
         // 黄铜反光：光斑中心 = 烛光在框坐标里的位置（只改 transform）；亮度够才有这一层
         // （够不着的那圈画框上原来只有光斑最外圈一点暗铜色，看不出来，省掉这一层）
-        const shOn = it.warm || L > (it.shineOn ? 0.25 : 0.3)
+        const shOn = it.warm || L > (it.shineOn ? 0.25 : 0.3) || (it.shineOn && S.dip > 0.01)
         if (shOn !== it.shineOn) { it.shineOn = shOn; it.lv.classList.toggle('is-shine', shOn); it.gx = -1e9 }
         if (shOn) {
           const gx = S.cx - sx + it.P, gy = S.cy - it.y + it.P

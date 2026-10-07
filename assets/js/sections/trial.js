@@ -50,7 +50,6 @@
      ========================================================== */
   const charOf = id => App.char(id) || { id, name: id, lines: {}, stats: {} }
   const nameOf = id => charOf(id).name || id
-  const fill = (s, x) => String(s || '').replace(/\{X\}/g, nameOf(x))
   const hhmm = m => U.clock(m).text
   const dayText = m => '第' + U.cnNum(U.clock(m).day) + '日'
   const seatOf = id => (S.G && S.G.people[id] ? S.G.people[id].seat : S.seats.indexOf(id) + 1)
@@ -59,15 +58,25 @@
   const meAlive = () => S.G && S.me && TE.isLiving(S.G, S.me)
 
   function guard(tok) { if (tok !== S.token) throw ABORT }
-  // 动画 Promise：重来/换座之后不再继续
+  // 离席（暂停）期间停在这里，续局后再往下走；重来则中止
+  function hold(tok) {
+    if (tok !== S.token) return Promise.reject(ABORT)
+    if (!S.paused) return Promise.resolve()
+    return new Promise((resolve, reject) => {
+      const off = App.tick(() => {
+        if (tok !== S.token) { off(); reject(ABORT) } else if (!S.paused) { off(); resolve() }
+      })
+    })
+  }
+  // 动画 Promise：重来/换座之后不再继续；离席时动画放完就停住，不在别的板块里闪光、出声
   function anim(make) {
     const tok = S.token
-    return new Promise((resolve, reject) => make(() => (tok === S.token ? resolve() : reject(ABORT))))
+    return new Promise((resolve, reject) => make(() => (tok === S.token ? resolve() : reject(ABORT)))).then(() => hold(tok))
   }
   // 斜切转场：中途的场景切换只在本局仍有效时执行
   function slash(midway, opts) {
     const tok = S.token
-    return App.slash(() => { if (tok === S.token && midway) midway() }, opts).then(() => guard(tok))
+    return App.slash(() => { if (tok === S.token && midway) midway() }, opts).then(() => guard(tok)).then(() => hold(tok))
   }
   // 可跳过、可暂停的等待
   function wait(ms, skippable = true) {
@@ -109,7 +118,8 @@
       cleanup = setup(v => end(true, v))
     })
   }
-  async function typeIn(node, text, speed = 24) {
+  // quiet：动作描写（格里菲斯的台词）逐字浮现但不出打字声
+  async function typeIn(node, text, speed = 24, quiet = false) {
     const tok = S.token
     node.textContent = ''
     node.classList.add('trial-caret')
@@ -122,7 +132,7 @@
         guard(tok)
         if (skipped) break
         node.textContent += chars[i]
-        if (i % 2 === 0 && chars[i].trim()) App.audio.sfx('type')
+        if (!quiet && i % 2 === 0 && chars[i].trim()) App.audio.sfx('type')
         const ch = chars[i]
         await wait(/[。！？…]/.test(ch) ? speed * 5 : /[，、；：]/.test(ch) ? speed * 2.4 : speed, false)
       }
@@ -130,6 +140,56 @@
     node.textContent = text || ''
     node.classList.remove('trial-caret')
   }
+  /* ==========================================================
+     台词：按场合从台词池（assets/data/lines/*.js）抽句
+     同一局里同一人同一场合不重复（洗牌袋，用完再洗）；缺占位符所需的数据时换一句不含它的；
+     池里没有可用的就回落到人物卡的那一句，再不行就是「……」。用 Math.random，不碰引擎的随机数。
+     ========================================================== */
+  const Lines = { bags: {}, last: {}, log: [] }
+  const linePool = (id, key) => { const P = window.TRIAL_LINES, a = P && P[id] && P[id][key]; return Array.isArray(a) ? a : [] }
+  const holes = s => Array.from(String(s).matchAll(/\{(\w+)\}/g), m => m[1])
+  const fillLine = (s, vars) => String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m))
+  // 整句以（开头、）结尾的是动作描写（格里菲斯不能说话）：不加引号、斜体、无打字声
+  const isAct = s => /^（[\s\S]*）$/.test(String(s || '').trim())
+  const quoted = s => (isAct(s) || s === '……' ? s : '「' + s + '」')
+  function fitsLine(s, vars, ctx) {
+    if (!holes(s).every(k => vars[k] != null && vars[k] !== '')) return false
+    if (ctx) {
+      // 少数发现/反应的句子默认了现场细节：与死因、时刻、楼层对不上的不用
+      if (/伤/.test(s) && ['poison', 'drown', 'alcohol', 'smother'].includes(ctx.cause)) return false
+      if (/不到两小时/.test(s) && ctx.since >= 120) return false
+      if (/那层楼/.test(s) && !/^[23]F$/.test(ctx.floor || '')) return false
+    }
+    return true
+  }
+  function line(id, key, vars = {}, ctx = null) {
+    const list = linePool(id, key)
+    const bk = id + '|' + key
+    let bag = Lines.bags[bk]
+    if (!bag || !bag.length) {
+      bag = Lines.bags[bk] = U.shuffle(list.map((_, i) => i))
+      // 新的一轮不以上一轮的最后一句开头
+      if (bag.length > 1 && bag[0] === Lines.last[bk]) bag.push(bag.shift())
+    }
+    let idx = -1
+    const i = bag.findIndex(n => fitsLine(list[n], vars, ctx))
+    if (i >= 0) idx = bag.splice(i, 1)[0]
+    else {
+      // 袋里剩下的都缺数据：从整池里找一句能用的（只有这时才可能重复）
+      const ok = list.map((_, n) => n).filter(n => fitsLine(list[n], vars, ctx))
+      if (ok.length) idx = U.pick(ok)
+    }
+    let text
+    if (idx >= 0) { text = fillLine(list[idx], vars); Lines.last[bk] = idx }
+    else {
+      const base = charOf(id).lines && charOf(id).lines[key]
+      text = base && fitsLine(base, vars) ? fillLine(base, vars) : '……'
+    }
+    Lines.log.push({ id, key, idx, text, case: S.G ? S.G.caseNo : 0 })
+    return text
+  }
+  function resetLines() { Lines.bags = {}; Lines.last = {}; Lines.log = [] }
+
   function face(id, opts = {}) {
     const w = App.portrait(id, Object.assign({}, opts, { track: false }))
     w._cancel = App.trackEyes(w, { eyeRange: opts.eyeRange || 7 })
@@ -196,6 +256,8 @@
     gloves: '<path d="M7 21v-6L4.5 11.5c-.8-1.2.8-2.4 1.8-1.3L8 12V4.5c0-1.3 2-1.3 2 0V10V3.6c0-1.4 2-1.4 2 0V10V4.6c0-1.3 2-1.3 2 0V11V7c0-1.3 2-1.3 2 0v8l-1 6z"/><path d="M7 18h9"/>',
     pipe: '<path d="M3 9h7l6 6h2.5a2.5 2.5 0 0 0 0-5H16"/><path d="M16 10v-1.5a3 3 0 0 1 3-3"/><path d="M7 6c0-1 .8-1.5.8-2.5M10 6c0-1 .8-1.5.8-2.5" opacity=".6"/>',
     body: '<circle cx="12" cy="4.5" r="2"/><path d="M12 7v7M12 9l-5 3M12 9l5-2M12 14l-4 6.5M12 14l4.5 6"/>',
+    look: '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/><path d="M8 8.5a3 3 0 0 1 3-1.5" opacity=".6"/>',
+    talk: '<path d="M4 5h16v10H10l-4 4v-4H4z"/><path d="M8 9h8M8 12h5" opacity=".6"/>',
   }
   function icon(key) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[key] || ICON.body) + '</svg>'
@@ -266,6 +328,7 @@
       el('div.trial-say-body', null, [
         el('div.trial-say-name', null, [el('b'), el('span')]),
         el('p.trial-say-line'),
+        el('i.trial-say-tag'),
       ]),
     ])
     E.reel = el('div.trial-reel', null, [el('div.trial-reel-strip'), el('i.trial-reel-frame')])
@@ -300,7 +363,7 @@
         el('div.trial-inv-victim', null, [el('div.trial-inv-vface'), el('b')]),
       ]),
       el('div.trial-inv-read', null, [el('b.trial-inv-left'), el('span.trial-inv-unit', { text: '分' }), el('span.trial-inv-court')]),
-      el('div.trial-inv-pop', null, [el('div.trial-inv-pop-ico'), el('div.trial-inv-pop-body', null, [el('b'), el('p'), el('p.trial-inv-pop-sub')])]),
+      el('div.trial-inv-pop', null, [el('div.trial-inv-pop-ico'), el('div.trial-inv-pop-body', null, [el('i.trial-inv-pop-lead'), el('b'), el('p.trial-inv-pop-text'), el('p.trial-inv-pop-more'), el('p.trial-inv-pop-sub')]), el('i.trial-inv-pop-tag')]),
       el('div.trial-inv-go'),
     ])
 
@@ -342,11 +405,13 @@
     E.veil = el('div.trial-veil', null, [el('div.trial-veil-box', null, [el('div.trial-veil-sigil', { html: '<i></i>' }), el('div.trial-veil-row')])])
     E.desk = el('div.trial-desk', { html: '<i></i>' })
     E.dealGo = el('div.trial-deal-go')
+    E.quips = el('div.trial-quips', { 'aria-live': 'polite' })
 
-    st.append(E.dome, E.fx, E.ring, E.idcard, E.dealGo, E.cine, E.inv, E.exec, E.end, E.desk, E.top, E.bar, E.me, E.roster, E.cast, E.banner, E.notes, E.veil)
+    st.append(E.dome, E.fx, E.ring, E.idcard, E.dealGo, E.cine, E.inv, E.exec, E.end, E.desk, E.quips, E.top, E.bar, E.me, E.roster, E.cast, E.banner, E.notes, E.veil)
     sec.appendChild(st)
     S.sec = sec
     S.stage = st
+    sec._trial = { S, Lines, Inv: () => Inv } // 调试与巡检脚本用（台词统计、阶段）
 
     // 事件
     st.addEventListener('click', onStageClick)
@@ -585,7 +650,8 @@
     lineData.push(rec)
     const len = p.getTotalLength ? p.getTotalLength() : 600
     if (window.gsap) {
-      gsap.fromTo(p, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: opts.dur || 0.42, ease: 'power3.out', onComplete: () => { p.style.strokeDasharray = 'none' } })
+      // 画完交回样式表（虚线类的线：作废票、恋人、反咬、质疑）
+      gsap.fromTo(p, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: opts.dur || 0.42, ease: 'power3.out', onComplete: () => { p.style.strokeDasharray = ''; p.style.strokeDashoffset = '' } })
       if (dot) gsap.fromTo(dot, { scale: 0, transformOrigin: 'center' }, { scale: 1, duration: 0.3, delay: (opts.dur || 0.42) * 0.8, ease: 'back.out(3)' })
     }
     return rec
@@ -754,6 +820,7 @@
   // 证物栏
   function clearBar() {
     S.cards = []
+    S.talk = {}
     S.tests = {}
     S.armed = null
     S.E.bar.querySelector('.trial-bar-track').innerHTML = ''
@@ -763,7 +830,7 @@
     const track = S.E.bar.querySelector('.trial-bar-track')
     const testable = !!item.predicate
     const no = String(S.cards.length + 1).padStart(2, '0')
-    const b = el('button.trial-card' + (opts.by ? '.is-shared' : '') + (testable ? '' : '.is-info'), { type: 'button', 'data-cursor': testable ? '言弹' : '', 'aria-label': item.label })
+    const b = el('button.trial-card' + (opts.by ? '.is-shared' : '') + (testable ? '' : '.is-info') + (opts.talk ? '.is-talk' : ''), { type: 'button', 'data-cursor': testable ? '言弹' : '', 'aria-label': item.label })
     b.innerHTML = `<span class="trial-card-no">${no}</span><span class="trial-card-ico">${icon(item.icon)}</span><span class="trial-card-label">${U.esc(item.label)}</span>` +
       (opts.by ? `<span class="trial-card-by">${U.roman(seatOf(opts.by))}</span>` : '')
     const rec = { item, el: b, no }
@@ -980,20 +1047,104 @@
     }
     box.querySelector('.trial-say-name b').textContent = nameOf(id)
     box.querySelector('.trial-say-name span').textContent = U.roman(seatOf(id))
-    box.className = 'trial-say is-on' + (opts.tone ? ' is-' + opts.tone : '') + (isMe(id) ? ' is-me' : '')
+    const tag = box.querySelector('.trial-say-tag')
+    tag.textContent = opts.tag || ''
+    const act = isAct(text)
+    const right = opts.tone === 'defend' || opts.tone === 'counter'
+    box.className = 'trial-say is-on' + (opts.tone ? ' is-' + opts.tone : '') + (right ? ' is-right' : '') + (isMe(id) ? ' is-me' : '') + (act ? ' is-act' : '')
     spotlight(id)
     if (window.gsap) {
-      gsap.fromTo(fc, { x: opts.tone === 'defend' ? 40 : -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'expo.out' })
+      gsap.fromTo(fc, { x: right ? 40 : -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: 'expo.out' })
       gsap.fromTo(box.querySelector('.trial-say-body'), { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'expo.out' })
+      if (opts.tag) gsap.fromTo(tag, { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, delay: 0.15, ease: 'expo.out' })
     }
     App.audio.sfx('whoosh', { volume: 0.35 })
-    if (opts.tone === 'accuse') { App.shake(S.stage, 4, 0.25); S.stage.classList.add('is-hot'); setTimeout(() => S.stage.classList.remove('is-hot'), 700) }
-    await typeIn(box.querySelector('.trial-say-line'), text, S.spectate ? 16 : 22)
-    await wait(opts.hold == null ? (S.spectate ? 650 : 950) : opts.hold)
+    if (opts.tone === 'accuse' || opts.tone === 'counter') { App.shake(S.stage, 4, 0.25); S.stage.classList.add('is-hot'); setTimeout(() => S.stage.classList.remove('is-hot'), 700) }
+    await typeIn(box.querySelector('.trial-say-line'), text, S.spectate ? 16 : 21, act)
+    await wait(opts.hold == null ? (S.spectate ? 600 : 850) : opts.hold)
   }
   function hideSay() {
     S.E.say.classList.remove('is-on')
     spotlight(null)
+  }
+
+  /* ---------- 插话气泡：一闪而过（附议、质疑、投票、旁观、自言自语……），不挡节奏 ----------
+     at：舞台坐标 {x, y}（气泡中心）；life：停留秒数。只动 transform / opacity。 */
+  function quip(id, text, opts = {}) {
+    if (!S.E.quips || !text) return null
+    const act = isAct(text)
+    const q = el('div.trial-quip' + (opts.tone ? '.is-' + opts.tone : '') + (act ? '.is-act' : '') + (isMe(id) ? '.is-me' : ''), null, [
+      el('div.trial-quip-face'),
+      el('div.trial-quip-body', null, [el('b', { text: nameOf(id) }), el('p', { text })]),
+    ])
+    q.firstChild.appendChild(App.portrait(id, { track: false }))
+    const g = S.geo || { W: S.stage.clientWidth, H: S.stage.clientHeight }
+    const at = opts.at || { x: g.W / 2, y: g.H / 2 }
+    S.E.quips.appendChild(q)
+    // 不出舞台：按气泡实际宽高夹住中心点
+    const w = q.offsetWidth, h = q.offsetHeight
+    const x = U.clamp(at.x, w / 2 + 10, g.W - w / 2 - 10), y = U.clamp(at.y, h / 2 + 60, g.H - h / 2 - 10)
+    q.style.left = (x - w / 2).toFixed(1) + 'px'
+    q.style.top = (y - h / 2).toFixed(1) + 'px'
+    const life = opts.life || 2.4
+    if (window.gsap) {
+      gsap.fromTo(q, { opacity: 0, y: 10, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.32, ease: 'expo.out' })
+      gsap.to(q, { opacity: 0, y: -10, duration: 0.4, delay: life, ease: 'power2.in', onComplete: () => q.remove() })
+    } else setTimeout(() => q.remove(), life * 1000)
+    return q
+  }
+  // 席位旁的气泡：从席位朝桌心挪一点
+  function seatQuipAt(id) {
+    const g = S.geo
+    const k = seatOf(id)
+    if (!g || !k) return null
+    const p = g.pos[k]
+    const dx = g.cx - p.x, dy = g.cy - p.y, d = Math.hypot(dx, dy) || 1
+    const off = g.mobile ? g.sw * 1.1 : g.sw * 1.25
+    return { x: p.x + (dx / d) * off, y: p.y + (dy / d) * off * 0.8 }
+  }
+  function quipSeat(id, text, opts = {}) { return quip(id, text, Object.assign({ at: seatQuipAt(id) }, opts)) }
+  // 调查时的自言自语：底部正中，证物栏上方
+  function voice(id, text) {
+    const g = S.geo
+    if (!g) return null
+    const bar = g.mobile ? 104 : 112
+    return quip(id, text, { at: { x: g.W / 2, y: g.H - bar - (g.mobile ? 40 : 46) }, tone: 'voice', life: 2.8 })
+  }
+  function clearQuips() { if (S.E.quips) S.E.quips.innerHTML = '' }
+  // 随机挑几个人各说一句（反应、旁观、公布后）
+  function pickVoices(pool, n) { return U.shuffle(pool.filter(Boolean)).slice(0, n) }
+
+  /* ---------- 出示证据：证物卡从证物栏飞到桌心、盖章，再射向被指认者 ---------- */
+  async function proof(speaker, clue, target) {
+    if (!clue || !S.geo) return
+    const g = S.geo
+    const chip = el('div.trial-proof', null, [el('span.trial-proof-ico', { html: icon(clue.tpl) }), el('b', { text: clue.label || clue.name })])
+    S.E.quips.appendChild(chip)
+    const mid = { x: g.cx, y: g.cy - (g.mobile ? 96 : Math.min(150, g.ry * 0.62)) }
+    chip.style.left = mid.x + 'px'
+    chip.style.top = mid.y + 'px'
+    const rec = S.cards.find(r => r.item.id === clue.id)
+    const sr = S.stage.getBoundingClientRect()
+    let from = seatCenter(seatOf(speaker))
+    if (rec) {
+      const r = rec.el.getBoundingClientRect()
+      if (r.width) from = { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height / 2 }
+      rec.el.classList.add('is-shown')
+      setTimeout(() => rec.el.classList.remove('is-shown'), 1600)
+    }
+    App.audio.sfx('card')
+    if (window.gsap) {
+      await anim(r => gsap.fromTo(chip, { x: from.x - mid.x, y: from.y - mid.y, scale: 0.45, rotate: -14, opacity: 0 }, { x: 0, y: 0, scale: 1.12, rotate: -4, opacity: 1, duration: 0.42, ease: 'expo.out', onComplete: r }))
+    }
+    App.audio.sfx('stamp', { volume: 0.7 })
+    App.shake(S.stage, 4, 0.2)
+    await wait(S.spectate ? 260 : 360)
+    if (!window.gsap) { chip.remove(); return }
+    if (target) {
+      const to = seatCenter(seatOf(target))
+      gsap.to(chip, { x: to.x - mid.x, y: to.y - mid.y, scale: 0.35, rotate: 8, opacity: 0, duration: 0.38, ease: 'power3.in', onComplete: () => { chip.remove(); shakeSeat(target) } })
+    } else gsap.to(chip, { y: -40, opacity: 0, duration: 0.5, delay: 0.5, ease: 'power2.in', onComplete: () => chip.remove() })
   }
 
   // 选择按钮（桌心）
@@ -1330,21 +1481,34 @@
       App.scroll && App.scroll.stop()
     }
   }
+  // 游戏模式登记在 App.mode：顶栏编号、目录、PgUp/PgDn、数字键跳转前会先调用 exitGame（暂停、留住进度），再解锁滚动
   function enterGameMode() {
     S.active = true
     S.paused = false
     S.stage.classList.add('is-playing')
     S.E.veil.classList.remove('is-on')
+    if (App.mode) App.mode.enter('trial', () => exitGame())
     lockScroll()
   }
+  // 任何阶段都可以离席：等待、打字、计时、选人都停在原处（见 wait / hold / ask），续局时接着走
   function exitGame() {
+    if (App.mode) App.mode.leave('trial')
     if (!S.active) return
     S.active = false
     S.paused = true
     disarm()
-    S.stage.classList.remove('is-playing')
+    touchSelect(null)
+    S.stage.classList.remove('is-playing', 'is-hot')
+    // 别把庭审的紧张、死后的黑暗带进别的板块
+    App.audio.setMood({ tension: 0 })
+    if (App.bg && App.bg.setDark) App.bg.setDark(0, 0.6)
     App.scroll && App.scroll.start()
     showVeil()
+  }
+  // 音乐紧张度：记下来，离席时归零、续局时恢复
+  function tension(v) {
+    S.tension = v
+    App.audio.setMood({ tension: v })
   }
   function showVeil() {
     const v = S.E.veil
@@ -1362,11 +1526,15 @@
     enterGameMode()
     S.paused = false
     mood(sceneMood())
+    App.audio.setMood({ tension: S.tension || 0 })
+    if (S.scene === 'end' && S.endMood === 'dead' && App.bg && App.bg.setDark) App.bg.setDark(0.6, 1.2)
+    if (S.scene === 'inv' && S.visible) Inv.start()
   }
   function sceneMood() {
     return { intro: 'intro', deal: 'intro', cine: 'cine', inv: 'inv', court: 'court', exec: 'exec', after: 'after', end: S.endMood || 'end' }[S.scene] || 'court'
   }
   function hardReset() {
+    if (App.mode) App.mode.leave('trial')
     S.token++
     S.skippers.clear()
     S.active = false
@@ -1405,9 +1573,11 @@
       clearFaces(S.E.end.querySelector('.trial-end-row'))
       if (window.gsap) gsap.set(S.E.end.querySelector('.trial-end-face'), { clearProps: 'transform,opacity' })
       clearFaces(S.E.exec.querySelector('.trial-exec-who'))
+      clearQuips()
+      Inv.closePop()
     }
     App.scroll && App.scroll.start()
-    App.audio.setMood({ tension: 0 })
+    tension(0)
     setCoins(0)
     setScene('intro')
     mood('intro')
@@ -1422,6 +1592,7 @@
     if (S.running || !S.me) return
     const ids = S.seats
     S.G = TE.create({ seats: ids, player: S.me, seed: Math.floor(Math.random() * 2 ** 31) })
+    resetLines()
     S.running = true
     S.spectate = false
     S.deadShown = false
@@ -1456,6 +1627,7 @@
         await choose([{ label: '下一案', value: 1, tone: 'blood', breath: true }])
         clearCoins()
         clearBar()
+        clearQuips()
         resetSeatStates()
         syncSeats()
       }
@@ -1553,6 +1725,13 @@
     if (window.gsap) gsap.set(card, { clearProps: 'all' })
     E.me.classList.add('is-on')
     App.audio.sfx('drop')
+    // 醒来的第一句：你，再两个人
+    const wakers = [S.me].concat(pickVoices(S.G.order.filter(x => x !== S.me), 2))
+    for (const id of wakers) {
+      quipSeat(id, line(id, 'wake'), { tone: 'wake', life: 3 })
+      await wait(700)
+    }
+    await wait(1300)
   }
 
   /* ---------- 受命 → 行凶 → 发现 ---------- */
@@ -1588,14 +1767,18 @@
     const t1 = c.tDiscover || c.tMurder
     const seer = S.G.people[S.me] && S.G.people[S.me].ident.name === '先知' && (meAlive())
     const dur = 4200
-    const start = performance.now()
+    let last = performance.now(), run = 0
     let lastMin = -1, fired = false, tickN = 0
     const tok = S.token
     await ask(done => {
       const off = App.tick(() => {
         if (tok !== S.token) return
+        // 只累计没有离席的时间：续局时钟从停下的地方接着走
+        const now = performance.now()
+        if (!S.paused) run += now - last
+        last = now
         if (S.paused) return
-        const k = Math.min(1, (performance.now() - start) / dur)
+        const k = Math.min(1, run / dur)
         const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2
         const m = t0 + (t1 - t0) * e
         const mm = Math.floor(m)
@@ -1635,12 +1818,23 @@
     const fc = E.cine.querySelector('.trial-cine-face')
     fc.appendChild(face(c.discoverer, { eyeRange: 9 }))
     E.cine.querySelector('.trial-cine-who b').textContent = nameOf(c.discoverer)
-    const line = E.cine.querySelector('.trial-cine-who p')
-    line.textContent = ''
+    const lineEl = E.cine.querySelector('.trial-cine-who p')
+    lineEl.textContent = ''
     if (window.gsap) gsap.fromTo(fc, { xPercent: -30, opacity: 0, skewX: -8 }, { xPercent: 0, opacity: 1, skewX: 0, duration: 0.6, ease: 'expo.out' })
     await wait(500)
-    await typeIn(line, charOf(c.discoverer).lines.discover || '……', 26)
-    await wait(600)
+    const ctx = { cause: c.cause.id, since: c.tDiscover - c.tMurder, floor: c.roomInfo.floor }
+    const vName = nameOf(c.victim)
+    const said = line(c.discoverer, 'discover', { V: vName }, ctx)
+    lineEl.classList.toggle('is-act', isAct(said))
+    await typeIn(lineEl, said, 26, isAct(said))
+    // 其余的人听说了：一两句反应，一闪而过
+    const g = S.geo
+    const others = pickVoices(living().filter(x => x !== c.discoverer), U.randInt(1, 2))
+    others.forEach((id, i) => {
+      const at = g.mobile ? { x: g.W / 2 + (i ? 40 : -40), y: g.H - 210 + i * 66 } : { x: g.W * (i ? 0.7 : 0.3), y: g.H * (i ? 0.84 : 0.8) }
+      setTimeout(() => { if (S.scene === 'cine' && !S.paused) quip(id, line(id, 'react', { V: vName }, ctx), { at, tone: 'react', life: 2.6 }) }, 350 + i * 750)
+    })
+    await wait(600 + others.length * 650)
     if (c.bell) App.audio.sfx('bell')
     const text = c.bell
       ? bcText('同上，敲钟人生效', { 开庭时刻: hhmm(c.tCourt) })
@@ -2425,61 +2619,135 @@
     },
 
     /* --- 点热点 --- */
-    async onSpot(sp) {
+    // by：旁观时代为调查的人（缺省为玩家自己）
+    async onSpot(sp, by) {
       if (this.busy || sp.done || this.ended || S.paused) return
       this.busy = true
-      if (!App.finePointer) {
-        // 触屏：点到哪里，手电就照到哪里
+      if (!App.finePointer || by) {
+        // 触屏 / 旁观：点到哪里，手电就照到哪里
         const [lx, ly] = this.P(sp.u, sp.v)
         this.light.tx = lx; this.light.ty = ly; this.light.tapAt = performance.now()
       }
       try {
+        const c = this.c
         const before = S.G.minutes
-        const res = TE.inspect(S.G, this.c, sp.id)
+        const res = TE.inspect(S.G, c, sp.id, by || null)
         if (!res) return
         sp.btn.classList.add('is-done')
         App.audio.sfx(sp.kind === 'body' ? 'heartbeat' : 'click')
         await this.spendAnim(res.cost, before)
         const [x, y] = this.P(sp.u, sp.v)
+        const who = by || S.me
+        const fast = !!by
+        const cardBy = by && by !== S.me ? by : null
         if (sp.kind === 'decoy') {
-          const w = el('div.trial-inv-word', { text: sp.word })
-          w.style.left = x + 'px'; w.style.top = y + 'px'
-          S.E.inv.appendChild(w)
-          App.audio.sfx('tick')
-          if (window.gsap) gsap.fromTo(w, { opacity: 0, y: 6 }, { opacity: 1, y: -18, duration: 0.6, ease: 'expo.out', onComplete: () => gsap.to(w, { opacity: 0, delay: 1.1, duration: 0.6, onComplete: () => w.remove() }) })
-          else setTimeout(() => w.remove(), 1500)
+          const h = res.herring
+          if (h) await this.popup(x, y, 'look', sp.object, h.bait, '', { fast, tag: '疑似', more: h.truth })
+          else await this.popup(x, y, 'look', sp.object, res.desc + (res.detail || ''), '', { fast })
+          voice(who, line(who, 'search', { ROOM: c.roomInfo.name }))
         } else if (sp.kind === 'body') {
           const cause = res.cause
           const sub = res.window ? hhmm(res.window[0]) + '—' + hhmm(res.window[1]) : ''
-          await this.popup(x, y, 'body', cause.name, cause.sign + '。' + res.stage + '。', sub)
-          addCard({ id: 'body', label: cause.name, text: cause.sign + '。' + res.stage + '。' + (sub ? ' ' + sub : ''), predicate: cause.needs || null, icon: 'body' }, { from: { x, y } })
+          await this.popup(x, y, 'body', cause.name, (res.obs || cause.sign + '。') + res.stage + '。', sub, { fast })
+          addCard({ id: 'body', label: cause.name, text: cause.sign + '。' + res.stage + '。' + (sub ? ' ' + sub : ''), predicate: cause.needs || null, icon: 'body' }, { from: { x, y }, by: cardBy })
         } else {
           const k = res.clue
-          await this.popup(x, y, k.tpl, k.label, k.text, k.place === 'away' && k.awayTo ? k.awayTo : '')
-          addCard({ id: k.id, label: k.label, text: k.text, predicate: k.predicate, icon: k.tpl }, { from: { x, y } })
+          await this.popup(x, y, k.tpl, k.label, k.text, k.place === 'away' && k.awayTo ? k.awayTo : '', { fast, lead: res.lead })
+          addCard({ id: k.id, label: k.label, text: k.text, predicate: k.predicate, icon: k.tpl }, { from: { x, y }, by: cardBy })
+          voice(who, line(who, 'found', { CLUE: k.name }))
         }
       } catch (e) {
         if (e !== ABORT) console.error(e)
       } finally {
         this.busy = false
         this.placeButtons()
+        this.updateGo()
       }
     },
-    async popup(x, y, ico, title, text, sub) {
+    // 询问：点一个在场的人，他交代案发时的去向（凶手会说谎）；花费调查时间
+    async interview() {
+      const c = this.c
+      if (this.busy || this.ended || S.paused || abilityBusy || !c || !meAlive() || S.spectate) return
+      this.busy = true
+      try {
+        const ids = await roster(1, id => id !== S.me && !(c.asked || []).includes(id), '询问')
+        if (!ids || !ids[0] || this.ended) return
+        const before = S.G.minutes
+        const r = TE.interview(S.G, c, ids[0])
+        if (!r) return
+        App.audio.sfx('door', { volume: 0.3 })
+        await this.spendAnim(r.cost, before)
+        const t = line(r.id, 'alibi', { ROOM: r.room, TIME: hhmm(r.time) })
+        talkCard(r.id, r)
+        await this.popup(this.W / 2, this.H / 2, null, nameOf(r.id), quoted(t), alibiTag(r.room, r.time, r.with), { face: r.id, center: true, tag: r.conflicts.length ? '矛盾' : '', alarm: r.conflicts.length > 0 })
+        for (const k of r.conflicts) markConflict(k)
+      } catch (e) {
+        if (e !== ABORT) console.error(e)
+      } finally {
+        this.busy = false
+        this.updateGo()
+      }
+    },
+    // 「询问」按钮：问完所有人或时间到了就收起
+    updateGo() {
+      const b = this.askBtn
+      if (!b) return
+      const c = this.c
+      const left = c ? c.tCourt - S.G.minutes : 0
+      const any = c && living().some(id => id !== S.me && !(c.asked || []).includes(id))
+      b.disabled = !any || left <= 0 || this.ended
+    },
+    closePop() {
+      const box = S.E.inv && S.E.inv.querySelector('.trial-inv-pop')
+      if (!box) return
+      box.classList.remove('is-on')
+      clearFaces(box.querySelector('.trial-inv-pop-ico'))
+    },
+    // 弹出的说明。opts：lead 发现时的动作；tag 角标（疑似 / 矛盾）；more 稍后补上的一句（疑似线索的真相）；
+    // face 用肖像代替图标；center 居中；fast 旁观时快一些
+    async popup(x, y, ico, title, text, sub, opts = {}) {
       const box = S.E.inv.querySelector('.trial-inv-pop')
-      box.querySelector('.trial-inv-pop-ico').innerHTML = icon(ico)
+      const ib = box.querySelector('.trial-inv-pop-ico')
+      clearFaces(ib)
+      ib.innerHTML = ''
+      if (opts.face) { ib.appendChild(App.portrait(opts.face, { track: false })); ib.classList.add('is-face') }
+      else { ib.innerHTML = ico ? icon(ico) : ''; ib.classList.remove('is-face') }
+      const lead = box.querySelector('.trial-inv-pop-lead')
+      lead.textContent = opts.lead || ''
       box.querySelector('b').textContent = title
       box.querySelector('.trial-inv-pop-sub').textContent = sub || ''
+      const more = box.querySelector('.trial-inv-pop-more')
+      more.textContent = ''
+      const tag = box.querySelector('.trial-inv-pop-tag')
+      tag.textContent = opts.tag || ''
+      tag.className = 'trial-inv-pop-tag' + (opts.tag ? ' is-on' : '') + (opts.alarm ? ' is-alarm' : '')
+      box.classList.toggle('is-act', isAct(text))
       const W = this.W
       const bw = Math.min(380, W - 32)
-      const left = this.geo.mobile ? (W - bw) / 2 : U.clamp(x + 30, 16, W - bw - 16)
-      const top = this.geo.mobile ? this.H - 330 : U.clamp(y - 70, 120, this.H - 300)
+      const left = this.geo.mobile || opts.center ? (W - bw) / 2 : U.clamp(x + 30, 16, W - bw - 16)
+      const top = this.geo.mobile ? this.H - 340 : opts.center ? this.H / 2 - 110 : U.clamp(y - 70, 120, this.H - 300)
       Object.assign(box.style, { left: left + 'px', top: top + 'px', width: bw + 'px' })
       box.classList.add('is-on')
       App.audio.sfx('card')
-      if (window.gsap) gsap.fromTo(box, { opacity: 0, y: 14, rotate: -2 }, { opacity: 1, y: 0, rotate: 0, duration: 0.45, ease: 'expo.out' })
-      await typeIn(box.querySelector('p'), text, 20)
-      await wait(Math.min(2600, 900 + text.length * 25))
+      if (window.gsap) {
+        gsap.fromTo(box, { opacity: 0, y: 14, rotate: -2 }, { opacity: 1, y: 0, rotate: 0, duration: 0.45, ease: 'expo.out' })
+        if (opts.lead) gsap.fromTo(lead, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.5, ease: 'expo.out' })
+        if (opts.tag) gsap.fromTo(tag, { scale: 2.2, opacity: 0, rotate: -18 }, { scale: 1, opacity: 1, rotate: -8, duration: 0.4, delay: 0.25, ease: 'expo.out' })
+      }
+      if (opts.alarm) { App.audio.sfx('glitch', { volume: 0.5 }); App.glitch(box, 0.3) }
+      const sp = opts.fast ? 14 : 20
+      await typeIn(box.querySelector('.trial-inv-pop-text'), text, sp, isAct(text))
+      if (opts.more) {
+        // 疑似线索：停一拍，再看清
+        await wait(opts.fast ? 450 : 750)
+        App.audio.sfx('tick')
+        await typeIn(more, opts.more, sp)
+        tag.textContent = '无关'
+        tag.classList.add('is-clear')
+        if (window.gsap) gsap.fromTo(tag, { scale: 1.6 }, { scale: 1, duration: 0.35, ease: 'back.out(3)' })
+      }
+      const len = text.length + (opts.more || '').length
+      await wait(opts.fast ? Math.min(1500, 600 + len * 14) : Math.min(2600, 900 + len * 25))
       if (window.gsap) await anim(r => gsap.to(box, { opacity: 0, y: 20, scale: 0.9, duration: 0.3, ease: 'power2.in', onComplete: r }))
       box.classList.remove('is-on')
       if (window.gsap) gsap.set(box, { clearProps: 'transform,opacity' })
@@ -2487,8 +2755,14 @@
     // 占卜家：查验结果（被查验者会以一句台词表现他知道了）
     async reveal(id, name) {
       const box = S.E.inv.querySelector('.trial-inv-pop')
-      box.querySelector('.trial-inv-pop-ico').innerHTML = ''
-      box.querySelector('.trial-inv-pop-ico').appendChild(sigil(name))
+      const ib = box.querySelector('.trial-inv-pop-ico')
+      clearFaces(ib)
+      ib.innerHTML = ''
+      ib.classList.remove('is-face')
+      ib.appendChild(sigil(name))
+      box.querySelector('.trial-inv-pop-lead').textContent = ''
+      box.querySelector('.trial-inv-pop-more').textContent = ''
+      box.querySelector('.trial-inv-pop-tag').className = 'trial-inv-pop-tag'
       box.querySelector('b').textContent = nameOf(id) + ' · ' + name
       box.querySelector('.trial-inv-pop-sub').textContent = ''
       const bw = Math.min(380, this.W - 32)
@@ -2496,10 +2770,40 @@
       box.classList.add('is-on')
       App.audio.sfx('flip')
       if (window.gsap) gsap.fromTo(box, { opacity: 0, rotateY: 90 }, { opacity: 1, rotateY: 0, duration: 0.5, ease: 'back.out(1.6)' })
-      await typeIn(box.querySelector('p'), '「' + (charOf(id).lines.defend || '……') + '」', 22)
+      const t = line(id, 'defend')
+      box.classList.toggle('is-act', isAct(t))
+      await typeIn(box.querySelector('.trial-inv-pop-text'), quoted(t), 22, isAct(t))
       await wait(2200)
       box.classList.remove('is-on')
     },
+  }
+
+  // 去向的小标：房间 · 时刻（· 同在的人）
+  function alibiTag(room, time, withIds) {
+    const w = (withIds || []).filter(id => S.G && S.G.people[id])
+    return room + ' · ' + hhmm(time) + (w.length ? ' · ' + w.map(nameOf).join('、') : '')
+  }
+  // 证言卡：调查时问到的去向（你自己的也算一张）；与所知相矛盾的会被标出
+  function talkCard(id, r) {
+    S.talk = S.talk || {}
+    if (S.talk[id]) return S.talk[id]
+    const w = (r.with || []).filter(x => S.G.people[x])
+    const rec = addCard({
+      id: 'talk:' + id, label: (isMe(id) ? '你' : nameOf(id)) + ' · ' + r.room,
+      text: hhmm(r.time) + ' 前后在' + r.room + (w.length ? '，与' + w.map(nameOf).join('、') + '同在' : '，无人同在'),
+      predicate: null, icon: 'talk',
+    }, { talk: true })
+    S.talk[id] = rec
+    return rec
+  }
+  function markConflict(k) {
+    for (const id of [k.liar, k.witness]) {
+      const rec = S.talk && S.talk[id]
+      if (!rec) continue
+      rec.el.classList.add('is-conflict')
+      if (window.gsap) gsap.fromTo(rec.el, { y: -18 }, { y: 0, duration: 0.6, ease: 'bounce.out' })
+    }
+    App.audio.sfx('wrong', { volume: 0.35 })
   }
 
   async function investigate(c) {
@@ -2535,23 +2839,46 @@
 
     const go = E.inv.querySelector('.trial-inv-go')
     go.innerHTML = ''
+    Inv.askBtn = null
     const tok = S.token
     if (S.spectate || !meAlive()) {
-      // 旁观：手电自己扫过现场
-      const spots = Inv.spots.slice()
-      for (const sp of spots) {
+      // 旁观：手电自己扫过现场，在场的人轮流细查（尸体、各条痕迹、一处陈设），边看边自言自语
+      const body = Inv.spots.filter(x => x.kind === 'body')
+      const clues = U.shuffle(Inv.spots.filter(x => x.kind === 'clue'))
+      const decoys = Inv.spots.filter(x => x.kind === 'decoy').sort((a, b) => (b.herring ? 1 : 0) - (a.herring ? 1 : 0)).slice(0, 1)
+      let crew = U.shuffle(living().filter(x => x !== c.murderer && x !== S.me))
+      if (!crew.length) crew = living()
+      let i = 0
+      for (const sp of body.concat(clues, decoys)) {
+        guard(tok)
+        if (S.G.minutes >= c.tCourt) break
+        const [x, y] = Inv.P(sp.u, sp.v)
+        Inv.light.tx = x; Inv.light.ty = y; Inv.light.tapAt = performance.now()
+        await wait(420)
+        await hold(tok)
+        await Inv.onSpot(sp, crew[i++ % crew.length])
+      }
+      for (const sp of Inv.spots) {
+        if (sp.done) continue
         guard(tok)
         const [x, y] = Inv.P(sp.u, sp.v)
         Inv.light.tx = x; Inv.light.ty = y; Inv.light.tapAt = performance.now()
-        await wait(700)
+        await wait(380)
       }
       S.G.minutes = c.tCourt
       Inv.updateTimer()
     } else {
+      // 你自己案发时在哪：一张证言卡
+      const mine = c.where && c.where[S.me]
+      if (mine) talkCard(S.me, { room: mine.room, with: mine.with, time: c.tAlibi })
       await ask(done => {
+        const q = button('询问', '', 'interview')
+        q.addEventListener('click', e => { e.stopPropagation(); App.audio.sfx('click'); Inv.interview() })
+        Inv.askBtn = q
+        Inv.updateGo()
         const b = button('开庭', 'btn--blood', 'court')
         b.addEventListener('click', e => { e.stopPropagation(); done('go') })
-        go.appendChild(b)
+        go.append(q, b)
         let acc = 0, last = performance.now()
         let warned = false
         const off = App.tick(() => {
@@ -2564,13 +2891,14 @@
             acc -= 1400
             const left = TE.spend(S.G, c, 1)
             Inv.updateTimer()
+            Inv.updateGo()
             if (left <= 15 && left > 0) App.audio.sfx(left <= 5 ? 'heartbeat' : 'tick', { volume: 0.5 })
-            if (left <= 15 && !warned) { warned = true; App.audio.setMood({ tension: 0.85 }) }
+            if (left <= 15 && !warned) { warned = true; tension(0.85) }
             if (left <= 0) done('time')
           }
           if (S.G.minutes >= c.tCourt && !Inv.busy) done('time')
         })
-        return () => { off(); go.innerHTML = '' }
+        return () => { off(); go.innerHTML = ''; Inv.askBtn = null }
       })
     }
     // 届满：主持人移走尸体
@@ -2594,7 +2922,7 @@
       Inv.stop()
       setScene('court')
       mood('court')
-      App.audio.setMood({ tension: 0.45 })
+      tension(0.45)
       resetSeatStates()
       syncSeats()
       hideSay()
@@ -2665,34 +2993,77 @@
         updateMe()
         spotlight(ev.speaker)
         return
-      case 'speech':
-        await say(ev.speaker, charOf(ev.speaker).lines.statement || '……')
+      case 'speech': {
+        // 一般看法；或谈自己找到的线索（线索名一闪）
+        if (ev.mode === 'clue' && ev.clue) {
+          await proof(ev.speaker, ev.clue, null)
+          await say(ev.speaker, line(ev.speaker, 'found', { CLUE: ev.clue.name }))
+        } else await say(ev.speaker, line(ev.speaker, 'statement'))
         return
+      }
       case 'accuse': {
         drawLine(ev.speaker, ev.target, { cls: 'is-accuse', kind: 'accuse', dur: 0.35 })
         App.audio.sfx('slash', { volume: 0.5 })
         shakeSeat(ev.target)
-        await say(ev.speaker, fill(charOf(ev.speaker).lines.accuse, ev.target) || '……', { tone: 'accuse' })
+        // 手里有相符的证据：先出示，再指认
+        if (ev.clue) await proof(ev.speaker, ev.clue, ev.target)
+        const text = ev.clue ? line(ev.speaker, 'accuseClue', { X: nameOf(ev.target), CLUE: ev.clue.name }) : line(ev.speaker, 'accuse', { X: nameOf(ev.target) })
+        await say(ev.speaker, text, { tone: 'accuse' })
+        return
+      }
+      case 'interject': {
+        // 旁人插话：附议（细线连向被指认者）或质疑（虚线连向指认者），气泡一闪而过
+        const agree = ev.stance === 'agree'
+        drawLine(ev.speaker, agree ? ev.target : ev.accuser, { cls: agree ? 'is-agree' : 'is-doubt', kind: 'accuse', dur: 0.25, dot: 3 })
+        quipSeat(ev.speaker, line(ev.speaker, ev.stance, { X: nameOf(ev.target) }), { tone: ev.stance })
+        App.audio.sfx(agree ? 'tick' : 'glitch', { volume: agree ? 0.5 : 0.25 })
+        await wait(S.spectate ? 360 : 460)
         return
       }
       case 'defend':
-        await say(ev.speaker, charOf(ev.speaker).lines.defend || '……', { tone: 'defend' })
+        await say(ev.speaker, line(ev.speaker, 'defend'), { tone: 'defend' })
         clearLines('accuse')
         return
-      case 'silent':
-        await say(ev.speaker, '……', { hold: 500 })
+      case 'counter': {
+        // 反咬：一条反向的线
+        drawLine(ev.speaker, ev.target, { cls: 'is-accuse is-counter', kind: 'accuse', dur: 0.3, bend: -0.16 })
+        App.audio.sfx('slash', { volume: 0.45 })
+        shakeSeat(ev.target)
+        await say(ev.speaker, line(ev.speaker, 'counter', { X: nameOf(ev.target) }), { tone: 'counter' })
+        clearLines('accuse')
         return
+      }
+      case 'alibi': {
+        const text = line(ev.speaker, 'alibi', { ROOM: ev.room, TIME: hhmm(ev.time) })
+        await say(ev.speaker, text, { tone: ev.response ? 'defend' : null, tag: alibiTag(ev.room, ev.time, ev.with) })
+        if (ev.response) clearLines('accuse')
+        return
+      }
+      case 'expose': {
+        // 当众拆穿：那个时刻真在那间房里的人站出来
+        drawLine(ev.speaker, ev.target, { cls: 'is-accuse', kind: 'accuse', dur: 0.3 })
+        shakeSeat(ev.target)
+        await stamp('矛盾', { hold: 650, sfx: 'glitch' })
+        await say(ev.speaker, line(ev.speaker, 'alibi', { ROOM: ev.truth || ev.room, TIME: hhmm(ev.time) }), { tone: 'accuse', tag: (ev.truth || ev.room) + ' · ' + hhmm(ev.time) })
+        seatMark(ev.target, LIE_MARK, 'is-lie')
+        if (S.talk) markConflict({ liar: ev.target, witness: ev.speaker })
+        clearLines('accuse')
+        return
+      }
+      case 'silent':
+        await say(ev.speaker, line(ev.speaker, 'silent'), { hold: 520 })
+        return
+      case 'ask-respond': {
+        // 你被指认了：辩解、反咬，或交代去向
+        turnBox()
+        App.audio.sfx('heartbeat', { volume: 0.6 })
+        const items = [{ label: '辩解', value: { kind: 'defend' } }, { label: '反咬', value: { kind: 'counter' }, tone: 'blood' }]
+        if (ev.canAlibi) items.push({ label: '不在场', value: { kind: 'alibi' } })
+        return await choose(items)
+      }
       case 'ask-debate': {
-        // 轮到你：指认一人，或沉默；也可以先发动能力
-        S.E.me.classList.remove('is-open')
-        spotlight(S.me)
-        const box = S.E.say
-        const fc = box.querySelector('.trial-say-face')
-        if (sayFaceId !== S.me) { clearFaces(fc); fc.appendChild(face(S.me, { eyeRange: 8 })); sayFaceId = S.me }
-        box.querySelector('.trial-say-name b').textContent = nameOf(S.me)
-        box.querySelector('.trial-say-name span').textContent = U.roman(seatOf(S.me))
-        box.querySelector('.trial-say-line').textContent = ''
-        box.className = 'trial-say is-on is-me is-turn'
+        // 轮到你：指认一人，或沉默、交代去向；也可以先发动能力
+        turnBox()
         App.audio.sfx('heartbeat', { volume: 0.5 })
         updateMe()
         const v = await ask(done => {
@@ -2703,6 +3074,11 @@
           b.addEventListener('click', e => { e.stopPropagation(); done({ kind: 'silent' }) })
           S.E.ask.innerHTML = ''
           S.E.ask.appendChild(b)
+          if (ev.canAlibi) {
+            const a = button('不在场', '', 'alibi')
+            a.addEventListener('click', e => { e.stopPropagation(); done({ kind: 'alibi' }) })
+            S.E.ask.appendChild(a)
+          }
           S.E.ask.classList.add('is-on')
           return () => {
             S.debateResolve = null
@@ -2756,7 +3132,7 @@
         clearLines(null)
         S.phase = 'vote'
         updateMe()
-        App.audio.setMood({ tension: 1 })
+        tension(1)
         S.stage.classList.add('is-vote')
         await broadcast(bcText('主持人只以【】喊停辩论') || '辩论结束，开始投票。')
         return
@@ -2765,7 +3141,7 @@
         S.V = V
         S.phase = V.kind === 'special' ? 'special' : 'vote'
         S.stage.classList.add('is-vote')
-        App.audio.setMood({ tension: 1 })
+        tension(1)
         for (let k = 1; k <= 15; k++) setCount(k, 0, true)
         clearLines('vote', false)
         for (let k = 1; k <= 15; k++) S.seat[k].mark.querySelectorAll('.is-judge').forEach(m => m.remove())
@@ -2823,6 +3199,12 @@
           App.audio.sfx('vote')
           if (counted) bumpCount(b.target)
           if (isMe(b.target)) updateMe()
+          // 投票时挑几个人说一句（不是每张票都说）
+          V.quips = V.quips || 0
+          if (!b.abstain && b.target !== b.voter && V.quips < 3 && (V.ballots.length === 1 || Math.random() < 0.3)) {
+            V.quips++
+            quipSeat(b.voter, line(b.voter, 'vote', { X: nameOf(b.target) }), { tone: 'vote', life: 1.9 })
+          }
         }
         await wait(S.spectate ? 300 : isMe(b.voter) ? 300 : 520)
         S.seat[vk].root.classList.remove('is-voter')
@@ -2865,7 +3247,7 @@
           clearLines(null)
           S.stage.classList.remove('is-vote')
           S.phase = 'debate'
-          App.audio.setMood({ tension: 0.5 })
+          tension(0.5)
         }
         return
       }
@@ -2943,7 +3325,7 @@
         return
       }
       case 'last-words':
-        await say(ev.speaker, charOf(ev.speaker).lines.executed || '……', { tone: 'exec', hold: 1300 })
+        await say(ev.speaker, line(ev.speaker, 'executed'), { tone: 'exec', hold: 1300 })
         return
       case 'verdict': {
         hideSay()
@@ -2957,6 +3339,10 @@
           if (r === 'restart') return 'restart'
           await broadcast(bcText('误判', { 某某: nameOf(ev.pending), 死者: vic, '一／二': NUM[ev.misjudge] || '一' }), { sfx: 'wrong' })
         }
+        // 公布之后：一两个人的反应
+        const vs = pickVoices(TE.livingIds(G).filter(x => !ev.executed.includes(x)), U.randInt(1, 2))
+        for (const id of vs) { quipSeat(id, line(id, ev.correct ? 'right' : 'wrong', { X: nameOf(ev.pending) }), { tone: ev.correct ? 'right' : 'wrong', life: 2.6 }); await wait(520) }
+        if (vs.length) await wait(900)
         S.seat.forEach(s => s && s.root.classList.remove('is-pending'))
         for (let i = 1; i <= 15; i++) setCount(i, 0, true)
         syncSeats()
@@ -2964,11 +3350,25 @@
       }
       case 'end':
         S.stage.classList.remove('is-vote')
-        App.audio.setMood({ tension: 0.3 })
+        tension(0.3)
         return
       default:
         return
     }
+  }
+  const LIE_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16v10H10l-4 4v-4H4z"/><path d="M6 3l12 16"/></svg>'
+  // 轮到你：桌心是你的脸，台词处留一个光标
+  function turnBox() {
+    S.E.me.classList.remove('is-open')
+    spotlight(S.me)
+    const box = S.E.say
+    const fc = box.querySelector('.trial-say-face')
+    if (sayFaceId !== S.me) { clearFaces(fc); fc.appendChild(face(S.me, { eyeRange: 8 })); sayFaceId = S.me }
+    box.querySelector('.trial-say-name b').textContent = nameOf(S.me)
+    box.querySelector('.trial-say-name span').textContent = U.roman(seatOf(S.me))
+    box.querySelector('.trial-say-line').textContent = ''
+    box.querySelector('.trial-say-tag').textContent = ''
+    box.className = 'trial-say is-on is-me is-turn'
   }
   // 公开发动能力的人：上一位发言者的台词收起，聚光转到发动者身上
   function focusActor(id) {
@@ -3065,6 +3465,14 @@
       })
       gsap.to(chain, { opacity: 0, duration: 1.2, delay: 0.5 })
     }
+    // 看着处刑的一两个人
+    const gg = S.geo
+    const watchers = pickVoices(living().filter(x => !ids.includes(x)), U.randInt(1, 2))
+    watchers.forEach((id, i) => setTimeout(() => {
+      if (S.scene !== 'exec' || S.paused || !gg) return
+      const at = gg.mobile ? { x: gg.W / 2, y: gg.H - 70 - i * 70 } : { x: gg.W * (i ? 0.82 : 0.18), y: gg.H * (i ? 0.8 : 0.74) }
+      quip(id, line(id, 'watch', { X: nameOf(ids[0]) }), { at, tone: 'watch', life: 2.2 })
+    }, 600 + i * 700))
     await wait(2300)
     await flushNotices()
     syncSeats()
@@ -3093,7 +3501,7 @@
       clearLines(null, false)
       S.E.count.innerHTML = ''
       S.E.mood.textContent = ''
-      App.audio.setMood({ tension: 0.2 })
+      tension(0.2)
     })
     S.G.minutes += 20
     updateTop()
@@ -3216,12 +3624,24 @@
       if (minis.length) gsap.fromTo(minis, { y: 14, opacity: 0 }, { y: 0, opacity: 0.5, duration: 0.7, stagger: 0.05, delay: 0.9, ease: 'expo.out' })
     }
     await wait(1200)
-    if (winner) await typeIn(E.end.querySelector('.trial-end-line'), charOf(winner).lines.wish || '……', 46)
+    if (winner) {
+      // 撑到最后的一句，然后是愿望
+      const endLine = E.end.querySelector('.trial-end-line')
+      const w1 = line(winner, 'win')
+      endLine.classList.toggle('is-act', isAct(w1))
+      await typeIn(endLine, w1, 40, isAct(w1))
+      await wait(1500)
+      if (window.gsap) await anim(r => gsap.to(endLine, { opacity: 0, duration: 0.4, onComplete: r }))
+      const w2 = line(winner, 'wish')
+      endLine.classList.toggle('is-act', isAct(w2))
+      if (window.gsap) gsap.set(endLine, { opacity: 1 })
+      await typeIn(endLine, w2, 46, isAct(w2))
+    }
     S.running = false
     const v = await endButtons([{ label: '终章', value: 'wish', tone: 'blood', act: 'wish' }, { label: '再来一局', value: 'again', act: 'again' }])
     if (v === 'wish') {
       hardReset()
-      setTimeout(() => App.scroll.to('#wish'), 80)
+      setTimeout(() => (App.nav ? App.nav.go('wish') : App.scroll.to('#wish')), 80)
     } else hardReset()
   }
   async function deadScene() {
@@ -3282,7 +3702,7 @@
     S.running = false
     const v = await endButtons([{ label: '终章', value: 'wish', tone: 'blood', act: 'wish' }, { label: '再来一局', value: 'again', act: 'again' }])
     hardReset()
-    if (v === 'wish') setTimeout(() => App.scroll.to('#wish'), 80)
+    if (v === 'wish') setTimeout(() => (App.nav ? App.nav.go('wish') : App.scroll.to('#wish')), 80)
   }
 
   /* ==========================================================

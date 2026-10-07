@@ -543,8 +543,7 @@
 .cycle-c-center {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%;
   overflow: hidden; opacity: 0; transition: opacity .35s; pointer-events: none;
-  /* 自成一层：辩论时每滚一小段就换一个发言人，中间的人像、名字重画不再和席位的光圈并成舞台上的一大块 */
-  will-change: transform;
+  /* 不给它常驻 will-change：它一成层，压在上面的满屏票线 SVG 和十五个席位都会被逼成合成层 */
 }
 .cycle-c-center.is-on { opacity: 1; }
 .cycle-c-ghost { position: absolute; left: 12%; right: 12%; top: 4%; bottom: -10%; }

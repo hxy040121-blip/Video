@@ -136,9 +136,8 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mansion-floor.is-stack .mz-suite { color: rgba(194, 154, 91, .75); }
 .mansion-floor.is-stack .mz-suite.mz-suite-lit { color: rgba(240, 207, 142, .75); }
 
-/* 悬停框与悬停底色：不用时 visibility:hidden（四层楼板上的这些小件不再常驻合成层）；
-   淡入淡出期间浏览器自动把它们提为合成层，平时画在动效层里 */
-/* 楼板内的淡入淡出一律改 stroke-/fill-opacity（不用 opacity）：opacity 过渡会被临时提为合成层，
+/* 悬停框与悬停底色：不用时 visibility:hidden（四层楼板上的这些小件不再常驻合成层），画在动效层里。
+   楼板内的淡入淡出一律改 stroke-/fill-opacity（不用 opacity）：opacity 过渡会被临时提为合成层，
    把同一层楼板劈成几层、过渡完再并回去，每次都要整层重新栅格化 */
 .mz-hl { fill: none; stroke: #ffe8bd; stroke-width: 1.5; stroke-opacity: 0; visibility: hidden; transition: stroke-opacity .3s, visibility 0s .3s; }
 .mz-hl.is-on { stroke-opacity: 1; visibility: visible; transition: stroke-opacity .3s; }
@@ -206,11 +205,10 @@ html.lenis-stopped .mansion.is-pinned > .mansion-sticky { position: fixed; left:
 .mz-wf { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; visibility: hidden; pointer-events: none; }
 .mz-wl.is-post { background: repeating-linear-gradient(90deg, rgba(194, 154, 91, .2) 0 2px, transparent 2px 8px); }
 .mz-wl.is-ghost { background: repeating-linear-gradient(90deg, rgba(194, 154, 91, .55) 0 3px, transparent 3px 8px); }
-.mz-wl.is-hover { height: 1.2px; margin-top: -.6px; background: rgba(255, 232, 189, .85); }
 .mz-wl.is-lead { background: #6f5532; }
 .mz-wl.is-door { background: rgba(194, 154, 91, .6); }
 .mz-w-hfill { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform, opacity; opacity: 0; visibility: hidden; }
-.mz-w-hfill i { position: absolute; display: block; background: rgba(194, 154, 91, .035); }
+.mz-w-hfill i { position: absolute; display: block; background: rgba(194, 154, 91, .035); outline: var(--hb, 3px) solid rgba(255, 232, 189, .85); outline-offset: calc(var(--hb, 3px) / -2); }
 .mansion-wire { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; overflow: visible; visibility: hidden; }
 .mansion-wire.is-on { visibility: visible; }
 .mz-w-string { fill: none; stroke: #a3104a; stroke-width: 1.2; stroke-linecap: round; }

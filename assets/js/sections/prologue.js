@@ -1356,7 +1356,9 @@
     }
     const glowCache = new Map()
     function numGlow(k, font, hov, sq) {
-      const key = k + font + (hov ? 'h' : 'w') + sq
+      // 字体载入前后各缓存一份（载入前用的是后备字体的形状）
+      const ready = !document.fonts || document.fonts.check(font)
+      const key = k + font + (hov ? 'h' : 'w') + sq + (ready ? '' : '~')
       let c = glowCache.get(key)
       if (c) return c
       const txt = U.roman(k), blur = 10 / sq
@@ -1375,11 +1377,8 @@
       x.shadowOffsetX = 4096
       x.fillStyle = '#000'
       x.fillText(txt, c.width / 2 - 4096, c.height / 2)
-      // 字体还没载入时先不缓存（免得记住了后备字体的形状）
-      if (!document.fonts || document.fonts.check(font)) {
-        if (glowCache.size > 240) glowCache.clear()
-        glowCache.set(key, c)
-      }
+      if (glowCache.size > 300) glowCache.clear()
+      glowCache.set(key, c)
       return c
     }
 
@@ -1520,7 +1519,7 @@
             // 冷光细线（分桶）
             const m = lp / (1 + ((r.sx * k - Lt.x) ** 2 + (r.sy * k - Lt.y) ** 2 + (z - Lt.z) ** 2) / lr)
             const ga = a * (0.03 + Math.min(0.45, m * 0.55)), gw = Math.max(0.6, w * 0.05)
-            const key = Math.round(ga * 200) * 64 + Math.min(63, Math.round(gw * 4))
+            const key = Math.round(ga * 50) * 64 + Math.min(63, Math.round(gw * 4))
             const ox = RY[j] - RY[j - 1], oy = -(RX[j] - RX[j - 1]), ol = Math.hypot(ox, oy) || 1, sh = w * 0.32 * r.side
             let L = glintBk.get(key)
             if (!L) glintBk.set(key, (L = []))
@@ -1555,7 +1554,7 @@
       ctx.strokeStyle = RIB_GLINT
       for (const [key, L] of glintBk) {
         if (!L.length) continue
-        ctx.globalAlpha = Math.min(1, Math.floor(key / 64) / 200)
+        ctx.globalAlpha = Math.min(1, Math.floor(key / 64) / 50)
         ctx.lineWidth = (key % 64) / 4
         ctx.beginPath()
         for (let i = 0; i < L.length; i += 4) { ctx.moveTo(L[i], L[i + 1]); ctx.lineTo(L[i + 2], L[i + 3]) }

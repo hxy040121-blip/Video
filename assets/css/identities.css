@@ -115,28 +115,27 @@
   background: radial-gradient(closest-side, rgba(0, 0, 0, .78), rgba(0, 0, 0, .38) 62%, rgba(0, 0, 0, 0));
   transform-origin: 50% 50%; opacity: .55;
 }
-/* 立体时（抬起、倾斜、拿在手里）影子随光标移动：只改 transform / opacity，单独成层，不重画整张牌 */
-.identities-slot.is-3d .identities-shadow { will-change: transform, opacity; }
+/* 抬起、倾斜、拿在手里时影子随光标移动：只改 transform / opacity，单独成层，不重画整张牌（见 identities.js render） */
+.identities-shadow.identities-live { will-change: transform, opacity; }
 .identities-glitch { position: absolute; inset: 0; }
-.identities-slot.is-3d .identities-glitch { perspective: calc(var(--mm) * 230); }
+/* 透视写在牌自己的 transform 最前面（perspective(230mm)，见 identities.js render），不另设 3D 容器 */
 .identities-card { position: absolute; inset: 0; }
 /* 平放的牌只画朝上的那一面（另一面 opacity:0：浏览器不画、不成层；opacity 不继承，换面时只重算这一个元素的样式）；
    立体时才保留 3D 结构 */
 .identities-card.is-front > .identities-face--back, .identities-card.is-back > .identities-face--front { opacity: 0; }
 .identities-slot.is-3d .identities-card { transform-style: preserve-3d; }
 
-/* 厚而硬挺：三层鎏金的牌边，只在倾斜、翻转时出现 */
-.identities-edge { position: absolute; inset: 0; display: none; }
-.identities-slot.is-3d .identities-edge { display: block; transform-style: preserve-3d; }
-.identities-edge i {
-  position: absolute; inset: 0; border-radius: calc(var(--mm) * 3.2);
+/* 厚而硬挺：三层鎏金的牌边（牌的前三个子元素），只在倾斜、翻转时出现 */
+.identities-edge {
+  position: absolute; inset: 0; border-radius: calc(var(--mm) * 3.2); display: none;
   background: linear-gradient(135deg, #5f421c, #cfaa63 28%, #7f5c2c 50%, #e2c27f 74%, #634520);
 }
-.identities-edge i:nth-child(1) { transform: translateZ(calc(var(--mm) * -.27)); }
-.identities-edge i:nth-child(2) { transform: translateZ(0); }
-.identities-edge i:nth-child(3) { transform: translateZ(calc(var(--mm) * .27)); }
+.identities-slot.is-3d .identities-edge { display: block; }
+.identities-edge:nth-child(1) { transform: translateZ(calc(var(--mm) * -.27)); }
+.identities-edge:nth-child(2) { transform: translateZ(0); }
+.identities-edge:nth-child(3) { transform: translateZ(calc(var(--mm) * .27)); }
 /* 只是倾斜（还没翻到侧立）时，露出来的金边只是最深那一层的边缘（另两层被它和牌面盖住），只留那一层 */
-.identities-card.is-front .identities-edge i:nth-child(n+2), .identities-card.is-back .identities-edge i:nth-child(-n+2) { display: none; }
+.identities-slot.is-3d .identities-card.is-front > .identities-edge:nth-child(n+2), .identities-slot.is-3d .identities-card.is-back > .identities-edge:nth-child(-n+2) { display: none; }
 
 /* ---------- 面 ---------- */
 .identities-face {
@@ -145,9 +144,10 @@
 }
 /* 平放的牌箔光亮着时（见 identities.js render）：牌面做成 3D 场景的叶子、自成渲染面（与原先一直是 3D 时相同），
    箔光只与这一面混合；牌面圆角对箔光的裁切在这一面自己的坐标里，牌位每帧微转时不必逐帧重画裁切遮罩。
-   （下面立体时的规则写在后面，同等权重时覆盖这里） */
-.identities-card.identities-lit { transform-style: preserve-3d; }
-.identities-card.identities-lit.is-front > .identities-face--front, .identities-card.identities-lit.is-back > .identities-face--back { transform: translateZ(.1px); }
+   只用于平放；立体时用下面原来的 3D 结构 */
+.identities-slot:not(.is-3d) .identities-card.identities-lit { transform-style: preserve-3d; }
+.identities-slot:not(.is-3d) .identities-card.identities-lit.is-front > .identities-face--front,
+.identities-slot:not(.is-3d) .identities-card.identities-lit.is-back > .identities-face--back { transform: translateZ(.1px); }
 .identities-slot.is-3d .identities-face {
   backface-visibility: hidden; -webkit-backface-visibility: hidden;
   transform: translateZ(calc(var(--mm) * .4));
@@ -200,6 +200,8 @@
   transition: color .8s var(--ease-out), filter .8s var(--ease-out), top .5s var(--ease-out), width .5s var(--ease-out), height .5s var(--ease-out), margin .5s var(--ease-out);
 }
 .identities-sig .sigil, .identities-sig svg { display: block; width: 100%; height: 100%; overflow: visible; }
+/* 纹章一笔笔画出来的那一两秒里自成一个小图层（见 identities.js drawSigil），只重画这一小块 */
+.identities-sig.identities-drawing { will-change: transform; }
 .identities-face.is-neg .identities-sig {
   top: calc(var(--mm) * 13.8); width: calc(var(--mm) * 22); height: calc(var(--mm) * 22); margin-left: calc(var(--mm) * -11);
   color: #ff2e7e;

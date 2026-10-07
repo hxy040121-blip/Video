@@ -373,6 +373,148 @@ section('受命资格与线索')
   ok(narrowed / total > 0.6, `多数案件把嫌疑人缩到一两人（${narrowed}/${total}）`)
 }
 
+/* ---------------- 去向与询问 ---------------- */
+section('去向、询问与拆穿')
+{
+  let cases = 0, bad = 0, lies = 0, truthful = 0, contraBad = 0, playerWit = 0, askBad = 0, costBad = 0
+  for (let s = 1; s <= 300; s++) {
+    const ids = ALL.slice(s % 24, s % 24 + 12)
+    const seats = Array(15).fill(null)
+    ids.forEach((id, i) => { seats[i] = id })
+    const g = TE.create({ seats, seed: s * 7, player: ids[s % 12] })
+    const c = TE.newCase(g)
+    if (c.type !== 'case' || c.lastStanding !== undefined) continue
+    cases++
+    const W = c.where
+    for (const id of TE.livingIds(g)) if (!W[id]) bad++
+    const m = W[c.murderer]
+    if (['poison', 'door'].includes(c.cause.id)) { if (m.lie) bad++; else truthful++ }
+    else {
+      if (!m.lie || m.room !== c.roomInfo.name || m.claim.room === c.roomInfo.name || m.claim.with.length) bad++
+      else lies++
+    }
+    for (const id in W) {
+      if (id !== c.murderer && (W[id].lie || W[id].claim.room !== W[id].room || W[id].room === c.roomInfo.name)) bad++
+      for (const w in W) if (TE.contradicts(c, id, w) && id !== c.murderer) contraBad++
+    }
+    // 询问：花时间、不能问两次、问出与玩家自己去向的矛盾
+    const t0 = g.minutes
+    const target = TE.livingIds(g).find(x => x !== g.player)
+    const r = TE.interview(g, c, target)
+    if (!r || r.cost <= 0 || g.minutes !== t0 + r.cost || r.room !== W[target].claim.room) costBad++
+    if (TE.interview(g, c, target) !== null) askBad++
+    if (TE.interview(g, c, g.player) !== null) askBad++
+    if (W[c.murderer] && W[c.murderer].lie && W[g.player] && W[g.player].room === W[c.murderer].claim.room) {
+      const before = c.known.length
+      const r2 = c.asked.includes(c.murderer) ? null : TE.interview(g, c, c.murderer)
+      if (r2 && c.tCourt > g.minutes - r2.cost) { playerWit++; if (!c.known.some(k => k.liar === c.murderer && k.witness === g.player) || c.known.length <= before) askBad++ }
+    }
+  }
+  ok(cases > 200 && bad === 0, `每个在馆者都有去向；无辜者照实说，亲手行凶的凶手说自己在别处（${lies} 案说谎，${truthful} 案下毒/关门照实说）`)
+  ok(contraBad === 0, '只有凶手的说法会与旁人的真实去向相矛盾')
+  ok(costBad === 0 && askBad === 0, `询问花费调查时间、每人一次、不能问自己；玩家本人在场时问出凶手的谎（${playerWit} 例）`)
+}
+
+/* ---------------- 调查的文字 ---------------- */
+section('调查的文字')
+{
+  let decoys = 0, empty = 0, herrings = 0, repeats = 0, bodyBad = 0, leads = 0, games = 0
+  for (let s = 1; s <= 60; s++) {
+    const ids = ALL.slice(s % 23, s % 23 + 15)
+    const seats = Array(15).fill(null)
+    ids.forEach((id, i) => { seats[i] = id })
+    const g = TE.create({ seats, seed: s * 31, player: ids[0] })
+    const seen = new Set()
+    games++
+    for (let n = 0; n < 6; n++) {
+      const c = TE.newCase(g)
+      if (c.type !== 'case' || c.lastStanding !== undefined) break
+      for (const sp of c.spots) {
+        if (sp.kind === 'decoy') {
+          decoys++
+          if (!sp.desc) empty++
+          if (seen.has(sp.desc)) repeats++
+          seen.add(sp.desc)
+          if (sp.herring) { herrings++; if (!sp.herring.bait || !sp.herring.truth) empty++ }
+        } else if (sp.kind === 'body') { if (!sp.obs) bodyBad++ } else if (sp.lead) leads++
+      }
+      const res = TE.inspect(g, c, 'body', null)
+      if (!res || !res.obs || !res.stage) bodyBad++
+      // 不调查，直接开庭、判定（让下一案能继续）
+      TE.courtOpen(g, c)
+      const T = TE.openTrial(g, c)
+      TE.autoTrial(g, T)
+      TE.closeTrial(g, T)
+      if (TE.winner(g)) break
+    }
+  }
+  ok(decoys > 300 && empty === 0, `诱饵点都有按陈设写的描写（${decoys} 处）`)
+  ok(repeats === 0, '同一局里诱饵点的描写不重复')
+  ok(herrings > decoys * 0.12 && herrings < decoys * 0.4, `偶有疑似线索（${herrings} 处）`)
+  ok(bodyBad === 0 && leads > 100, '验尸按死因与尸体阶段描写；发现线索时有动作描写')
+}
+
+/* ---------------- 辩论的节拍 ---------------- */
+section('辩论的节拍')
+{
+  const seen = {}
+  let bad = 0, deadAsk = 0, games = 0, ends = 0, clueBad = 0, exposeBad = 0, respondAsk = 0
+  for (let s = 1; s <= 160; s++) {
+    const n = [6, 9, 12, 15][s % 4]
+    const ids = ALL.slice((s * 5) % 23, (s * 5) % 23 + n)
+    const seats = Array(15).fill(null)
+    ids.forEach((id, i) => { seats[i] = id })
+    const g = TE.create({ seats, seed: s * 101, player: ids[s % n] })
+    games++
+    let guard = 0, last = null
+    while (guard++ < 30) {
+      const c = TE.newCase(g)
+      if (c.type === 'final' || c.type === 'stall') { ends++; break }
+      if (c.type === 'overdue') { if (TE.winner(g)) { ends++; break } continue }
+      if (c.lastStanding !== undefined) { ends++; break }
+      TE.aiInvestigation(g, c)
+      TE.courtOpen(g, c)
+      const T = TE.openTrial(g, c)
+      TE.autoTrial(g, T, ev => {
+        seen[ev.type] = (seen[ev.type] || 0) + 1
+        if (ev.type === 'accuse') { last = ev; if (ev.clue) { seen.accuseClue = (seen.accuseClue || 0) + 1; const k = c.clues.find(x => x.id === ev.clue.id); if (!k || !k.foundBy || !TE.testClue(g, k, ev.target)) clueBad++ } }
+        if (ev.type === 'interject') { seen[ev.stance] = (seen[ev.stance] || 0) + 1; if (!last || ev.speaker === last.speaker || ev.speaker === last.target || ev.target !== last.target) bad++ }
+        if (ev.type === 'counter' && (!last || ev.speaker !== last.target || ev.target !== last.speaker)) bad++
+        if (ev.type === 'speech' && ev.mode === 'clue') seen.clueTalk = (seen.clueTalk || 0) + 1
+        if (ev.type === 'expose' && (ev.target !== c.murderer || !TE.contradicts(c, ev.target, ev.speaker))) exposeBad++
+        if (ev.type === 'ask-respond') respondAsk++
+        if (/^ask-/.test(ev.type) && g.player && !TE.isLiving(g, g.player)) deadAsk++
+      })
+      TE.closeTrial(g, T)
+      if (TE.winner(g)) { ends++; break }
+    }
+  }
+  ok(ends === games, '加入新节拍后每局都能走到终局（含玩家死后的旁观）')
+  ok(deadAsk === 0, '玩家出局后不再向他提问（旁观模式自动跑完）')
+  ok(['interject', 'counter', 'alibi', 'expose', 'silent', 'defend'].every(k => seen[k] > 0) && seen.agree > 0 && seen.doubt > 0, '附议、质疑、反咬、交代去向、当众拆穿、保留都会出现')
+  ok(seen.accuseClue > 0 && clueBad === 0, `出示证据时证据已被发现且与被指认者相符（${seen.accuseClue} 次）`)
+  ok(seen.clueTalk > 0, '不指认时也会谈自己找到的线索')
+  ok(bad === 0 && exposeBad === 0, '插话、反咬的对象正确；被拆穿的一定是说了谎的凶手')
+  ok(respondAsk > 0, '玩家被指认时由他选择怎样回应')
+}
+
+/* ---------------- 台词池 ---------------- */
+section('台词池')
+{
+  for (const f of ['a', 'b', 'c', 'd']) require(join(ROOT, 'assets/data/lines/' + f + '.js'))
+  const P = globalThis.TRIAL_LINES || {}
+  const KEYS = ['wake', 'discover', 'react', 'search', 'found', 'statement', 'alibi', 'accuse', 'accuseClue', 'agree', 'doubt', 'defend', 'counter', 'silent', 'vote', 'executed', 'watch', 'right', 'wrong', 'win', 'wish']
+  const ALLOW = { discover: ['V'], react: ['V'], search: ['ROOM'], found: ['CLUE'], alibi: ['ROOM', 'TIME'], accuse: ['X'], accuseClue: ['X', 'CLUE'], agree: ['X'], doubt: ['X'], counter: ['X'], vote: ['X'], watch: ['X'], right: ['X'], wrong: ['X'] }
+  let missing = [], badPh = []
+  for (const id of ALL) for (const k of KEYS) {
+    const arr = P[id] && P[id][k]
+    if (!Array.isArray(arr) || !arr.length) { missing.push(id + '.' + k); continue }
+    for (const t of arr) for (const m of t.matchAll(/\{(\w+)\}/g)) if (!(ALLOW[k] || []).includes(m[1])) badPh.push(id + '.' + k)
+  }
+  ok(missing.length === 0, '三十八人每个场合都有台词' + (missing.length ? '（缺 ' + missing.slice(0, 6).join('、') + '）' : ''))
+  ok(badPh.length === 0, '占位符只用该场合允许的')
+}
+
 /* ---------------- 整局 ---------------- */
 section('整局自动模拟')
 {

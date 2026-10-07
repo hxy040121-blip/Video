@@ -329,6 +329,7 @@
     g.minutes = c.tDiscover
     buildClues(g, c)
     buildSpots(g, c)
+    buildWhere(g, c)
     return c
   }
 
@@ -381,6 +382,131 @@
     return c.clues
   }
 
+  /* ---------- 调查的文字：诱饵点、疑似线索、验尸、发现线索时的动作 ----------
+     按陈设种类给出具体的描写；同一局里不重复（用尽才重来）。
+     这些文字只用子随机数（subRng），不消耗 g.r，规则结果不受影响。 */
+  function subRng(g, salt) { return rng(((g.seed >>> 0) ^ Math.imul((salt >>> 0) + 1, 0x9e3779b1)) >>> 0) }
+  const FLAVOR_KINDS = [
+    ['thing', /梯架|银幕/], ['coin', /金币/], ['lanes', /球道|置瓶机|保龄|球瓶|计分屏/], ['water', /泳池|浴池|喷泉/],
+    ['basin', /浴缸|淋浴|盥洗台|洗手台|水槽|坐便器|内衬盆|洗涤台|水台$/], ['art', /挂毯|织锦|织画|解剖课|星月夜|十二庭|画架|画报/],
+    ['rug', /毯|软垫|练习垫/], ['cloth', /床帘|窗帘|浴袍|长枕|油布|棉绳|胶带|软管|脏衣篮/], ['bed', /床(?!头)/],
+    ['music', /钢琴|竖琴|四琴|谱架|音乐柜/], ['instrument', /放大镜|望远镜|六分仪|分规|量角仪|星盘|电子秤|温湿度表/], ['clock', /钟/],
+    ['mirror', /镜/], ['window', /窗/], ['lamp', /灯|烛台/], ['plant', /兰$|金花茶|拱架/],
+    ['book', /书柜|圣经|手稿|绢面本|笔匣|端砚|镇纸|书刊/], ['game', /棋|麻将|扑克|台球|球台|球拍|乒乓|计分牌|哑铃|划船机|力量架|扶杆|把杆/],
+    ['tool', /刀|剪|钳|工具板|开瓶器|刷杆|救生杆|熨斗|缝纫机|急救箱/],
+    ['machine', /洗衣机|烘干机|泵|过滤罐|水箱|冷冻柜|保鲜柜|咖啡机|投影机|电磁灶|洗碗机|总控柜|轮阀|电热座/],
+    ['fixture', /插销|门铃|号码牌|编号锁|银钩|罗盘花|隔间|隔板|钥匙龛|酒款签/],
+    ['vessel', /杯|壶|瓶|盘|罐|醒酒器|冰桶|盂|器皿|皂盒|花器|托盘/],
+    ['exhibit', /像|雕|标本|骨架|化石|山子|礼器|皇冠|玉琮|地球仪|星球仪|太阳系仪|天球仪|切片|鲸牙|颅骨|凤蝶|极乐鸟|鹦鹉螺|屏风|霸王龙/],
+    ['cabinet', /柜|架|格/], ['table', /桌|台|几|案|岛|车/], ['seat', /沙发|榻|椅|凳/],
+  ]
+  function flavorKind(name) {
+    for (const [k, re] of FLAVOR_KINDS) if (re.test(name)) return k
+    return 'thing'
+  }
+  const DECOY_TEXT = {
+    rug: ['{O}的长毛顺着一个方向倒伏，像被人抚平过。', '掀开{O}一角：底下的玉面干干净净。', '{O}吸走了所有脚步声，毛里只有灰。', '{O}中央一处浅凹，是放过重物的旧印。', '{O}的流苏理得一丝不乱。', '手指插进{O}的毛里，是凉的。'],
+    bed: ['{O}的被面铺得太平，像从没人睡过。', '{O}下的黑暗里，只有一层薄灰。', '枕上一道浅凹，早已凉透。', '掀开{O}的帷幔，里面只有叠好的被。', '{O}的床柱上搭着一件睡袍，口袋是空的。'],
+    cloth: ['{O}叠得方方正正，折痕锋利。', '{O}垂着，下摆一动不动。', '抖开{O}——什么也没掉出来。', '{O}上有沉香的味道，很淡。'],
+    basin: ['{O}是干的，排水口没有一根头发。', '{O}边沿一圈水渍，早已干成白印。', '{O}里映着手电的光，晃了一下就停了。', '{O}旁的毛巾叠得整齐，没有用过。', '拧开{O}的水——水声在空屋里格外响。'],
+    water: ['{O}的水面很平，倒映着手电的光。', '{O}底什么也没有，只有灯影。', '{O}边的水渍一路干到了墙根。', '水温与刻度对得上，没人动过阀门。'],
+    lanes: ['{O}的漆面光可鉴人，映出一道手电光。', '{O}停着，上一局的分数还挂在那里。', '{O}旁的球按号排好，一个不少。', '{O}上只有一道很旧的划痕。'],
+    art: ['{O}里的人看着门口，不看你。', '{O}的框背后只有挂钩和灰。', '凑近{O}：颜料的裂纹里没有新东西。', '{O}微微倾斜，挂钩却是牢的。', '手电下，{O}的颜色忽然变了，又变回去。'],
+    music: ['{O}合着盖，上面落着灰。', '按下一个键——声音在屋里转了一圈。', '{O}的弦都在，调子却低了半音。', '{O}旁的乐谱停在某一页，没有折角。'],
+    clock: ['{O}还在走，和别处的钟差了几分钟。', '{O}的摆停在一侧——它停在{T}。', '{O}的指针一格一格地走，不快不慢。', '{O}的钥匙孔里没有钥匙。'],
+    instrument: ['{O}的刻度停在一个没有意义的位置。', '{O}擦得很亮，镜筒里只有灰。', '{O}摆在原位，角度分毫不差。'],
+    mirror: ['{O}里只有你和你的手电。', '{O}擦得太亮，一个指印都没有。', '侧光照过{O}：只有一层薄雾。', '{O}的银背边缘起了细斑，是旧的。'],
+    window: ['{O}后面没有天光，只有一层背光。', '{O}的缝塞得死死的，一线风都没有。', '{O}上凝着薄雾，没有字，没有手印。', '{O}外什么也看不见。'],
+    lamp: ['{O}亮着，灯罩是凉的——它一直这么亮。', '{O}的光晕里浮着细尘。', '{O}微微晃了一下。没有风。', '{O}的灯座积着一层匀匀的灰。'],
+    plant: ['{O}的叶上挂着水珠，是滴灌留下的。', '{O}落了一片花瓣，边缘已经卷了。', '{O}的香气很重，盖住了别的味道。', '{O}下的泥土松软，只有园艺铲的齿痕。'],
+    book: ['{O}合着，夹着一根旧书签。', '翻开{O}——一页页都空着。', '{O}上一本书略微凸出。推回去，严丝合缝。', '{O}散着旧纸与墨的气味。', '{O}上的灰被一本书的形状打断——书都在。'],
+    game: ['{O}的残局停在中盘，谁也没赢。', '{O}摆得整整齐齐，像没开过局。', '{O}旁边少了一枚？数了两遍，没少。', '{O}摸上去是凉的，很久没人碰了。'],
+    tool: ['{O}挂在原处，刃口干净，没有新磕碰。', '{O}位置上的灰尘轮廓与它严丝合缝。', '{O}收得整整齐齐，一件不少。', '{O}上一层薄油，防锈的。', '掂了掂{O}，又放回原处。'],
+    machine: ['{O}没在运转，按钮上的灰没有断。', '{O}低低嗡了一声，又安静下来。', '打开{O}——空的，只有一股冷气。', '{O}的指示灯一明一暗，像在呼吸。', '{O}的门缝里什么也没夹。'],
+    vessel: ['{O}是空的，壁上没有一点水痕。', '{O}里剩着冷掉的茶，结了一层膜。', '{O}倒扣着，底下一圈干净的印子。', '{O}擦得锃亮，映出一张变形的脸。', '轻敲{O}——声音清脆，没有裂。', '{O}里的水还满着，落了一点灰。'],
+    exhibit: ['{O}的眼睛在手电下亮了一下。', '{O}的底座积着一层匀匀的灰。', '{O}的影子在墙上被拉得很长。', '{O}静静立着，什么也不肯说。', '凑近{O}：标签上的字已经褪色。',
+      '绕着{O}走了一圈，没有一处新痕。', '{O}比看上去更冷，像刚从地下取出来。', '{O}的位置与地上的旧印分毫不差。'],
+    fixture: ['{O}摸上去冰凉，没有手印。', '{O}好好的，没有撬过、碰过的痕迹。', '{O}纹丝不动，和别处的一样。', '{O}在手电下反着光，干干净净。'],
+    coin: ['{O}码得整整齐齐，一枚不少。', '{O}两面都是一百。数了一遍，没人动过。', '{O}在手电下泛着暗光。'],
+    cabinet: ['{O}的门虚掩着，里面码得整齐。', '拉开{O}的抽屉：空的，只有木香。', '{O}顶上的灰很匀，没人够上去过。', '{O}的把手是凉的，没有手印。', '{O}空着一格——那一格本来就空。', '{O}的锁孔里没有钥匙，也不需要。'],
+    table: ['{O}上什么也没有，映着手电的光。', '{O}上一圈杯底的水印，早就干了。', '{O}的抽屉里只有一张空白的纸。', '{O}被挪过？不，地上的压痕是旧的。', '{O}的漆面有一道细长的旧划痕。', '{O}上的东西都在原处，像一幅静物。'],
+    seat: ['{O}的坐垫还鼓着，没人坐过。', '{O}的扶手上搭着一条叠好的披肩。', '{O}底下什么也没有。', '{O}朝着门，像有人在这里等过谁。', '{O}偏了一点角度。地上的压痕是旧的。'],
+    thing: ['{O}在原处，看不出被动过。', '{O}上只有灰。', '{O}，没有异样。', '看了很久。{O}就只是{O}。'],
+  }
+  // 氛围细节：接在描写后面（{M} 为本房间的氛围句，每间房一局只用一次）
+  const DECOY_DETAIL = [
+    '空气里一股淡淡的沉香味。', '远处有钟在走。', '灰尘落得很匀，没有指痕。', '脚下的玉面冰凉。', '门外好像有脚步声，停了。',
+    '手电闪了一下，又稳住了。', '这里比走廊冷一点。', '墙后一声闷响，再没有了。', '一根头发也没有，干净得过分。', '你听见自己的心跳。',
+    '香味散得很快，像刚有人路过。', '地面映着灯光，没有一个脚印。', '安静得能听见灰落下来。', '窗光不动，日影也不动。', '有一瞬间，像有人在背后。',
+  ]
+  // 疑似线索：先看见可疑的东西，细看之后无害
+  const HERRINGS = [
+    ['{O}边沿一抹暗红。', '凑近闻——是干掉的葡萄酒。'],
+    ['{O}下压着一根长发。', '颜色对上了：是死者自己的。'],
+    ['一道拖痕，从{O}延伸到墙边。', '挪动{O}留下的旧痕，积着灰。'],
+    ['{O}后面塞着一团揉皱的纸。', '展开：一张空白的便笺。'],
+    ['{O}旁躺着一枚金币。', '两面都是一百——谁都可能掉。'],
+    ['{O}上一圈湿痕。', '杯底的水印，几个钟头前就在了。'],
+    ['{O}脚下滚着一枚纽扣。', '线头早就朽了，是旧物上掉的。'],
+    ['{O}上的灰被抹掉一块。', '圆形的——放过一只杯子。'],
+    ['空气里一股刺鼻的味道。', '是{O}新上的蜡。'],
+    ['{O}缝里卡着一片碎玻璃。', '边缘早已磨圆，是很久以前的。'],
+    ['{O}后面一枚黄铜钥匙。', '是装饰件，打不开任何门。'],
+    ['{O}上三道细长的划痕。', '划痕里积着旧灰，早于今天。'],
+    ['{O}下一小撮白色粉末。', '捻开，是爽身粉。'],
+    ['{O}底下压着半张撕下的纸。', '上面只有一行乐谱。'],
+  ]
+  // 验尸：按死因
+  const BODY_TEXT = {
+    stab: ['衣襟被血浸透，伤口边缘整齐。', '伤口不止一处，血已经发暗。', '身下一摊血，还留着倒下时的弧度。'],
+    blunt: ['后脑塌陷，发间结着血块。', '额角重重一击，地上溅着细小的血点。', '一侧肋骨摸上去是断的。'],
+    strangle: ['颈上一圈瘀紫，指痕叠着指痕。', '眼睑里布满针尖大的红点。', '领口被扯开，颈侧发青。'],
+    smother: ['口鼻周围一圈压痕，唇色发绀。', '脸上没有伤，只有鼻梁一道浅压印。', '指甲里嵌着细小的织物纤维。'],
+    poison: ['嘴角干着一线白沫，指甲发青。', '身旁倒着一只杯子，杯底还剩一口。', '死前抓过胸口，衣扣崩了一颗。'],
+    drown: ['衣服湿透，口鼻一圈细白泡沫。', '指甲缝里有池壁的滑腻。', '头发湿贴在脸上，水还在往下滴。'],
+    fall: ['四肢扭成不自然的角度，头先着地。', '断骨顶起了袖管。', '身下的地面裂开一道细纹。'],
+    door: ['肩胸一道笔直的压痕，像被门扇夹住。', '身旁那扇门锁死了，推不动。', '手指伸向门缝，指甲劈了。'],
+    alcohol: ['浓重的酒气，仰面，口鼻有呕吐物。', '身旁一只倒空的酒瓶。', '脸色紫红，衣襟上一片酒渍。'],
+  }
+  // 发现线索时的动作（无主语：玩家与旁观时的调查者都能用）
+  const CLUE_LEAD = {
+    room: ['手电压低，贴着地面扫过去——', '蹲下，侧过光——', '指尖拂过，停住了——', '换个角度再看一眼——', '屏住呼吸，凑近——'],
+    body: ['翻过死者的手腕——', '俯身，屏住呼吸——', '掀开死者的衣角——', '拨开死者的头发——'],
+    away: ['痕迹通向{TO}——', '顺着痕迹，一路走到{TO}——', '{TO}里，它就在那儿——', '追到{TO}，门虚掩着——'],
+  }
+  // 从一组里取一句本局没用过的（用尽才重来）
+  function flavorPick(g, rr, tag, list) {
+    const used = g.flavorUsed || (g.flavorUsed = {})
+    const set = used[tag] || (used[tag] = [])
+    let free = list.map((_, i) => i).filter(i => !set.includes(i))
+    if (!free.length) { set.length = 0; free = list.map((_, i) => i) }
+    const i = free[Math.floor(rr() * free.length)]
+    set.push(i)
+    return list[i]
+  }
+  const fillO = (s, o) => s.split('{O}').join(o)
+  function decoyText(g, c, rr, object) {
+    const kind = flavorKind(object)
+    const seen = g.flavorSeen || (g.flavorSeen = new Set())
+    let text = ''
+    // 同一件陈设（同一间房再次成为现场）不说同一句；本类用尽时借用通用的说法
+    for (let n = 0; n < 8 && (!text || seen.has(text)); n++) {
+      const list = n < 6 ? DECOY_TEXT[kind] || DECOY_TEXT.thing : DECOY_TEXT.thing
+      text = fillO(flavorPick(g, rr, 'd:' + (n < 6 ? kind : 'thing'), list), object)
+    }
+    seen.add(text)
+    if (text.includes('{T}')) {
+      const t = ((c.tDiscover + 200 + Math.floor(rr() * 700)) % 1440 + 1440) % 1440
+      text = text.split('{T}').join(String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'))
+    }
+    let detail = ''
+    const moodKey = 'm:' + c.roomInfo.floor + c.roomInfo.name
+    const used = g.flavorUsed || (g.flavorUsed = {})
+    if (c.roomInfo.mood && !used[moodKey] && rr() < 0.35) { used[moodKey] = [1]; detail = c.roomInfo.mood + '。' }
+    else if (rr() < 0.5) detail = flavorPick(g, rr, 'detail', DECOY_DETAIL)
+    return { kind, text, detail }
+  }
+
   /* ---------- 现场热点与耗时（洋馆物理层 8.3） ---------- */
   const DECOY_WORDS = ['如常', '无痕', '没有异样', '干净', '空']
   function buildSpots(g, c) {
@@ -390,15 +516,30 @@
     const jit = () => randInt(g.r, -1, 2)
     // 每处细查五到二十分钟：检查尸体约 5—15 分钟（医护者更快），细查痕迹数分钟，追到别的房间另加步行与粗搜
     const cost = n => Math.min(20, Math.max(5, n))
+    const rr = subRng(g, c.no * 7919 + 13)
     const spots = []
-    spots.push({ id: 'body', kind: 'body', cost: cost((med === '有' ? 8 : med === '战场急救' ? 10 : 13) + jit()), done: false })
+    spots.push({ id: 'body', kind: 'body', cost: cost((med === '有' ? 8 : med === '战场急救' ? 10 : 13) + jit()), done: false,
+      obs: flavorPick(g, rr, 'b:' + c.cause.id, BODY_TEXT[c.cause.id] || ['']) })
     for (const k of c.clues) {
       let n = k.place === 'away' ? 18 : k.place === 'body' ? 8 : 7
       if (obs === '擅长' && k.place !== 'away') n -= 2
-      spots.push({ id: k.id, kind: 'clue', clue: k, cost: cost(n + jit()), done: false })
+      const lead = flavorPick(g, rr, 'l:' + k.place, CLUE_LEAD[k.place] || CLUE_LEAD.room).split('{TO}').join(k.awayTo || '门外')
+      spots.push({ id: k.id, kind: 'clue', clue: k, cost: cost(n + jit()), done: false, lead })
     }
     const objs = shuffle(g.r, (c.roomInfo.objects || []).slice())
-    objs.slice(0, 2).forEach((o, i) => spots.push({ id: 'd' + i, kind: 'decoy', object: o, word: pick(g.r, DECOY_WORDS), cost: cost(6 + jit()), done: false }))
+    // 诱饵点：两到三处陈设，各有具体的描写；每案至多一处「疑似线索」
+    const nDecoy = objs.length >= 4 ? 3 : Math.min(2, objs.length)
+    const herringAt = rr() < 0.6 ? Math.floor(rr() * nDecoy) : -1
+    objs.slice(0, nDecoy).forEach((o, i) => {
+      const d = decoyText(g, c, rr, o)
+      const s = { id: 'd' + i, kind: 'decoy', object: o, word: pick(g.r, DECOY_WORDS), cost: cost(6 + jit()), done: false, flavor: d.kind, desc: d.text, detail: d.detail }
+      if (i === herringAt) {
+        const h = flavorPick(g, rr, 'herring', HERRINGS)
+        s.herring = { bait: fillO(h[0], o), truth: fillO(h[1], o) }
+        s.cost = cost(s.cost + 2)
+      }
+      spots.push(s)
+    })
     c.spots = spots
     return spots
   }
@@ -408,29 +549,35 @@
     for (const s of st) if (minutesSince >= s.minutes) cur = s
     return cur.text
   }
-  // 玩家细查一处：消耗馆内时间，返回所得
-  function inspect(g, c, spotId) {
+  // 细查一处：消耗馆内时间，返回所得。by：调查者（缺省为玩家；旁观时为代为调查的人）
+  function inspect(g, c, spotId, by) {
     const s = c.spots.find(x => x.id === spotId)
     if (!s || s.done) return null
     s.done = true
+    const who = by || g.player
     const cost = Math.min(s.cost, Math.max(0, c.tCourt - g.minutes))
     g.minutes += cost
-    const out = { spot: s, cost }
+    const out = { spot: s, cost, by: who }
     if (s.kind === 'body') {
       c.bodySeen = true
-      const pc = charOf(g, g.player)
+      const pc = charOf(g, who)
       const since = g.minutes - c.tMurder
       out.cause = c.cause
       out.stage = bodyStage(g, since)
+      out.obs = s.obs || ''
       if (pc && pc.stats.medical === '有') {
         const a = c.tMurder - randInt(g.r, 30, 75), b = c.tMurder + randInt(g.r, 30, 75)
         out.window = [a, b]
       }
     } else if (s.kind === 'clue') {
-      s.clue.foundBy = g.player
+      s.clue.foundBy = who
       out.clue = s.clue
+      out.lead = s.lead || ''
     } else {
       out.word = s.word
+      out.desc = s.desc || s.object
+      out.detail = s.detail || ''
+      out.herring = s.herring || null
     }
     return out
   }
@@ -438,6 +585,94 @@
     g.minutes = Math.min(c.tCourt, g.minutes + minutes)
     return c.tCourt - g.minutes
   }
+  /* ---------- 去向：案发时每人在哪、对外怎么说（不在场陈述） ----------
+     无辜者照实说（连同同在一处的人）；凶手若亲手行凶，就说自己在别处、且没有同伴——
+     他说的那间房里若真有人，那人就能拆穿他。下毒与关门不必在场，凶手照实说。
+     只用子随机数（subRng），不消耗 g.r。 */
+  function buildWhere(g, c) {
+    const rr = subRng(g, c.no * 104729 + 31)
+    const L = g.data.lore.rooms || {}
+    const all = Object.keys(L).map(k => L[k])
+    const crime = c.roomInfo.name
+    const common = all.filter(x => x.crimeScene && !/套房/.test(x.name) && x.name !== crime)
+    const suiteOf = id => { const r = all.find(x => x.name === P(g, id).seat + '号套房'); return r && r.name !== crime ? r : null }
+    const lying = !['poison', 'door'].includes(c.cause.id)
+    const people = livingIds(g).filter(id => !(lying && id === c.murderer))
+    const where = {}
+    const taken = []
+    for (const id of shuffle(rr, people)) {
+      const walk = charOf(g, id).canWalk !== false
+      const own = suiteOf(id)
+      let room = null
+      if (walk && taken.length && rr() < 0.3) room = taken[Math.floor(rr() * taken.length)]
+      else if (own && rr() < (walk ? 0.38 : 0.75)) room = own
+      else {
+        const near = walk ? common : common.filter(x => own && x.floor === own.floor)
+        const pool = near.length ? near : common
+        room = pool[Math.floor(rr() * pool.length)] || own
+      }
+      if (!room) continue
+      where[id] = { room: room.name, floor: room.floor }
+      taken.push(room)
+    }
+    for (const id in where) {
+      where[id].with = Object.keys(where).filter(o => o !== id && where[o].room === where[id].room)
+      where[id].claim = { room: where[id].room, with: where[id].with.slice() }
+      where[id].lie = false
+    }
+    if (lying && isLiving(g, c.murderer)) {
+      const m = c.murderer
+      const occupied = Array.from(new Set(Object.values(where).map(w => w.room)))
+      const own = suiteOf(m)
+      const x = rr()
+      let lie
+      if (x < 0.5 && occupied.length) lie = occupied[Math.floor(rr() * occupied.length)]
+      else if (x < 0.8 && own) lie = own.name
+      else {
+        const free = common.filter(r => !occupied.includes(r.name))
+        lie = (free.length ? free[Math.floor(rr() * free.length)] : common[Math.floor(rr() * common.length)] || { name: '走廊' }).name
+      }
+      where[m] = { room: crime, floor: c.roomInfo.floor, with: [], claim: { room: lie, with: [] }, lie: true }
+    }
+    c.where = where
+    // 大家被问到的那个时刻：案发前后，取整到十分钟
+    c.tAlibi = Math.round((c.tMurder + Math.floor(rr() * 31) - 15) / 10) * 10
+    c.asked = []
+    c.known = []
+    return where
+  }
+  // a 说自己在某处；w 当时真在那里，却没和 a 在一起 → w 能拆穿 a
+  function contradicts(c, a, w) {
+    const A = c && c.where && c.where[a], W = c && c.where && c.where[w]
+    if (!A || !W || a === w) return false
+    return W.room === A.claim.room && !W.with.includes(a)
+  }
+  // 玩家在调查期询问一人：他照自己的说法交代去向；花费调查时间。与玩家所知相矛盾的说法被记下
+  function interviewCost(g, id) {
+    const pc = charOf(g, g.player), t = charOf(g, id)
+    return 6 + (pc && pc.stats.readsPeople === '是' ? 0 : 2) + (t && t.stats.suspicion === '重' ? 2 : 0)
+  }
+  function interview(g, c, id) {
+    if (!c.where || !c.where[id] || !g.player || id === g.player || !isLiving(g, id) || !isLiving(g, g.player)) return null
+    if (c.asked.includes(id)) return null
+    const left = Math.max(0, c.tCourt - g.minutes)
+    if (left <= 0) return null
+    const cost = Math.min(left, interviewCost(g, id))
+    g.minutes += cost
+    const w = c.where[id]
+    const found = []
+    const note = (liar, witness) => {
+      if (!c.known.some(k => k.liar === liar && k.witness === witness)) { const k = { liar, witness }; c.known.push(k); found.push(k) }
+    }
+    if (contradicts(c, id, g.player)) note(id, g.player)
+    for (const b of c.asked) {
+      if (contradicts(c, id, b)) note(id, b)
+      if (contradicts(c, b, id)) note(b, id)
+    }
+    c.asked.push(id)
+    return { id, room: w.claim.room, with: w.claim.with.slice(), time: c.tAlibi, cost, conflicts: found }
+  }
+
 
   /* ---------- 调查期内 AI 的秘密能力（不广播；条文规定的私人通知照常送达） ---------- */
   function aiInvestigation(g, c) {
@@ -557,6 +792,7 @@
       used: { hanged: {}, silencer: {}, puffer: {} },
       knownMurderer: null, accuse: {}, noise: {}, puffInfo: {}, decoy: null,
       queue: [], votes: 0, vote: null, log: [],
+      agree: {}, doubt: {}, exposed: {}, claimed: {}, lastMode: null,
     }
     for (const a of livingIds(g)) {
       const ch = charOf(g, a)
@@ -578,6 +814,10 @@
     let s = matches(g, T.case, t) + ((T.noise[a] && T.noise[a][t]) || 0)
     const by = (T.accuse[t] || []).filter(x => x !== a)
     s += 0.32 * by.length
+    // 旁人的附议与质疑、被当众拆穿的谎
+    if (T.agree) s += 0.15 * (T.agree[t] || []).filter(x => x !== a).length
+    if (T.doubt) s -= 0.12 * (T.doubt[t] || []).filter(x => x !== a).length
+    if (T.exposed && T.exposed[t]) s += 1.6
     const pi = T.puffInfo[a]
     if (pi) {
       const nb = neighborsOf(g, pi.seat)
@@ -970,11 +1210,78 @@
     } else if (top && top.s > 0.5 && chance(g.r, ACCUSE_P[ch.stats.suspicion] || 0.45)) {
       out.kind = 'accuse'; out.target = top.t
     }
+    // 指认时手里有相符的证据就出示；不指认时，发言在一般看法、交代去向、谈线索、保留之间轮换
+    if (out.kind === 'accuse') out.clue = clueFor(g, T, id, out.target, false)
+    else {
+      out.say = speechMode(g, T, id)
+      if (out.say === 'clue') out.clue = pick(g.r, ownClues(T, id))
+    }
     return out
   }
   function recordAccuse(T, accuser, target) {
     if (!T.accuse[target]) T.accuse[target] = []
     if (!T.accuse[target].includes(accuser)) T.accuse[target].push(accuser)
+  }
+  const clueInfo = k => (k ? { id: k.id, name: k.name, label: k.label, tpl: k.tpl, text: k.text } : null)
+  const ownClues = (T, id) => (T.case.clues || []).filter(k => k.foundBy === id)
+  const canAlibi = (T, id) => !!(T.case.where && T.case.where[id]) && !T.claimed[id]
+  // 能对 target 出示的证据：已发现、且与 target 相符；先用自己找到的。mine：玩家（证物栏里的都算他手里的）
+  function clueFor(g, T, id, target, mine) {
+    const ch = charOf(g, target)
+    const ks = (T.case.clues || []).filter(k => k.foundBy && pred(k.predicate)(ch))
+    if (!ks.length) return null
+    const own = ks.filter(k => k.foundBy === id)
+    if (own.length) return pick(g.r, own)
+    return mine || chance(g.r, 0.45) ? pick(g.r, ks) : null
+  }
+  function speechMode(g, T, id) {
+    const opts = [{ v: 'statement', w: 4.4 }, { v: 'silent', w: 0.9 }]
+    if (canAlibi(T, id)) opts.push({ v: 'alibi', w: id === T.murderer ? 1.4 : 2.4 })
+    if (ownClues(T, id).length) opts.push({ v: 'clue', w: 2.4 })
+    for (const o of opts) if (o.v === T.lastMode) o.w *= 0.3
+    return weighted(g.r, opts)
+  }
+  // 被指认者怎么回应：辩解、反咬指认者、或交代去向（凶手更爱反咬；怀疑指认者的人也会反咬）
+  function aiRespond(g, T, id, accuser) {
+    if (T.knownMurderer === id) return chance(g.r, 0.5) ? 'counter' : 'defend'
+    const opts = []
+    if (id === T.murderer) opts.push({ v: 'counter', w: 4.5 }, { v: 'defend', w: 2 })
+    else {
+      const rk = ranked(g, T, id, livingIds(g))
+      const w = rk.length && rk[0].t === accuser ? 4 : suspicion(g, T, id, accuser) > 1 ? 2.2 : 0.8
+      opts.push({ v: 'counter', w }, { v: 'defend', w: 3 })
+    }
+    if (canAlibi(T, id)) opts.push({ v: 'alibi', w: 3.2 })
+    return weighted(g.r, opts)
+  }
+  // 指认之后旁人插话：0—2 人附议或质疑。嫌疑越重越容易被附议；凶手乐于附和别人对旁人的指认；恋人护着对方
+  function aiInterject(g, T, accuser, target) {
+    const pool = livingIds(g).filter(x => x !== accuser && x !== target && x !== g.player)
+    if (!pool.length) return []
+    const n = weighted(g.r, [{ v: 0, w: 3 }, { v: 1, w: 4.6 }, { v: 2, w: 2.4 }])
+    if (!n) return []
+    const cands = []
+    const nTarget = matches(g, T.case, target)
+    for (const a of pool) {
+      let stance = null, w = 0
+      if (T.knownMurderer === target) { stance = 'agree'; w = 1 }
+      else if (P(g, a).lover === target) { stance = 'doubt'; w = 2.5 }
+      else if (a === T.murderer) { stance = 'agree'; w = 1.6 + 0.4 * nTarget }
+      else {
+        const rk = ranked(g, T, a, livingIds(g))
+        const sT = suspicion(g, T, a, target), top = rk.length ? rk[0].s : 0
+        if (sT >= top - 0.6 && sT > 0.3) { stance = 'agree'; w = 0.7 + (sT - top + 0.6) + 0.4 * nTarget }
+        else if (sT < top - 0.8) { stance = 'doubt'; w = Math.min(2.2, 0.5 + (top - sT) * 0.45) }
+      }
+      if (stance) cands.push({ v: { speaker: a, stance }, w })
+    }
+    const out = []
+    while (out.length < n && cands.length) {
+      const v = weighted(g.r, cands)
+      out.push(v)
+      cands.splice(cands.findIndex(x => x.v === v), 1)
+    }
+    return out
   }
 
   /* ==========================================================
@@ -1068,6 +1375,56 @@
       return T.ended ? 'ended' : 'revote'
     }
 
+    // ---- 辩论的节拍 ----
+    // 交代去向；说法与某个在场者的真实去向相矛盾时，那人当众拆穿
+    function* alibiFlow(id, response) {
+      const w = c.where[id]
+      T.claimed[id] = true
+      tick(1)
+      yield { type: 'alibi', speaker: id, room: w.claim.room, time: c.tAlibi, with: w.claim.with.filter(x => isLiving(g, x)), response: !!response }
+      if (T.exposed[id] || T.ended) return
+      const wits = livingIds(g).filter(x => contradicts(c, id, x) && P(g, x).lover !== id)
+      if (!wits.length) return
+      const wit = wits.includes(g.player) ? g.player : pick(g.r, wits)
+      if (wit !== g.player && !chance(g.r, 0.85)) return
+      yield* exposeFlow(wit, id)
+    }
+    function* exposeFlow(wit, liar) {
+      if (T.exposed[liar] || !isLiving(g, wit) || !isLiving(g, liar)) return
+      T.exposed[liar] = wit
+      const w = c.where[liar]
+      tick(1)
+      yield { type: 'expose', speaker: wit, target: liar, room: w ? w.claim.room : '', time: c.tAlibi, truth: c.where[wit] ? c.where[wit].room : '' }
+    }
+    // 指认 → 旁人插话 → 被指认者回应（辩解 / 反咬 / 交代去向）→（玩家调查时问出的矛盾）当众拆穿
+    function* exchange(speaker, target, clue) {
+      recordAccuse(T, speaker, target)
+      tick(2)
+      yield { type: 'accuse', speaker, target, clue: clueInfo(clue) }
+      for (const v of aiInterject(g, T, speaker, target)) {
+        if (!isLiving(g, v.speaker)) continue
+        const book = v.stance === 'agree' ? T.agree : T.doubt
+        ;(book[target] || (book[target] = [])).push(v.speaker)
+        yield { type: 'interject', speaker: v.speaker, stance: v.stance, target, accuser: speaker }
+      }
+      if (!isLiving(g, target)) return
+      let kind
+      if (target === g.player) {
+        const a = yield { type: 'ask-respond', speaker: target, against: speaker, canAlibi: canAlibi(T, target) }
+        kind = a && a.kind
+      } else kind = aiRespond(g, T, target, speaker)
+      tick(1)
+      if (kind === 'counter' && isLiving(g, speaker)) {
+        recordAccuse(T, target, speaker)
+        yield { type: 'counter', speaker: target, target: speaker }
+      } else if (kind === 'alibi' && canAlibi(T, target)) yield* alibiFlow(target, true)
+      else yield { type: 'defend', speaker: target, against: speaker }
+      if (speaker === g.player && !T.exposed[target]) {
+        const k = (c.known || []).find(x => x.liar === target && isLiving(g, x.witness))
+        if (k) yield* exposeFlow(k.witness, target)
+      }
+    }
+
     // ---- 辩论：从一号席起，在席的人依次各发言一次 ----
     T.phase = 'debate'
     const order = livingIds(g)
@@ -1081,28 +1438,29 @@
         // 轮到玩家：可以先发动辩论能力（发动后仍轮到他发言），再指认或沉默
         let act = null, n = 0
         while (n++ < 8) {
-          act = yield { type: 'ask-debate', speaker: id }
+          act = yield { type: 'ask-debate', speaker: id, canAlibi: canAlibi(T, id) }
           yield* checkpoint()
           if (!act || act.kind !== 'ability' || T.ended || T.phase !== 'debate' || !isLiving(g, id)) break
         }
         if (T.ended || T.phase !== 'debate' || !isLiving(g, id)) break
         if (act && act.kind === 'accuse' && isLiving(g, act.target) && act.target !== id) {
-          recordAccuse(T, id, act.target)
-          tick(2)
-          yield { type: 'accuse', speaker: id, target: act.target }
-          yield { type: 'defend', speaker: act.target, against: id }
+          yield* exchange(id, act.target, clueFor(g, T, id, act.target, true))
+        } else if (act && act.kind === 'alibi' && canAlibi(T, id)) {
+          T.lastMode = 'alibi'
+          yield* alibiFlow(id, false)
         } else {
           tick(1)
           yield { type: 'silent', speaker: id }
         }
       } else {
         const d = aiDebate(g, T, id)
-        tick(2)
-        if (d.kind === 'accuse' && d.target) {
-          recordAccuse(T, id, d.target)
-          yield { type: 'accuse', speaker: id, target: d.target }
-          yield { type: 'defend', speaker: d.target, against: id }
-        } else yield { type: 'speech', speaker: id }
+        if (d.kind === 'accuse' && d.target) yield* exchange(id, d.target, d.clue)
+        else {
+          T.lastMode = d.say || 'statement'
+          if (d.say === 'alibi' && canAlibi(T, id)) yield* alibiFlow(id, false)
+          else if (d.say === 'silent') { tick(1); yield { type: 'silent', speaker: id } }
+          else { tick(2); yield { type: 'speech', speaker: id, mode: d.say === 'clue' && d.clue ? 'clue' : 'statement', clue: d.say === 'clue' ? clueInfo(d.clue) : null } }
+        }
         if (d.ability && d.ability.type === 'knight') {
           const r = knight(g, T, id, d.ability.target)
           if (r) { tick(3); yield Object.assign({ type: 'knight' }, r) }
@@ -1164,8 +1522,9 @@
       if (onEvent) onEvent(value)
       if (value.type === 'ask-debate') {
         const d = aiDebate(g, T, value.speaker)
-        input = d.kind === 'accuse' ? { kind: 'accuse', target: d.target } : { kind: 'silent' }
-      } else if (value.type === 'ask-vote') input = value.forced || aiBallot(g, T, value.vote, value.voter)
+        input = d.kind === 'accuse' ? { kind: 'accuse', target: d.target } : d.say === 'alibi' && value.canAlibi ? { kind: 'alibi' } : { kind: 'silent' }
+      } else if (value.type === 'ask-respond') input = { kind: aiRespond(g, T, value.speaker, value.against) }
+      else if (value.type === 'ask-vote') input = value.forced || aiBallot(g, T, value.vote, value.voter)
       else if (value.type === 'ask-idiot') input = aiIdiot(g, T, value.pending)
       else if (value.type === 'ask-hope') input = aiHope(g, T, value.holder, value.pending)
     }
@@ -1198,6 +1557,7 @@
     version: 1, ID, LABELS,
     rng, pred, tally,
     create, newCase, buildClues, buildSpots, bodyStage, inspect, spend, aiInvestigation,
+    buildWhere, contradicts, interview, interviewCost, flavorKind, aiRespond, aiInterject, clueFor,
     fortune, shapeshift, magic, cupid,
     courtOpen, openTrial, knownClues, matches, testClue, suspicion,
     knight, silence, pufferChoose, puffer, canUse, request,
