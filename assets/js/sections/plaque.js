@@ -2,7 +2,9 @@
    铜牌 · plaque —— 价目铜牌与 150 枚金币
    · 铜牌：穹顶议事厅东墙南段（洋馆物理层 §6.2）。深烟褐的青铜牌面，凹刻文字嵌铂金，
      古沉香窄框、羊脂白玉细边，框面突出墙面 5 cm。刻的就是《价目表》「兑换方式」与
-     第一到第六节的原文（WORLD.prices），分三栏，「六、离场」独占最底一条。
+     第 1 到第 6 节的原文（WORLD.prices.how / chapters；章名「1. 食物」由 build-data 写成「一、食物」），
+     分三栏，「六、离场」独占最底一条。第 10 节牌外价目（WORLD.prices.offPlaque）与「不成立」的兑换
+     （WORLD.prices.void）不刻在牌上。
      光标是一束掠射的光：牌面高光、拉丝反光、框的投影与每一行刻字的阴阳边随光源方位实时变化。
    · 理币盘：收纳台白玉台面上的白玉理币盘，十五摞 × 十枚，整列居中（Canvas 2D 简易透视）。
      点一摞取一枚，金币带着拖影飞进右下角「你的钱袋」。
@@ -307,7 +309,7 @@
     }
     E.orn = U.el('div.plaque-orn', { 'aria-hidden': 'true' }, [U.el('i'), U.el('b'), U.el('i')])
 
-    // 兑换方式 + 第一到第五节，分三栏
+    // 兑换方式 + 第 1 到第 5 节，分三栏
     const how = U.el('div.plaque-blk.plaque-how')
     how.appendChild(reg(U.el('h3.plaque-h.plaque-eng.plaque-reveal', { text: '兑换方式' }), 1.3))
     for (const t of HOW) how.appendChild(reg(U.el('p.plaque-p.plaque-eng.plaque-reveal', { text: t }), 1))

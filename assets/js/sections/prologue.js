@@ -1,8 +1,10 @@
 /* ==========================================================
    醒来 · prologue —— 网站的第一屏
    眼睑睁开后：从穹顶正上方俯视圆桌，十五把乌木扶手椅，光源就是光标。
-   17:01 起按席位分五批醒来（《开局配置》§3）；滚动时镜头倾斜、圆桌后退、编号逐一亮起，
-   整个议事厅沉入黑暗，一把黄铜钥匙从钥匙龛落下，带进洋馆。
+   十五个人在 17:05 之前陆续醒来，先后每次随机（《洋馆物理层》§9：谁先谁后由演出者安排）；
+   滚动时镜头倾斜、圆桌后退，整个议事厅沉入黑暗，一把黄铜钥匙从钥匙龛落下。号牌开局是空白的：
+   钥匙落地、人人手里都有了钥匙的那一拍，十五枚同时无声地现出号码（§6.2；《主持人游戏》§1），
+   随后连同眼睛一起没入黑暗，钥匙带进洋馆。
 
    本文件同时提供 App.domeHall：穹顶议事厅的 Canvas 渲染器（终章 wish 复用同一张圆桌）。
    几何依据《洋馆物理层》§1.1 §6.2 §9（单位米；原点在桌心，x 向东，y 向北，z 向上）：
@@ -11,6 +13,8 @@
      1 号正北、顺时针；墙上十五幅窄长丝绸织纹屏与座椅节奏相应；北墙两座水晶罩柜与石英挂钟；
      中央悬一盏直径 2.4 m 的无色水晶灯；西侧沉香侧案；
      东侧收纳台 x 7.45–8.10、y −4.0–−1.6，台面 1.05，钥匙龛离地 1.12–1.76（上排 1–8，下排 9–15），
+     台面前部中央一只白玉理币盘（长 0.9、宽 0.16，长轴南北向，前沿距台面西缘 0.1），
+     十五摞金币沿长轴排成一列（每摞直径 26.5 mm，相邻两摞边缘相距 2.8 cm，整列居中）；
      其南侧墙面嵌价目铜牌。
    ========================================================== */
 (function () {
@@ -246,6 +250,8 @@
       rim: [222, 176, 108],        // 黑影的黄铜轮廓光
       silhouette: [9, 8, 8],
       motes: 70,
+      blankNums: false,            // true：号牌未现出（lit = 0）时牌面空白（醒来）；false：未点亮的编号暗着可见（终章）
+      tray: 15,                    // 理币盘里还剩几摞（终章 0：开局各取一摞，盘早空了）
     }, opts)
 
     const S = {
@@ -265,6 +271,8 @@
       dark: 0,          // 全局沉入黑暗 0–1
       ribA: 1,          // 肋拱
       numA: 1,          // 编号
+      numDarkA: 0,      // 沉入黑暗后仍看得见的编号（画在黑幕之上；醒来时号码在黑暗里现出）
+      tray: o.tray,     // 理币盘里的摞数
       eyeA: 1,          // 眼睛
       wallA: 1,         // 墙与陈设
       poolA: 1,         // 光标光池
@@ -1318,9 +1326,10 @@
       S.eyeQ.push({ x: b[0], y: b[1], r: rr, rot, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover, sep })
     }
 
-    /* ---------- 椅背上的黄铜编号 ---------- */
-    function drawNumber(ctx, s, ex) {
-      const A = S.numA * S.floorA
+    /* ---------- 椅背上的黄铜编号 ----------
+       mul：额外的透明度（黑幕之上那一遍用）；blankNums 时未现出的号牌是空白的 */
+    function drawNumber(ctx, s, ex, mul) {
+      const A = S.numA * S.floorA * (mul == null ? 1 : mul) * (o.blankNums ? s.lit : 1)
       if (A <= 0.01) return
       const tau = sstep(0.3, 0.85, S.tilt)
       const sc = S.numScale
@@ -1463,13 +1472,23 @@
           ctx.globalAlpha = S.floorA * S.wallA
         }
       }
-      // 白玉理币盘：十五摞金币
-      for (let i = 0; i < 15; i++) {
-        const x = 7.62 + (i % 3) * 0.16, y = -3.55 + Math.floor(i / 3) * 0.42
-        const q = c.p(x, y, COUNTER.top + 0.05)
+      // 白玉理币盘（长 0.9、宽 0.16，长轴南北向，前沿距台面西缘 0.1）：十五摞金币沿长轴排成一列，整列居中。
+      // 每摞直径 26.5 mm、相邻两摞边缘相距 2.8 cm（摞距 5.45 cm）；画得比实物略大一点，免得缩成一个点
+      const tx0 = COUNTER.x0 + 0.1, tx1 = tx0 + 0.16, tyc = (COUNTER.y0 + COUNTER.y1) / 2, tz = COUNTER.top + 0.024
+      const tq = [c.p(tx0, tyc - 0.45, tz), c.p(tx1, tyc - 0.45, tz), c.p(tx1, tyc + 0.45, tz), c.p(tx0, tyc + 0.45, tz)]
+      if (tq[0] && tq[1] && tq[2] && tq[3]) {
+        ctx.fillStyle = shade([0.82, 0.8, 0.74], (tx0 + tx1) / 2, tyc, tz, 0, 0, 1, null, 2)
+        ctx.beginPath(); ctx.moveTo(tq[0][0], tq[0][1])
+        for (let i = 1; i < 4; i++) ctx.lineTo(tq[i][0], tq[i][1])
+        ctx.closePath(); ctx.fill()
+      }
+      const cx = (tx0 + tx1) / 2
+      for (let i = 0; i < S.tray; i++) {
+        const y = tyc + (i - 7) * 0.0545
+        const q = c.p(cx, y, tz + 0.018)
         if (!q) continue
-        ctx.fillStyle = shade([0.7, 0.52, 0.22], x, y, COUNTER.top + 0.05, 0, 0, 1, null, 3)
-        ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(0.8, 0.045 * q[3]), 0, TAU); ctx.fill()
+        ctx.fillStyle = shade([0.7, 0.52, 0.22], cx, y, tz + 0.018, 0, 0, 1, null, 3)
+        ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(0.8, 0.021 * q[3]), 0, TAU); ctx.fill()
       }
       ctx.globalAlpha = 1
     }
@@ -1884,6 +1903,8 @@
         ctx.fillStyle = '#050404'
         ctx.fillRect(0, 0, S.W, S.H)
         ctx.globalAlpha = 1
+        // 已现出的号码在黑暗里仍看得见（只补上被黑幕盖掉的那一部分）
+        if (S.numDarkA > 0.01) for (const s of S.seats) if (s.lit > 0.01) drawNumber(ctx, s, null, S.numDarkA * S.dark)
       }
       drawEyes(ctx)
       // 穹顶肋拱、水晶灯（离镜头最近）与眼眶在最上面：桌面版一起画进半分辨率缓冲、整屏只贴一次，
@@ -1914,7 +1935,7 @@
     function stateSig() {
       const L = S.light
       let v = S.lensOpen * 3.1 + S.poolA * 5.3 + S.dark * 7.7 + S.eyeA * 11.3 + S.beam.amt * 13.1 + S.wallA * 17.9 + S.chandA * 19.7 +
-        S.ribA * 23.3 + S.numA * 29.1 + S.lensA * 31.7 + S.keyGone * 37 + (S.beam.k + 1) * 43 + o.amb * 470 + S.glowA * 53 + S.floorA * 59 +
+        S.ribA * 23.3 + S.numA * 29.1 + S.numDarkA * 30.7 + S.tray * 7.3 + S.lensA * 31.7 + S.keyGone * 37 + (S.beam.k + 1) * 43 + o.amb * 470 + S.glowA * 53 + S.floorA * 59 +
         L.power * 61 + L.range * 67 + S.clock * 0.07 + S.hoverK * 71
       for (const s of S.seats) v += s.awake * 1.3 + s.eyes * 2.9 + s.lit * 4.1 + s.out * 6.7 + s.fall * 8.3 + s.gone * 9.7 + s.lamp * 12.1 + s.flash * 14.3 + s.hover * 16.9
       return v
@@ -1943,7 +1964,7 @@
       if (mv > 0.75) return true
       if (S.ripples.length || Math.abs(stateSig() - lastSig) > 1e-4) return true
       // 全黑、眼睛也闭上了：画面不再变化
-      if (S.dark >= 0.999 && S.eyeA <= 0.01) return false
+      if (S.dark >= 0.999 && S.eyeA <= 0.01 && S.numDarkA <= 0.01) return false
       return (now || performance.now()) - lastAt >= 26
     }
     /* ---------- 拾取与屏幕位置 ---------- */
@@ -1986,7 +2007,7 @@
   const domeHall = (App.domeHall = {
     create: createHall,
     G, COUNTER,
-    // 十五席上坐的人：App.state.seats 里有人就用他们，空位从 38 人中随机补齐（整页共用一份）
+    // 十五席上坐的人：App.state.seats 里有人就用他们，空位从卡池里随机补齐（整页共用一份）
     people() {
       const seats = (App.state.seats || []).slice(0, 15)
       while (seats.length < 15) seats.push(null)
@@ -2021,7 +2042,7 @@
 
   const P = {
     el: null, H: null, E: null, vis: false, started: false,
-    p: 0, ps: 0, lit: 0, mob: false,
+    p: 0, ps: 0, mob: false,
     ptrIn: false, touchUntil: 0, hoverK: -1, tagK: -1, tagUntil: 0, lineK: -1,
     zoom: 1.4, lv: 0, keyNo: 1, keyLanded: false, keyShown: false, lastKeyP: 0, whooshed: false, cueOn: false, wakeDone: false, gateOpen: false,
   }
@@ -2079,21 +2100,16 @@
     gsap.fromTo(E.clock, { x: -3 }, { x: 0, duration: 0.4, ease: 'expo.out' })
   }
 
-  function wakeSeat(s, i) {
+  function wakeSeat(s, v) {
     s.flash = 1
     P.H.ripple(s.k, s.acc)
     gsap.to(s, { eyes: 1, duration: 0.32, ease: 'power4.out', overwrite: 'auto' })
     gsap.to(s, { awake: 1, duration: App.reduced ? 0.4 : 2.2, ease: 'power3.inOut', delay: App.reduced ? 0 : 0.5 })
-    App.audio.sfx('tick', { volume: 0.55 + i * 0.1, pan: U.clamp(s.x / 3.2, -1, 1) * 0.8, pitch: 0.7 + s.k * 0.035 })
+    App.audio.sfx('tick', { volume: v, pan: U.clamp(s.x / 3.2, -1, 1) * 0.8, pitch: 0.7 + s.k * 0.035 })
   }
-  function wakeBatch(b) {
-    setClock(b + 1)
-    App.audio.sfx('drop', { volume: 0.5, pitch: 0.7 + b * 0.06 })
-    ;[b + 1, b + 6, b + 11].forEach((k, i) => {
-      const s = P.H.seats[k - 1]
-      if (App.reduced) wakeSeat(s, i)
-      else gsap.delayedCall(0.14 + i * 0.2, () => wakeSeat(s, i))
-    })
+  function tickMinute(m) {
+    setClock(m)
+    App.audio.sfx('drop', { volume: 0.32, pitch: 0.7 + m * 0.06 })
   }
 
   function revealTitle() {
@@ -2117,9 +2133,17 @@
     gsap.fromTo(H, { poolA: 0.2 }, { poolA: 1, duration: 2.4, ease: 'power2.out' })
     const tl = (P.tl = gsap.timeline())
     tl.add(revealTitle, 0.2)
+    // 时钟每 gap 秒走一分钟：17:01 … 17:05。十五个人按随机的先后，在 17:05 之前陆续醒来
     const gap = App.reduced ? 0.35 : 1.45
-    for (let b = 0; b < 5; b++) tl.add(() => wakeBatch(b), 1.5 + b * gap)
-    tl.add(() => { P.wakeDone = true; showCue(true) }, 1.5 + 5 * gap + 0.8)
+    const t5 = 1.5 + 4 * gap
+    for (let m = 1; m <= 5; m++) tl.add(() => tickMinute(m), 1.5 + (m - 1) * gap)
+    const order = U.shuffle(H.seats.slice())
+    const t0 = App.reduced ? 0.4 : 0.9, span = t5 - 0.25 - t0
+    order.forEach((s, i) => {
+      const at = t0 + span * (i + (App.reduced ? 0 : Math.random() * 0.85)) / order.length
+      tl.add(() => wakeSeat(s, 0.5 + Math.random() * 0.25), at)
+    })
+    tl.add(() => { P.wakeDone = true; showCue(true) }, t5 + 0.8)
   }
 
   function showCue(on) {
@@ -2192,7 +2216,7 @@
     else if (P.lineK > 0 && !App.finePointer) { P.lineK = -1; hideTag() }
   }
 
-  /* ---------- 滚动：倾斜镜头、编号亮起、沉入黑暗、钥匙落下 ---------- */
+  /* ---------- 滚动：倾斜镜头、沉入黑暗、钥匙落下、号码现出 ---------- */
   function applyScroll(p) {
     const H = P.H, v = H.view, E = P.E
     const t = easeIO(sstep(0.04, 0.66, p))
@@ -2204,20 +2228,10 @@
     v.tz = mix(0.45, 0.55, t)
     v.oy = mix(P.oy0, P.oy0 + H.H * 0.07, t)
     H.lensA = 1 - 0.55 * sstep(0.04, 0.4, p)
-    // 编号一个个亮起（1 号正北，顺时针）
-    const n = Math.floor(U.clamp((p - 0.1) / 0.42, 0, 1) * 15 + 1e-6)
-    if (n !== P.lit) {
-      if (n > P.lit && P.started) App.audio.sfx('tick', { volume: 0.32, pitch: 1.3 + n * 0.04, pan: U.clamp(H.seats[Math.max(0, n - 1)].x / 3, -1, 1) * 0.6 })
-      P.lit = n
-    }
-    for (const s of H.seats) {
-      const want = s.k <= n ? 1 : 0
-      if (want && s.lit < 0.02 && P.started) H.ripple(s.k, [214, 172, 102])
-      s.lit += (want - s.lit) * 0.14
-    }
-    // 沉入黑暗，只剩眼睛；然后眼睛也闭上
+    // 沉入黑暗，只剩眼睛；钥匙落地后眼睛也闭上，号码随后没入黑暗
     H.dark = sstep(0.64, 0.86, p)
-    H.eyeA = 1 - sstep(0.88, 0.96, p)
+    H.eyeA = 1 - sstep(0.9, 0.97, p)
+    H.numDarkA = 1 - sstep(0.95, 1, p)
     // 文字退场（值没变就不写；完全淡出后不再占合成层）
     const fade = 1 - sstep(0.03, 0.2, p)
     css(E.head, 'opacity', fade.toFixed(3))
@@ -2228,6 +2242,9 @@
     if (p > 0.03) showCue(false)
     else if (P.wakeDone) showCue(true)
     keyFall(p)
+    // 号牌开局空白；钥匙落地（人人手里都有了一把钥匙）的那一拍，十五枚同时无声地现出号码（1 号正北，顺时针）
+    const want = P.started && P.keyLanded ? 1 : 0
+    for (const s of H.seats) if (s.lit !== want) s.lit = Math.abs(want - s.lit) < 0.004 ? want : s.lit + (want - s.lit) * 0.16
   }
 
   function keyFall(p) {
@@ -2360,13 +2377,13 @@
       P.el = el
       el.classList.add('prologue')
       build(el)
-      P.H = createHall({ canvas: P.E.cv, vignette: true, motes: App.reduced ? 20 : 70 })
+      P.H = createHall({ canvas: P.E.cv, vignette: true, motes: App.reduced ? 20 : 70, blankNums: true })
       P.H.setPeople(domeHall.people())
       P.H.lensA = 1
       P.H.lensOpen = 0.42
       P.H.poolA = 0.2
       layout()
-      // 遮幕前：未醒的人、未亮的编号
+      // 遮幕前：未醒的人、空白的号牌
       P.E.title._chars = App.text.split(P.E.title)
       gsap.set(P.E.title._chars, { opacity: 0 })
       gsap.set([P.E.seal, P.E.latin, P.E.clock, P.E.cue, P.E.key], { opacity: 0 })

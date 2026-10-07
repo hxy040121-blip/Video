@@ -80,8 +80,8 @@
 
   /* ---------- 目录 ---------- */
   const TAG = {
-    prologue: '十五把椅子', screening: '宣传片', mansion: '窗后没有太阳', cast: '三十八张脸', table: '谁坐在哪里',
-    identities: '撕不开的牌', cycle: '一夜的循环', trial: '亲手审一次', plaque: '一切都有价', wish: '只剩一个人',
+    prologue: '十五把椅子', screening: '宣传片', mansion: '窗后没有太阳', cast: '五十三张脸', table: '谁坐在哪里',
+    identities: '撕不开的牌', cycle: '二十四小时', trial: '亲手审一次', plaque: '一切都有价', wish: '只剩一个人',
   }
   let menuOpen = false
   function buildMenu() {

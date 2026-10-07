@@ -33,9 +33,10 @@ assets/css/base.css        设计令牌、字体、通用组件（核心，板�
 assets/css/<板块>.css      各板块样式，类名一律以板块前缀开头，如 .mansion-xxx
 assets/js/core/*.js        核心：app / bg / cursor / scroll / hud / gate / audio
 assets/js/sections/<板块>.js
-assets/data/world.js       由 tools/build-data.mjs 生成：rooms / identities / prices
-assets/data/characters.js  window.CHARACTERS：38 人
-assets/data/lines/a–d.js   window.TRIAL_LINES：模拟庭审台词池（每人 21 个场合、79 句；占位符 {X}{CLUE}{ROOM}{TIME}{V}）
+assets/data/world.js       由 tools/build-data.mjs 生成：rooms / identities / prices / broadcasts
+assets/data/characters.js  window.CHARACTERS：最早的 38 人
+assets/data/characters-new.js  v4.71 新增的 15 人（push 进同一个 window.CHARACTERS，共 53 人）
+assets/data/lines/a–f.js   window.TRIAL_LINES：模拟庭审台词池（每人 21 个场合、79 句；占位符 {X}{CLUE}{ROOM}{TIME}{V}）
 assets/data/lore.js        window.LORE：房间氛围、线索模板、尸体变化、循环阶段、广播句式
 assets/data/portrait-images.js   由 tools/portraits/export.py 生成（肖像位图清单）
 assets/data/sigils.js      由 tools/build-art.mjs 打包 assets/art/sigils/*.svg 生成
@@ -49,7 +50,7 @@ assets/data/sigils.js      由 tools/build-art.mjs 打包 assets/art/sigils/*.sv
 | 1 | prologue | 醒来：穹顶下的圆桌、十五把椅子、17:00 | sections/prologue.js |
 | 2 | screening | 放映：宣传片（幕布预览 + 全屏放映，`App.screening.open()`） | sections/screening.js |
 | 3 | mansion | 洋馆：四层平面、房间、光的时段 | sections/mansion.js |
-| 4 | cast | 卡池：38 人的肖像长廊与档案 | sections/cast.js |
+| 4 | cast | 卡池：53 人的肖像长廊与档案 | sections/cast.js |
 | 5 | table | 十五席：把人拖进席位 | sections/table.js |
 | 6 | identities | 十五组身份牌，正位/逆位 | sections/identities.js |
 | 7 | cycle | 受命 → 行凶 → 发现 → 调查 → 庭审 → 处刑 | sections/cycle.js |
@@ -105,7 +106,7 @@ assets/data/sigils.js      由 tools/build-art.mjs 打包 assets/art/sigils/*.sv
 - 鼠标驱动：每个板块至少有一种跟随光标的变化（视差、光源、视线、倾斜、烟雾、声音滤波）。
 - 板块之间要有连续感：上一板块的元素可以"带入"下一板块（如钥匙、椅子、红线）。
 
-## 4. 角色肖像（38 张统一画风）
+## 4. 角色肖像（53 张统一画风）
 
 - 肖像是位图：每个角色一张官方原图，经同一套处理（动漫抠图、按双眼统一构图、暗金单色调色、只把虹膜染成血粉）做成 900×1200 的 WebP，透明背景，双眼约在画面 41% 高处、水平居中。流程与原图出处见 `tools/portraits/README.md`。
 - 文件：`assets/art/portraits/<id>.webp`，清单 `assets/data/portrait-images.js`（`window.PORTRAIT_IMAGES`）。图片版权属于原作，不进公开仓库，只随本地成品包交付。
@@ -143,12 +144,17 @@ App.section('mansion', {
 
 ## 7. 数据
 
-- `WORLD.rooms[]`：`{floor, name, x0,x1,y0,y1, area, doors[], parent}`，单位米，原点在西南角，x 向东、y 向北，平面 52×36。
-- `WORLD.identities[]`：`{no, front, back, state, noReverse, frontText, backText, notes}`。`frontText/backText` 是卡面原文，可以直接印在牌上；`notes` 是主持人要点，不上牌。
-- `WORLD.prices`：`{how[], chapters[{title, items[{item, points} | {sub}]}]}`，铜牌原文。
-- `WORLD.broadcasts`：`{fixed[{when, text}], abilities[{kind, ability, text}]}`，`主持人游戏.md` 第七节机制广播的固定句式原文（〈〉里是要代入的内容）。
-- `CHARACTERS[]`：见 `assets/data/characters.js` 顶部注释。
-- `LORE`：见 `assets/data/lore.js` 顶部注释。
+配置文件是 v4.71（章节编号写作「## 5.」「### 5.1」）。`world.js` 只能由 `node tools/build-data.mjs` 重新生成，不手改；哪一处的标题或格式对不上，脚本直接报错。
+
+- `WORLD.rooms[]`：`{floor, name, x0,x1,y0,y1, area, doors[], parent}`，单位米，原点在西南角，x 向东、y 向北，平面 52×36。共 106 间：物理层 1.3 的房间表，加上 1.2 末尾条目里写的楼梯厅与北前室（每层主楼梯厅、西北/东北楼梯厅、西北/东北前室，脚本按条目逐层展开，插在各层走廊之后）。`parent`（小室所属的大间）在 v4.71 的表里已删，脚本按坐标包含关系推出。`doors[]`：`{raw, open, axis, at, width, dir, to}`。
+- `WORLD.identities[]`：`{no, front, back, state, noReverse, frontText, backText, notes}`。`frontText/backText` 是卡面原文，可以直接印在牌上（段落之间空一行）；`notes` 是主持人要点，不上牌。
+- `WORLD.prices`：
+  - `how[]`、`chapters[{title, items[{item, points} | {sub}]}]`：刻在铜牌上的「兑换方式」与第 1–6 节原文（章名写成「一、食物」……「六、离场」）。
+  - `offPlaque`：第 10 节牌外价目，**不刻在铜牌上**，人物问了才知道。`{note, chapters[{no, title, items[{item, points}], note?, tiers?}]}`；火器一节（10.7）另有 `note`（每升一级乘 2）与 `tiers[{level, item, points 一把, round 弹药一发}]`，消音器在 `items` 里。
+  - `void`：会让一次兑换「不成立」的条件。`{text 价目表 8.2 原段, kinds[{key, text}], result, other[{key, text}]}`；`kinds` 的 key：`power` 买回被封的本事、`super` 买带超常本事的东西、`ask` 打听受命者/身份/来历、`kill` 请主持人代杀、`bypass` 绕过门锁墙出口或联络馆外、`outsider` 买馆外的人进来；`other` 的 key：`round` 总价不是整百又不添东西凑满、`purse` 身上的金币不够、`repair` 修复身体残疾时请求的是治伤或对象没有卡上写明的残疾。结果一律是：不收金币，本人只得知不成立。
+- `WORLD.broadcasts`：`{fixed[{when, text}], abilities[{kind, ability, text}]}`，`主持人游戏.md` 第 7 节机制广播的固定句式原文（〈〉里是要代入的内容；〈某某〉〈死者〉用此人自我介绍时报的名字，重名或没报名字的说「几号」）。
+- `CHARACTERS[]`：见 `assets/data/characters.js` 顶部注释。名字有两个字段：`name` 是卡名（档案、卡池用）；`callName` 是此人在馆里自我介绍时报的名字（卡面「名字」一条，没写就是卡名去掉括号；L 是「龙崎」，鬼舞辻无惨是「东云」，漩涡长门是「佩恩」，宇智波带土不报名为 `null`）。广播与台词里的 {X}/{V} 代入 `callName`；同局两人报同一个名字（两位乔瑟夫、两位承太郎）或 `null` 时，改说「N 号」。
+- `LORE`：见 `assets/data/lore.js` 顶部注释。线索模板的 `name` 会代入台词池的 {CLUE}，要读得通（「防御伤」「冷冻柜结冻」），证物卡上的短名另见庭审引擎。
 
 ## 8. 质量清单（每个板块交付前自检）
 
