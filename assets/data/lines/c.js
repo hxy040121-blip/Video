@@ -332,7 +332,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
       '为什么是我，{X}？为什么偏偏是现在？',
     ],
     silent: [
-      '……没什么好说的。',
+      '……说了也没用。',
       '哼。下一个。',
       '我在看。',
     ],
@@ -354,7 +354,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     ],
     right: [
       '果然是{X}。',
-      '{X}，结束了。',
+      '哼。{X}，你输了。',
       '是{X}。……这次没看错。',
     ],
     wrong: [
@@ -462,7 +462,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     ],
     vote: [
       '{X}。死在这边，也无妨。',
-      '我投{X}。',
+      '那就{X}吧。',
       '{X}。反正这边的事，都不作数。',
       '投{X}。你们想要一个答案，我就给一个。',
     ],
@@ -770,7 +770,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     ],
     found: [
       '{CLUE}。……原来是这样。',
-      '找到了。{CLUE}。',
+      '{CLUE}。……这个，留着。',
       '{CLUE}。凶手也有藏不住的时候。',
       '记住这个，{CLUE}。到了庭上用得着。',
     ],
@@ -800,7 +800,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
       '{CLUE}。{X}，你还要说什么？',
       '{X}，{CLUE}就在那。不是你，是谁。',
       '我看见了{CLUE}。{X}，你逃不掉。',
-      '{X}。{CLUE}，加上你的来由。够了。',
+      '{X}。{CLUE}。……够了，别说了。',
     ],
     agree: [
       '嗯。是{X}。',
@@ -850,7 +850,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     ],
     right: [
       '是{X}。……结束了。',
-      '果然。{X}，你的来由，我会记着。',
+      '果然。{X}，我懂你为什么这么做。',
       '是{X}。……也没什么好高兴的。',
     ],
     wrong: [
@@ -887,13 +887,13 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
       '又死了一个。……还不能停下。',
     ],
     search: [
-      '{ROOM}，没有。',
+      '{ROOM}，查完了。没有。',
       '门、柜子、角落，都查过了。这里没有。',
       '能当武器的东西，一样都没少。不是这里。',
       '什么都没有。我去下一间。',
     ],
     found: [
-      '{CLUE}。我看见了。',
+      '{CLUE}。……在这里。',
       '这里有{CLUE}。请别碰。',
       '{CLUE}。……还是新的。',
       '找到了，{CLUE}。位置我记下了。',
@@ -929,7 +929,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     agree: [
       '我同意。是{X}。',
       '嗯。{X}，请您老实回答。',
-      '{X}。我也看见了。',
+      '{X}。我也一直在看。',
       '阿尔敏在的话，也会这么说。是{X}。',
     ],
     doubt: [
@@ -958,9 +958,9 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     ],
     vote: [
       '我投{X}。不改。',
-      '{X}。',
+      '{X}。……就这样。',
       '我投{X}。为了活下去。',
-      '{X}。我看见了，所以投。',
+      '{X}。我信自己的眼睛。',
     ],
     executed: [
       '……艾伦。对不起，回不了家了。',
@@ -974,12 +974,12 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     ],
     right: [
       '是{X}。没错。',
-      '{X}。……结束了。',
+      '{X}。……这一次，没有放过。',
       '是{X}。……这样，大家能睡一会儿了。',
     ],
     wrong: [
       '不是{X}……我们错了。',
-      '{X}。……对不起。',
+      '{X}……是我投的。我记着。',
       '凶手还在。{X}的命，要算在那个人头上。',
     ],
     win: [
@@ -1104,7 +1104,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     wrong: [
       '不是{X}……是我推错了。',
       '{X}……对不起。我一定找出真凶。',
-      '我们错了，{X}不是。……也就是说，凶手还在我们中间。',
+      '我们错了，{X}不是。……那么，凶手还在我们中间。',
     ],
     win: [
       '活、活下来了……我真的可以活下来吗。',
@@ -1206,7 +1206,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     ],
     vote: [
       '{X}。没什么好说的。',
-      '我投{X}。',
+      '{X}。动手吧。',
       '{X}。砍了吧。',
       '{X}。就你了。',
     ],
