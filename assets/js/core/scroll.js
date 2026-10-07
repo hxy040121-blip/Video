@@ -55,6 +55,16 @@
         if (App.bg) App.bg.setScroll(self.progress * 6)
       },
     })
+
+    // 板块事后变高（字体、图片、动态内容）时重算所有触发位置，色调与音乐切换才不会错位
+    if (window.ResizeObserver) {
+      const world = document.getElementById('world')
+      let lastH = 0
+      new ResizeObserver(() => {
+        const h = world.offsetHeight
+        if (Math.abs(h - lastH) > 2) { lastH = h; App.scroll.refresh() }
+      }).observe(world)
+    }
   }
 
   function setCurrent(id) {
