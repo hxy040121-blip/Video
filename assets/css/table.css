@@ -166,6 +166,10 @@ html[data-q="0"] .table-sheen { display: none; }
   mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 30px), transparent 100%);
 }
 .table.is-mob .table-tray::-webkit-scrollbar { display: none; }
+/* 长条是合成的滚动层：里面带混合模式的烛光（悬停才用，手指没有悬停）会让每一枚徽章各自成层，手机上去掉；选中的外光只在选中时才有 */
+.table.is-mob .table-badge .table-disc::after { display: none; }
+.table.is-mob .table-badge::after { display: none; }
+.table.is-mob .table-badge.is-sel::after { display: block; }
 .table-traybar { position: absolute; z-index: 20; height: 3px; pointer-events: none; }
 .table-traybar::before { content: ''; position: absolute; left: 0; right: 0; top: 1px; height: 1px; background: rgba(111,85,50,.45); }
 .table-traybar > i { position: absolute; left: 0; top: 0; height: 3px; display: block; background: var(--brass); box-shadow: 0 0 6px rgba(194,154,91,.45); }

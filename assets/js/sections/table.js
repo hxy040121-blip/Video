@@ -336,7 +336,8 @@
       S.trayCW = Math.ceil(x0 + total + 30)
       traySizer.style.width = S.trayCW + 'px'
       S.trayMax = Math.max(0, S.trayCW - S.W)
-      Object.assign(trayBar.style, { display: '', left: '16px', top: Math.round(S.trayY + S.trayH + 16) + 'px', width: S.W - 32 + 'px' })
+      // 细铜线落在长条盒子下面（连同光晕都不与滚动层相交，免得它为「叠在合成层上」再单独成层）
+      Object.assign(trayBar.style, { display: '', left: '16px', top: Math.round(S.trayY + S.trayH + m + 10) + 'px', width: S.W - 32 + 'px' })
       S.barW = S.W - 32
       S.thumbW = Math.max(24, Math.round(S.barW * S.W / S.trayCW))
       trayThumb.style.width = S.thumbW + 'px'
