@@ -1,0 +1,26 @@
+{
+ "id": "johnny",
+ "source_url": "https://static.jojowiki.com/images/e/e7/latest/20260306203832/Johnny_Joestar_Infobox_Anime.png",
+ "source_note": "TV 动画《JOJO的奇妙冒险 飙马野郎》（2026）乔尼·乔斯达官方角色视觉图（JoJo Wiki File:Johnny Joestar Infobox Anime.png，720×1168，wiki 去字、调色、裁切后的透明图）：星星针织帽（开两孔、头发像短角钻出）、帽前马蹄铁、横条纹上衣，手指抵唇，直视观者。",
+ "src": "src/johnny-1.png",
+ "eyes": [
+  257,
+  300,
+  383,
+  287
+ ],
+ "scale": 0.92,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   257,
+   300,
+   383,
+   287
+  ],
+  "r": 13
+ },
+ "notes": "飙马野郎 2026 年已有动画，这张是动画官方视觉图，比原作彩页干净。透明底直接 --keep-alpha。胸像只到腹部，腿不在画面里，与人物卡保留的残疾不冲突。复现：python3 work-F2/irisclip2.py src/johnny-1.png --id johnny --eyes 257,300,383,287 --r 13 --soft 0.3 --keep-alpha --scale 0.92。不满意：帽子很亮、占了头顶一大块，视觉重心偏上；神情是带怒的直视，杀意还不够冷；眼距 127px。备选：work-F2/c/johnny-animepng.png（JoJo Wiki File:Johnny anime png.png，坐姿全身，头太小）。"
+}

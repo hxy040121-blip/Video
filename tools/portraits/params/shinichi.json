@@ -1,0 +1,25 @@
+{
+ "id": "shinichi",
+ "source_url": "https://static.zerochan.net/Kudou.Shinichi.full.1666325.jpg",
+ "source_note": "青山刚昌《名侦探柯南》官方指南书「工藤新一」人物介绍页的彩色插画扫描（Zerochan 1666325，Official Art / Scan，作者 Aoyama Goushou）：帝丹高中蓝西装、绿领带，托腮斜睨、嘴角得意的推理神情。",
+ "eyes": [
+  853,
+  828,
+  1132,
+  791
+ ],
+ "scale": 0.9,
+ "dx": -20,
+ "dy": 0,
+ "keep_alpha": false,
+ "iris_only": {
+  "iris": [
+   848,
+   830,
+   1122,
+   777
+  ],
+  "r": 30
+ },
+ "notes": "原图是 1980×6211 的长条页，src/shinichi-1.png 是预处理后的版本：裁到 y<2600；左下角漫画分格和说明文字区域（x≤345, y≥1500）涂白；头顶附近 y<1000 的蓝色圆点底纹涂白（保留虹膜那一块）。预处理脚本：python3 work-A/prep_shinichi.py（读 work-A/v/shinichi-1666325.jpg）。然后用 work-A/iris_only.py：python3 work-A/iris_only.py src/shinichi-1.png --id shinichi --eyes 853,828,1132,791 --iris 848,830,1122,777 --r 30 --scale 0.9 --dx -20（漫画上色的虹膜是浅蓝，默认染色会染到眼睑描线上）。网点印刷的颗粒在放大后可见，和画风一致。"
+}

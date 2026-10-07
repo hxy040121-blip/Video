@@ -1,0 +1,27 @@
+{
+ "id": "griffith",
+ "source_url": "https://static.wikia.nocookie.net/berserk/images/2/27/Griffith_descubre_que_no_puede_sujetar_espadas.jpg/revision/latest?cb=20190428063824&path-prefix=es",
+ "source_note": "三浦建太郎《剑风传奇》漫画第 62 话（单行本第 11 卷）的一格：从再生之塔救出后的格里菲斯，罩着鹰喙形的铁面盔，肩上披一块粗布毯子，靠坐着正面看向读者，两只眼睛从面盔眼孔里露出来（同页前几格是他握不住剑）。西班牙语 Berserk Wiki 文件 Archivo:Griffith descubre que no puede sujetar espadas.jpg（933×618，整页上半的扫描，MangaFairuse）。取右侧那一格，裁成 src/griffith-1.png（366×613，原图 x567–933, y5–618）。",
+ "src": "src/griffith-1a.png",
+ "eyes": [
+  143,
+  131,
+  213,
+  127
+ ],
+ "scale": 1.3,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   143,
+   131,
+   213,
+   127
+  ],
+  "r": 5
+ },
+ "command": "python3 work-E2/iris_only2.py src/griffith-1a.png --id griffith --eyes 143,131,213,127 --keep-alpha --scale 1.3 --r 5",
+ "notes": "坐标都是 src/griffith-1.png（裁出的那一格）上的。抠图：先用 pipe.py 默认的 isnet-anime 抠 src/griffith-1.png（缓存在 work-E2/go1），右侧岩壁的排线被当成前景、右下有剑柄和剑身，所以再乘一个多边形掩码只留面盔、毯子和膝盖（work-E2/polycut.py，多边形见 work-E2/griffith-poly.txt），存成 src/griffith-1a.png，以 --keep-alpha 进 pipe。剑是故意去掉的（立绘说明写明不带武器），剑身下段落在底部淡出区里。眼睛：面盔眼孔里是大片阴影，默认染色会把整个眼孔染成两团粉，所以用 iris_only 只染半径 5px 的虹膜；work-E2/iris_only2.py 是 work-A/iris_only.py 的副本，只把临时目录改到 work-E2/iris_tmp、加了 --out，算法没改。面盔是整颗头，按眼距统一会显得头小，scale 取 1.3 让面盔和格斯、鼬等人的头一样大。不满意：原图是 933 像素宽的漫画扫描，面盔只有约 150 像素宽，放大约 3.6 倍，近看能看出网点和颗粒（缩到网站上的 600×800 不明显）；这一格是第 62 话，比人物卡的时间点（第 71 话末，马车里装睡）早几话，但装束（铁面盔、披毯、绷带）一致。找过的其他来源：英文 Berserk Wiki（只有全身小图或侧面、和格斯同框的格子）、1997 年 TV 动画第 23 集截图（TMDB；只有特写和侧躺，脸部构图不完整）、剧场版/Memorial Edition 截图（正面特写但面盔被画面上下切掉）、Danbooru/Zerochan（戴面盔的几乎都是同人图）。"
+}

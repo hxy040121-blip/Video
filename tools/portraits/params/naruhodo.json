@@ -1,0 +1,25 @@
+{
+ "id": "naruhodo",
+ "source_url": "https://static.wikia.nocookie.net/aceattorney/images/4/48/Phoenix_Wright_Trilogy_Art.png/revision/latest?cb=20201012100803",
+ "source_note": "Capcom《逆转裁判123 成步堂精选》（Phoenix Wright: Ace Attorney Trilogy）官方插画，透明底，1467×4831。逆转裁判 Wiki File:Phoenix Wright Trilogy Art.png（Category: Capcom official artwork）。",
+ "eyes": [
+  667,
+  345,
+  838,
+  340
+ ],
+ "scale": 1.0,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   667,
+   343,
+   842,
+   341
+  ],
+  "r": 24
+ },
+ "notes": "蓝西装、领口徽章、伸手指向观者，锯齿眉下双眼盯住目标、嘴角是有把握的笑。复现：python3 work-A/iris_only.py src/naruhodo-1.png --id naruhodo --eyes 667,345,838,340 --iris 667,343,842,341 --r 24 --keep-alpha（直接 pipe.py 也基本干净，只是左眼内侧的鼻梁阴影会沾一点粉）。指着观者的手占据画面左下，比较抢眼，但正是角色标志动作。表情偏自信而非阴森。"
+}

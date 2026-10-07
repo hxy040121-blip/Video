@@ -1,0 +1,18 @@
+{
+ "id": "aizen",
+ "source_url": "https://static.wikia.nocookie.net/bleach/images/3/35/Aizen_sousuke.png/revision/latest?cb=20220902041954&path-prefix=en",
+ "source_note": "《BLEACH》动画第293集截图（Bleach Wiki File:Aizen sousuke.png，1440×1080）。叛离后的蓝染：头发向后拢起、额前垂一绺，不戴眼镜，白色高领长衣，从容的浅笑。",
+ "src": "src/aizen-1.webp",
+ "eyes": [
+  659,
+  396,
+  812,
+  396
+ ],
+ "scale": 1.0,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": false,
+ "command": "python3 pipe.py src/aizen-1.webp --id aizen --out final --eyes 659,396,812,396",
+ "notes": "背景是天空和城市，isnet-anime 一次就抠干净了。放大了 1.27 倍，线条略软。眼睛细长，眼白本身有阴影，所以整个眼裂都染成了粉色。"
+}

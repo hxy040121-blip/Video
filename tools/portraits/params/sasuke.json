@@ -1,0 +1,18 @@
+{
+ "id": "sasuke",
+ "source_url": "https://static.wikia.nocookie.net/naruto/images/1/13/Sasuke_Part_2.png/revision/latest?cb=20170716092003",
+ "source_note": "《火影忍者疾风传》动画第142集截图（Narutopedia File:Sasuke Part 2.png，2700×2000）。鹰小队时期的佐助，正面胸像，冷眼正视。",
+ "src": "src/sasuke-2.png",
+ "eyes": [
+  1202,
+  911,
+  1487,
+  910
+ ],
+ "scale": 1.0,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "command": "python3 pipe.py src/sasuke-2.png --id sasuke --out final --eyes 1202,911,1487,910 --keep-alpha",
+ "notes": "isnet-anime 把右侧灰色背景留成半透明，用 work-D/refine_cut.py 加背景多边形做 GrabCut 修过 alpha（src/sasuke-2.png 是原图 RGB 加修好的 alpha）。和人物卡不完全一致：卡上是第699话、18岁的佐助（深色高领斗篷，额发遮住左半边脸，左臂没有）；这张是16岁、浅色高领上衣、两只眼都露着。第699话那身打扮的官方图只找到侧脸截图、多人合照、全身小图和带字封面，《博人传》里成年后的佐助卡上明确不并入，所以选了这张同动画画风、正面清楚的胸像。"
+}

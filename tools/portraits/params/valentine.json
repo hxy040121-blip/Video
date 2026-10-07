@@ -1,0 +1,26 @@
+{
+ "id": "valentine",
+ "source_url": "https://static.jojowiki.com/images/5/5c/latest/20220424095611/Valentine_heart_and_actions_speech.png",
+ "source_note": "《JOJO的奇妙冒险 飙马野郎》第89话原作彩页（JOJO-D 官方数码上色版，JoJo Wiki File:Valentine heart and actions speech.png，715×762）：瓦伦泰对乔尼说“我的心与行动毫无阴霾……一切都是『正义』”的那一格，俯视、半垂眼、紧抿嘴，浅色长发与成排的粗卷、褶边领。",
+ "src": "src/valentine-1c.png",
+ "eyes": [
+  544,
+  418,
+  653,
+  394
+ ],
+ "scale": 0.88,
+ "dx": 30,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   544,
+   419,
+   655,
+   393
+  ],
+  "r": 10
+ },
+ "notes": "isnet-anime 抠图正好去掉了两个对白气泡和橙色底。右边和下边是分格线：python3 work-F2/prep_cut.py work-F2/val1.isnet-anime.png work-F2/val1-clean.png --erase '703,0 715,0 715,762 703,762' --erase '0,749 715,749 715,762 0,762' --feather 1 --right 660,703 --bottom 640,749；再 python3 work-F2/pad_rot.py work-F2/val1-clean.png src/valentine-1c.png --pad 100,100,0,0 --rot -12（补透明边免得头顶被源图边缘羽化，并把歪着的头扶正 12°，眼坐标已换算）。复现：python3 work-F2/irisclip2.py src/valentine-1c.png --id valentine --eyes 544,418,653,394 --iris 544,419,655,393 --r 10 --soft 0.25 --keep-alpha --scale 0.88 --dx 30。不满意：原格在右边切掉了肩和右侧的发卷，只能渐隐，画面重心偏左；扶正后仍略斜视；眼距 111px（放大约 1.5 倍），网点与排线略软。第89话晚于人物卡时间点（第72话），但外貌相同。"
+}

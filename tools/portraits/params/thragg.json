@@ -1,0 +1,27 @@
+{
+ "id": "thragg",
+ "source_url": "https://static.wikia.nocookie.net/amazon-invincible/images/6/67/Thragg_Eulogy.png/revision/latest?cb=20260415202952",
+ "source_note": "亚马逊动画《无敌少侠》（Invincible）第四季截图（Amazon Invincible Wiki File:Thragg Eulogy.png，2560×1440，2026 年 4 月上传，用在 Viltrumite Council 页面）。大摄政王崔格正面半身，红色制服、胸口三道竖线的圆形徽记，没有披毛领斗篷，皱眉直视镜头；身后两名红衣卫兵、两侧是兜帽长老。",
+ "src": "src/thragg-1a.png",
+ "eyes": [
+  1257,
+  431,
+  1375,
+  431
+ ],
+ "scale": 1.0,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   1257,
+   431,
+   1375,
+   431
+  ],
+  "r": 10
+ },
+ "command": "python3 work-E2/iris_only2.py src/thragg-1a.png --id thragg --eyes 1257,431,1375,431 --keep-alpha --scale 1.0 --r 10",
+ "notes": "原图 src/thragg-1.png。isnet-anime 把画面里所有人都抠出来了（两个红衣卫兵就站在他头两侧、兜帽长老的边缘贴着他的肩），所以按他的头和肩线画了一个多边形（work-E2/polycut.py，多边形见 work-E2/thragg-poly.txt）乘到 alpha 上，存成 src/thragg-1a.png，再 --keep-alpha 进 pipe。默认染色会把粉色染到上眼睑线上，所以用 iris_only 只染半径 10px 的虹膜（work-E2/iris_only2.py，见格里菲斯那份的说明）。动画画风眼距相对脸宽偏大，scale 1.0 时脸宽与鼬、日车相当，就没再调。注意：fandom.py 里那个 Chrome UA 现在被 static.wikia.nocookie.net 回 403，我用 work-E2/fs.py / ft.py 换成短 UA 下载（没改共用脚本）；下载时要在 URL 后加 &format=original，否则拿到的是 WebP。不满意：表情是皱眉怒视，比人物卡写的「冷静、居高临下的轻蔑」更凶一点；比它更冷静、没披斗篷的几张（Thragg Doesn't Recognize Oliver）有人物遮住他的肩，或者头顶被画面切掉（Thragg stares a Councilor）。肩膀比画面宽，两侧靠边缘淡出。"
+}

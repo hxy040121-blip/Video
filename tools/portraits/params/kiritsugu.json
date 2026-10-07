@@ -1,0 +1,26 @@
+{
+ "id": "kiritsugu",
+ "source_url": "https://static.wikia.nocookie.net/typemoon/images/1/19/Kiritsugu_ufotable_Fate_Zero_Character_Sheet_2.png/revision/latest?cb=20141022132131",
+ "source_note": "ufotable《Fate/Zero》动画设定稿：卫宫切嗣表情集（TYPE-MOON Wiki File:Kiritsugu ufotable Fate Zero Character Sheet 2.png，3184×2219，透明底）。取上排正中那张正面胸像：乱发、胡茬、黑西装不打领带、眼下有阴影的空洞眼神。src/kiritsugu-2.png 为原图。",
+ "src": "src/kiritsugu-2c.png",
+ "eyes": [
+  1442,
+  562,
+  1636,
+  563
+ ],
+ "scale": 1.1,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   1443,
+   566,
+   1636,
+   566
+  ],
+  "r": 17
+ },
+ "notes": "设定稿上多个头像挨在一起：用 work-F2/prep_cut.py 擦掉左右相邻头像和下排（--erase 两个多边形、--left 1010,1110 --right 1860,1950 --bottom 980,1070，得 src/kiritsugu-2b.png），再把 alpha 收 2px（MinFilter 5 + 0.8 模糊，得 src/kiritsugu-2c.png），否则设定稿的白描边在暗金里会变成一圈亮线。scale 1.1 时头的大小和 saber/gilgamesh 一致。血粉只染虹膜：python3 work-F2/irisclip2.py src/kiritsugu-2c.png --id kiritsugu --eyes 1442,562,1636,563 --iris 1443,566,1636,566 --r 17 --keep-alpha --scale 1.1。不满意：设定稿是平涂，比 saber 那种成片截图素，整体偏暗；肩膀以下是设定稿原本的截断，靠底部渐隐盖住。备选：src/kiritsugu-1c.png（Zerochan 4242294，第1话截图，四分之三侧面，眼距 218px；墙上影子已擦掉，但画面偏暗、帧边缘裁到后脑），eyes 500,506,718,510 --keep-alpha。"
+}

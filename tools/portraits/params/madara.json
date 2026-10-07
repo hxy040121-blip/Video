@@ -1,0 +1,18 @@
+{
+ "id": "madara",
+ "source_url": "https://static.wikia.nocookie.net/naruto/images/f/fd/Madara.png/revision/latest?cb=20160115141947",
+ "source_note": "《火影忍者疾风传》动画第369集截图（Narutopedia File:Madara.png，1440×1080）。壮年的斑，胸像，高领，前发遮住右眼，左眼是普通黑眼（非写轮眼），没有秽土转生的裂纹。",
+ "src": "src/madara-3.png",
+ "eyes": [
+  612,
+  492,
+  842,
+  498
+ ],
+ "scale": 1.0,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "command": "python3 work-D/pipe1eye.py --hide-eye l src/madara-3.png --id madara --out final --eyes 612,492,842,498 --keep-alpha",
+ "notes": "画面左那只眼被头发完全遮住，坐标是估计的；要用 work-D/pipe1eye.py --hide-eye l 跑（只给看得见的那只眼染色）。直接用 pipe.py 跑，头发上会多一团粉色。原图很暗，isnet-anime 抠出来整张图都是半透明，所以先做了色阶拉亮（src/madara-2.png），再用 work-D/refine_cut.py（GrabCut）把 alpha 修成实心（src/madara-3.png）。不满意：原图顶上切掉了一点头发，下边只到领口、没有肩膀和铠甲（顶和底靠羽化淡出）；没找到同样清楚、又带完整头发、肩膀和铠甲、而且没有裂纹的官方胸像。"
+}

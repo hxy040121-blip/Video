@@ -1,0 +1,18 @@
+{
+ "id": "shanks",
+ "source_url": "https://static.zerochan.net/Shanks.full.4133339.jpg",
+ "source_note": "《ONE PIECE》东映动画官方插画（ONE PIECE.com 官方 X 账号 @opcom_info 发布，https://x.com/opcom_info/status/1766135464141144495；Zerochan 4133339，2480×3508，白底）。黑披风、白衬衫，左眼上三道疤，前倾、抬眼、带一点笑。",
+ "src": "src/shanks-3.jpg",
+ "eyes": [
+  1418,
+  680,
+  1641,
+  717
+ ],
+ "scale": 0.9,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": false,
+ "command": "python3 pipe.py src/shanks-3.jpg --id shanks --out final --eyes 1418,680,1641,717 --scale 0.9",
+ "notes": "白底，抠图干净；头微微侧倾，眼距短，所以 scale 0.9。和卡（第580话，漫画为准）相比是较新的东映插画，衣着一致；姿势是蹲着前倾，所以画面下方能看到端酒杯的右手（会淡进黑暗里）。画面右那只眼上方有疤痕和粗的眼睑线，粉色稍微溢到了眼睑上（和鼬的成品程度差不多）。备选：Zerochan 2511424（东映手机壁纸，背景是红底大字，抠不干净）、2313074（扫描图，放大后发糊）。"
+}

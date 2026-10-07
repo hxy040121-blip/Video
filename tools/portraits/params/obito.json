@@ -1,0 +1,18 @@
+{
+ "id": "obito",
+ "source_url": "https://static.wikia.nocookie.net/naruto/images/4/45/Obito_Unmasked_full.png/revision/latest?cb=20230320174415",
+ "source_note": "游戏《火影忍者疾风传 究极忍者风暴 世代》官方立绘（Narutopedia File:Obito Unmasked full.png，2894×4093，透明底），第四次忍界大战中露脸的带土：深紫高领长衣、右半边脸的疤。",
+ "src": "src/obito-3.webp",
+ "eyes": [
+  1302,
+  593,
+  1449,
+  587
+ ],
+ "scale": 1.0,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "command": "python3 pipe.py src/obito-3.webp --id obito --out final --eyes 1302,593,1449,587 --keep-alpha --scale 1.0",
+ "notes": "四分之三侧脸，用 scale 1.0 时，脸长（眼到下巴）和鼬的大致一样。动画第372集正面截图（src/obito-1.webp，抠图修过的版本是 src/obito-2.png）画面只到领口，挂出来像一颗浮着的头，所以没用。不满意：画风是游戏立绘，比鼬的动画截图线条更细、更平；右肩撕破的衣服里露出白色的白绝组织，在单色里是一块浅色的碎边；轮回眼整只眼都染成了粉色（卡上本局是普通黑眼）。"
+}

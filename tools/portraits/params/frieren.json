@@ -1,0 +1,26 @@
+{
+ "id": "frieren",
+ "source_url": "https://static.wikia.nocookie.net/frieren/images/3/3a/Frieren_descends_upon_Aura%27s_army_EP8.png/revision/latest?cb=20231125230903",
+ "source_note": "TV 动画《葬送的芙莉莲》第8话截图（Frieren Wiki File:Frieren descends upon Aura's army EP8.png，1920×1080）：芙莉莲在月下降临阿乌拉的不死军，仰视构图，无表情地俯视对手，双马尾飘起，尖耳、水滴形耳坠、白色短披肩与高领红宝石扣都在画面里。src/frieren-2.png 为原图。",
+ "src": "src/frieren-2b.png",
+ "eyes": [
+  857,
+  333,
+  1043,
+  333
+ ],
+ "scale": 1.2,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   858,
+   331,
+   1044,
+   331
+  ],
+  "r": 18
+ },
+ "notes": "isnet-anime 抠图干净（月面背景）。原帧是夜景蓝调、整体很暗，直接进 pipe.py 几乎全黑，所以抠图后先提亮：python3 work-F2/levels.py work-F2/fr2.isnet-anime.png src/frieren-2b.png 0.03 0.36 1.15（work-F2/cuts.py 产出 isnet-anime 抠图）。再 python3 work-F2/irisclip2.py src/frieren-2b.png --id frieren --eyes 857,333,1043,333 --iris 858,331,1044,331 --r 18 --soft 0.15 --keep-alpha --scale 1.2。不满意：仰视角度，脸比别人略短、下巴抬着；双马尾很宽，两侧溶进画框边。左下角的法杖杆只剩一点影子。备选：src/frieren-1c.png（第10话截图“Frieren gives her command to Aura”，正面平视、半垂眼的冷淡神情，但原帧顶部切到头顶，只能做圆顶渐隐），eyes 562,478,850,481 --keep-alpha --scale 1.25（work-F2/frieren_matte.py 生成 src/frieren-1b.png）。"
+}

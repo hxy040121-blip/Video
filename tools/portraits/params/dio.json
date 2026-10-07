@@ -1,0 +1,26 @@
+{
+ "id": "dio",
+ "source_url": "https://static.jojowiki.com/images/0/0a/latest/20210424101455/DIO_Normal_SC_Infobox_Anime.png",
+ "source_note": "TV 动画《JOJO的奇妙冒险 星尘斗士》DIO 官方插画（JoJo Wiki File:DIO Normal SC Infobox Anime.png，1108×1691，wiki 编辑者去底的透明图）：第三部 DIO，金发后梳、心形额饰、黄色短外衣，双手抱头、低头上目、带笑俯视，阴影压着眉眼。",
+ "src": "src/dio-1.png",
+ "eyes": [
+  440,
+  452,
+  569,
+  440
+ ],
+ "scale": 0.8,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   442,
+   450,
+   568,
+   440
+  ],
+  "r": 9
+ },
+ "notes": "原图透明底，直接 --keep-alpha。荒木画风脸窄、头发高，按眼距对齐时头偏大，scale 0.8 与 gilgamesh/guts 接近。眼窝是大片墨线阴影，用 python3 work-F2/irisclip2.py src/dio-1.png --id dio --eyes 440,452,569,440 --iris 442,450,568,440 --r 9 --soft 0.3 --keep-alpha --scale 0.8 只染虹膜。不满意：抬起的两条胳膊把画面左右上角占满，比别人的构图满；眼距只有 129px（放大 1.2 倍），墨线略粗。"
+}

@@ -1,0 +1,25 @@
+{
+ "id": "sherlock",
+ "source_url": "https://upload.wikimedia.org/wikipedia/commons/4/47/Portrait_of_Sherlock_Holmes_by_Sidney_Paget.jpg",
+ "source_note": "西德尼·佩吉特（Sidney Paget）1904 年所绘福尔摩斯肖像，墨水淡彩原稿（6×8 英寸），公有领域。Wikimedia Commons File:Portrait of Sherlock Holmes by Sidney Paget.jpg（2000×1537）。叼着烟斗、坐在扶手椅里斜视。",
+ "eyes": [
+  809,
+  572,
+  928,
+  571
+ ],
+ "scale": 0.8,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "iris_only": {
+  "iris": [
+   809,
+   572,
+   928,
+   571
+  ],
+  "r": 9
+ },
+ "notes": "pipe.py 默认的 isnet-anime 抠这张水彩画几乎全不透明（整张纸都留下了），所以先用 rembg 的 isnet-general-use 模型（下载在 work-A/models，U2NET_HOME=work-A/models）抠成 src/sherlock-2.png（python3 work-A/precut_general.py src/sherlock-1.jpg src/sherlock-2.png），再以 --keep-alpha 进 pipe。写实画法的眼窝是大片阴影，默认染色会把整个眼窝染成两团粉，故用 work-A/iris_only.py 只染半径 9px 的虹膜：python3 work-A/iris_only.py src/sherlock-2.png --id sherlock --eyes 809,572,928,571 --keep-alpha --scale 0.8 --r 9。写实脸的眼睛相对头更小，按眼距统一会显得头大，scale 取 0.8。右侧肩后保留了一截扶手椅椅背（与外套连在一起，难以分开），顶边是一条较平的轮廓。"
+}

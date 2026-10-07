@@ -1,0 +1,16 @@
+{
+ "id": "kurisu",
+ "source_url": "https://static.wikia.nocookie.net/steins-gate/images/4/47/Makise.Kurisu.full.1677036.jpg/revision/latest?cb=20140305204934",
+ "source_note": "剧场版《命运石之门 负荷领域的既视感》限定版特典小册子①插画（原画：坂井久太，WHITE FOX；Zerochan 1677036，Official Art / Scan），3251×4392。Steins;Gate Wiki File:Makise.Kurisu.full.1677036.jpg。",
+ "eyes": [
+  1898,
+  1760,
+  2410,
+  1752
+ ],
+ "scale": 1.0,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": false,
+ "notes": "四分之三侧面、微微侧目、抿嘴，冷淡审视的神情，背景纯白，抠图干净；原图左上角的署名文字不在画面内。服装是制服外套而不是白大褂（找不到同时满足胸像、单人、官方、披白大褂的高清图）。复现：python3 pipe.py src/kurisu-1.jpg --id kurisu --out final --eyes 1898,1760,2410,1752。备选：src/kurisu-2.jpg（huke 原作海报，Zerochan 477894，更阴暗，但做旧纹理重、抠图后右侧发缘轮廓光不连贯），eyes 1098,1352,1566,1432。"
+}

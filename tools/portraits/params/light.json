@@ -1,0 +1,25 @@
+{
+ "id": "light",
+ "source_url": "https://static.zerochan.net/Yagami.Light.full.1422629.jpg",
+ "source_note": "《DEATH NOTE》小畑健画集《Blanc et Noir》彩页扫描（Zerochan 1422629，Official Art / Scan）：穿白衬衫的夜神月，双眼藏在刘海阴影里、嘴角含笑，手托地球。src/light-1.jpg 为原图。",
+ "eyes": [
+  1418,
+  878,
+  1818,
+  883
+ ],
+ "scale": 1.08,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": false,
+ "iris_only": {
+  "iris": [
+   1420,
+   872,
+   1822,
+   877
+  ],
+  "r": 40
+ },
+ "notes": "成品由 work-A/iris_only.py 生成（pipe.py 跑两遍：--eyes 带染色、等价 --face 不染色，构图相同，只在虹膜圆内取染色版），因为小畑的眼睛周围全是发丝和描线，pipe.py 默认的眼睛遮罩会把血粉染到刘海和眼眶线上。复现：python3 work-A/iris_only.py src/light-1.jpg --id light --eyes 1418,878,1818,883 --iris 1420,872,1822,877 --r 40 --scale 1.08。画面下方有一团深色的地球（原图手托地球），已沉入底部暗部；虹膜上方仍有一两缕发丝带一点粉。"
+}

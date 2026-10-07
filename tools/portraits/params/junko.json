@@ -1,0 +1,16 @@
+{
+ "id": "junko",
+ "source_url": "https://static.wikia.nocookie.net/danganronpa/images/6/61/Danganronpa_V3_Bonus_Mode_Junko_Enoshima_Sprite_%2819%29.png/revision/latest?cb=20171113050104",
+ "source_note": "《新弹丸论破V3》附赠模式（才能开花学园模式）江之岛盾子官方立绘 Sprite (19)，透明底，840×950。弹丸论破 Wiki File:Danganronpa V3 Bonus Mode Junko Enoshima Sprite (19).png。",
+ "eyes": [
+  357,
+  265,
+  455,
+  265
+ ],
+ "scale": 0.92,
+ "dx": 0,
+ "dy": 0,
+ "keep_alpha": true,
+ "notes": "换掉了样张那张甜笑（DRS Uniform 16）：这张是\"绝望\"模式的死鱼眼——上半张脸罩着阴影、瞳孔空洞、嘴抿成一条线，比样张阴森得多。眼距只有 98px（放大约 1.8 倍），线条略软但可接受。双马尾很宽，scale 调到 0.92 让脸和参考差不多大，发梢溶进两侧暗部。复现：python3 pipe.py src/junko-1.png --id junko --out final --eyes 357,265,455,265 --keep-alpha --scale 0.92。备选：src/junko-2.png（DRS Uniform 18）。"
+}
