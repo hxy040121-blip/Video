@@ -232,6 +232,24 @@
   }
   if (window.gsap) gsap.ticker.add(frame)
 
+  // 高刷新率屏幕（120/144/165/240Hz）上，把动画循环降到 刷新率÷n ≈ 55–72 帧：
+  // 网站每帧的计算不再随刷新率成倍放大，节拍仍然均匀（屏幕本身照常刷新）
+  if (window.gsap) {
+    const ds = []
+    let last = 0
+    const probe = t => {
+      if (last) ds.push(t - last)
+      last = t
+      if (ds.length < 45) { requestAnimationFrame(probe); return }
+      ds.sort((a, b) => a - b)
+      const hz = 1000 / ds[ds.length >> 1]
+      const n = Math.max(1, Math.floor(hz / 55)) // 90Hz 不限；120→60，144→72，165→55，240→60
+      App.refreshHz = Math.round(hz)
+      if (n > 1) gsap.ticker.fps(hz / n + 1)
+    }
+    requestAnimationFrame(probe)
+  }
+
   /* ---------- 可见性 ---------- */
   App.onVisible = (el, cb, opts) => {
     const io = new IntersectionObserver(entries => {

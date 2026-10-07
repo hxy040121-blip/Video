@@ -88,7 +88,7 @@ void main(){
   function initGL() {
     const canvas = document.getElementById('bg')
     if (!canvas) return null
-    const gl = canvas.getContext('webgl', { antialias: false, alpha: false, premultipliedAlpha: false, powerPreference: 'low-power' })
+    const gl = canvas.getContext('webgl', { antialias: false, alpha: false, premultipliedAlpha: false })
     if (!gl) { canvas.style.background = 'radial-gradient(ellipse at 50% 30%, #1a1214, #0a0809 70%)'; return null }
     const sh = (type, src) => {
       const s = gl.createShader(type)
