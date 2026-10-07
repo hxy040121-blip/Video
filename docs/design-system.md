@@ -1,4 +1,4 @@
-# 十五席 · 设计系统与开发约定
+# 夙与愿 · 设计系统与开发约定
 
 这份文档是网站所有板块共同遵守的约定。网站是把仓库里这套角色扮演游戏（洋馆、十五席圆桌、十五组身份、受命与庭审）做成一件可交互的艺术作品：展示的是"游戏"本身，不是配置文件。
 
@@ -31,7 +31,7 @@ assets/js/sections/<板块>.js
 assets/data/world.js       由 tools/build-data.mjs 生成：rooms / identities / prices
 assets/data/characters.js  window.CHARACTERS：38 人
 assets/data/lore.js        window.LORE：房间氛围、线索模板、尸体变化、循环阶段、广播句式
-assets/data/portraits.js   由 tools/build-art.mjs 打包 assets/art/portraits/*.svg 生成
+assets/data/portrait-images.js   由 tools/portraits/export.py 生成（肖像位图清单）
 assets/data/sigils.js      由 tools/build-art.mjs 打包 assets/art/sigils/*.svg 生成
 ```
 
@@ -41,14 +41,15 @@ assets/data/sigils.js      由 tools/build-art.mjs 打包 assets/art/sigils/*.sv
 |---|---|---|---|
 | — | gate | 遮幕/载入/「睁开眼睛」 | core/gate.js |
 | 1 | prologue | 醒来：穹顶下的圆桌、十五把椅子、17:00 | sections/prologue.js |
-| 2 | mansion | 洋馆：四层平面、房间、光的时段 | sections/mansion.js |
-| 3 | cast | 卡池：38 人的肖像长廊与档案 | sections/cast.js |
-| 4 | table | 十五席：把人拖进席位 | sections/table.js |
-| 5 | identities | 十五组身份牌，正位/逆位 | sections/identities.js |
-| 6 | cycle | 受命 → 行凶 → 发现 → 调查 → 庭审 → 处刑 | sections/cycle.js |
-| 7 | trial | 可玩的模拟庭审 | sections/trial.js |
-| 8 | plaque | 价目铜牌与 150 枚金币 | sections/plaque.js |
-| 9 | wish | 终章：只剩一人时的愿望 | sections/wish.js |
+| 2 | screening | 放映：宣传片（幕布预览 + 全屏放映，`App.screening.open()`） | sections/screening.js |
+| 3 | mansion | 洋馆：四层平面、房间、光的时段 | sections/mansion.js |
+| 4 | cast | 卡池：38 人的肖像长廊与档案 | sections/cast.js |
+| 5 | table | 十五席：把人拖进席位 | sections/table.js |
+| 6 | identities | 十五组身份牌，正位/逆位 | sections/identities.js |
+| 7 | cycle | 受命 → 行凶 → 发现 → 调查 → 庭审 → 处刑 | sections/cycle.js |
+| 8 | trial | 可玩的模拟庭审 | sections/trial.js |
+| 9 | plaque | 价目铜牌与 150 枚金币 | sections/plaque.js |
+| 10 | wish | 终章：只剩一人时的愿望 | sections/wish.js |
 
 ## 3. 视觉语言
 
@@ -98,17 +99,12 @@ assets/data/sigils.js      由 tools/build-art.mjs 打包 assets/art/sigils/*.sv
 - 鼠标驱动：每个板块至少有一种跟随光标的变化（视差、光源、视线、倾斜、烟雾、声音滤波）。
 - 板块之间要有连续感：上一板块的元素可以"带入"下一板块（如钥匙、椅子、红线）。
 
-## 4. 角色立绘规范（38 张统一画风）
+## 4. 角色肖像（38 张统一画风）
 
-- 文件：`assets/art/portraits/<id>.svg`，`viewBox="0 0 600 800"`，透明背景，胸像（胸口以上），头部中心约在 x=300、双眼约在 y=300—340；高个子/低个子不用改变构图（统一取景）。
-- **（2026-10-02：下面这条赛璐璐画风已被主人否决，新画风待主人从样张中选定，见 `docs/HANDOFF.md`。结构要求仍然有效。）**
-- **画风（已否决）：** 动漫赛璐璐 + 墨线剪影。平涂色块，硬边阴影（光从左上来，阴影是一层 `fill="#000" opacity=".28"` 左右的形状），外轮廓墨线 `#0b0809` 粗 5，内部线粗 2—2.5，端点圆头。不用写实渐变；最多在头发上用一个简单线性渐变做高光。整体略带不安：眼神是重点。
-- **必须的结构（网站会控制这些部分）：**
-  - `<g class="p-body">` 身体与衣服；`<g class="p-head">` 头（含脸、头发、五官）。
-  - 每只眼：`<g class="p-eye">` 内含眼白 `class="p-sclera"`，以及被眼白裁切的 `<g clip-path="url(#<id>-eyeL)"><g class="p-iris">…</g></g>`（虹膜+瞳孔+高光，网站会把 `.p-iris` 在 ±7px 内平移，让视线追随光标；clip-path 必须挂在外包的组上，不能挂在 `.p-iris` 自己身上，`.p-eye`/`.p-iris` 不能写 `transform` 属性，详见 `assets/art/portraits/_STYLE.md` 第 0 节）。clipPath 的 id 必须以角色 id 开头，避免同页冲突。闭眼或遮眼的角色（如绷带）也要保留一个可动的 `p-iris`（可以是从缝隙里露出的光点）。
-  - 角色的签名色 `accent` 至少出现在一个元素上，并给该元素加 `class="p-accent"`。
-- 所有 `id` 都以 `<id>-` 开头。不得包含 `<script>`、外部引用、`<image>`、`<text>`。
-- 文件体积 ≤ 60 KB。
+- 肖像是位图：每个角色一张官方原图，经同一套处理（动漫抠图、按双眼统一构图、暗金单色调色、只把虹膜染成血粉）做成 900×1200 的 WebP，透明背景，双眼约在画面 41% 高处、水平居中。流程与原图出处见 `tools/portraits/README.md`。
+- 文件：`assets/art/portraits/<id>.webp`，清单 `assets/data/portrait-images.js`（`window.PORTRAIT_IMAGES`）。图片版权属于原作，不进公开仓库，只随本地成品包交付。
+- 使用：`App.portrait(id, { mono, dead, silhouette, className, track, eyeRange })` 返回 `div.portrait.is-photo > img`。画像随光标微微偏转（`App.trackEyes` 写入 CSS 变量 `--pvx/--pvy`，-1..1）。`is-mono` 压暗、`is-dead` 灰暗、`is-silhouette` 纯黑剪影。缺图或图片加载失败时自动回落到统一的矢量剪影占位（带 `.p-eye/.p-iris`，眼珠追随光标）。
+- 板块代码不能依赖 `.p-eye/.p-iris` 一定存在。
 
 ## 5. 板块开发约定（`App.section`）
 
@@ -128,10 +124,10 @@ App.section('mansion', {
   - `time:set`（hud 发出，参数为馆内分钟数）
 - 读写本地存储一律用 `App.store.get/set`（已包 try/catch）。
 - 所有音效通过 `App.audio.sfx(name, opts)`；名称表见 §6。
-- 肖像：`App.portrait(id, {size, mono, dead})` 返回一个包含内联 SVG 的元素，并自动注册视线追随。立绘缺失时自动返回统一的剪影占位。
+- 肖像：`App.portrait(id, {mono, dead, silhouette, className, track})` 返回 `div.portrait`（位图肖像为 `.is-photo > img`），并自动注册随光标偏转。肖像缺失时自动返回统一的剪影占位。见 §4。
 - 纹章：`App.sigil(name)` 返回身份纹章 SVG 元素（name 用身份中文名，如 `'法官'`）。
 
-## 6. 音频接口（`App.audio`，由 core/audio.js 实现）
+## 6. 音频接口（`App.audio`，由 core/audio.js 实现；放映宣传片时用 `App.audio.hush(true/false)` 让出声音）
 
 - `App.audio.start()`：用户在遮幕上点击后调用（核心已做）。
 - `App.audio.track(name)`：切换音乐，交叉淡化。`dread` 洋馆的日常（音乐盒 + 低频嗡鸣 + 钟摆），`gallery` 肖像长廊（缓慢的小调圆舞曲），`investigation` 调查（脉冲、钟表、紧张），`trial` 庭审（推进的节奏，弹丸论破式的紧迫感），`wish` 终章（破碎、变慢的音乐盒），`silence`。
