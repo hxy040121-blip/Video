@@ -43,6 +43,7 @@
     S.preview = preview
 
     const screen = U.el('div.scr-screen', { role: 'button', tabindex: '0', 'aria-label': '放映', 'data-cursor': '放映' }, [
+      U.el('div.scr-glow', { 'aria-hidden': 'true' }),
       U.el('div.scr-screen-inner', null, [
         preview,
         U.el('div.scr-scan', { 'aria-hidden': 'true' }),
@@ -52,6 +53,9 @@
       ]),
     ])
     S.screen = screen
+    S.glow = screen.querySelector('.scr-glow')
+    S.setRX = gsap.quickSetter(screen, 'rotationX', 'deg')
+    S.setRY = gsap.quickSetter(screen, 'rotationY', 'deg')
 
     const dur = U.el('span.scr-dur', { text: '01:26' })
     preview.addEventListener('loadedmetadata', () => { if (isFinite(preview.duration)) dur.textContent = fmt(preview.duration) })
@@ -75,6 +79,8 @@
       U.el('div.scr-floor', { 'aria-hidden': 'true' }),
     ])
     el.appendChild(S.room)
+    S.beam = S.room.querySelector('.scr-beam')
+    S.floor = S.room.querySelector('.scr-floor')
 
     const go = () => open({ from: screen })
     screen.addEventListener('click', go)
@@ -116,11 +122,15 @@
     const k = App.reduced ? 0 : 1
     S.rx = U.lerp(S.rx, -ny * 7 * k, 0.08 * dt)
     S.ry = U.lerp(S.ry, nx * 9 * k, 0.08 * dt)
-    S.room.style.setProperty('--scr-rx', S.rx.toFixed(3) + 'deg')
-    S.room.style.setProperty('--scr-ry', S.ry.toFixed(3) + 'deg')
-    S.room.style.setProperty('--scr-bx', (nx * 14).toFixed(2) + 'vw')
-    S.room.style.setProperty('--scr-lit', (1 - Math.min(1, Math.hypot(nx, ny) * 1.4)).toFixed(3))
-    stepDust(dt, nx, ny)
+    // 只在数值变化时写，且只改 transform / opacity（合成层上完成，不重画幕布四周的大面积发光）
+    const rx = S.rx.toFixed(2), ry = S.ry.toFixed(2)
+    if (rx !== S._rx) { S._rx = rx; S.setRX(+rx) }
+    if (ry !== S._ry) { S._ry = ry; S.setRY(+ry) }
+    const bx = (nx * 14).toFixed(1)
+    if (bx !== S._bx) { S._bx = bx; S.beam.style.transform = `translateX(calc(-50% + ${bx}vw))` }
+    const lit = (1 - Math.min(1, Math.hypot(nx, ny) * 1.4)).toFixed(2)
+    if (lit !== S._lit) { S._lit = lit; S.glow.style.opacity = lit; S.floor.style.opacity = (0.45 + lit * 0.55).toFixed(2) }
+    if ((S._dn = (S._dn || 0) + 1) % 2 === 0 || (App.quality && App.quality.level === 2)) stepDust(dt * (App.quality && App.quality.level === 2 ? 1 : 2), nx, ny)
   }
 
   /* ---------- 光束里的浮尘 ---------- */
@@ -131,7 +141,7 @@
     const n = App.finePointer ? 140 : 70
     for (let i = 0; i < n; i++) motes.push({ x: Math.random(), y: Math.random(), z: Math.random(), vx: 0, vy: 0, ph: Math.random() * 6.28 })
     const resize = () => {
-      dpr = Math.min(2, window.devicePixelRatio || 1)
+      dpr = 1 // 浮尘是柔的点，按 CSS 像素画即可
       dw = S.dust.clientWidth; dh = S.dust.clientHeight
       S.dust.width = Math.round(dw * dpr); S.dust.height = Math.round(dh * dpr)
     }

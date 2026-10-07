@@ -5,7 +5,6 @@
 #screening { position: relative; }
 
 .scr-room {
-  --scr-rx: 0deg; --scr-ry: 0deg; --scr-bx: 0vw; --scr-lit: 0;
   position: relative;
   height: 100vh; min-height: 620px;
   overflow: hidden;
@@ -16,7 +15,8 @@
 /* 放映机的光：从观众头顶上方打来，向幕布张开 */
 .scr-beam {
   position: absolute; left: 50%; top: -12%; width: 150vw; height: 92%;
-  transform: translateX(calc(-50% + var(--scr-bx)));
+  transform: translateX(-50%);
+  will-change: transform;
   clip-path: polygon(49.2% 0, 50.8% 0, 82% 100%, 18% 100%);
   background:
     radial-gradient(ellipse 30% 22% at 50% 0%, rgba(255, 238, 205, .22), transparent 70%),
@@ -44,8 +44,7 @@
   position: relative;
   width: min(78vw, 1180px, calc((100vh - var(--hud-h) - 200px) * 16 / 9));
   aspect-ratio: 16 / 9;
-  transform: rotateX(var(--scr-rx)) rotateY(var(--scr-ry));
-  transform-style: preserve-3d;
+  will-change: transform;
   cursor: pointer;
   outline: none;
   box-shadow:
@@ -53,9 +52,15 @@
     0 0 0 9px rgba(10, 8, 9, .9),
     0 0 0 10px rgba(194, 154, 91, .14),
     0 50px 140px rgba(0, 0, 0, .85),
-    0 0 180px rgba(216, 198, 162, calc(.05 + var(--scr-lit) * .09));
-  transition: box-shadow .6s var(--ease-out);
+    0 0 180px rgba(216, 198, 162, .05);
   opacity: 0;
+}
+/* 光标靠近时幕布四周多出的一圈光：固定的渐变层，只改 opacity */
+.scr-glow {
+  position: absolute; inset: -22%; pointer-events: none; opacity: 0;
+  background: radial-gradient(closest-side, rgba(216, 198, 162, .14), rgba(216, 198, 162, .05) 55%, transparent 100%);
+  transition: opacity .5s var(--ease-out);
+  will-change: opacity;
 }
 .scr-screen:focus-visible { box-shadow: 0 0 0 1px var(--blood), 0 0 0 9px rgba(10, 8, 9, .9), 0 50px 140px rgba(0, 0, 0, .85); }
 .scr-screen-inner { position: absolute; inset: 0; overflow: hidden; background: #050404; }
@@ -116,7 +121,8 @@
 
 .scr-floor {
   position: absolute; left: 0; right: 0; bottom: 0; height: 26%; z-index: 2; pointer-events: none;
-  background: radial-gradient(ellipse 60% 70% at 50% 0%, rgba(216, 198, 162, calc(.03 + var(--scr-lit) * .04)), transparent 70%);
+  background: radial-gradient(ellipse 60% 70% at 50% 0%, rgba(216, 198, 162, .07), transparent 70%);
+  opacity: .45; will-change: opacity;
 }
 
 @media (max-width: 760px) {
