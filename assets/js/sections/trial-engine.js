@@ -1390,7 +1390,7 @@
       presentLeft: PRESENT_MAX, presents: [], tested: {},
       // 公开讨论（A6）：玩家举手 3 次；current 当前的指认 {accuser, target, clue?, claim?}
       hands: HAND_MAX, handUp: false, current: null, spoken: {}, spokeOpen: {}, answered: {}, beats: 0, beatsRun: 0, stopReason: null,
-      misled: false, refuted: {}, // 凶手拿陈设误导（一次）；被排除性事实驳倒的人
+      misled: false, refuted: {}, openClaim: null, // 凶手拿陈设误导（一次）；被排除性事实驳倒的人；桌上还没被驳回的误导
       // 大家按哪个时刻对去向：开庭时按尸体「看上去」的死亡时刻；有人出示让时间窗偏移的证物（识破）后按真正的时刻
       refTime: apparentDeath(c), refKnown: !c.shift,
     }
@@ -2138,6 +2138,8 @@
     function* exchange(speaker, target, clue, claim) {
       recordAccuse(T, speaker, target)
       T.current = { accuser: speaker, target, clue: clue ? clue.id : null, claim: claim || null }
+      // 误导的「证据」一直摆在桌上，直到有人驳回或辩论结束
+      if (claim) T.openClaim = { claim, accuser: speaker, target, refuted: false }
       tick(2)
       yield { type: 'accuse', speaker, target, clue: clueInfo(clue), claim: claim || null }
       // 被点名指认（出示的若是他自己留下的痕迹，更是直击要害）：持秘密者掷破绽，表现挂在他的回应上
@@ -2163,6 +2165,7 @@
       tick(1)
       if (kind === 'counter' && isLiving(g, speaker)) {
         recordAccuse(T, target, speaker)
+        T.current = { accuser: target, target: speaker, clue: null, claim: null }
         yield { type: 'counter', speaker: target, target: speaker, tell }
       } else if (kind === 'alibi' && canAlibi(T, target)) yield* alibiFlow(target, true, tell)
       else yield { type: 'defend', speaker: target, against: speaker, tell }
@@ -2207,7 +2210,7 @@
     function* refuteFlow(speaker, claimant, claim) {
       if (!isLiving(g, speaker)) return
       T.refuted[claimant] = speaker
-      if (T.current && T.current.claim === claim) T.current.refuted = true
+      if (T.openClaim && T.openClaim.claim === claim) T.openClaim.refuted = true
       tick(1)
       yield { type: 'refute', speaker, target: claimant, claim, ok: true }
       const tl = tellOf(claimant, 'exposed')
@@ -2279,12 +2282,12 @@
           return true
         }
         case 'refute': {
-          const cur = T.current
-          if (!cur) return false
-          const sp = cur.claim && (c.spots || []).find(x => x.id === cur.claim.spot)
-          const ok = !!(sp && a.card === sp.id && sp.done && (!sp.herring || sp.herring.cleared) && !cur.refuted)
-          if (ok) yield* refuteFlow(me, cur.accuser, cur.claim)
-          else { tick(1); yield { type: 'refute', speaker: me, target: cur.accuser, claim: cur.claim || null, ok: false } }
+          const oc = T.openClaim
+          if (!oc || oc.refuted) return false
+          const sp = (c.spots || []).find(x => x.id === oc.claim.spot)
+          const ok = !!(sp && a.card === sp.id && sp.done && (!sp.herring || sp.herring.cleared))
+          if (ok) yield* refuteFlow(me, oc.accuser, oc.claim)
+          else { tick(1); yield { type: 'refute', speaker: me, target: oc.accuser, claim: oc.claim, ok: false } }
           return true
         }
       }
@@ -2447,14 +2450,15 @@
       T.beats = beats
       yield { type: 'discuss', beats }
       let b = 0, extra = 0, last = null, guardB = 0
-      while (b < beats && guardB++ < 40) {
+      while (guardB++ < 40) {
         yield* checkpoint()
         if (T.ended || T.phase !== 'debate') break
-        // 玩家举手：这一拍归他（不占 AI 的拍数，最多多出两拍）
+        // 玩家举手：下一拍归他（最后一拍时举的手也算；最多多出两拍）
         if (T.handUp && g.player && isLiving(g, g.player) && T.hands > 0) {
           T.handUp = false
           const cur = T.current
-          const a = yield { type: 'ask-interject', speaker: g.player, hands: T.hands, presentLeft: T.presentLeft, current: cur ? { accuser: cur.accuser, target: cur.target, claim: cur.claim || null, refuted: !!cur.refuted } : null }
+          const oc = T.openClaim && !T.openClaim.refuted ? T.openClaim : null
+          const a = yield { type: 'ask-interject', speaker: g.player, hands: T.hands, presentLeft: T.presentLeft, current: cur ? { accuser: cur.accuser, target: cur.target } : null, claim: oc ? { accuser: oc.accuser, target: oc.target, claim: oc.claim } : null }
           if (a && a.kind) {
             const said = yield* interjectFlow(a)
             if (said) {
@@ -2467,6 +2471,7 @@
           }
           continue
         }
+        if (b >= beats) break
         const bt = pickBeat(last)
         if (!bt) { T.stopReason = 'exhausted'; break } // 论点说尽：主持人喊停
         yield* runBeat(bt)

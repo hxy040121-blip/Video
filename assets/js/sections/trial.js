@@ -425,6 +425,7 @@
       ]),
       el('div.trial-inv-read', null, [el('b.trial-inv-left'), el('span.trial-inv-unit', { text: '分' }), el('span.trial-inv-court')]),
       el('div.trial-inv-pop', null, [el('div.trial-inv-pop-ico'), el('div.trial-inv-pop-body', null, [el('i.trial-inv-pop-lead'), el('b'), el('p.trial-inv-pop-text'), el('p.trial-inv-pop-more'), el('p.trial-inv-pop-sub')]), el('i.trial-inv-pop-tag')]),
+      el('div.trial-inv-tools'),
       el('div.trial-inv-go'),
     ])
 
@@ -450,6 +451,7 @@
     E.top = el('div.trial-top', null, [
       el('div.trial-top-case', null, [el('b'), el('span')]),
       el('div.trial-top-clock', null, [el('span.trial-top-day'), el('span.trial-top-time')]),
+      el('div.trial-top-body', { 'aria-hidden': 'true', html: '<i class="trial-gauge is-hunger">' + icon('meal') + '<b></b><b></b><b></b></i><i class="trial-gauge is-sleep">' + icon('sleep') + '<b></b><b></b><b></b><b></b></i>' }),
       el('div.trial-top-coins', { html: '<i></i><span>0</span>' }),
       el('button.trial-top-exit', { type: 'button', 'data-cursor': '', 'data-trial-act': '离席', text: '离席' }),
     ])
@@ -473,7 +475,12 @@
       el('div.trial-rp-go'),
     ])
 
-    st.append(E.dome, E.fx, E.ring, E.idcard, E.dealGo, E.cine, E.inv, E.exec, E.replay, E.end, E.desk, E.quips, E.prof, E.top, E.bar, E.me, E.roster, E.cast, E.banner, E.notes, E.veil)
+    // 公开讨论的举手、验尸的时间刻度、默念的价目
+    E.hand = el('button.trial-hand', { type: 'button', 'data-cursor': '举手', 'aria-label': '举手' }, [el('i.trial-hand-ico', { html: HAND_ICON }), el('span.trial-hand-dots')])
+    E.ap = el('div.trial-ap', { 'data-lenis-prevent': '' })
+    E.mm = el('div.trial-mm', { 'data-lenis-prevent': '' })
+
+    st.append(E.dome, E.fx, E.ring, E.idcard, E.dealGo, E.cine, E.inv, E.exec, E.replay, E.end, E.desk, E.quips, E.prof, E.top, E.bar, E.me, E.hand, E.ap, E.mm, E.roster, E.cast, E.banner, E.notes, E.veil)
     sec.appendChild(st)
     S.sec = sec
     S.stage = st
@@ -488,6 +495,7 @@
     E.me.querySelector('.trial-me-card').addEventListener('click', e => { e.stopPropagation(); toggleMeText() })
     E.me.querySelector('.trial-me-act').addEventListener('click', e => { e.stopPropagation(); onAbility() })
     E.roster.querySelector('.trial-roster-x').addEventListener('click', e => { e.stopPropagation(); cancelTargeting() })
+    E.hand.addEventListener('click', e => { e.stopPropagation(); onHand() })
     st.addEventListener('contextmenu', e => { if (S.armed || S.targeting) { e.preventDefault(); disarm(); cancelTargeting() } })
   }
 
@@ -632,7 +640,7 @@
   function resetSeatStates() {
     for (let k = 1; k <= 15; k++) {
       const s = S.seat[k]
-      s.root.classList.remove('is-dead', 'is-me', 'is-speaking', 'is-dim', 'is-voter', 'is-pending', 'is-banned', 'is-novote', 'is-out', 'is-target', 'is-picked', 'is-hope', 'is-lit', 'is-gone', 'is-shake', 'is-tie')
+      s.root.classList.remove('is-dead', 'is-left', 'is-me', 'is-speaking', 'is-dim', 'is-voter', 'is-pending', 'is-banned', 'is-novote', 'is-out', 'is-target', 'is-picked', 'is-hope', 'is-lit', 'is-gone', 'is-shake', 'is-tie')
       setCount(k, 0, true)
       s.pips.innerHTML = ''
       s.mark.innerHTML = ''
@@ -648,14 +656,16 @@
       const s = S.seat[k]
       const id = s.id
       if (!id) continue
-      const dead = !TE.isLiving(S.G, id)
-      s.root.classList.toggle('is-dead', dead)
-      s.root.classList.toggle('is-me', isMe(id))
       const p = S.G.people[id]
+      const left = !!(p && p.alive && !p.inMansion)
+      const dead = !TE.isLiving(S.G, id) && !left
+      s.root.classList.toggle('is-dead', dead)
+      s.root.classList.toggle('is-left', left)
+      s.root.classList.toggle('is-me', isMe(id))
       s.root.classList.toggle('is-novote', !!(p && !dead && p.ident.noVote))
       s.root.classList.toggle('is-out', !!(S.T && S.T.idiotOut.includes(id)))
       const prt = s.pt.querySelector('.portrait')
-      if (prt) prt.classList.toggle('is-dead', dead)
+      if (prt) { prt.classList.toggle('is-dead', dead); prt.classList.toggle('is-mono', left) }
     }
   }
   function setCount(k, n, silent) {
@@ -834,7 +844,7 @@
     E.top.querySelector('.trial-top-case b').textContent = n ? '第' + U.cnNum(n) + '案' : '入局'
     E.top.querySelector('.trial-top-case span').textContent = n ? 'CASE ' + U.roman(n) : ''
     const mm = Math.floor(m)
-    if (S.active && mm !== S.lastTime) { S.lastTime = mm; emitTime(mm) }
+    if (S.active && mm !== S.lastTime) { S.lastTime = mm; emitTime(mm); updateBody() }
   }
   // 顶栏的时钟：游戏中以局内时刻为准。滚动进度（core/scroll.js）也会发 'time'——锁着的滚动被对齐、窗口改变大小时都会——
   // 那时在同一轮事件之后把局内时刻再发一次盖回去（见 mount 里的监听）
@@ -1021,7 +1031,9 @@
   function showTip(rec) {
     const tip = S.E.bar.querySelector('.trial-bar-tip')
     tip.querySelector('b').textContent = rec.item.label
-    tip.querySelector('p').textContent = rec.item.text || ''
+    const p = tip.querySelector('p')
+    p.textContent = rec.item.talk && rec.item.segs ? '' : rec.item.text || ''
+    if (rec.item.talk && rec.item.segs) p.appendChild(timelineEl(rec.item.segs))
     S.E.bar.classList.add('is-tip')
   }
   function hideTip() { S.E.bar.classList.remove('is-tip') }
@@ -1030,6 +1042,7 @@
   // 能做笔记的证物：筛人的证物
   const notable = rec => !!(rec && rec.item.predicate && !rec.herring)
   function onCardClick(rec) {
+    if (S.dragEat && performance.now() - S.dragEat < 300) return
     // 选卡（出示、对质、驳回）：交给正在等的那一步
     if (S.cardPick) { if (S.cardPick.filter(rec)) S.cardPick.done(rec); else { App.audio.sfx('wrong', { volume: 0.25 }); shakeCard(rec) } return }
     // 疑似线索：调查期里点它「再看一次」（三到五分钟）
@@ -1039,14 +1052,8 @@
     if (rec.item.id === 'photo' && S.C && S.C.photo && S.scene === 'court') { openAutopsy({ photo: true }); return }
     if (S.scene !== 'court' || !(notable(rec) || presentable(rec))) { showTip(rec); App.audio.sfx('flip', { volume: 0.5 }); return }
     if (S.armed === rec) return disarm()
-    disarm()
-    if (!S.presentArm) cancelTargeting()
-    S.armed = rec
-    rec.el.classList.add('is-armed')
-    S.stage.classList.add('is-armed')
-    showTip(rec)
-    App.audio.sfx('whoosh', { volume: 0.5 })
-    refreshTargets()
+    if (!S.presentArm && !S.debateResolve) cancelTargeting()
+    armCard(rec)
   }
   function shakeCard(rec) {
     if (!rec || !window.gsap) return
@@ -1085,24 +1092,6 @@
     }
   }
   function renderAllPips() { for (const id of Object.keys(S.notes)) renderPips(id) }
-  // 选一张卡（filter 决定哪些能选）：合适的卡呼吸，其余压暗；返回 Promise<rec | null>
-  function pickCard(filter) {
-    disarm()
-    return ask(done => {
-      S.cardPick = { filter, done }
-      S.E.bar.classList.add('is-picking')
-      for (const r of S.cards) r.el.classList.toggle('is-pickable', !!filter(r))
-      const kill = () => done(null)
-      picks.add(kill)
-      return () => {
-        S.cardPick = null
-        picks.delete(kill)
-        S.E.bar.classList.remove('is-picking')
-        for (const r of S.cards) r.el.classList.remove('is-pickable')
-      }
-    })
-  }
-
   // 私人通知（屏幕边缘）
   const NOTE_ICON = {
     death: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 3v18M7 8h10"/></svg>',
@@ -1405,7 +1394,7 @@
      ========================================================== */
   function onStageClick(e) {
     if (S.profK && !App.finePointer) hideProf()
-    if (S.paused || e.target.closest('button, a, .trial-roster, .trial-me, .trial-bar, .trial-veil, .trial-replay')) return
+    if (S.paused || e.target.closest('button, a, .trial-roster, .trial-me, .trial-bar, .trial-veil, .trial-replay, .trial-ap, .trial-mm')) return
     touchSelect(null)
     // 身份卡的说明开着时，点别处先把它收起
     if (S.E.me && S.E.me.classList.contains('is-open')) { toggleMeText(false); return }
@@ -1823,6 +1812,15 @@
       S.E.idcard.classList.remove('is-on', 'is-flipped')
       S.E.desk.classList.remove('is-on')
       S.E.me.classList.remove('is-open', 'is-on', 'is-dead', 'is-window', 'is-choice')
+      hideHand()
+      S.E.ap.classList.remove('is-on')
+      S.E.mm.classList.remove('is-on')
+      S.E.inv.classList.remove('is-dark')
+      if (S.pairChips) { S.pairChips.forEach(x => x.remove()); S.pairChips = null }
+      S.claimChip = null
+      S.frame = null
+      S.autopsy = null
+      S.discuss = false
       hideRoster()
       clearBar()
       clearLines(null, false)
@@ -1862,7 +1860,13 @@
     S.running = true
     S.spectate = false
     S.deadShown = false
-    setCoins(0)
+    S.left = false
+    S.consumed = {}
+    // 本局钱袋：规则宣告之后，有人坐的那几摞已各自取走，你身上 10 枚（不跨局累积）
+    const e = App.econ ? App.econ.newGame({ me: S.me, seats: S.seats }) : null
+    S.econGame = e ? e.game : 0
+    setCoins(e ? e.coins : TE.START_COINS)
+    syncPurse()
     enterGameMode()
     const tok = ++S.token
     try {
@@ -2188,7 +2192,7 @@
       box.innerHTML = ''
       for (const sp of this.spots) {
         const label = sp.kind === 'body' ? '验尸' : sp.place === 'away' ? '追踪' : '细查'
-        const b = el('button.trial-spot' + (sp.kind === 'body' ? '.is-body' : '') + (sp.revealed ? '' : '.is-hidden'), { type: 'button', 'data-cursor': '', 'aria-label': label })
+        const b = el('button.trial-spot' + (sp.kind === 'body' ? '.is-body' : '') + (sp.revealed ? '' : '.is-hidden') + (sp.blocked ? '.is-blocked' : ''), { type: 'button', 'data-cursor': '', 'aria-label': label })
         b.addEventListener('click', e => { e.stopPropagation(); this.onSpot(sp) })
         sp.btn = b
         box.appendChild(b)
@@ -3106,6 +3110,8 @@
     async onSpot(sp, by) {
       // 旁观时由在场的人轮流细查，点热点不起作用
       if (this.busy || sp.done || this.ended || S.paused || (this.auto && !by)) return
+      // 饿过两天：去不了别的房间（身体结算 2）
+      if (sp.blocked && !by) { App.audio.sfx('wrong', { volume: 0.35 }); if (window.gsap) gsap.fromTo(sp.btn, { x: -5 }, { x: 0, duration: 0.5, ease: 'elastic.out(1.2, 0.3)', clearProps: 'transform' }); return }
       this.busy = true
       if (!sp.revealed) this.revealSpot(sp)
       if (!App.finePointer || by) {
@@ -3130,25 +3136,27 @@
           if (h) {
             // 疑似线索：当场只看见可疑的东西；以虚边卡进证物栏，「再看一次」才揭开
             await this.popup(x, y, 'look', sp.object, h.bait, '', { fast, tag: '疑似' })
-            const rec = addCard({ id: 'herring:' + sp.id, label: sp.object, text: h.bait, predicate: null, icon: 'look' }, { from: { x, y }, by: cardBy, herring: sp.herring })
+            const rec = addCard({ id: 'herring:' + sp.id, label: sp.object, text: h.bait, predicate: null, icon: 'look', spot: sp.id }, { from: { x, y }, by: cardBy, herring: sp.herring })
             rec.spot = sp
           } else {
             await this.popup(x, y, 'look', sp.object, res.desc + (res.detail ? res.detail : ''), '', { fast })
             // 排除性事实留在证物栏（庭上可以拿来反驳）
-            if (res.fact) addCard({ id: 'fact:' + sp.id, label: sp.object, text: res.desc, predicate: null, icon: 'look', fact: res.fact }, { from: { x, y }, by: cardBy, fact: true })
+            if (res.fact) addCard({ id: 'fact:' + sp.id, label: sp.object, text: res.desc, predicate: null, icon: 'look', fact: res.fact, spot: sp.id }, { from: { x, y }, by: cardBy, fact: true })
           }
           const ri = c.roomInfo
           // 自言自语不是每处都说（玩家自己每案至多一句，免得同一人的池子很快用完）
           if (this.talk(who, 'search', !!h)) voice(who, line(who, 'search', { ROOM: ri.name }, { objs: (ri.objects || []).concat(ri.weapons || []).join('、'), windows: !!ri.windows }))
         } else if (sp.kind === 'body') {
+          // 验尸：三格读数与时间刻度（你自己框出死亡时间窗；医护者自动得到一个窗）；衣袋里的金币可取走
           const cause = res.cause
-          const sub = res.window ? hhmm(res.window[0]) + '—' + hhmm(res.window[1]) : ''
-          await this.popup(x, y, 'body', cause.name, (res.obs || cause.sign + '。') + res.stage + '。', sub, { fast })
-          addCard({ id: 'body', label: cause.name, text: cause.sign + '。' + res.stage + '。' + (sub ? ' ' + sub : ''), predicate: cause.needs || null, icon: 'body', dim: cause.needs ? cause.glyph || null : null, visible: cause.visible }, { from: { x, y }, by: cardBy })
+          if (who === S.me || !S.autopsy) S.autopsy = { readings: res.readings, ruler: res.ruler, window: who === S.me ? res.window : null, causeName: cause.name, obs: (res.obs || cause.sign + '。') + res.stage + '。', coins: res.coins || 0, at: S.G.minutes, by: who }
+          if (who === S.me && res.window && !S.frame) S.frame = res.window.slice()
+          addCard({ id: 'body', label: cause.name, text: cause.sign + '。' + res.stage + '。', predicate: cause.needs || null, icon: 'body', dim: cause.needs ? cause.glyph || null : null, visible: cause.visible }, { from: { x, y }, by: cardBy })
+          await openAutopsy({ auto: fast })
         } else {
           const k = res.clue
           await this.popup(x, y, k.tpl, k.label, k.text, k.place === 'away' && k.awayTo ? k.awayTo : '', { fast, lead: res.lead })
-          addCard({ id: k.id, label: k.label, text: k.text, predicate: k.predicate, icon: k.tpl, dim: k.dim, visible: k.visible }, { from: { x, y }, by: cardBy })
+          addCard({ id: k.id, label: k.label, text: k.text, predicate: k.predicate, icon: k.tpl, dim: k.dim, visible: k.visible, shift: k.shift || null }, { from: { x, y }, by: cardBy })
           if (this.talk(who, 'found', false)) voice(who, line(who, 'found', { CLUE: k.name }))
         }
       } catch (e) {
@@ -3181,13 +3189,20 @@
         if (!r) return
         App.audio.sfx('door', { volume: 0.3 })
         await this.spendAnim(r.cost, before)
-        const t = line(r.id, 'alibi', { ROOM: r.room, TIME: hhmm(r.time) })
+        // 「这个时段你在哪」：两段时间线；台词说的是落在你框出的窗里的那一段（没框就是前一段）
+        const f = S.frame
+        const segs = r.segs || []
+        const hit = f ? segs.findIndex(sg => sg.from < f[1] && sg.to > f[0]) : -1
+        const sg = segs[hit >= 0 ? hit : 0] || { room: r.room, from: r.time }
+        const t = line(r.id, 'alibi', { ROOM: sg.room, TIME: hhmm(sg.from) })
         const rec = talkCard(r.id, r)
+        // 与你自己的去向相矛盾（你当时就在那间房里）：你知道他在说谎
+        const mine = r.conflicts.filter(k => k.witness === S.me)
         // 被问到案发的时间与地点：破绽成立、而你察觉到了——肖像抖一帧，话断出「……」，证言卡上留一只小眼睛
         const tell = r.tell && r.tell.shown && r.tell.player ? r.tell : null
-        await this.popup(this.W / 2, this.H / 2, null, nameOf(r.id), quoted(t), alibiTag(r.room, r.time, r.with), { face: r.id, center: true, tag: r.conflicts.length ? '矛盾' : '', alarm: r.conflicts.length > 0, tell: !!tell })
+        await this.popup(this.W / 2, this.H / 2, null, nameOf(r.id), quoted(t), '', { face: r.id, center: true, tag: mine.length ? '矛盾' : '', alarm: mine.length > 0, tell: !!tell, timeline: segs })
         if (tell) markTell(r.id, rec)
-        for (const k of r.conflicts) markConflict(k)
+        for (const k of mine) markConflict(k)
       } catch (e) {
         if (e !== ABORT) console.error(e)
       } finally {
@@ -3223,6 +3238,126 @@
         this.updateGo()
       }
     },
+    // 手边的工具（兑换来的）：鲁米诺（要毛毯）、指纹粉、拍立得；录音笔开着时亮一个红点
+    renderTools(pop) {
+      const box = S.E.inv.querySelector('.trial-inv-tools')
+      if (!box) return
+      box.innerHTML = ''
+      if (this.auto || !meAlive() || S.spectate) return
+      const c = this.c
+      const tools = c ? c.tools || {} : {}
+      const add = (key, ico, used, extra) => {
+        const b = el('button.trial-tool' + (used ? '.is-used' : '') + (extra || ''), { type: 'button', 'data-cursor': '', 'aria-label': IT[key] }, [el('i', { html: icon(ico) })])
+        b.disabled = !!used || this.ended
+        b.addEventListener('click', e => { e.stopPropagation(); this.useTool(key) })
+        box.appendChild(b)
+        if (pop && window.gsap) gsap.fromTo(b, { y: -20, opacity: 0, scale: 1.4 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: 'bounce.out' })
+        return b
+      }
+      if (haveItem('luminol') || tools.luminol) {
+        const b = add('luminol', 'luminol', tools.luminol)
+        if (!haveItem('blanket')) b.classList.add('is-need')
+      }
+      if (haveItem('powder')) add('powder', 'powder', tools.powder)
+      if (haveItem('camera')) add('camera', 'photo', tools.camera)
+      if (haveItem('recorder')) { const b = add('recorder', 'recorder', true, '.is-rec'); b.disabled = true }
+      box.classList.toggle('is-on', !!box.children.length)
+    },
+    async useTool(key) {
+      const c = this.c
+      if (this.busy || this.ended || S.paused || this.auto || !c) return
+      if (key === 'luminol' && !haveItem('blanket')) {
+        // 灯关不掉：要先用毛毯罩出一块暗处
+        App.audio.sfx('wrong', { volume: 0.35 })
+        const b = S.E.inv.querySelector('.trial-tool.is-need')
+        if (b && window.gsap) gsap.fromTo(b, { x: -5 }, { x: 0, duration: 0.5, ease: 'elastic.out(1.2, 0.3)', clearProps: 'transform' })
+        return
+      }
+      this.busy = true
+      try {
+        const before = S.G.minutes
+        const r = TE.useTool(S.G, c, key === 'camera' ? 'camera' : key)
+        if (!r) { App.audio.sfx('wrong', { volume: 0.3 }); return }
+        if (key === 'luminol') { S.consumed = S.consumed || {}; S.consumed.luminol = (S.consumed.luminol || 0) + 1 }
+        await this.spendAnim(r.cost, before)
+        if (key === 'luminol') await this.luminolFx(r)
+        else if (key === 'powder') await this.powderFx(r)
+        else if (key === 'camera') this.cameraFx(r)
+      } catch (e) {
+        if (e !== ABORT) console.error(e)
+      } finally {
+        this.busy = false
+        this.placeButtons()
+        this.updateGo()
+        this.renderTools()
+      }
+    },
+    // 鲁米诺：毛毯罩出的暗处里，血类痕迹泛蓝光（漂白剂擦过的地方也亮）
+    async luminolFx(r) {
+      const inv = S.E.inv
+      inv.classList.add('is-dark')
+      App.audio.sfx('dark', { volume: 0.5 })
+      await wait(500)
+      for (const id of r.glow) {
+        const sp = this.spots.find(x => x.id === id)
+        if (!sp) continue
+        sp.revealed = true
+        if (sp.btn) { sp.btn.classList.remove('is-hidden'); sp.btn.classList.add('is-glow') }
+        App.audio.sfx('tick', { volume: 0.4 })
+        await wait(160)
+      }
+      if (!r.glow.length) App.audio.sfx('wrong', { volume: 0.3 })
+      await wait(1100)
+      inv.classList.remove('is-dark')
+    },
+    // 指纹粉：刷开——显出手印（本案已有的那处直接显出；新显出的一处另放一个热点）；戴手套的人只留污印
+    async powderFx(r) {
+      if (r.smudge || !r.spot) { App.audio.sfx('wrong', { volume: 0.35 }); return }
+      let sp = this.spots.find(x => x.id === r.spot)
+      if (!sp) {
+        const src = this.c.spots.find(x => x.id === r.spot)
+        const solid = this.objs.filter(o => !o.rug && !o.ghost && /mirror|window|table|cabinet|round|piano/.test(o.k))
+        const o = solid[Math.floor(Math.random() * solid.length)] || this.objs[0] || { u: this.w / 2, v: this.h / 2, a: 1, b: 1 }
+        src.u = U.clamp(o.u + (Math.random() - 0.5) * 0.6, 0.35, this.w - 0.35)
+        src.v = U.clamp(o.v + (Math.random() - 0.5) * 0.6, 0.35, this.h - 0.35)
+        src.place = 'room'
+        src.revealed = true
+        const b = el('button.trial-spot.is-glow', { type: 'button', 'data-cursor': '', 'aria-label': '细查' })
+        b.addEventListener('click', e => { e.stopPropagation(); this.onSpot(src) })
+        src.btn = b
+        S.E.inv.querySelector('.trial-inv-spots').appendChild(b)
+        this.spots.push(src)
+        sp = src
+      }
+      sp.revealed = true
+      if (sp.btn) { sp.btn.classList.remove('is-hidden'); sp.btn.classList.add('is-glow', 'is-found') }
+      App.audio.sfx('hover', { volume: 0.6 })
+      this.placeButtons()
+      await wait(400)
+    },
+    // 拍立得：一闪，照片进证物栏（开庭可出示）
+    cameraFx(r) {
+      App.flash('#ffffff', { opacity: 0.6, duration: 0.5 })
+      App.audio.sfx('flip')
+      const [x, y] = this.body ? this.P(this.body.u, this.body.v) : [this.W / 2, this.H / 2]
+      addCard({ id: 'photo', label: '尸体照片', text: r.photo.readings.map(x => x.name + '：' + x.text).join('；') + '。', predicate: null, icon: 'photo' }, { from: { x, y } })
+    },
+    // 默念：调查期的兑换（时间停着，买成一次花一分钟）
+    async murmur() {
+      if (this.busy || this.ended || S.paused || this.auto || !meAlive() || S.spectate) return
+      this.busy = true
+      let v
+      try {
+        v = await murmur('inv')
+      } catch (e) {
+        if (e !== ABORT) console.error(e)
+      } finally {
+        this.busy = false
+        this.updateGo()
+        this.renderTools()
+      }
+      if (v === 'exit' && S.invDone) S.invDone('exit')
+    },
     // 「询问」按钮：问完所有人或时间到了就收起
     updateGo() {
       const b = this.askBtn
@@ -3250,7 +3385,10 @@
       const lead = box.querySelector('.trial-inv-pop-lead')
       lead.textContent = opts.lead || ''
       box.querySelector('b').textContent = title
-      box.querySelector('.trial-inv-pop-sub').textContent = sub || ''
+      const subEl = box.querySelector('.trial-inv-pop-sub')
+      subEl.textContent = sub || ''
+      subEl.classList.toggle('is-tl', !!opts.timeline)
+      if (opts.timeline) subEl.appendChild(timelineEl(opts.timeline))
       const more = box.querySelector('.trial-inv-pop-more')
       more.textContent = ''
       const tag = box.querySelector('.trial-inv-pop-tag')
@@ -3322,6 +3460,339 @@
     },
   }
 
+  /* ==========================================================
+     默念：兑换（价目表「兑换方式」、8.2、第 9 节）
+     说出或默念 → 只对你报价 → 同意 → 付款 → 东西出现在手边。一次兑换的总价要正好整百，不找零；身上的不够就不成立。
+     调查期列工具（鲁米诺要先用毛毯罩出暗处；指纹粉不在铜牌上，问了才知道价）；余波列吃的、一夜安眠。
+     打听「谁是凶手」之类一律不成立，不收钱。退出券五百枚：买得起的话，持券可以要求离馆。
+     ========================================================== */
+  const IT = {
+    luminol: '鲁米诺试剂一瓶', blanket: '毛毯、枕头、睡袋', juice: '一瓶果汁、汽水或牛奶', powder: '指纹粉、刷子与胶纸一套',
+    recorder: '录音笔一支', camera: '拍立得相机一台，含相纸二十张', meal: '一餐，一人份，菜式任点', feast: '十五人份的同一餐',
+    sleep: '热水浴、按摩、一夜安眠的服务', coffee: '一壶热咖啡或茶，含杯具', choc: '巧克力一板', ticket: '退出券一张', repair: '修复身体残疾',
+  }
+  const MM_LIST = {
+    inv: [['luminol', 'luminol'], ['blanket', 'blanket'], ['juice', 'drink'], ['powder', 'powder'], ['recorder', 'recorder'], ['camera', 'photo'], ['meal', 'meal'], ['ticket', 'ticket']],
+    after: [['meal', 'meal'], ['feast', 'meal'], ['sleep', 'sleep'], ['coffee', 'drink'], ['choc', 'meal'], ['juice', 'drink'], ['repair', 'walk'], ['ticket', 'ticket']],
+  }
+  const econ = () => (App.econ && App.econ.get()) || null
+  // 手边有几件（买到的，减去这一局用掉的鲁米诺）
+  function haveItem(key) {
+    const e = econ()
+    if (!e || e.game !== S.econGame) return 0
+    const it = e.items.find(x => x.name === IT[key])
+    return it ? Math.max(0, it.qty - ((S.consumed && S.consumed[key]) || 0)) : 0
+  }
+  // 引擎里你身上的枚数跟着钱袋走
+  function syncPurse() {
+    const e = econ()
+    if (!e || !S.G || !S.me || e.game !== S.econGame) return
+    const p = S.G.people[S.me]
+    if (p) p.coins = e.coins
+    S.G.walkFix = Object.assign({}, e.repaired || {})
+  }
+  // 顶栏的饥饿与困倦刻度（身体结算 2、4）
+  function updateBody() {
+    const box = S.E.top && S.E.top.querySelector('.trial-top-body')
+    if (!box || !S.G || !S.me || !S.G.people[S.me]) return
+    const b = TE.bodyState(S.G, S.me)
+    const key = b.hunger + '|' + b.sleep
+    if (box._k === key) return
+    box._k = key
+    box.querySelectorAll('.trial-gauge').forEach(gg => {
+      const n = gg.classList.contains('is-hunger') ? b.hunger : b.sleep
+      gg.querySelectorAll('b').forEach((x, i) => x.classList.toggle('is-on', i < n))
+      gg.classList.toggle('is-warn', gg.classList.contains('is-hunger') ? b.hunger >= 2 : b.sleep >= 2)
+    })
+  }
+  function murmur(where) {
+    const box = S.E.mm
+    const list = MM_LIST[where] || MM_LIST.inv
+    const note = [] // 这一次兑换：{key, qty}
+    box.innerHTML = ''
+    const purse = el('div.trial-mm-purse', null, [el('i.trial-mm-coin'), el('b')])
+    const rows = el('div.trial-mm-rows')
+    const noteEl = el('div.trial-mm-note')
+    const go = button('同意', 'btn--blood', 'mm-pay')
+    const close = button('收起', '', 'mm-close')
+    const exitBtn = button('持券离馆', '', 'mm-exit')
+    exitBtn.classList.add('trial-mm-exit')
+    exitBtn.prepend(el('i', { html: icon('exitdoor') }))
+    const priceOf = key => { const p = App.econ.price(IT[key]); return p ? p.pts : null }
+    const known = key => { const p = App.econ.price(IT[key]); const e = econ(); return !!p && (!p.off || (e && e.asked[IT[key]] != null)) }
+    const listOf = () => note.map(n => ({ name: IT[n.key], qty: n.qty, repair: n.key === 'repair' ? S.me : undefined }))
+    const render = () => {
+      const e = econ()
+      purse.querySelector('b').textContent = String(e ? e.coins : 0)
+      noteEl.innerHTML = ''
+      if (note.length) {
+        const parts = []
+        for (const n of note) {
+          const chip = el('button.trial-mm-chip', { type: 'button', 'data-cursor': '', 'aria-label': IT[n.key] }, [el('i', { html: icon(MM_LIST[where].find(x => x[0] === n.key)[1]) }), n.qty > 1 ? el('b', { text: '×' + n.qty }) : null])
+          chip.addEventListener('click', ev => { ev.stopPropagation(); n.qty--; if (n.qty <= 0) note.splice(note.indexOf(n), 1); App.audio.sfx('click'); render() })
+          noteEl.appendChild(chip)
+          parts.push(String((priceOf(n.key) || 0) * n.qty))
+        }
+        const r = App.econ.settle(listOf())
+        noteEl.appendChild(el('span.trial-mm-sum', { text: parts.join(' + ') + ' = ' + r.total }))
+        const res = el('span.trial-mm-res' + (r.ok ? '.is-ok' : '.is-no'), null, [el('i.trial-mm-coin'), el('b', { text: String(Math.floor(r.total / 100)) })])
+        if (r.reason === 'round') res.appendChild(el('em', { text: '+' + r.short }))
+        if (r.reason === 'purse') res.classList.add('is-short')
+        if (r.reason === 'repair' || r.reason === 'exited') res.classList.add('is-void')
+        noteEl.appendChild(res)
+        go.disabled = !r.ok
+      } else go.disabled = true
+      noteEl.classList.toggle('is-on', !!note.length)
+      go.classList.toggle('is-breath', !go.disabled)
+      exitBtn.style.display = App.econ.hasTicket() && !(e && e.exited) && meAlive() ? '' : 'none'
+    }
+    for (const [key, ico] of list) {
+      if (key === 'repair' && !App.econ.disability(S.me)) continue
+      const row = el('button.trial-mm-row', { type: 'button', 'data-cursor': '', 'aria-label': IT[key] }, [el('i', { html: icon(ico) }), el('span', { text: IT[key] }), el('b')])
+      const showPrice = () => { row.querySelector('b').textContent = known(key) ? String(priceOf(key)) : '?' }
+      showPrice()
+      row.addEventListener('click', ev => {
+        ev.stopPropagation()
+        // 牌外的东西：先问价（只对你报）
+        if (!known(key)) { App.econ.ask(IT[key]); showPrice(); App.audio.sfx('chime', { volume: 0.4 }); if (window.gsap) gsap.fromTo(row.querySelector('b'), { scale: 1.8, color: '#ff2e7e' }, { scale: 1, color: '', duration: 0.5, ease: 'back.out(3)', clearProps: 'color' }); return }
+        const n = note.find(x => x.key === key)
+        if (n) n.qty++
+        else note.push({ key, qty: 1 })
+        App.audio.sfx('card', { volume: 0.5 })
+        render()
+      })
+      rows.appendChild(row)
+    }
+    // 打听：一律不成立，不收钱
+    const asks = el('div.trial-mm-asks')
+    for (const v of [{ label: '谁是凶手', key: 'ask' }].concat((App.econ.VOID_ASKS || []).slice(0, 3))) {
+      const b = el('button.trial-mm-ask', { type: 'button', 'data-cursor': '', 'aria-label': v.label }, [el('i', { html: icon('voidask') }), el('span', { text: v.label })])
+      b.addEventListener('click', ev => {
+        ev.stopPropagation()
+        const r = App.econ.settle([{ name: v.label, void: v.key }])
+        b.classList.add('is-void')
+        b.setAttribute('data-res', r.ok ? '' : '不成立')
+        App.audio.sfx('wrong', { volume: 0.35 })
+        if (window.gsap) gsap.fromTo(b, { x: -6 }, { x: 0, duration: 0.5, ease: 'elastic.out(1.2, 0.3)' })
+      })
+      asks.appendChild(b)
+    }
+    const foot = el('div.trial-mm-foot', null, [exitBtn, go, close])
+    box.append(el('div.trial-mm-head', null, [el('i.trial-mm-ico', { html: icon('look') }), purse]), rows, asks, noteEl, foot)
+    box.classList.toggle('is-after', where === 'after')
+    box.classList.add('is-on')
+    render()
+    App.audio.sfx('whoosh', { volume: 0.4 })
+    if (window.gsap) gsap.fromTo(box, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'expo.out' })
+    return ask(done => {
+      go.addEventListener('click', ev => {
+        ev.stopPropagation()
+        const r = App.econ.pay(listOf())
+        if (!r.ok) { App.audio.sfx('wrong', { volume: 0.4 }); render(); return }
+        syncPurse()
+        App.audio.sfx('coins')
+        delivered(r.items || [], where)
+        note.length = 0
+        render()
+        if (where === 'inv' && S.C) { const before = S.G.minutes; TE.spend(S.G, S.C, 1); Inv.spendAnim(1, before) }
+      })
+      close.addEventListener('click', ev => { ev.stopPropagation(); App.audio.sfx('click'); done('close') })
+      exitBtn.addEventListener('click', ev => { ev.stopPropagation(); done('exit') })
+      const kill = () => done('close')
+      picks.add(kill)
+      return () => { picks.delete(kill); box.classList.remove('is-on') }
+    })
+  }
+  // 交付：买到的东西落在手边（调查期落进工具栏；余波落在你席位前的桌面上），并生效
+  function delivered(items, where) {
+    const G = S.G
+    for (const it of items) {
+      if (it.name === IT.meal) TE.eat(G, S.me)
+      else if (it.name === IT.feast) TE.eat(G, TE.livingIds(G))
+      else if (it.name === IT.sleep) TE.rest(G, S.me)
+      else if (it.name === IT.recorder && S.C && where === 'inv' && !Inv.ended) TE.useTool(G, S.C, 'recorder')
+    }
+    updateBody()
+    if (where === 'inv') Inv.renderTools(true)
+    // 东西出现的样子：小图标从桌心落下
+    const g = S.geo
+    if (!g || !window.gsap) return
+    items.forEach((it, i) => {
+      const key = Object.keys(IT).find(k => IT[k] === it.name)
+      const row = (MM_LIST[where] || []).find(x => x[0] === key)
+      const ico = el('i.trial-drop-item', { html: icon(row ? row[1] : 'look') })
+      S.stage.appendChild(ico)
+      const k = seatOf(S.me)
+      const at = where === 'after' && k ? { x: g.pos[k].x + (g.cx - g.pos[k].x) * 0.3, y: g.pos[k].y + (g.cy - g.pos[k].y) * 0.3 } : { x: g.W / 2, y: g.H - 150 }
+      ico.style.left = at.x + 'px'
+      ico.style.top = at.y + 'px'
+      gsap.fromTo(ico, { y: -60, opacity: 0, scale: 1.4 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, delay: i * 0.1, ease: 'bounce.out', onStart: () => App.audio.sfx('drop', { volume: 0.5 }) })
+      gsap.to(ico, { opacity: 0, duration: 0.6, delay: 1.6 + i * 0.1, onComplete: () => ico.remove() })
+    })
+  }
+
+  /* ==========================================================
+     验尸：三格读数与死亡时间窗（洋馆物理层 7.4、7.5）
+     体温、僵硬、尸斑各落在表里的一档，每一档对应一个死亡时段，画在同一条时间刻度上；你在刻度上自己拖出死亡时间窗。
+     医护「有 / 战场急救 / 基本常识」的人自动得到一个由窄到宽的窗（虚线）。你手里有让时间窗偏移的证物时，
+     被干扰的那一格裂开，显出它本来该在的位置。框好的窗决定证言卡上哪一段标亮。
+     ========================================================== */
+  const READ_TONE = { temp: 'is-temp', rigor: 'is-rigor', livor: 'is-livor' }
+  // 你知不知道尸体被怎样处理过：证物栏里有那条让时间窗偏移的证物
+  const knowShift = () => !!(S.C && S.C.shift && S.cards.some(r => r.item.shift))
+  function openAutopsy(opts = {}) {
+    const A = opts.photo && S.C && S.C.photo ? Object.assign({}, S.autopsy || {}, { readings: S.C.photo.readings, ruler: S.C.photo.ruler, photo: true, coins: 0 }) : S.autopsy
+    if (!A || !A.readings || !S.E.ap) return Promise.resolve()
+    const box = S.E.ap
+    const c = S.C
+    box.innerHTML = ''
+    const [r0, r1] = A.ruler
+    const span = r1 - r0
+    const known = knowShift()
+    const off = c && c.shift ? c.shift.dir * c.shift.minutes : 0
+    // 头：死因、所见、尸体阶段
+    const head = el('div.trial-ap-head', null, [
+      el('i.trial-ap-ico', { html: icon(A.photo ? 'photo' : 'body') }),
+      el('div', null, [el('b', { text: A.causeName || (c && c.cause.name) || '' }), A.obs ? el('p', { text: A.obs }) : null]),
+    ])
+    // 三格读数
+    const cells = el('div.trial-ap-reads')
+    for (const r of A.readings) {
+      const crack = known && r.shifted
+      cells.appendChild(el('div.trial-ap-cell.' + (READ_TONE[r.key] || '') + (crack ? '.is-crack' : ''), null, [el('i.trial-ap-sw'), el('b', { text: r.name }), el('span', { text: r.text })]))
+    }
+    // 刻度
+    const ruler = el('div.trial-ap-ruler')
+    const axis = el('div.trial-ap-axis')
+    const rows = el('div.trial-ap-rows')
+    const pct = t => U.clamp((t - r0) / span) * 100
+    for (let t = Math.ceil(r0 / 60) * 60; t <= r1; t += 60) {
+      const major = Math.round(t / 60) % 2 === 0
+      axis.appendChild(el('i' + (major ? '.is-major' : ''), { style: { left: pct(t) + '%' } }))
+      if (major) axis.appendChild(el('span', { text: hhmm(t), style: { left: pct(t) + '%' } }))
+    }
+    for (const r of A.readings) {
+      const row = el('div.trial-ap-row.' + (READ_TONE[r.key] || ''))
+      const band = (a, b, cls) => {
+        const L = pct(a == null ? r0 : a), R = pct(b)
+        row.appendChild(el('i.trial-ap-band' + (cls || '') + (a == null ? '.is-open' : ''), { style: { left: L + '%', width: Math.max(0.8, R - L) + '%' } }))
+      }
+      if (known && r.shifted) {
+        band(r.band[0], r.band[1], '.is-false')
+        band(r.band[0] == null ? null : r.band[0] - off, r.band[1] - off, '.is-true')
+      } else band(r.band[0], r.band[1])
+      rows.appendChild(row)
+    }
+    // 医护的窗（虚线）与你的窗（可拖）
+    const med = A.window ? el('i.trial-ap-med', { html: dimIcon('medical'), style: { left: pct(A.window[0]) + '%', width: (pct(A.window[1]) - pct(A.window[0])) + '%' } }) : null
+    const frame = el('div.trial-ap-frame', null, [el('i.trial-ap-h.is-a'), el('i.trial-ap-h.is-b'), el('b.trial-ap-ft')])
+    ruler.append(axis, rows)
+    if (med) ruler.appendChild(med)
+    ruler.appendChild(frame)
+    if (!S.frame && A.window) S.frame = A.window.slice()
+    const drawFrame = () => {
+      const f = S.frame
+      frame.classList.toggle('is-on', !!f)
+      if (!f) return
+      frame.style.left = pct(f[0]) + '%'
+      frame.style.width = Math.max(0, pct(f[1]) - pct(f[0])) + '%'
+      frame.querySelector('.trial-ap-ft').textContent = hhmm(f[0]) + '—' + hhmm(f[1])
+    }
+    drawFrame()
+    // 拖：在刻度上按下拖出一个窗；按住端点改一边
+    let drag = null
+    const tAt = e => { const rc = ruler.getBoundingClientRect(); return r0 + U.clamp((e.clientX - rc.left) / (rc.width || 1)) * span }
+    const snap = t => Math.round(t / 10) * 10
+    ruler.addEventListener('pointerdown', e => {
+      if (opts.readonly) return
+      e.preventDefault()
+      const t = tAt(e)
+      const f = S.frame
+      const rc = ruler.getBoundingClientRect()
+      const px = m => (m / span) * rc.width
+      if (f && Math.abs(px(t - f[0])) < 14) drag = { side: 0 }
+      else if (f && Math.abs(px(t - f[1])) < 14) drag = { side: 1 }
+      else { drag = { anchor: snap(t) }; S.frame = [snap(t), snap(t) + 10] }
+      try { ruler.setPointerCapture(e.pointerId) } catch (err) {}
+      drawFrame()
+      App.audio.sfx('tick', { volume: 0.4 })
+    })
+    ruler.addEventListener('pointermove', e => {
+      if (!drag) return
+      const t = snap(tAt(e))
+      let f = S.frame.slice()
+      if (drag.anchor != null) f = t < drag.anchor ? [t, drag.anchor] : [drag.anchor, Math.max(t, drag.anchor + 10)]
+      else if (drag.side === 0) f[0] = Math.min(t, f[1] - 10)
+      else f[1] = Math.max(t, f[0] + 10)
+      S.frame = f
+      drawFrame()
+    })
+    const end = () => { if (!drag) return; drag = null; lightTalk(); App.audio.sfx('drop', { volume: 0.4 }) }
+    ruler.addEventListener('pointerup', end)
+    ruler.addEventListener('pointercancel', end)
+    // 脚：衣袋里的金币（调查期、尸体还在时可取走，耗一分钟）与收起
+    const foot = el('div.trial-ap-foot')
+    if (A.coins > 0 && !opts.readonly && S.scene === 'inv' && !Inv.ended && S.C && !S.C.coinsTaken && meAlive() && !S.spectate) {
+      const purse = el('div.trial-ap-coins')
+      for (let i = 0; i < Math.min(A.coins, 24); i++) purse.appendChild(el('i'))
+      purse.appendChild(el('b', { text: String(A.coins) }))
+      const take = button('取走', '', 'take-coins')
+      take.addEventListener('click', e => { e.stopPropagation(); takeCoins(purse, take) })
+      foot.append(purse, take)
+    }
+    const close = button('收起', 'btn--blood', 'ap-close')
+    foot.appendChild(close)
+    box.append(head, cells, ruler, foot)
+    box.classList.toggle('is-photo', !!A.photo)
+    box.classList.add('is-on')
+    App.audio.sfx('flip', { volume: 0.6 })
+    if (window.gsap) {
+      gsap.fromTo(box, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'expo.out' })
+      gsap.fromTo(rows.querySelectorAll('.trial-ap-band'), { scaleX: 0 }, { scaleX: 1, duration: 0.55, stagger: 0.08, delay: 0.2, ease: 'expo.out' })
+      if (med) gsap.fromTo(med, { opacity: 0 }, { opacity: 1, duration: 0.4, delay: 0.6 })
+      const tb = rows.querySelectorAll('.trial-ap-band.is-true')
+      if (tb.length) gsap.fromTo(tb, { x: 0, opacity: 0 }, { opacity: 1, duration: 0.6, delay: 0.8, ease: 'expo.out', onStart: () => App.audio.sfx('glitch', { volume: 0.35 }) })
+    }
+    return ask(done => {
+      const fin = e => { if (e) e.stopPropagation(); App.audio.sfx('click'); done() }
+      close.addEventListener('click', fin)
+      S.apClose = () => done()
+      // 旁观：看一眼就收起
+      let t = null
+      if (S.spectate || opts.auto) t = setTimeout(() => done(), S.spectate ? 1700 : 2400)
+      return () => {
+        clearTimeout(t)
+        S.apClose = null
+        box.classList.remove('is-on')
+        lightTalk()
+      }
+    })
+  }
+  // 拾取死者衣袋里的金币：一分钟；金币一枚枚飞进右上角
+  async function takeCoins(purse, btn) {
+    const c = S.C
+    if (!c || Inv.busyCoins) return
+    Inv.busyCoins = true
+    btn.disabled = true
+    const before = S.G.minutes
+    const r = TE.takeBodyCoins(S.G, c, S.me)
+    if (!r) { Inv.busyCoins = false; App.audio.sfx('wrong', { volume: 0.3 }); return }
+    App.econ.gain(r.n, 'pickup')
+    syncPurse()
+    if (S.autopsy) S.autopsy.coins = 0
+    const coins = Array.from(purse.querySelectorAll('i'))
+    const to = S.E.top.querySelector('.trial-top-coins').getBoundingClientRect()
+    if (window.gsap) {
+      coins.forEach((ci, i) => {
+        const rc = ci.getBoundingClientRect()
+        gsap.to(ci, { x: to.left - rc.left, y: to.top - rc.top, scale: 0.6, opacity: 0, duration: 0.55, delay: i * 0.03, ease: 'power3.in', onComplete: () => { if (i % 3 === 0) App.audio.sfx('coin', { volume: 0.4 }) } })
+      })
+    }
+    await Inv.spendAnim(r.cost, before)
+    purse.classList.add('is-empty')
+    Inv.busyCoins = false
+  }
+
   // 去向的小标：时刻—时刻 房间（· 在一起的人）
   function alibiTag(room, time, withIds, to) {
     const w = (withIds || []).filter(id => S.G && S.G.people[id])
@@ -3333,6 +3804,25 @@
       const w = (sg.with || []).filter(x => S.G && S.G.people[x])
       return hhmm(sg.from) + '—' + hhmm(sg.to) + ' ' + sg.room + (w.length ? '，和' + w.map(callOf).join('、') + '在一起' : '，独自')
     }).join('｜')
+  }
+  // 两段时间线的小图：按时长分成两截，标出时刻、房间、同伴；落在你框出的时间窗里的那一截亮
+  function timelineEl(segs) {
+    const box = el('div.trial-tl')
+    const a = segs.length ? segs[0].from : 0, b = segs.length ? segs[segs.length - 1].to : 1
+    const f = S.frame
+    for (const sg of segs) {
+      const w = (sg.with || []).filter(x => S.G && S.G.people[x])
+      const on = !!(f && sg.from < f[1] && sg.to > f[0])
+      box.appendChild(el('div.trial-tl-seg' + (on ? '.is-lit' : '') + (w.length ? '' : '.is-alone'), { style: { flexGrow: String(Math.max(1, sg.to - sg.from)) } }, [
+        el('i', { text: hhmm(sg.from) }), el('b', { text: sg.room }), w.length ? el('span', { text: w.map(callOf).join('、') }) : el('span.is-none', { text: '—' }),
+      ]))
+    }
+    box.appendChild(el('i.trial-tl-end', { text: hhmm(b) }))
+    if (f && b > a) {
+      const L = U.clamp((f[0] - a) / (b - a)) * 100, R = U.clamp((f[1] - a) / (b - a)) * 100
+      if (R > L) box.appendChild(el('i.trial-tl-frame', { style: { left: L + '%', width: (R - L) + '%' } }))
+    }
+    return box
   }
   // 证言卡：「这个时段你在哪」的两段（你自己的也算一张）；落在你框出的死亡时间窗里的那段标亮
   function talkCard(id, r) {
@@ -3387,6 +3877,10 @@
       Inv.bodyGone = false
       Inv.ended = false
       S.tellMarks = new Set()
+      S.frame = null
+      S.autopsy = null
+      S.refKnown = false
+      syncPurse()
       Inv.auto = !!(S.spectate || !meAlive())
       E.inv.classList.toggle('is-auto', Inv.auto)
       Inv.setup(c)
@@ -3442,17 +3936,25 @@
       S.G.minutes = c.tCourt
       Inv.updateTimer()
     } else {
-      // 你自己案发时在哪：一张证言卡
+      // 你自己这个时段在哪：一张证言卡
       const mine = c.where && c.where[S.me]
-      if (mine) talkCard(S.me, { room: mine.room, with: mine.with, time: c.tAlibi })
-      await ask(done => {
+      if (mine) talkCard(S.me, { segs: TE.claimSegs(S.G, c, S.me) })
+      // 手边已有录音笔：这一案的询问照样录下
+      if (haveItem('recorder')) TE.useTool(S.G, c, 'recorder')
+      Inv.renderTools()
+      const how = await ask(done => {
+        S.invDone = done
         const q = button('询问', '', 'interview')
         q.addEventListener('click', e => { e.stopPropagation(); App.audio.sfx('click'); Inv.interview() })
         Inv.askBtn = q
         Inv.updateGo()
+        // 默念：兑换工具（时间停着）
+        const mm = button('默念', '', 'murmur')
+        mm.prepend(el('i.trial-mm-btn-ico', { html: icon('look') }))
+        mm.addEventListener('click', e => { e.stopPropagation(); App.audio.sfx('click'); Inv.murmur() })
         const b = button('开庭', 'btn--blood', 'court')
         b.addEventListener('click', e => { e.stopPropagation(); done('go') })
-        go.append(q, b)
+        go.append(q, mm, b)
         let acc = 0, last = performance.now()
         let warned = false
         const off = App.tick(() => {
@@ -3472,8 +3974,17 @@
           }
           if (S.G.minutes >= c.tCourt && !Inv.busy) done('time')
         })
-        return () => { off(); go.innerHTML = ''; Inv.askBtn = null }
+        return () => { off(); go.innerHTML = ''; Inv.askBtn = null; S.invDone = null }
       })
+      if (how === 'exit') {
+        // 持券离馆：调查到此为止，其余的人照常开庭（你可以旁观）
+        Inv.ended = true
+        Inv.renderTools()
+        const v = await leaveMansion()
+        if (v === 'restart') { setTimeout(hardReset, 0); throw ABORT }
+        if (S.G.minutes < c.tCourt) S.G.minutes = c.tCourt
+        return
+      }
     }
     // 届满：主持人移走尸体
     Inv.ended = true
@@ -3509,13 +4020,18 @@
     // 他人找到的证物，从他的席位飞进证物栏
     for (const k of opened.shared) {
       const p = seatCenter(seatOf(k.foundBy))
-      addCard({ id: k.id, label: k.label, text: k.text, predicate: k.predicate, icon: k.tpl, dim: k.dim, visible: k.visible }, { by: k.foundBy, from: p })
+      addCard({ id: k.id, label: k.label, text: k.text, predicate: k.predicate, icon: k.tpl, dim: k.dim, visible: k.visible, shift: k.shift || null }, { by: k.foundBy, from: p })
       await wait(260)
     }
     if (opened.body) {
       const p = seatCenter(seatOf(opened.body.by))
       addCard({ id: 'body', label: c.cause.name, text: c.cause.sign + '。' + opened.body.stage + '。', predicate: c.cause.needs || null, icon: 'body', dim: c.cause.needs ? c.cause.glyph || null : null, visible: c.cause.visible }, { by: opened.body.by, from: p })
       await wait(260)
+    }
+    // 没亲手验尸：发现者转述的三格读数（听说），你仍可以在刻度上框出时间窗
+    if (!S.autopsy && c.tDiscover != null) {
+      const at = c.tDiscover + 10
+      S.autopsy = { readings: TE.bodyReadings(G, c, at), ruler: [Math.floor((at - 540) / 60) * 60, at], window: null, causeName: c.cause.name, obs: c.cause.sign + '。', coins: 0, at, by: c.discoverer }
     }
     // 卡片多了：重排推理笔记
     renderAllPips()
@@ -3538,8 +4054,11 @@
       if (ev.type === 'end') result = ev
     }
     hideSay()
+    hideHand()
     clearLines(null)
     disarm()
+    S.discuss = false
+    if (S.claimChip) { S.claimChip.remove(); S.claimChip = null }
     S.phase = null
     updateMe()
     const pay = TE.closeTrial(G, T)
@@ -4090,6 +4609,316 @@
     await wait(300)
   }
 
+  /* ---------- 当众出示、公开讨论的小件 ---------- */
+  // 「出示」按钮：三颗小点是这一场还能出示几次；按下去，能出示的证物呼吸，拿起一张再点人
+  function presentButton(left) {
+    const b = button('出示', 'btn--blood', 'present')
+    const dots = el('i.trial-btn-dots')
+    for (let i = 0; i < TE.PRESENT_MAX; i++) dots.appendChild(el('b' + (i < left ? '.is-on' : '')))
+    b.appendChild(dots)
+    b.addEventListener('click', e => {
+      e.stopPropagation()
+      App.audio.sfx('click')
+      S.E.bar.classList.add('is-picking')
+      for (const r of S.cards) r.el.classList.toggle('is-pickable', presentable(r))
+      setTimeout(() => { S.E.bar.classList.remove('is-picking'); for (const r of S.cards) r.el.classList.remove('is-pickable') }, 2600)
+    })
+    return b
+  }
+  function armCard(rec) {
+    disarm()
+    S.armed = rec
+    rec.el.classList.add('is-armed')
+    S.stage.classList.add('is-armed')
+    showTip(rec)
+    App.audio.sfx('whoosh', { volume: 0.5 })
+    refreshTargets()
+  }
+  // 当众的结果写进你的笔记（相符 / 不符），省得再记
+  function markNote(id, clueId, v) {
+    if (!id || !clueId || !S.cards.some(r => r.item.id === clueId && notable(r))) return
+    ;(S.notes[id] || (S.notes[id] = {}))[clueId] = v
+    renderPips(id)
+  }
+  // 反证：看得见的特征（档案里那一项）亮出来；看不见的只是他的说法——画成一只对话框（听说）
+  function rebutChip(ev, ch) {
+    const at = seatQuipAt(ev.speaker)
+    if (!at || !S.E.quips) return null
+    const vis = !!ev.visible
+    const chip = el('div.trial-rebut' + (vis ? '' : '.is-hearsay'), null, [
+      el('i.trial-rebut-dim', { html: dimIcon(ev.dim || 'items') }),
+      vis ? el('b', { text: featureOf(ev.dim, ch) }) : el('i.trial-rebut-say', { html: HEARSAY_ICON }),
+      el('i.trial-rebut-x'),
+    ])
+    S.E.quips.appendChild(chip)
+    const g = S.geo
+    const w = chip.offsetWidth, h = chip.offsetHeight
+    chip.style.left = U.clamp(at.x - w / 2, 8, g.W - w - 8) + 'px'
+    chip.style.top = U.clamp(at.y - h - 40, 64, g.H - h - 8) + 'px'
+    App.audio.sfx('flip', { volume: 0.5 })
+    if (window.gsap) gsap.fromTo(chip, { scale: 0.5, opacity: 0, rotate: -8 }, { scale: 1, opacity: 1, rotate: 0, duration: 0.4, ease: 'back.out(2.4)' })
+    return chip
+  }
+  // 识破假窗口：旧的时刻划掉，箭头指向新的时刻
+  async function reframeAnim(ev) {
+    const box = el('div.trial-reframe' + (ev.shift ? '.is-shift' : ''), null, [
+      el('i.trial-reframe-ico', { html: dimIcon('time') }), el('s', { text: hhmm(ev.from) }), el('i.trial-reframe-arrow'), el('b', { text: hhmm(ev.time) }),
+    ])
+    S.E.core.appendChild(box)
+    App.audio.sfx('glitch', { volume: 0.45 })
+    App.shake(S.stage, 5, 0.25)
+    if (window.gsap) {
+      gsap.fromTo(box, { scale: 1.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'expo.out' })
+      gsap.fromTo(box.querySelector('b'), { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, delay: 0.45, ease: 'expo.out', onStart: () => App.audio.sfx('stamp', { volume: 0.5 }) })
+    }
+    await wait(S.spectate ? 1000 : 1500)
+    if (window.gsap) gsap.to(box, { opacity: 0, y: -12, duration: 0.35, onComplete: () => box.remove() })
+    else box.remove()
+  }
+  // 对质：两张证言卡从证物栏飞到桌心，撞在一起；对得上矛盾就裂开（随后是当众拆穿），对不上就弹开
+  function talkChip(id) {
+    const rec = S.talk && S.talk[id]
+    const chip = el('div.trial-proof.is-talk', null, [el('span.trial-proof-ico', { html: icon('talk') }), el('b', { text: isMe(id) ? '你' : callOf(id) }),
+      rec ? el('span.trial-proof-segs', null, (rec.item.segs || []).map(sg => el('i', { text: sg.room }))) : null])
+    S.E.quips.appendChild(chip)
+    return { chip, rec }
+  }
+  function flyPair(idx, id) {
+    const g = S.geo
+    const { chip, rec } = talkChip(id)
+    const to = { x: g.cx + (idx ? 1 : -1) * Math.min(130, g.W * 0.2), y: g.cy - (g.mobile ? 70 : Math.min(120, g.ry * 0.5)) }
+    chip.style.left = to.x + 'px'
+    chip.style.top = to.y + 'px'
+    if (rec && window.gsap) {
+      const sr = S.stage.getBoundingClientRect(), r = rec.el.getBoundingClientRect()
+      gsap.fromTo(chip, { x: r.left - sr.left + r.width / 2 - to.x, y: r.top - sr.top + r.height / 2 - to.y, scale: 0.5, opacity: 0 }, { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.45, ease: 'expo.out' })
+    }
+    App.audio.sfx('card')
+    return chip
+  }
+  async function confrontAnim(ev) {
+    const pair = S.pairChips && S.pairChips.length === 2 ? S.pairChips : [flyPair(0, ev.a), flyPair(1, ev.b)]
+    S.pairChips = null
+    focusActor(ev.speaker)
+    await wait(350)
+    if (ev.recorded) {
+      // 放录音：磁带转起来，波形一闪
+      const tape = el('div.trial-tape', { html: TAPE_ICON + '<i></i><i></i><i></i><i></i><i></i>' })
+      S.E.core.appendChild(tape)
+      App.audio.sfx('tick', { volume: 0.5 })
+      await wait(S.spectate ? 600 : 1000)
+      tape.remove()
+    }
+    if (window.gsap) await anim(r => gsap.to(pair, { x: (i) => (i ? -1 : 1) * Math.min(56, S.geo.W * 0.08), duration: 0.22, ease: 'power3.in', onComplete: r }))
+    if (ev.ok) {
+      App.audio.sfx('glitch', { volume: 0.6 })
+      App.shake(S.stage, 9, 0.35)
+      pair.forEach(p => p.classList.add('is-crack'))
+    } else {
+      App.audio.sfx('wrong', { volume: 0.45 })
+      if (window.gsap) gsap.to(pair, { x: (i) => (i ? 1 : -1) * 40, duration: 0.4, ease: 'back.out(3)' })
+    }
+    await wait(ev.ok ? 450 : 700)
+    if (window.gsap) gsap.to(pair, { opacity: 0, y: -16, duration: 0.35, onComplete: () => pair.forEach(p => p.remove()) })
+    else pair.forEach(p => p.remove())
+  }
+  // 举手：公开讨论时出现在证物栏上方，三颗小点是这一场还能举几次
+  function showHand() {
+    const h = S.E.hand
+    if (!h || !S.T || !meAlive() || S.spectate) return
+    const dots = h.querySelector('.trial-hand-dots')
+    dots.innerHTML = ''
+    for (let i = 0; i < TE.HAND_MAX; i++) dots.appendChild(el('b' + (i < S.T.hands ? '.is-on' : '')))
+    h.disabled = S.T.hands <= 0
+    h.classList.add('is-on')
+    h.classList.remove('is-up')
+    if (window.gsap) gsap.fromTo(h, { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(2.2)', clearProps: 'transform,opacity' })
+  }
+  function hideHand() { if (S.E.hand) S.E.hand.classList.remove('is-on', 'is-up', 'is-hint') }
+  function pulseHand() {
+    const h = S.E.hand
+    if (!h || !h.classList.contains('is-on') || h.disabled) return
+    h.classList.add('is-hint')
+    setTimeout(() => h.classList.remove('is-hint'), 2400)
+  }
+  function onHand() {
+    if (!S.T || S.paused || S.spectate || !meAlive()) return
+    if (S.E.hand.classList.contains('is-up')) return
+    if (TE.raiseHand(S.T)) {
+      S.E.hand.classList.add('is-up')
+      App.audio.sfx('whoosh', { volume: 0.5 })
+      // 这一拍还在演：让它快一点收尾
+      skipAll()
+    } else { App.audio.sfx('wrong', { volume: 0.3 }); shakeSeat(S.me) }
+  }
+  // 驳回用的卡：排除性事实，或已经看清了的疑似线索
+  const refuter = r => !!(r && r.item.spot && (r.item.fact || (r.herring && r.herring.cleared)))
+  // 桌心的取消（选卡、选人时）
+  function cancelBox(done) {
+    const box = S.E.ask
+    box.innerHTML = ''
+    const x = button('取消', '', 'cancel')
+    x.addEventListener('click', e => { e.stopPropagation(); App.audio.sfx('click'); done(null) })
+    box.appendChild(x)
+    box.classList.add('is-on')
+  }
+  function clearAsk() { S.E.ask.innerHTML = ''; S.E.ask.classList.remove('is-on') }
+  // 选人（带取消）
+  function pickSeatC(filter, label) {
+    const p = pickSeat(filter, label, { cancelable: true })
+    cancelBox(() => p.kill())
+    return p.finally(clearAsk)
+  }
+  // 选一张卡（带取消）
+  function pickCardC(filter) {
+    return ask(done => {
+      cancelBox(done)
+      S.cardPick = { filter, done }
+      S.E.bar.classList.add('is-picking')
+      for (const r of S.cards) r.el.classList.toggle('is-pickable', !!filter(r))
+      const kill = () => done(null)
+      picks.add(kill)
+      return () => {
+        S.cardPick = null
+        picks.delete(kill)
+        clearAsk()
+        S.E.bar.classList.remove('is-picking')
+        for (const r of S.cards) r.el.classList.remove('is-pickable')
+      }
+    })
+  }
+  // 出示：拿起一张证物、点一个人（带取消）→ {rec, id}
+  function pickPresent() {
+    return ask(done => {
+      cancelBox(done)
+      S.presentArm = { ok: x => TE.isLiving(S.G, x) && x !== S.me, done: (rec, id) => done({ rec, id }) }
+      S.E.bar.classList.add('is-picking')
+      for (const r of S.cards) r.el.classList.toggle('is-pickable', presentable(r))
+      refreshTargets()
+      const kill = () => done(null)
+      picks.add(kill)
+      return () => {
+        S.presentArm = null
+        picks.delete(kill)
+        disarm()
+        clearAsk()
+        S.E.bar.classList.remove('is-picking')
+        for (const r of S.cards) r.el.classList.remove('is-pickable')
+        refreshTargets()
+      }
+    })
+  }
+  // 对质：选两张证言卡（点，或拖到桌心）；选中的飞到桌心
+  function pickTalkPair() {
+    return ask(done => {
+      cancelBox(done)
+      const sel = []
+      const chips = []
+      const take = r => {
+        if (!r || !r.item.talk || sel.includes(r)) return
+        sel.push(r)
+        r.el.classList.add('is-picked')
+        chips.push(flyPair(sel.length - 1, r.who))
+        if (sel.length === 2) { S.pairChips = chips.slice(); chips.length = 0; setTimeout(() => done(sel.slice()), 420) }
+      }
+      S.cardPick = { filter: r => !!r.item.talk && !sel.includes(r), done: take }
+      S.E.bar.classList.add('is-picking')
+      for (const r of S.cards) r.el.classList.toggle('is-pickable', !!r.item.talk)
+      S.E.core.classList.add('is-drop')
+      // 拖：按住一张证言卡拖到桌心
+      const track = S.E.bar.querySelector('.trial-bar-track')
+      let drag = null
+      const down = e => {
+        const b = e.target.closest('.trial-card.is-talk')
+        const r = b && S.cards.find(x => x.el === b)
+        if (!r || sel.includes(r)) return
+        drag = { r, x: e.clientX, y: e.clientY, ghost: null }
+      }
+      const move = e => {
+        if (!drag) return
+        if (!drag.ghost && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 10) {
+          drag.ghost = drag.r.el.cloneNode(true)
+          drag.ghost.classList.add('trial-drag-ghost')
+          S.stage.appendChild(drag.ghost)
+        }
+        if (drag.ghost) {
+          const sr = S.stage.getBoundingClientRect()
+          drag.ghost.style.transform = `translate3d(${e.clientX - sr.left - 70}px, ${e.clientY - sr.top - 30}px, 0) rotate(-4deg)`
+        }
+      }
+      const up = e => {
+        if (!drag) return
+        const d = drag
+        drag = null
+        if (!d.ghost) return
+        d.ghost.remove()
+        S.dragEat = performance.now() // 拖完的这一下不算点
+        const cr = S.E.core.getBoundingClientRect()
+        if (e.clientX > cr.left && e.clientX < cr.right && e.clientY > cr.top && e.clientY < cr.bottom) take(d.r)
+      }
+      track.addEventListener('pointerdown', down)
+      window.addEventListener('pointermove', move)
+      window.addEventListener('pointerup', up)
+      const kill = () => done(null)
+      picks.add(kill)
+      return () => {
+        S.cardPick = null
+        picks.delete(kill)
+        clearAsk()
+        track.removeEventListener('pointerdown', down)
+        window.removeEventListener('pointermove', move)
+        window.removeEventListener('pointerup', up)
+        S.E.bar.classList.remove('is-picking')
+        S.E.core.classList.remove('is-drop')
+        for (const r of S.cards) r.el.classList.remove('is-pickable', 'is-picked')
+        if (chips.length) chips.forEach(c => c.remove())
+      }
+    })
+  }
+  // 举手之后的这一拍：出示 / 对质 / 追问 / 附议 / 质疑 / 驳回 / 放下
+  async function interjectUI(ev) {
+    const G = S.G
+    hideSay()
+    turnBox()
+    S.E.hand.classList.remove('is-up')
+    App.audio.sfx('heartbeat', { volume: 0.5 })
+    const cur = ev.current
+    for (let n = 0; n < 12; n++) {
+      const items = []
+      if (ev.presentLeft > 0 && S.cards.some(presentable)) items.push({ label: '出示', value: 'present', tone: 'blood' })
+      if (Object.keys(S.talk || {}).length >= 2) items.push({ label: '对质', value: 'confront' })
+      items.push({ label: '追问', value: 'question' })
+      if (cur && TE.isLiving(G, cur.target) && cur.target !== S.me) items.push({ label: '附议', value: 'agree' }, { label: '质疑', value: 'doubt' })
+      if (ev.claim && S.cards.some(refuter)) items.push({ label: '驳回', value: 'refute', tone: 'blood' })
+      items.push({ label: '放下', value: 'cancel' })
+      const v = await choose(items)
+      if (v === 'cancel') return null
+      if (v === 'agree' || v === 'doubt') return { kind: v }
+      if (v === 'question') {
+        const id = await pickSeatC(x => TE.isLiving(G, x) && x !== S.me, '追问')
+        if (id) return { kind: 'question', target: id }
+        continue
+      }
+      if (v === 'present') {
+        const r = await pickPresent()
+        if (r) return { kind: 'present', clue: r.rec.item.id, target: r.id, frame: S.frame }
+        continue
+      }
+      if (v === 'confront') {
+        const pr = await pickTalkPair()
+        if (pr) return { kind: 'confront', a: pr[0].who, b: pr[1].who, recorded: pr.some(r => r.recorded) }
+        if (S.pairChips) { S.pairChips.forEach(c => c.remove()); S.pairChips = null }
+        continue
+      }
+      if (v === 'refute') {
+        const rec = await pickCardC(refuter)
+        if (rec) return { kind: 'refute', card: rec.item.spot }
+        continue
+      }
+    }
+    return null
+  }
+
   // 投票结果：桌心的转盘
   async function reel(pending, pool) {
     const box = S.E.reel
@@ -4223,14 +5052,23 @@
       await wait(500)
       await dropCoins(ids, 5)
     }
+    // 你这一轮的几枚进钱袋（一局一个钱袋，铜牌与庭审共用）
     const gain = meAlive() && pay.table[S.me] ? pay.table[S.me] : 0
-    App.bus.emit('trial:coins', gain)
+    if (gain && App.econ) { App.econ.gain(gain, 'aftermath'); syncPurse() }
     // 未查明：凶手的十枚出现在他套房的书桌上（不广播）——只有一个极暗的光点
     if (!pay.solved && Object.keys(pay.desk).length) {
       E.desk.classList.add('is-on')
       setTimeout(() => E.desk.classList.remove('is-on'), 9000)
     }
     await wait(500)
+    // 「下一案」之前：默念兑换（吃饭、一夜安眠……）；旁观时略过
+    if (meAlive() && !S.spectate && App.econ) {
+      const v = await murmur('after')
+      if (v === 'exit') {
+        const r = await leaveMansion()
+        if (r === 'restart') { setTimeout(hardReset, 0); throw ABORT }
+      }
+    }
   }
   async function dropCoins(ids, n) {
     const g = S.geo
@@ -4267,10 +5105,10 @@
     }
     await Promise.all(tasks)
     guard(tok)
+    // 席位前只显示这一轮落下的枚数（旁人看不见谁攒了多少：没有账本）
     for (const id of ids) {
       const k = seatOf(id)
-      const p = S.G.people[id]
-      if (k && p) { const c = S.seat[k].coins; c.textContent = String(p.coinsTable); if (window.gsap) gsap.fromTo(c, { scale: 1.6 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' }) }
+      if (k) { const c = S.seat[k].coins; c.textContent = String(Number(c.dataset.n) || 0); if (window.gsap) gsap.fromTo(c, { scale: 1.6 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' }) }
     }
     await wait(300)
   }
@@ -4600,6 +5438,46 @@
       setTimeout(() => (App.nav ? App.nav.go('wish') : App.scroll.to('#wish')), 80)
     } else hardReset()
   }
+  // 持券离馆（开局流程 2.4；主持人游戏 6）：不是死亡——你的椅子空出来（门开着，不是锈红），回到记忆截止的那一刻
+  async function leaveMansion() {
+    const G = S.G
+    if (!App.econ.exit({ at: Math.floor(G.minutes) })) return 'watch'
+    TE.leave(G, S.me)
+    S.left = true
+    S.deadShown = true
+    const E = S.E
+    S.endMood = 'end'
+    hideHand()
+    await slash(() => {
+      setScene('end')
+      mood('end')
+      E.end.className = 'trial-end is-left'
+      const oldL = E.end.querySelector('.trial-end-ledger')
+      if (oldL) { clearFaces(oldL); oldL.remove() }
+      const fc = E.end.querySelector('.trial-end-face')
+      clearFaces(fc)
+      clearFaces(E.end.querySelector('.trial-end-row'))
+      fc.appendChild(face(S.me, { eyeRange: 6 }))
+      fc.appendChild(el('i.trial-end-door', { html: icon('exitdoor') }))
+      E.end.querySelector('.trial-end-tag').textContent = U.roman(seatOf(S.me))
+      E.end.querySelector('.trial-end-name').textContent = nameOf(S.me)
+      E.end.querySelector('.trial-end-line').textContent = ''
+      syncSeats()
+    }, { color: '#e2c48c' })
+    App.audio.sfx('door', { volume: 0.7 })
+    if (window.gsap) {
+      const fc = E.end.querySelector('.trial-end-face')
+      gsap.set(fc, { rotate: 0, rotationX: 0, x: 0, y: 0, opacity: 1, transformPerspective: 760, transformOrigin: '50% 100%' })
+      gsap.to(fc.querySelector('.portrait'), { xPercent: 26, opacity: 0.12, scale: 0.86, duration: 1.8, delay: 0.5, ease: 'power2.inOut' })
+    }
+    await wait(1600)
+    E.end.querySelector('.trial-end-line').textContent = '回到记忆截止的那一刻'
+    if (window.gsap) gsap.fromTo(E.end.querySelector('.trial-end-line'), { opacity: 0 }, { opacity: 1, duration: 1.2 })
+    const v = await endButtons([{ label: '旁观', value: 'watch', tone: 'blood', act: 'watch' }, { label: '重来', value: 'restart', act: 'restart' }])
+    if (v === 'watch') { S.spectate = true; S.endMood = 'end' }
+    if (window.gsap) gsap.set(E.end.querySelector('.trial-end-face'), { clearProps: 'transform,opacity' })
+    return v
+  }
   async function deadScene() {
     const E = S.E
     S.endMood = 'dead'
@@ -4725,6 +5603,12 @@
       if (S.scene === 'inv') { if (v) Inv.start(); else Inv.stop() }
     })
     App.tick(onTick)
+    // 钱袋变了（余波发放、拾取、兑换，或在铜牌上动了它）：顶栏跟着变，引擎里你身上的枚数也跟着
+    App.bus.on('econ:change', e => {
+      if (!S.G || !e || e.game !== S.econGame) return
+      if (e.coins !== S.coins) setCoins(e.coins, true)
+      syncPurse()
+    })
     App.bus.on('time', () => {
       if (S.timeOwn || !S.active || S.paused || !S.G || S.shownTime == null || S.reTime) return
       S.reTime = true
