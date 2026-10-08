@@ -90,26 +90,31 @@ void main(){
     if (!canvas) return null
     const gl = canvas.getContext('webgl', { antialias: false, alpha: false, premultipliedAlpha: false })
     if (!gl) { canvas.style.background = 'radial-gradient(ellipse at 50% 30%, #1a1214, #0a0809 70%)'; return null }
-    const sh = (type, src) => {
-      const s = gl.createShader(type)
-      gl.shaderSource(s, src)
-      gl.compileShader(s)
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s))
-      return s
-    }
-    const prog = gl.createProgram()
-    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT))
-    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG))
-    gl.linkProgram(prog)
-    gl.useProgram(prog)
-    const buf = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW)
-    const loc = gl.getAttribLocation(prog, 'p')
-    gl.enableVertexAttribArray(loc)
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
+    // 着色器、顶点、uniform：开局建一次；显卡驱动重置、休眠唤醒等丢失上下文后，恢复时再建一次
+    // （不处理的话烟雾会停在丢失前的最后一帧，之后切换板块也不再变色）
     const u = {}
-    for (const n of ['uRes', 'uTime', 'uMouse', 'uVel', 'uColA', 'uColB', 'uGlow', 'uPulse', 'uDark', 'uScroll', 'uOct']) u[n] = gl.getUniformLocation(prog, n)
+    function build() {
+      const sh = (type, src) => {
+        const s = gl.createShader(type)
+        gl.shaderSource(s, src)
+        gl.compileShader(s)
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS) && !gl.isContextLost()) console.error(gl.getShaderInfoLog(s))
+        return s
+      }
+      const prog = gl.createProgram()
+      gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT))
+      gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG))
+      gl.linkProgram(prog)
+      gl.useProgram(prog)
+      const buf = gl.createBuffer()
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW)
+      const loc = gl.getAttribLocation(prog, 'p')
+      gl.enableVertexAttribArray(loc)
+      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
+      for (const n of ['uRes', 'uTime', 'uMouse', 'uVel', 'uColA', 'uColB', 'uGlow', 'uPulse', 'uDark', 'uScroll', 'uOct']) u[n] = gl.getUniformLocation(prog, n)
+    }
+    build()
 
     // 烟雾本身是柔的、动得慢：按 CSS 像素的一小部分渲染（不乘设备像素比，高分屏上也不会多算），
     // 每秒最多画 FPS 次（屏幕照常按自己的刷新率显示上一张）；画质每降一级：分辨率更低、噪声层数更少、画得更少
@@ -124,11 +129,14 @@ void main(){
     resize()
     window.addEventListener('resize', U.debounce(resize, 120))
     App.bus.on('quality', resize)
+    // preventDefault 才允许浏览器稍后恢复上下文
+    canvas.addEventListener('webglcontextlost', e => e.preventDefault(), false)
+    canvas.addEventListener('webglcontextrestored', () => { build(); resize(); lastDraw = -1e9 }, false)
 
     const start = performance.now()
     let lastDraw = -1e9
     App.tick(() => {
-      if (!state.running) return
+      if (!state.running || gl.isContextLost()) return
       const now = performance.now()
       if (now - lastDraw < 1000 / FPS[Q()] - 4) return
       lastDraw = now
