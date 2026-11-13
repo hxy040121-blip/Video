@@ -567,10 +567,7 @@
       return
     }
     gsap.set([readName, readEpi], { opacity: 1 })
-    // 卡名；括号里的显示名（两位乔瑟夫、两位承太郎）刻成名字旁一枚小铜签
-    const m = /^(.+?)（([^（）]+)）$/.exec(c.name)
-    readName.textContent = m ? m[1] : c.name
-    if (m) readName.appendChild(el('i.read-part', { text: m[2] }))
+    readName.textContent = c.name
     readEpi.textContent = ''
     App.text.scramble(readEpi, c.epithet, { duration: 0.6 })
     if (!RM) gsap.fromTo(readName, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.45, ease: 'expo.out' })

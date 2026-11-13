@@ -723,7 +723,7 @@
 
   /* ==========================================================
      席位档案（悬停 / 长按）：看得见的特征——身高刻度、性别、体格、能否行走、随身物
-     只放卡面原文与数字；医护、现场观察、年代这类别人看不见的不放（运行规则 1.1）。v7.11 的人物卡没有「别人眼里」了：有这一项的旧数据才显示
+     只放卡面原文与数字；医护、现场观察、年代这类别人看不见的不放（运行规则 1.1）
      ========================================================== */
   // 能不能行走：卡上的 canWalk；本局在铜牌或默念里修复过残疾的，按能走算（App.econ.canWalk）
   const cantWalk = id => {
@@ -765,8 +765,7 @@
     ])
     const items = (c.carried || []).slice(0, 3)
     const bag = el('div.trial-prof-items', null, [el('i', { html: dimIcon('items') }), el('ul', null, items.length ? items.map(t => el('li', { text: t })) : [el('li', { text: '—' })])])
-    const see = c.othersSee ? el('p.trial-prof-see', null, [el('span', { text: '别人眼里' }), document.createTextNode(c.othersSee)]) : null
-    box.append(head, el('div.trial-prof-body', null, [el('div.trial-prof-left', { html: rulerSVG(c.heightCm) }), el('div.trial-prof-right', null, [traits, bag, see])]))
+    box.append(head, el('div.trial-prof-body', null, [el('div.trial-prof-left', { html: rulerSVG(c.heightCm) }), el('div.trial-prof-right', null, [traits, bag])]))
     // 位置：贴着席位，朝桌心一侧；不出舞台、不压顶栏与证物栏
     const g = S.geo, p = g.pos[k]
     box.classList.add('is-measure')
@@ -2053,7 +2052,7 @@
       hideSay()
       E.cine.classList.remove('is-found')
       clearFaces(E.cine.querySelector('.trial-cine-face'))
-      // 幕布揭开时表盘已经就位：十五颗席位点（空席、死者熄灭）、指针、时刻
+      // 幕布揭开时表盘已经就位：十三颗席位点（空席、死者熄灭）、指针、时刻
       dots.forEach((d, i) => d.classList.toggle('is-off', !S.G.seats[i] || !TE.isLiving(S.G, S.G.seats[i]) && S.G.seats[i] !== c.victim))
       setDial(t0)
       moodEl.textContent = ''
@@ -2099,16 +2098,15 @@
       })
       return () => off()
     })
-    if (c.doorLock && c.tMurder > t0) {
-      // 典狱长：发动的那一刻全馆广播（主持人游戏 5.1、7）——表盘停在行凶时刻，广播之后再走到发现
-      const share = U.clamp((c.tMurder - t0) / Math.max(1, t1 - t0), 0.45, 0.85)
-      await dialRun(t0, c.tMurder, 4200 * share)
-      App.audio.sfx('door', { volume: 0.9 })
-      App.shake(S.stage, 10, 0.4)
-      const ab = (window.WORLD && WORLD.broadcasts && WORLD.broadcasts.abilities || []).find(x => x.ability === '典狱长')
-      await broadcast(ab ? ab.text : '', { alarm: true, hold: 1200, sfx: 'door' })
-      await dialRun(c.tMurder, t1, 4200 * (1 - share))
+    // 第一天晚上八点（开局流程第 4 节）：表盘停在 20:00，播报原文，每人五枚；之后再走到发现
+    const d01 = S.G.d01 && !S.d01Shown && S.G.d01.ids.length && t0 < S.G.d01.at && S.G.d01.at <= t1 ? S.G.d01.at : null
+    if (d01) {
+      const share = U.clamp((d01 - t0) / Math.max(1, t1 - t0), 0.2, 0.8)
+      await dialRun(t0, d01, 4200 * share)
+      await d01Scene()
+      await dialRun(d01, t1, 4200 * (1 - share))
     } else await dialRun(t0, t1, 4200)
+    syncD01()
     await flushNotices()
     if (c.lastStanding !== undefined) {
       await wait(900)
@@ -2144,11 +2142,29 @@
     })
     await wait(600 + others.length * 650)
     if (c.bell) App.audio.sfx('bell')
+    // 敲钟人（主持人游戏 3.1、5.5、7）：没有调查——「发现尸体。由于敲钟人的能力，现在开庭。」
     const text = c.bell
       ? bcText('同上，敲钟人生效', { 开庭时刻: hhmm(c.tCourt) })
       : bcText('尸体被有效发现', { 开庭时刻: hhmm(c.tCourt) })
     await broadcast(text, { alarm: true, hold: 1400 })
-    await choose([{ label: '调查', value: 1, tone: 'blood', breath: true }], { box: S.E.cine.querySelector('.trial-cine-go') })
+    await choose([{ label: c.bell ? '开庭' : '调查', value: 1, tone: 'blood', breath: true }], { box: S.E.cine.querySelector('.trial-cine-go') })
+  }
+  // D01 20:00 的播报（WORLD.opening 第 8 条原文）与五枚
+  async function d01Scene() {
+    S.d01Shown = true
+    const op = ((window.WORLD && WORLD.opening) || []).find(o => o.no === 8)
+    App.audio.sfx('chimes5', { volume: 0.5 })
+    syncD01()
+    if (op) await broadcast((op.lines || [op.text]).join(''), { hold: 1200 })
+    else await wait(600)
+  }
+  // 你这一份的五枚进钱袋（一局一次；引擎里 AI 的那一份已经发过）
+  function syncD01() {
+    const d = S.G && S.G.d01
+    if (!d || S.d01Paid || !S.me || !d.ids.includes(S.me) || !App.econ || !App.econ.d01) return
+    S.d01Paid = true
+    const n = App.econ.d01()
+    if (n) { syncPurse(); setCoins((econ() || {}).coins || S.coins, true) }
   }
 
   /* ---------- 逾期 ---------- */
