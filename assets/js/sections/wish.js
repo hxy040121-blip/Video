@@ -1,10 +1,12 @@
 /* ==========================================================
    终章 · wish —— 回到同一张圆桌
-   同样的俯视构图；滚动推进时十五把椅子一把接一把熄灭（编号变成锈红，人伏倒或散成墨），
-   直到只剩最后一把，被穹顶顶端落下的一束光照着。
+   同样的俯视构图；滚动推进时十三把椅子一把接一把熄灭（号牌上的号码变成锈红，人伏倒或散成墨），
+   面前那一摞金币也跟着没了——空出来的席位前什么也没有；
+   直到只剩最后一把，被天眼落下的一束光照着（《主持人游戏》§6：活着、在馆、还在参加游戏的人只剩一个时，
+   游戏结束，主持人实现他的任何愿望）。
    那个人：模拟庭审若有胜者（App.state.winner / bus 'trial:winner'）就是他；
    否则这个位置的人在卡池里缓慢轮换：剪影 → 片刻显形 → 又沉回黑暗。
-   收纳台上的理币盘是空的：开局各人已取走自己那一摞（开局流程 2.2）。
+   右侧竖排的一句是主持人第一条播报的原句（《开局流程》2.2）。
    光标在黑暗里照出漂浮的愿望低语。最后「再睡一次」：眼睑合上，回到顶端，重新醒来。
    复用 App.domeHall（prologue.js）。
    ========================================================== */
@@ -20,8 +22,21 @@
   const easeIO = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
   // 写样式：值没变就不写（免得每帧让元素重算样式）
   const css = (el, k, v) => { const c = el._css || (el._css = {}); if (c[k] !== v) { c[k] = v; el.style[k] = v } }
-  // 《主持人游戏》第 6 节：仍存活、在馆且参加游戏的人只剩一名时，游戏结束……主持人实现其任何愿望。
-  const RULE = '只剩一人时，主持人实现他的任何愿望。'
+  // 第 k 席面前桌上那一摞有几枚（plan711/ECON.md：App.econ.seatCoins(k)，k = 1–13，读 econ.front[k-1]）。
+  // 没有理币盘了：第二条播报时每人十枚出现在各人面前（开局流程 2.3）；还没开局为 10，庭审里各人已拿起、为 0
+  const START = (window.WORLD && window.WORLD.coins && window.WORLD.coins.startEach) || 10
+  function stackOf(k) {
+    const E = App.econ
+    const n = E && typeof E.seatCoins === 'function' ? E.seatCoins(k) : START
+    return typeof n === 'number' && n > 0 ? n : 0
+  }
+  // 主持人第一条播报的原句（《开局流程》2.2；WORLD.opening）：§0 只许原句，不写转述
+  const RULE = (() => {
+    const b = window.WORLD && Array.isArray(window.WORLD.opening) ? window.WORLD.opening.find(x => x && x.no === 1) : null
+    for (const para of (b && b.lines) || []) for (const t of String(para).split(/(?<=[。？！])/)) if (t.includes('不管内容是什么')) return t.trim()
+    return '一个不管内容是什么都可以实现的愿望。'
+  })()
+  const N = (App.domeHall && App.domeHall.G && App.domeHall.G.n) || 13
 
   // 滚动节点（钉住段的进度 0–1）
   const T = { out0: 0.07, outSpan: 0.5, beam0: 0.58, beam1: 0.68, cam0: 0.62, cam1: 0.84, fin: 0.8 }
@@ -43,7 +58,7 @@
     E.cv = U.el('canvas.wish-cv', { 'aria-hidden': 'true' })
     E.stage.append(E.cv)
     E.whis = U.el('div.wish-whispers', { 'aria-hidden': 'true' })
-    E.countN = U.el('span.wish-count-n', { text: 'XV' })
+    E.countN = U.el('span.wish-count-n', { text: U.roman(N) })
     E.count = U.el('div.wish-count', { 'aria-hidden': 'true' }, [E.countN, U.el('i.wish-count-bar')])
     E.face = U.el('div.wish-face')
     E.eyes = U.el('div.wish-eyes', { 'aria-hidden': 'true' }, [U.el('i'), U.el('i')])
@@ -76,10 +91,10 @@
       U.el('span.wish-foot-mark', { 'aria-hidden': 'true', html: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15"/><circle cx="20" cy="20" r="3.2"/></svg>' }),
       U.el('span.wish-foot-name', { text: '夙与愿' }),
     ])
-    // 十五道刻度围成的环：十四道锈红，一道骨白（还亮着的那把椅子）
+    // 十三道刻度围成的环：十二道锈红，一道骨白（还亮着的那把椅子）
     let ticks = ''
-    for (let i = 0; i < 15; i++) {
-      const a = i / 15 * Math.PI * 2
+    for (let i = 0; i < N; i++) {
+      const a = i / N * Math.PI * 2
       const x1 = 100 + Math.sin(a) * 86, y1 = 100 - Math.cos(a) * 86, x2 = 100 + Math.sin(a) * 94, y2 = 100 - Math.cos(a) * 94
       ticks += '<line data-k="' + (i + 1) + '" x1="' + x1.toFixed(2) + '" y1="' + y1.toFixed(2) + '" x2="' + x2.toFixed(2) + '" y2="' + y2.toFixed(2) + '"/>'
     }
@@ -136,8 +151,10 @@
     others.forEach((k, i) => { W.mode[k] = i % 3 === 1 ? 'gone' : 'fall' })
     for (const s of H.seats) {
       gsap.killTweensOf(s)
-      Object.assign(s, { awake: 1, eyes: 1, lamp: 1, lit: 1, out: 0, fall: 0, gone: 0, _out: false })
+      Object.assign(s, { awake: 1, eyes: 1, lamp: 1, lit: 1, out: 0, fall: 0, gone: 0, coinA: 1, coinN: stackOf(s.k), ruleA: 0, idA: 0, _out: false })
     }
+    // 钥匙早已在各人手里：钥匙龛是空的；三扇门合着
+    H.keyT.fill(1); H.keyTo.fill(-1); H.doorOpen = 0
     // 镜头最后转向那把椅子（取最短的方向）
     const a = H.seats[fk - 1].a
     let y = -a
@@ -153,13 +170,13 @@
     syncOut(true)
     buildWhispers()
     for (const l of W.E.ring.querySelectorAll('line')) l.classList.toggle('is-last', +l.dataset.k === fk)
-    W.E.ring.style.setProperty('--ring-rot', (-(fk - 1) * 24) + 'deg')
+    W.E.ring.style.setProperty('--ring-rot', (-(fk - 1) * 360 / N).toFixed(3) + 'deg')
     if (W.finaleOn) { stopFinale(true); startFinale() }
   }
 
   function outCount(p) {
     if (p < T.out0) return 0
-    return Math.min(14, Math.floor((p - T.out0) / (T.outSpan / 14)) + 1)
+    return Math.min(N - 1, Math.floor((p - T.out0) / (T.outSpan / (N - 1))) + 1)
   }
 
   function syncOut(instant) {
@@ -177,13 +194,13 @@
       gsap.killTweensOf(s)
       if (instant) {
         Object.assign(s, out
-          ? { lamp: 0, out: 1, eyes: 0, fall: W.mode[k] === 'fall' ? 1 : 0, gone: W.mode[k] === 'gone' ? 1 : 0, awake: W.mode[k] === 'fall' ? 0.6 : 1 }
-          : { lamp: 1, out: 0, eyes: 1, fall: 0, gone: 0, awake: 1 })
+          ? { lamp: 0, out: 1, eyes: 0, coinA: 0, fall: W.mode[k] === 'fall' ? 1 : 0, gone: W.mode[k] === 'gone' ? 1 : 0, awake: W.mode[k] === 'fall' ? 0.6 : 1 }
+          : { lamp: 1, out: 0, eyes: 1, coinA: 1, fall: 0, gone: 0, awake: 1 })
       } else if (out) {
         extinguish(s, W.mode[k])
         loud = s
       } else {
-        gsap.to(s, { lamp: 1, out: 0, eyes: 1, fall: 0, gone: 0, awake: 1, duration: 0.7, ease: 'power2.out' })
+        gsap.to(s, { lamp: 1, out: 0, eyes: 1, coinA: 1, fall: 0, gone: 0, awake: 1, duration: 0.7, ease: 'power2.out' })
       }
     })
     if (loud && n > prev && prev >= 0) {
@@ -192,7 +209,7 @@
       App.audio.sfx('tick', { volume: 0.55, pitch: 0.42, pan, delay: 0.34 })
       if (W.mode[loud.k] === 'fall') App.audio.sfx('drop', { volume: 0.35, pitch: 0.55, pan, delay: 1.1 })
     }
-    setCount(15 - n, instant)
+    setCount(N - n, instant)
   }
 
   function extinguish(s, mode) {
@@ -205,6 +222,8 @@
       .to(s, { lamp: 0, duration: 0.6, ease: 'power2.in' })
     s.flash = 0.35
     gsap.to(s, { out: 1, duration: 1, ease: 'power2.out' })
+    // 空出来的席位前什么也没有
+    gsap.to(s, { coinA: 0, duration: 0.9, delay: 0.5, ease: 'power2.in' })
     gsap.to(s, { eyes: 0, duration: 0.3, delay: 0.28, ease: 'power3.in' })
     if (mode === 'fall') gsap.to(s, { fall: 1, awake: 0.6, duration: 1.1, delay: 0.32, ease: 'power3.in' })
     else gsap.to(s, { gone: 1, duration: 1.9, delay: 0.3, ease: 'power2.inOut' })
@@ -485,8 +504,12 @@
     // 镜头落下时，四壁与陈设退进黑暗，只留圆桌与那束光
     H.wallA = 1 - 0.85 * t
     H.chandA = 1 - 0.85 * t
-    // 熄灭后的厅更暗
-    H.o.amb = mix(0.06, 0.03, sstep(T.out0, T.out0 + T.outSpan, p))
+    // 熄灭后的厅更暗（灯环也压低：风格化，灯其实关不掉）；天眼的天光跟着馆内时刻，最后收成照在那一席上的一束
+    const outK = sstep(T.out0, T.out0 + T.outSpan, p)
+    H.o.amb = mix(0.06, 0.03, outK)
+    H.o.ringPow = mix(0.3, 0.12, outK)
+    H.sky = App.domeHall.dayK ? App.domeHall.dayK(App.state.minutes) : 1
+    H.skyA = 1 - 0.85 * sstep(T.beam0 - 0.04, T.beam1, p)
     // 计数与最后的那个人
     E.count.style.opacity = (sstep(0.02, 0.08, p) * (1 - (W.mob ? 1 : 0.6) * sstep(T.fin - 0.04, T.fin + 0.04, p))).toFixed(3)
     if (p > T.fin) startFinale()
@@ -658,10 +681,10 @@
         lightCol: [232, 222, 206], amb: 0.06, ambCol: [118, 118, 132],
         lampCol: [214, 188, 150], beamCol: [240, 233, 220],
         rim: [212, 196, 170], motes: App.reduced ? 20 : 60,
-        tray: 0, // 理币盘空着
       })
       const H = W.H
-      const trayN = () => { const e = App.state.econ; H.tray = e ? e.tray.filter(t => t.n > 0).length : 0 }; trayN(); App.bus.on('econ:change', trayN) // 理币盘照这一局的钱袋（还没有钱袋就是空盘）
+      // 各席面前那一摞照这一局的钱袋（没有钱袋就是开局的十枚）
+      App.bus.on('econ:change', () => { for (const s of H.seats) s.coinN = stackOf(s.k) })
       H.lampPow = 1.7; H.lampRange = 2.7; H.homePow = 0.8; H.homeRange = 3.4
       H.light.power = 0.8
       H.lensA = 0.85

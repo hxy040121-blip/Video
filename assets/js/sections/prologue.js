@@ -284,19 +284,19 @@
       lightCol: [255, 204, 154],   // 光（光标）的颜色：烛光
       amb: 0.07,                   // 环境光
       ambCol: [140, 134, 150],
-      floorAlb: [0.62, 0.6, 0.56], // 石材地面
+      floorAlb: [0.56, 0.54, 0.5], // 石材地面
       discAlb: [0.2, 0.19, 0.18],  // 墨玉（抛光）
-      tableAlb: [0.34, 0.335, 0.31], // 石面圆桌
+      tableAlb: [0.3, 0.295, 0.275], // 石面圆桌
       num: [214, 172, 102],        // 号码：黄铜
       numDim: [111, 85, 50],
       numOut: [150, 28, 28],       // 熄灭：锈红
       lampCol: [226, 180, 112],    // 席位小光池
       beamCol: [235, 227, 214],    // 天眼落下的一束光
       skyCol: [196, 208, 228],     // 阴天的天光
-      skyPow: 0.95,
+      skyPow: 0.75,
       ringCol: [255, 232, 204],    // 灯环：乳白玻璃球灯
-      ringPow: 0.5,
-      doorCol: [186, 176, 160],    // 门外（门厅、两院）的光
+      ringPow: 0.3,
+      doorCol: [206, 178, 136],    // 门外（门厅、两院）的光：天光渐暗以后是灯光
       glint: [190, 205, 255],
       rim: [222, 176, 108],        // 黑影的黄铜轮廓光
       silhouette: [9, 8, 8],
@@ -761,14 +761,6 @@
           x.fill()
         }
       }
-      // 剖面：厚 1.2 m 的鼓座墙在切口处的断面
-      if (ARC) {
-        x.fillStyle = 'rgb(13,10,10)'
-        for (const a of ARC) {
-          const q = c.poly([wallPt(a, R, 0), wallPt(a, G.rOuter, 0), wallPt(a, G.rOuter, G.wallH), wallPt(a, R, G.wallH)])
-          if (q) { pathPts(x, q); x.fill() }
-        }
-      }
       x.globalAlpha = 1
       ctx.save()
       clipOut(ctx, null, [FL])
@@ -796,15 +788,17 @@
         const q = c.poly(OC_LO)
         if (q) { pathPts(ctx, q); ctx.stroke() }
       }
-      // 剖面的边
+      // 剖面：墙在切口处只留一道竖边
       if (ARC) {
         ctx.strokeStyle = BRASS_DIM
-        ctx.globalAlpha = A * 0.4
+        ctx.globalAlpha = A * 0.35
         ctx.lineWidth = 1
+        ctx.beginPath()
         for (const a of ARC) {
-          const q = c.poly([wallPt(a, R, 0), wallPt(a, G.rOuter, 0), wallPt(a, G.rOuter, G.wallH), wallPt(a, R, G.wallH)])
-          if (q) { pathPts(ctx, q); ctx.stroke() }
+          const pa = c.p(Math.sin(a) * R, Math.cos(a) * R, 0), pb = c.p(Math.sin(a) * R, Math.cos(a) * R, G.wallH)
+          if (pa && pb) { ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]) }
         }
+        ctx.stroke()
       }
       // 十三幅窄长丝绸织纹屏（墙上部的灰泥上，与座椅同一节奏，避开门与陈设）
       for (const a of SCREENS) {
@@ -981,7 +975,7 @@
       x.globalCompositeOperation = 'lighter'
       // 一层极淡的环境光，中央略亮
       pool(x, [0, 0, 0], [1, 0, 0], [0, 1, 0], 7.2, 1, 7.5, o.ambCol, o.floorAlb, 11, amb * 0.9, LQ)
-      ambientPools(x, 0, o.floorAlb, 4.4)
+      ambientPools(x, 0, o.floorAlb, 3.2)
       // 光标
       pool(x, [Lt.x, Lt.y, 0], [1, 0, 0], [0, 1, 0], Lt.z, Lt.power * Lt.flick, Lt.range, o.lightCol, o.floorAlb, 12, S.poolA, LQ)
       // 门开着：门外的光从门洞铺进来
@@ -1007,7 +1001,7 @@
       x.fillStyle = rgb(o.discAlb[0] * o.ambCol[0] * amb * 0.6, o.discAlb[1] * o.ambCol[1] * amb * 0.6, o.discAlb[2] * o.ambCol[2] * amb * 0.6)
       x.fillRect(0, 0, S.W + 8, S.H + 8)
       x.globalCompositeOperation = 'lighter'
-      ambientPools(x, 0.002, o.discAlb, 4.4)
+      ambientPools(x, 0.002, o.discAlb, 3.2)
       pool(x, [Lt.x, Lt.y, 0], [1, 0, 0], [0, 1, 0], Lt.z, Lt.power * Lt.flick, Lt.range, o.lightCol, o.discAlb, 12, S.poolA, LQ)
       // 席位小光池 / 一束光（落在墨玉上）
       const R9 = DISC_RAYS[DISC_RAYS.length - 1]
@@ -1202,7 +1196,7 @@
       x.fillStyle = rgb(alb[0] * o.ambCol[0] * a * 0.9, alb[1] * o.ambCol[1] * a * 0.9, alb[2] * o.ambCol[2] * a * 0.9)
       x.fillRect(0, 0, S.W + 8, S.H + 8)
       x.globalCompositeOperation = 'lighter'
-      ambientPools(x, G.tableH, alb, 3)
+      ambientPools(x, G.tableH, alb, 2.7)
       const dp = Math.max(0.08, Lt.z - G.tableH)
       pool(x, [Lt.x, Lt.y, G.tableH], [1, 0, 0], [0, 1, 0], dp, Lt.power * Lt.flick, Lt.range, o.lightCol, alb, 7, S.poolA, LQ)
       // 席位小光池照到桌沿
@@ -1288,7 +1282,7 @@
         const P = L2W(s, 0, v, zt)
         ctx.globalAlpha = S.floorA
         pathPts(ctx, q)
-        ctx.fillStyle = shade([0.2, 0.15, 0.085], P[0], P[1], zt, 0, 0, 1, seatExtra(s), 1.4)
+        ctx.fillStyle = shade([0.17, 0.13, 0.075], P[0], P[1], zt, 0, 0, 1, seatExtra(s), 0.5)
         ctx.fill()
         ctx.globalAlpha = S.floorA * (0.25 + 0.35 * s.lit)
         ctx.strokeStyle = BRASS_DIM
@@ -1788,8 +1782,8 @@
           const p = c.p(x, y, z)
           if (!p) continue
           const a = Math.sin(Math.PI * clamp01(t)) * (1 - j * 0.24) * (1 - S.dark)
-          drawGlow(ctx, spr, p[0], p[1], Math.max(8, 0.32 * p[3]) * (1 - j * 0.15), 0.4 * a)
-          if (!j) drawGlow(ctx, hard, p[0], p[1], Math.max(3, 0.07 * p[3]), 0.9 * a)
+          drawGlow(ctx, spr, p[0], p[1], Math.max(12, 0.42 * p[3]) * (1 - j * 0.15), 0.7 * a)
+          if (!j) drawGlow(ctx, hard, p[0], p[1], Math.max(4, 0.09 * p[3]), a)
         }
       }
       ctx.globalCompositeOperation = 'source-over'
@@ -1945,7 +1939,7 @@
       const key = camKey()
       if (key !== skyKey) {
         skyKey = key
-        column(S.B.sky, 0, 0, G.ocZ - 0.1, G.ocR * 0.9, 0, 0, G.tableH + 0.05, G.ocR * 1.25, o.skyCol, 0.03, 0.055, 0)
+        column(S.B.sky, 0, 0, G.ocZ - 0.1, G.ocR * 0.9, 0, 0, G.tableH + 0.05, G.ocR * 1.25, o.skyCol, 0.07, 0.11, 0)
       }
       ctx.globalCompositeOperation = 'lighter'
       ctx.globalAlpha = Math.min(1, A)

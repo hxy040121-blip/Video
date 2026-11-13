@@ -1,5 +1,5 @@
 /* ==========================================================
-   十五席 · 核心命名空间 App
+   十三席 · 核心命名空间 App
    所有板块通过 window.App 协作（file:// 下不能用 ES module）。
    ========================================================== */
 (function () {
@@ -135,10 +135,7 @@
 
   /* ---------- 全局状态 ---------- */
   App.state = {
-    seats: (() => {
-      const s = App.store.get('seats', null)
-      return Array.isArray(s) && s.length === 15 ? s : Array(15).fill(null)
-    })(),
+    seats: null, // 十三席（长度 13，角色 id 或 null）：读完角色数据后从本地存储取（见下）
     minutes: 17 * 60, // 馆内时间
     section: null,
   }
@@ -149,32 +146,60 @@
   for (const c of App.chars) App.charMap[c.id] = c
   App.char = id => App.charMap[id] || null
 
+  /* ---------- 十三席（主持人游戏 3.2：十三个编号席位，1 号正北，顺时针） ----------
+     本地存储里可能还是旧版的十五席（长度 15），或者坐着已经不在卡池里的人：
+     前十三席照旧；第 14、15 席上的人挪进前面空着的席位（坐满了就请下桌）；不在卡池里的、重复的都清掉。
+     迁移过的结果写回存储。 */
+  App.SEATS = 13
+  App.state.seats = (() => {
+    const raw = App.store.get('seats', null)
+    const out = Array(App.SEATS).fill(null)
+    if (!Array.isArray(raw)) return out
+    const seen = new Set()
+    const ok = id => typeof id === 'string' && App.charMap[id] && !seen.has(id)
+    const extra = []
+    raw.forEach((id, i) => {
+      if (!ok(id)) return
+      seen.add(id)
+      if (i < App.SEATS) out[i] = id
+      else extra.push(id)
+    })
+    for (const id of extra) { const k = out.indexOf(null); if (k >= 0) out[k] = id }
+    if (JSON.stringify(raw) !== JSON.stringify(out)) App.store.set('seats', out)
+    return out
+  })()
+
   /* ---------- 本局钱袋（App.state.econ · App.econ） ----------
-     依据：价目表 8.1–8.2、第 9 节；开局流程 2.2；主持人游戏 8。接口说明另见 docs/design-system.md §9。
+     依据：价目表 8.1–8.2、第 9 节；开局流程 2.3、第 4 节；主持人游戏 3.2、8。接口说明另见 plan711/ECON.md。
      一局一个钱袋：铜牌与模拟庭审读写同一份。开新局（App.econ.newGame）整个换掉，不跨局累积，也不写进本地存储（刷新即无）。
      还没有人开过局时 App.state.econ 为 null；铜牌上第一次取币 / 兑换时由 App.econ.ensure() 开一局「铜牌上的试玩」。
+     没有理币盘：第二条播报第一句说出的同时，每人十枚出现在各人面前的桌上，码成一摞（开局流程 2.3）。
      App.state.econ = {
        game      局号（每开一局 +1）
-       source    'plaque' 铜牌上的试玩（盘里十五摞都在，你还没取）/ 'trial' 模拟庭审开的局（规则宣告之后：每人已各取一摞）
+       source    'plaque' 铜牌上的试玩（十三席面前各十枚，还没人拿）/ 'trial' 模拟庭审开的局（各人已拿起面前那一摞）
        me        「你」的角色 id（庭审里你选的人；铜牌上修复残疾时可以先选）；null 未定
-       seat      你的席位号 1–15（号牌 = 套房号）；0 未知
+       seat      你的席位号 1–13（号牌 = 套房号）；0 未知（铜牌上第一次拿的那一摞所在的席位就是你的）
+       seats[13] 开局时的十三席（角色 id 或 null）
+       front[13] 各席面前桌上还剩几枚（下标 = 席位号 − 1）。铜牌上开局各 10；庭审开局全是 0（各人已拿起）
        coins     你身上带着的枚数。只有这些能付账；没有账本，也没有余额播报（8.1）
        spent     这一局你付出去的枚数（熔进铜牌）
-       tray[15]  理币盘，一列十五摞：{ n 这一摞还剩几枚, owner 这一摞是谁的 }
-                 owner：null 没人动过 / 'me' 你的一摞 / 'other' 别人的（你从中拿过）/ 角色 id（庭审开局各取一摞）
-       grabbed   你从别人的那一摞里拿的枚数（抢夺不受惩罚，只是人人看得见）
+       grabbed   你从别人面前拿的枚数（抢夺不受惩罚，只是人人看得见：开局流程 2.3）
        items[]   交付到你手边、还留着的东西：{ name, pts 单价（分）, qty, kind, off }
                  kind：'item' 物品 / 'service' 服务（在你绑定的套房兑现）/ 'ticket' 退出券；off：牌外（第 10 节）的东西
-       repaired  { 角色 id: true }：修复过身体残疾的人（卡上写明保留的残疾全部修好；乔尼、格里菲斯此后能走）
+       repaired  { 角色 id: true }：修复过身体残疾的人（卡上写明保留的残疾全部修好；此后能走）
        asked     { 牌外物品名: 分 }：问过价的牌外物品（第 10 节问了才知道；此后照这个价）
+       d01       D01 20:00 的五枚发过没有（开局流程第 4 节；一局一次）
        exited    null / { at, seat }：持退出券离馆（不是死亡；离馆者退出游戏和愿望争夺，回到记忆截止那一刻）
        last      最近一次变化，给监听者决定怎么演：{ type: 'new'|'take'|'gain'|'lose'|'pay'|'ask'|'me'|'exit', … }
      }
      每次变化后 App.bus.emit('econ:change', econ)；App.state.coins 同步为 econ.coins（旧代码兼容）。 */
   ;(function () {
     const PR = () => (window.WORLD && window.WORLD.prices) || {}
-    const NST = 15, PER = 10
-    // 卡上写明保留的残疾（人物卡「身体」一条原文；卡司总则 2、价目表第 9 节）。人物数据日后若带 disability 字段，以数据为准
+    const CO = (window.WORLD && window.WORLD.coins) || {}
+    const num = (v, d) => (Number.isFinite(+v) && +v > 0 ? +v : d)
+    const NST = num(CO.seats, 13), PER = num(CO.startEach, 10)
+    // 卡上写明保留的残疾（人物卡「身体」一条原文；价目表第 9 节）。人物数据带 disability 字段时以数据为准；
+    // 这张表只给卡池里还有、数据里又没写 disability 的人兜底
     const DISABLED = {
       johnny: '腰以下瘫痪',
       griffith: '手脚的筋被切断，舌头被割掉，人瘦得皮包骨头',
@@ -183,12 +208,13 @@
       shanks: '左臂从肩下不远处断掉，只剩一截上臂根',
       baku: '体弱，跑不了几步就喘，力气撑不久',
     }
-    // 几条典型的「不成立」请求（价目表 8.2；key 对应 WORLD.prices.void.kinds）
+    // 几条典型的「不成立」请求（价目表 8.2；key 对应 WORLD.prices.void.kinds）。trial.js 取前三条
     const VOID_ASKS = [
       { label: '谁是受命者', key: 'ask' },
-      { label: '能打开正门的钥匙', key: 'bypass' },
+      { label: '穿过透明的墙', key: 'bypass' },
       { label: '能打出去的电话', key: 'bypass' },
       { label: '买回被封住的本事', key: 'power' },
+      { label: '他昨夜去过哪里', key: 'ask' },
     ]
     let gameNo = 0
     const st = () => App.state.econ
@@ -243,63 +269,66 @@
       }
       return out
     }
+    const seatsOf = s => { const a = (Array.isArray(s) ? s : []).slice(0, NST); while (a.length < NST) a.push(null); return a }
 
     const E = App.econ = {
-      NST, PER, TOTAL: NST * PER, TICKET: 500, // 开局全馆 150 枚；退出券一张 500 枚
-      BATCH: [5, 10],                           // 每审结一批，存活在馆者每人得 5（全部查明再 +5）
+      NST, PER, TOTAL: num(CO.startTotal, NST * PER), // 十三席；每人十枚；开局全馆 130 枚
+      TICKET: num(CO.ticket, 500),                    // 退出券一张 500 枚
+      BATCH: [num(CO.batch, 5), num(CO.batch, 5) + num(CO.solvedBonus, 5)], // 每审结一批，存活在馆者每人 5（全部查明再 +5）
+      KILLER: num(CO.unsolvedKiller, 10),             // 未能查明：凶手书桌上另 10 枚（不广播）
+      D01: num(CO.d01, 5), D01_AT: 20 * 60,           // 第一天晚上八点（局内分钟数 1200）每人 5 枚
       VOID_ASKS,
       get: st,
       // 当前这一局；还没有就开一局「铜牌上的试玩」
       ensure: () => st() || E.newGame({ source: 'plaque' }),
       /* 开新局。opts：
-         me      「你」的角色 id；seats  十五席（长度 15，元素是角色 id 或 null）
+         me      「你」的角色 id；seats  十三席（长度 13，元素是角色 id 或 null；默认 App.state.seats）
          source  'trial' / 'plaque'（默认：有 me 就是 'trial'）
-         taken   盘里是不是已经各取一摞（默认：source 为 'trial' 时是——模拟从规则宣告之后开始）
-         coins   你身上的起始枚数（默认：已各取一摞时 10，否则 0） */
+         taken   各人是不是已经拿起面前那一摞（默认：source 为 'trial' 时是——模拟从开局播报之后开始）
+                 没拿：十三席面前各 PER 枚（全馆十三人，空着的席位也照放），你身上 0
+                 已拿：各席面前都是 0，你身上 PER 枚
+         coins   你身上的起始枚数（默认见上） */
       newGame(opts = {}) {
-        const seats = Array.isArray(opts.seats) ? opts.seats.slice(0, NST) : (App.state.seats || []).slice(0, NST)
+        const seats = seatsOf(Array.isArray(opts.seats) ? opts.seats : App.state.seats)
         const me = opts.me || null
         const source = opts.source || (me ? 'trial' : 'plaque')
         const taken = opts.taken != null ? !!opts.taken : source === 'trial'
         const seat = me ? seats.indexOf(me) + 1 : 0
-        const tray = []
-        for (let i = 0; i < NST; i++) {
-          // 已各取一摞：有人坐的席位那一摞已被取走；空席的那一摞还在盘里
-          if (taken && (!seats.some(Boolean) || seats[i])) tray.push({ n: 0, owner: seats[i] ? (seats[i] === me ? 'me' : seats[i]) : 'other' })
-          else tray.push({ n: PER, owner: null })
-        }
         const e = {
-          game: ++gameNo, source, me, seat: Math.max(0, seat),
+          game: ++gameNo, source, me, seat: Math.max(0, seat), seats,
+          front: new Array(NST).fill(taken ? 0 : PER),
           coins: opts.coins != null ? Math.max(0, Math.floor(opts.coins)) : taken ? PER : 0,
-          spent: 0, tray, grabbed: 0, items: [], repaired: {}, asked: {}, exited: null, last: null,
+          spent: 0, grabbed: 0, items: [], repaired: {}, asked: {}, d01: false, exited: null, last: null,
         }
         App.state.econ = e
         return emit(e, { type: 'new' })
       },
-      // 设定「你」是谁（铜牌上修复残疾时选人；庭审开局由 newGame 带入）
+      // 设定「你」是谁（铜牌上修复残疾时选人；庭审开局由 newGame 带入）。席位号随之按 App.state.seats 改
       setMe(id) {
         const e = E.ensure()
         if (e.me === id) return e
         e.me = id || null
-        e.seat = id ? (App.state.seats || []).indexOf(id) + 1 : 0
+        const k = id ? seatsOf(App.state.seats).indexOf(id) + 1 : 0
+        if (k || id) e.seat = k
         return emit(e, { type: 'me', id: e.me })
       },
-      // 从理币盘第 i 摞取一枚：第一次碰的那一摞是你的，你有了一摞之后再拿的都是「别人的那一摞」
+      /* 从第 i 席（下标 0–12）面前拿一枚到你身上。
+         你的席位还不知道（seat 为 0）时，第一次拿的那一摞所在的席位就是你的；
+         拿别人面前的是抢夺（grab：许可的行为，不罚，只是人人看得见）。
+         返回 { grab, left 这一摞还剩几枚, seat 你的席位号 }；拿不到（空了、已离馆）返回 null */
       take(i) {
-        const e = E.ensure(), s = e.tray[i]
-        if (!s || s.n <= 0 || e.exited) return null
-        const mine = e.tray.some(t => t.owner === 'me')
-        let grab = false
-        if (s.owner !== 'me') {
-          if (!mine && s.owner == null) s.owner = 'me'
-          else { grab = true; if (s.owner == null) s.owner = 'other'; e.grabbed++ }
-        }
-        s.n--
+        const e = E.ensure()
+        i = Math.floor(+i)
+        if (!(i >= 0 && i < NST) || e.front[i] <= 0 || e.exited) return null
+        if (!e.seat) e.seat = i + 1
+        const grab = e.seat !== i + 1
+        if (grab) e.grabbed++
+        e.front[i]--
         e.coins++
         emit(e, { type: 'take', i, grab, n: 1 })
-        return { grab, left: s.n }
+        return { grab, left: e.front[i], seat: e.seat }
       },
-      // 你身上多了 / 少了几枚（余波发放、拾取、交易、被抢……）；why 只是给监听者看的标签
+      // 你身上多了 / 少了几枚（审判发放、D01 20:00、拾取、交易、被抢……）；why 只是给监听者看的标签
       gain(n, why) {
         n = Math.floor(+n || 0)
         if (n <= 0) return st()
@@ -315,8 +344,16 @@
         e.coins -= n
         return emit(e, { type: 'lose', n, why: why || null })
       },
+      // 第一天晚上八点：存活在馆的你得五枚（一局一次；离馆后不发）。返回发了几枚（0 = 已发过 / 已离馆 / 还没开局）
+      d01() {
+        const e = st()
+        if (!e || e.d01 || e.exited) return 0
+        e.d01 = true
+        E.gain(E.D01, 'd01')
+        return E.D01
+      },
       /* 结算检查（纯函数，不改钱袋）。list：名字，或 { name, pts?, qty?, void?, repair? } 的数组
-           void   不成立类别的 key（WORLD.prices.void.kinds：power/super/ask/kill/bypass/outsider）
+           void   不成立类别的 key（WORLD.prices.void.kinds：power/super/ask/kill/bypass/outsider；other 里的 service）
            repair 修复谁（角色 id；省略时按名字「修复身体残疾」识别，修的是 econ.me）
          返回 { ok, total 总价（分）, coins 要付几枚, reason, key, text 原文, result, … }
            reason：null 成立 / 'empty' / 'exited' 已离馆 / 'void' 不成立的请求 / 'repair' 对象没有卡上写明的残疾（who 为 null：还不知道「你」是谁）
@@ -405,8 +442,12 @@
         return o ? { pts: o.pts, off: true } : null
       },
       plaqueList, offList,
-      trayLeft: () => { const e = st(); return e ? e.tray.reduce((a, t) => a + t.n, 0) : NST * PER },
-      stacksLeft: () => { const e = st(); return e ? e.tray.filter(t => t.n > 0).length : NST },
+      // 各席面前桌上的枚数（长度 13 的新数组；还没开局：铜牌上的样子，各 PER 枚）
+      front: () => { const e = st(); return e ? e.front.slice() : new Array(NST).fill(PER) },
+      // 第 k 号席（1–13）面前桌上的枚数；还没开局为 PER
+      seatCoins: k => { const e = st(); k = Math.floor(+k) - 1; return k >= 0 && k < NST ? (e ? e.front[k] : PER) : 0 },
+      // 桌上还剩几枚（十三席面前合计）
+      frontLeft: () => { const e = st(); return e ? e.front.reduce((a, n) => a + n, 0) : NST * PER },
       hasTicket: () => { const e = st(); return !!(e && e.items.some(x => x.kind === 'ticket' && x.qty > 0)) },
     }
     App.state.econ = null
@@ -935,7 +976,7 @@
     scramble(el, text, opts = {}) {
       return gsap.to(el, {
         duration: opts.duration || 1.2,
-        scrambleText: { text, chars: opts.chars || '█▓▒░十五席谋杀推理辩论审判钥匙血钟', speed: 0.6, revealDelay: opts.revealDelay || 0.2 },
+        scrambleText: { text, chars: opts.chars || '█▓▒░十三席谋杀推理辩论审判钥匙血钟', speed: 0.6, revealDelay: opts.revealDelay || 0.2 },
         ease: 'none',
         delay: opts.delay || 0,
       })
