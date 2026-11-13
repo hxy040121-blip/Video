@@ -1,4002 +1,7439 @@
-/* 由 tools/build-data.mjs 从配置文件生成，请勿手改 */
+/* 由 tools/build-data.mjs 从配置文件（v7.11）生成，请勿手改 */
 window.WORLD = {
+ "version": "v7.11",
  "generatedFrom": [
-  "洋馆物理层.md §1.2 §1.3",
-  "主持人游戏.md §5 §7",
-  "价目表.md 兑换方式–§6（铜牌）、§8.2 §9（不成立）、§10（牌外价目）"
+  "洋馆物理层.md §1.1 §1.2 §1.3 §1.4 §2.1 §2.2 §2.5 §3.1–3.5",
+  "各室/1F_穹顶议事厅.md",
+  "主持人游戏.md §5 §7 §8",
+  "价目表.md 兑换方式–§6（铜牌）、§7.4 §8.2 §9（不成立）、§8.1（金币）、§10（牌外价目）",
+  "开局流程.md §2 §3 §4"
  ],
+ "outline": {
+  "x0": 0,
+  "x1": 69.6,
+  "y0": 0,
+  "y1": 40.8,
+  "extWall": 0.6,
+  "intWall": 0.24,
+  "glassWall": 0.1,
+  "suiteLining": 0.12,
+  "suiteNet": 8.16,
+  "roof": 15
+ },
  "floors": [
   {
    "id": "B1",
    "level": -4.8,
-   "height": 4.8
+   "height": 4.8,
+   "clear": 4.4,
+   "suites": []
   },
   {
    "id": "1F",
    "level": 0,
-   "height": 8.4
+   "height": 5,
+   "clear": 4.6,
+   "suites": [
+    1,
+    2,
+    3,
+    4
+   ]
   },
   {
    "id": "2F",
-   "level": 8.4,
-   "height": 6
+   "level": 5,
+   "height": 5,
+   "clear": 4.6,
+   "suites": [
+    5,
+    6,
+    7,
+    8
+   ]
   },
   {
    "id": "3F",
-   "level": 14.4,
-   "height": 5.2
+   "level": 10,
+   "height": 5,
+   "clear": 4.6,
+   "suites": [
+    9,
+    10,
+    11,
+    12,
+    13
+   ]
   }
  ],
  "rooms": [
   {
    "floor": "B1",
-   "name": "西浴场廊",
-   "x0": 14.4,
-   "x1": 17.2,
+   "name": "西电梯",
+   "kind": "elevator",
+   "shape": "rect",
+   "x0": 9,
+   "x1": 11.4,
    "y0": 0,
-   "y1": 36,
-   "area": 100.8,
+   "y1": 2.8,
+   "area": 6.72,
    "doors": [
     {
-     "raw": "主楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "主楼梯厅"
-    },
-    {
-     "raw": "西北前室敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西北前室"
-    },
-    {
-     "raw": "浴更前厅门",
+     "raw": "电梯门",
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "浴更前厅"
-    },
-    {
-     "raw": "玉石泳池厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "玉石泳池厅"
-    },
-    {
-     "raw": "玉石泳池厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "玉石泳池厅"
-    },
-    {
-     "raw": "双道保龄球馆门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "双道保龄球馆"
-    },
-    {
-     "raw": "运动休息厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "运动休息厅"
-    },
-    {
-     "raw": "乒乓体育室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "乒乓体育室"
-    },
-    {
-     "raw": "体能训练室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "体能训练室"
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.1,
+     "dir": "北",
+     "to": "西电梯厅",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 0
   },
   {
    "floor": "B1",
-   "name": "南侧库廊",
-   "x0": 34.8,
-   "x1": 37.6,
+   "name": "东电梯",
+   "kind": "elevator",
+   "shape": "rect",
+   "x0": 58.2,
+   "x1": 60.6,
    "y0": 0,
-   "y1": 8.2,
-   "area": 22.96,
+   "y1": 2.8,
+   "area": 6.72,
    "doors": [
     {
-     "raw": "地下会客前厅门",
+     "raw": "电梯门",
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "地下会客前厅"
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.1,
+     "dir": "北",
+     "to": "东电梯厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "西电梯厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 2.8,
+   "y1": 8.4,
+   "area": 20.16,
+   "doors": [
+    {
+     "raw": "西电梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.1,
+     "dir": "南",
+     "to": "西电梯",
+     "owner": "西电梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "箱笼储藏室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 5.6,
+     "width": 1.4,
+     "dir": "西",
+     "to": "箱笼储藏室",
+     "owner": "箱笼储藏室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "东电梯厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 2.8,
+   "y1": 8.4,
+   "area": 20.16,
+   "doors": [
+    {
+     "raw": "东电梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.1,
+     "dir": "南",
+     "to": "东电梯",
+     "owner": "东电梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "地毯储藏室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 5.6,
+     "width": 1.4,
+     "dir": "东",
+     "to": "地毯储藏室",
+     "owner": "地毯储藏室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "西地廊",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
+   "doors": [
+    {
+     "raw": "健身房门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 20.4,
+     "width": 1.6,
+     "dir": "东",
+     "to": "健身房",
+     "owner": "健身房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "工具间门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 16.2,
+     "width": 1,
+     "dir": "西",
+     "to": "工具间",
+     "owner": "工具间",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "北廊西段",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "东地廊",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
+   "doors": [
+    {
+     "raw": "洗衣房门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 16.2,
+     "width": 1.2,
+     "dir": "西",
+     "to": "洗衣房",
+     "owner": "洗衣房",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
      "raw": "物资库门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "物资库"
-    },
-    {
-     "raw": "南勤廊门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "南勤廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "东服务廊",
-   "x0": 34.8,
-   "x1": 37.6,
-   "y0": 16.8,
-   "y1": 36,
-   "area": 53.76,
-   "doors": [
-    {
-     "raw": "东北前室敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "东北前室"
-    },
-    {
-     "raw": "酒窖前廊门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "酒窖前廊"
-    },
-    {
-     "raw": "运动休息厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "运动休息厅"
-    },
-    {
-     "raw": "伸展室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "伸展室"
-    },
-    {
-     "raw": "运动器材库门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "运动器材库"
-    },
-    {
-     "raw": "珍酿酒窖门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "珍酿酒窖"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "主楼梯厅",
-   "x0": 17.4,
-   "x1": 23.8,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 52.48,
-   "doors": [
-    {
-     "raw": "西口 y=1.5，宽2，通西浴场廊",
-     "open": false,
-     "axis": "y",
-     "at": 1.5,
-     "width": 2,
-     "dir": "西",
-     "to": "西浴场廊"
-    },
-    {
-     "raw": "地下会客前厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "地下会客前厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "西北楼梯厅",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 29.6,
-   "y1": 36,
-   "area": 37.12,
-   "doors": [
-    {
-     "raw": "南口 x=11.3，宽1.8，通西北前室",
-     "open": false,
-     "axis": "x",
-     "at": 11.3,
-     "width": 1.8,
-     "dir": "南",
-     "to": "西北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "东北楼梯厅",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 29.6,
-   "y1": 36,
-   "area": 37.12,
-   "doors": [
-    {
-     "raw": "南口 x=40.7，宽1.8，通东北前室",
-     "open": false,
-     "axis": "x",
-     "at": 40.7,
-     "width": 1.8,
-     "dir": "南",
-     "to": "东北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "西北前室",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 27.8,
-   "y1": 29.4,
-   "area": 9.28,
-   "doors": [
-    {
-     "raw": "西北楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西北楼梯厅"
-    },
-    {
-     "raw": "东口 y=28.6，宽1.2，通西浴场廊",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 1.2,
-     "dir": "东",
-     "to": "西浴场廊"
-    },
-    {
-     "raw": "泳池机房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "泳池机房"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "东北前室",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 27.8,
-   "y1": 29.4,
-   "area": 9.28,
-   "doors": [
-    {
-     "raw": "东北楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "东北楼梯厅"
-    },
-    {
-     "raw": "西口 y=28.6，宽1.2，通东服务廊",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 1.2,
-     "dir": "西",
-     "to": "东服务廊"
-    },
-    {
-     "raw": "洗衣布草室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "洗衣布草室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "浴更前厅",
-   "x0": 0,
-   "x1": 14.2,
-   "y0": 0,
-   "y1": 2.6,
-   "area": 36.92,
-   "doors": [
-    {
-     "raw": "东门 y=1.3，宽1.2，通西浴场廊",
-     "open": false,
-     "axis": "y",
-     "at": 1.3,
-     "width": 1.2,
-     "dir": "东",
-     "to": "西浴场廊"
-    },
-    {
-     "raw": "甲更衣室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "甲更衣室"
-    },
-    {
-     "raw": "乙更衣室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "乙更衣室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "甲更衣室",
-   "x0": 0,
-   "x1": 6.9,
-   "y0": 2.8,
-   "y1": 8.2,
-   "area": 37.26,
-   "doors": [
-    {
-     "raw": "南门 x=3.45，宽0.95，通浴更前厅",
-     "open": false,
-     "axis": "x",
-     "at": 3.45,
-     "width": 0.95,
-     "dir": "南",
-     "to": "浴更前厅"
-    },
-    {
-     "raw": "玉石泳池厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "玉石泳池厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "乙更衣室",
-   "x0": 7.1,
-   "x1": 14.2,
-   "y0": 2.8,
-   "y1": 8.2,
-   "area": 38.34,
-   "doors": [
-    {
-     "raw": "南门 x=10.65，宽0.95，通浴更前厅",
-     "open": false,
-     "axis": "x",
-     "at": 10.65,
-     "width": 0.95,
-     "dir": "南",
-     "to": "浴更前厅"
-    },
-    {
-     "raw": "玉石泳池厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "玉石泳池厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "玉石泳池厅",
-   "x0": 0,
-   "x1": 14.2,
-   "y0": 8.4,
-   "y1": 27.6,
-   "area": 272.64,
-   "doors": [
-    {
-     "raw": "南门 x=3.45，宽1，通甲更衣室",
-     "open": false,
-     "axis": "x",
-     "at": 3.45,
-     "width": 1,
-     "dir": "南",
-     "to": "甲更衣室"
-    },
-    {
-     "raw": "南门 x=10.65，宽1，通乙更衣室",
-     "open": false,
-     "axis": "x",
-     "at": 10.65,
-     "width": 1,
-     "dir": "南",
-     "to": "乙更衣室"
-    },
-    {
-     "raw": "东门 y=15，宽1.4，通西浴场廊",
-     "open": false,
-     "axis": "y",
-     "at": 15,
-     "width": 1.4,
-     "dir": "东",
-     "to": "西浴场廊"
-    },
-    {
-     "raw": "东门 y=24，宽1.4，通西浴场廊",
-     "open": false,
-     "axis": "y",
-     "at": 24,
-     "width": 1.4,
-     "dir": "东",
-     "to": "西浴场廊"
-    },
-    {
-     "raw": "冷热浴疗室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "冷热浴疗室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "冷热浴疗室",
-   "x0": 0,
-   "x1": 4,
-   "y0": 27.8,
-   "y1": 36,
-   "area": 32.8,
-   "doors": [
-    {
-     "raw": "南门 x=2，宽0.95，通玉石泳池厅",
-     "open": false,
-     "axis": "x",
-     "at": 2,
-     "width": 0.95,
-     "dir": "南",
-     "to": "玉石泳池厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "泳池机房",
-   "x0": 4.2,
-   "x1": 8.2,
-   "y0": 27.8,
-   "y1": 36,
-   "area": 32.8,
-   "doors": [
-    {
-     "raw": "东门 y=28.6，宽0.95，通西北前室",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 0.95,
-     "dir": "东",
-     "to": "西北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "地下会客前厅",
-   "x0": 24,
-   "x1": 34.6,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 86.92,
-   "doors": [
-    {
-     "raw": "西口 y=1.5，宽2，通主楼梯厅",
-     "open": false,
-     "axis": "y",
-     "at": 1.5,
-     "width": 2,
-     "dir": "西",
-     "to": "主楼梯厅"
-    },
-    {
-     "raw": "东门 y=4.1，宽1.4，通南侧库廊",
-     "open": false,
-     "axis": "y",
-     "at": 4.1,
-     "width": 1.4,
-     "dir": "东",
-     "to": "南侧库廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "物资库",
-   "x0": 37.8,
-   "x1": 45,
-   "y0": 0,
-   "y1": 5.6,
-   "area": 40.32,
-   "doors": [
-    {
-     "raw": "西门 y=2.8，宽1，通南侧库廊",
-     "open": false,
-     "axis": "y",
-     "at": 2.8,
-     "width": 1,
-     "dir": "西",
-     "to": "南侧库廊"
-    },
-    {
-     "raw": "工具修理室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "工具修理室"
-    },
-    {
-     "raw": "北门 x=41.4，宽1，通南勤廊",
-     "open": false,
-     "axis": "x",
-     "at": 41.4,
-     "width": 1,
-     "dir": "北",
-     "to": "南勤廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "工具修理室",
-   "x0": 45.2,
-   "x1": 52,
-   "y0": 0,
-   "y1": 5.6,
-   "area": 38.08,
-   "doors": [
-    {
-     "raw": "西门 y=2.8，宽1，通物资库",
-     "open": false,
-     "axis": "y",
-     "at": 2.8,
-     "width": 1,
-     "dir": "西",
-     "to": "物资库"
-    },
-    {
-     "raw": "北门 x=50.4，宽1，通南勤廊",
-     "open": false,
-     "axis": "x",
-     "at": 50.4,
-     "width": 1,
-     "dir": "北",
-     "to": "南勤廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "南勤廊",
-   "x0": 37.8,
-   "x1": 52,
-   "y0": 5.8,
-   "y1": 8.2,
-   "area": 34.08,
-   "doors": [
-    {
-     "raw": "西门 y=7，宽1.4，通南侧库廊",
-     "open": false,
-     "axis": "y",
-     "at": 7,
-     "width": 1.4,
-     "dir": "西",
-     "to": "南侧库廊"
-    },
-    {
-     "raw": "器械后廊敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "器械后廊"
-    },
-    {
-     "raw": "物资库门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "物资库"
-    },
-    {
-     "raw": "工具修理室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "工具修理室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "器械后廊",
-   "x0": 49.61,
-   "x1": 52,
-   "y0": 8.4,
-   "y1": 16.6,
-   "area": 19.6,
-   "doors": [
-    {
-     "raw": "南口 x=50.805，宽1.4，通南勤廊",
-     "open": false,
-     "axis": "x",
-     "at": 50.805,
-     "width": 1.4,
-     "dir": "南",
-     "to": "南勤廊"
-    },
-    {
-     "raw": "北口 x=50.805，宽1.4，通酒窖前廊",
-     "open": false,
-     "axis": "x",
-     "at": 50.805,
-     "width": 1.4,
-     "dir": "北",
-     "to": "酒窖前廊"
-    },
-    {
-     "raw": "双道保龄球馆门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "双道保龄球馆"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "酒窖前廊",
-   "x0": 37.8,
-   "x1": 52,
-   "y0": 16.8,
-   "y1": 18.8,
-   "area": 28.4,
-   "doors": [
-    {
-     "raw": "器械后廊敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "器械后廊"
-    },
-    {
-     "raw": "西门 y=17.8，宽1.4，通东服务廊",
-     "open": false,
-     "axis": "y",
-     "at": 17.8,
-     "width": 1.4,
-     "dir": "西",
-     "to": "东服务廊"
-    },
-    {
-     "raw": "珍酿酒窖门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "珍酿酒窖"
-    },
-    {
-     "raw": "品酒室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "品酒室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "双道保龄球馆",
-   "x0": 17.4,
-   "x1": 49.41,
-   "y0": 8.4,
-   "y1": 16.6,
-   "area": 262.48,
-   "doors": [
-    {
-     "raw": "东门 y=15.2，宽1.2，通器械后廊",
-     "open": false,
-     "axis": "y",
-     "at": 15.2,
-     "width": 1.2,
-     "dir": "东",
-     "to": "器械后廊"
-    },
-    {
-     "raw": "西门 y=12.5，宽1.6，通西浴场廊",
-     "open": false,
-     "axis": "y",
-     "at": 12.5,
-     "width": 1.6,
-     "dir": "西",
-     "to": "西浴场廊"
-    },
-    {
-     "raw": "北门 x=21，宽1.4，通运动休息厅",
-     "open": false,
-     "axis": "x",
-     "at": 21,
-     "width": 1.4,
-     "dir": "北",
-     "to": "运动休息厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "运动休息厅",
-   "x0": 17.4,
-   "x1": 34.6,
-   "y0": 16.8,
-   "y1": 20.4,
-   "area": 61.92,
-   "doors": [
-    {
-     "raw": "双道保龄球馆门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "双道保龄球馆"
-    },
-    {
-     "raw": "西门 y=18.6，宽1.6，通西浴场廊",
-     "open": false,
-     "axis": "y",
-     "at": 18.6,
-     "width": 1.6,
-     "dir": "西",
-     "to": "西浴场廊"
-    },
-    {
-     "raw": "东门 y=18.6，宽1.6，通东服务廊",
-     "open": false,
-     "axis": "y",
-     "at": 18.6,
-     "width": 1.6,
-     "dir": "东",
-     "to": "东服务廊"
-    },
-    {
-     "raw": "乒乓体育室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "乒乓体育室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "乒乓体育室",
-   "x0": 17.4,
-   "x1": 29.4,
-   "y0": 20.6,
-   "y1": 28.6,
-   "area": 96,
-   "doors": [
-    {
-     "raw": "南门 x=23.4，宽1.2，通运动休息厅",
-     "open": false,
-     "axis": "x",
-     "at": 23.4,
-     "width": 1.2,
-     "dir": "南",
-     "to": "运动休息厅"
-    },
-    {
-     "raw": "西门 y=24.6，宽1.2，通西浴场廊",
+     "ref": true,
      "open": false,
      "axis": "y",
      "at": 24.6,
      "width": 1.2,
      "dir": "西",
-     "to": "西浴场廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "体能训练室",
-   "x0": 17.4,
-   "x1": 29.4,
-   "y0": 28.8,
-   "y1": 36,
-   "area": 86.4,
-   "doors": [
-    {
-     "raw": "西门 y=32.4，宽1.2，通西浴场廊",
-     "open": false,
-     "axis": "y",
-     "at": 32.4,
-     "width": 1.2,
-     "dir": "西",
-     "to": "西浴场廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "伸展室",
-   "x0": 29.6,
-   "x1": 34.6,
-   "y0": 20.6,
-   "y1": 28.2,
-   "area": 38,
-   "doors": [
-    {
-     "raw": "东门 y=24.4，宽1，通东服务廊",
-     "open": false,
-     "axis": "y",
-     "at": 24.4,
-     "width": 1,
-     "dir": "东",
-     "to": "东服务廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "运动器材库",
-   "x0": 29.6,
-   "x1": 34.6,
-   "y0": 28.4,
-   "y1": 36,
-   "area": 38,
-   "doors": [
-    {
-     "raw": "东门 y=32.2，宽1，通东服务廊",
-     "open": false,
-     "axis": "y",
-     "at": 32.2,
-     "width": 1,
-     "dir": "东",
-     "to": "东服务廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "珍酿酒窖",
-   "x0": 37.8,
-   "x1": 46.6,
-   "y0": 19,
-   "y1": 27.6,
-   "area": 75.68,
-   "doors": [
-    {
-     "raw": "南门 x=42.2，宽1.2，通酒窖前廊",
-     "open": false,
-     "axis": "x",
-     "at": 42.2,
-     "width": 1.2,
-     "dir": "南",
-     "to": "酒窖前廊"
-    },
-    {
-     "raw": "西门 y=22.2，宽1.2，通东服务廊",
-     "open": false,
-     "axis": "y",
-     "at": 22.2,
-     "width": 1.2,
-     "dir": "西",
-     "to": "东服务廊"
+     "to": "物资库",
+     "owner": "物资库",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
      "raw": "品酒室门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "品酒室"
+     "axis": "y",
+     "at": 16.2,
+     "width": 1.2,
+     "dir": "东",
+     "to": "品酒室",
+     "owner": "品酒室",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
-     "raw": "酒器洗藏间门",
+     "raw": "酒窖门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "酒器洗藏间"
+     "axis": "y",
+     "at": 24.6,
+     "width": 1,
+     "dir": "东",
+     "to": "酒窖",
+     "owner": "酒窖",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "北廊东段",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "南廊西段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 26.4,
+   "y0": 8.4,
+   "y1": 12,
+   "area": 64.8,
+   "doors": [
+    {
+     "raw": "更衣室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 19.2,
+     "width": 1.2,
+     "dir": "南",
+     "to": "更衣室",
+     "owner": "更衣室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "泳池厅门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 10.2,
+     "width": 1.8,
+     "dir": "东",
+     "to": "泳池厅",
+     "owner": "泳池厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "健身房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 19.2,
+     "width": 1.2,
+     "dir": "北",
+     "to": "健身房",
+     "owner": "健身房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "西电梯厅",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "西地廊",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "南廊东段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 61.2,
+   "y0": 8.4,
+   "y1": 12,
+   "area": 64.8,
+   "doors": [
+    {
+     "raw": "泳池厅门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 10.2,
+     "width": 1.8,
+     "dir": "西",
+     "to": "泳池厅",
+     "owner": "泳池厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "泳池机房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 50.4,
+     "width": 1.2,
+     "dir": "南",
+     "to": "泳池机房",
+     "owner": "泳池机房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "东电梯厅",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "东地廊",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "北廊西段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 26.4,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 64.8,
+   "doors": [
+    {
+     "raw": "西北后楼梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.4,
+     "dir": "北",
+     "to": "西北后楼梯",
+     "owner": "西北后楼梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "保龄球馆门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 14.4,
+     "width": 1,
+     "dir": "北",
+     "to": "保龄球馆",
+     "owner": "保龄球馆",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "家具储藏室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 30.6,
+     "width": 1.4,
+     "dir": "西",
+     "to": "家具储藏室",
+     "owner": "家具储藏室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "西地廊",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "北地廊",
+     "side": "东",
+     "a": 28.8,
+     "b": 32.4
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "北地廊",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 60.48,
+   "doors": [
+    {
+     "raw": "浴疗室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 1.4,
+     "dir": "南",
+     "to": "浴疗室",
+     "owner": "浴疗室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "保龄球馆门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 40.2,
+     "width": 1.6,
+     "dir": "北",
+     "to": "保龄球馆",
+     "owner": "保龄球馆",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "北廊西段",
+     "side": "西",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "北廊东段",
+     "side": "东",
+     "a": 28.8,
+     "b": 32.4
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "北廊东段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 61.2,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 64.8,
+   "doors": [
+    {
+     "raw": "东北后楼梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.4,
+     "dir": "北",
+     "to": "东北后楼梯",
+     "owner": "东北后楼梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "机房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 55.2,
+     "width": 1.2,
+     "dir": "北",
+     "to": "机房",
+     "owner": "机房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "杂物储藏室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 30.6,
+     "width": 1.4,
+     "dir": "东",
+     "to": "杂物储藏室",
+     "owner": "杂物储藏室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "东地廊",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "北地廊",
+     "side": "西",
+     "a": 28.8,
+     "b": 32.4
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "西北后楼梯",
+   "kind": "stair",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 32.4,
+   "y1": 40.8,
+   "area": 30.24,
+   "doors": [
+    {
+     "raw": "后楼梯门",
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.4,
+     "dir": "南",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "东北后楼梯",
+   "kind": "stair",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 32.4,
+   "y1": 40.8,
+   "area": 30.24,
+   "doors": [
+    {
+     "raw": "后楼梯门",
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.4,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "更衣室",
+   "kind": "room",
+   "x0": 12,
+   "x1": 26.4,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "北门 x=19.2，宽1.2，通南廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 19.2,
+     "width": 1.2,
+     "dir": "北",
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "东门 y=6.3，宽1.2，通泳池厅",
+     "open": false,
+     "axis": "y",
+     "at": 6.3,
+     "width": 1.2,
+     "dir": "东",
+     "to": "泳池厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "泳池厅",
+   "kind": "room",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 0,
+   "y1": 24.6,
+   "shape": "rect",
+   "area": 413.3,
+   "areaNet": false,
+   "netW": 16.56,
+   "netH": 24.48,
+   "doors": [
+    {
+     "raw": "东门 y=10.2，宽1.8，通南廊东段",
+     "open": false,
+     "axis": "y",
+     "at": 10.2,
+     "width": 1.8,
+     "dir": "东",
+     "to": "南廊东段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "西门 y=10.2，宽1.8，通南廊西段",
+     "open": false,
+     "axis": "y",
+     "at": 10.2,
+     "width": 1.8,
+     "dir": "西",
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "更衣室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 6.3,
+     "width": 1.2,
+     "dir": "西",
+     "refDir": null,
+     "to": "更衣室",
+     "glass": false,
+     "owner": "更衣室"
+    },
+    {
+     "raw": "浴疗室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 1.2,
+     "dir": "北",
+     "refDir": null,
+     "to": "浴疗室",
+     "glass": false,
+     "owner": "浴疗室"
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "浴疗室",
+   "kind": "room",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 24.6,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 16.56,
+   "netH": 3.96,
+   "doors": [
+    {
+     "raw": "北门 x=34.8，宽1.4，通北地廊",
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 1.4,
+     "dir": "北",
+     "to": "北地廊",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "南门 x=34.8，宽1.2，通泳池厅",
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 1.2,
+     "dir": "南",
+     "to": "泳池厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "泳池机房",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "北门 x=50.4，宽1.2，通南廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 50.4,
+     "width": 1.2,
+     "dir": "北",
+     "to": "南廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "健身房",
+   "kind": "room",
+   "x0": 12,
+   "x1": 26.4,
+   "y0": 12,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 241.9,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 16.56,
+   "doors": [
+    {
+     "raw": "南门 x=19.2，宽1.2，通南廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 19.2,
+     "width": 1.2,
+     "dir": "南",
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "西门 y=20.4，宽1.6，通西地廊",
+     "open": false,
+     "axis": "y",
+     "at": 20.4,
+     "width": 1.6,
+     "dir": "西",
+     "to": "西地廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "工具间",
+   "kind": "room",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 12,
+   "y1": 20.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
+   "doors": [
+    {
+     "raw": "东门 y=16.2，宽1，通西地廊",
+     "open": false,
+     "axis": "y",
+     "at": 16.2,
+     "width": 1,
+     "dir": "东",
+     "to": "西地廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "洗衣房",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 12,
+   "y1": 20.4,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.16,
+   "doors": [
+    {
+     "raw": "东门 y=16.2，宽1.2，通东地廊",
+     "open": false,
+     "axis": "y",
+     "at": 16.2,
+     "width": 1.2,
+     "dir": "东",
+     "to": "东地廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "物资库",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 20.4,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.16,
+   "doors": [
+    {
+     "raw": "东门 y=24.6，宽1.2，通东地廊",
+     "open": false,
+     "axis": "y",
+     "at": 24.6,
+     "width": 1.2,
+     "dir": "东",
+     "to": "东地廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
   },
   {
    "floor": "B1",
    "name": "品酒室",
-   "x0": 46.8,
-   "x1": 52,
-   "y0": 19,
-   "y1": 24,
-   "area": 26,
+   "kind": "room",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 12,
+   "y1": 20.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
    "doors": [
     {
-     "raw": "南门 x=49.4，宽1，通酒窖前廊",
+     "raw": "西门 y=16.2，宽1.2，通东地廊",
+     "open": false,
+     "axis": "y",
+     "at": 16.2,
+     "width": 1.2,
+     "dir": "西",
+     "to": "东地廊",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "酒窖门",
+     "ref": true,
      "open": false,
      "axis": "x",
-     "at": 49.4,
+     "at": 66,
+     "width": 1,
+     "dir": "北",
+     "refDir": null,
+     "to": "酒窖",
+     "glass": false,
+     "owner": "酒窖"
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "酒窖",
+   "kind": "room",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 20.4,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
+   "doors": [
+    {
+     "raw": "南门 x=66，宽1，通品酒室",
+     "open": false,
+     "axis": "x",
+     "at": 66,
      "width": 1,
      "dir": "南",
-     "to": "酒窖前廊"
+     "to": "品酒室",
+     "main": false,
+     "glass": false
     },
     {
-     "raw": "西门 y=21.5，宽1，通珍酿酒窖",
+     "raw": "西门 y=24.6，宽1，通东地廊",
      "open": false,
      "axis": "y",
-     "at": 21.5,
+     "at": 24.6,
      "width": 1,
      "dir": "西",
-     "to": "珍酿酒窖"
-    },
+     "to": "东地廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "保龄球馆",
+   "kind": "room",
+   "x0": 12,
+   "x1": 43.2,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 262.1,
+   "areaNet": false,
+   "netW": 30.96,
+   "netH": 8.28,
+   "doors": [
     {
-     "raw": "北门 x=49.4，宽0.9，通酒器洗藏间",
+     "raw": "南门 x=14.4，宽1，通北廊西段",
      "open": false,
      "axis": "x",
-     "at": 49.4,
-     "width": 0.9,
-     "dir": "北",
-     "to": "酒器洗藏间"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "B1",
-   "name": "酒器洗藏间",
-   "x0": 46.8,
-   "x1": 52,
-   "y0": 24.2,
-   "y1": 27.6,
-   "area": 17.68,
-   "doors": [
-    {
-     "raw": "西门 y=25.2，宽1，通珍酿酒窖",
-     "open": false,
-     "axis": "y",
-     "at": 25.2,
+     "at": 14.4,
      "width": 1,
-     "dir": "西",
-     "to": "珍酿酒窖"
+     "dir": "南",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
     },
     {
-     "raw": "品酒室门",
+     "raw": "南门 x=40.2，宽1.6，通北地廊",
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "品酒室"
+     "axis": "x",
+     "at": 40.2,
+     "width": 1.6,
+     "dir": "南",
+     "to": "北地廊",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 0
   },
   {
    "floor": "B1",
-   "name": "洗衣布草室",
-   "x0": 43.8,
-   "x1": 52,
-   "y0": 27.8,
-   "y1": 36,
-   "area": 67.24,
+   "name": "机房",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
    "doors": [
     {
-     "raw": "西门 y=28.6，宽1，通东北前室",
+     "raw": "南门 x=55.2，宽1.2，通北廊东段",
      "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 1,
-     "dir": "西",
-     "to": "东北前室"
+     "axis": "x",
+     "at": 55.2,
+     "width": 1.2,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "家具储藏室",
+   "kind": "room",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 20.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 171.4,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 20.28,
+   "doors": [
+    {
+     "raw": "东门 y=30.6，宽1.4，通北廊西段",
+     "open": false,
+     "axis": "y",
+     "at": 30.6,
+     "width": 1.4,
+     "dir": "东",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "箱笼储藏室",
+   "kind": "room",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 0,
+   "y1": 12,
+   "shape": "rect",
+   "area": 100.8,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 11.88,
+   "doors": [
+    {
+     "raw": "东门 y=5.6，宽1.4，通西电梯厅",
+     "open": false,
+     "axis": "y",
+     "at": 5.6,
+     "width": 1.4,
+     "dir": "东",
+     "to": "西电梯厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "地毯储藏室",
+   "kind": "room",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 0,
+   "y1": 12,
+   "shape": "rect",
+   "area": 100.8,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 11.88,
+   "doors": [
+    {
+     "raw": "西门 y=5.6，宽1.4，通东电梯厅",
+     "open": false,
+     "axis": "y",
+     "at": 5.6,
+     "width": 1.4,
+     "dir": "西",
+     "to": "东电梯厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "B1",
+   "name": "杂物储藏室",
+   "kind": "room",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 28.8,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 100.8,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 11.88,
+   "doors": [
+    {
+     "raw": "西门 y=30.6，宽1.4，通北廊东段",
+     "open": false,
+     "axis": "y",
+     "at": 30.6,
+     "width": 1.4,
+     "dir": "西",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "1F",
+   "name": "西电梯",
+   "kind": "elevator",
+   "shape": "rect",
+   "x0": 9,
+   "x1": 11.4,
+   "y0": 0,
+   "y1": 2.8,
+   "area": 6.72,
+   "doors": [
+    {
+     "raw": "电梯门",
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.1,
+     "dir": "北",
+     "to": "西电梯厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "1F",
+   "name": "东电梯",
+   "kind": "elevator",
+   "shape": "rect",
+   "x0": 58.2,
+   "x1": 60.6,
+   "y0": 0,
+   "y1": 2.8,
+   "area": 6.72,
+   "doors": [
+    {
+     "raw": "电梯门",
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.1,
+     "dir": "北",
+     "to": "东电梯厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "1F",
+   "name": "西电梯厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 2.8,
+   "y1": 8.4,
+   "area": 20.16,
+   "doors": [
+    {
+     "raw": "西电梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.1,
+     "dir": "南",
+     "to": "西电梯",
+     "owner": "西电梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "1F",
+   "name": "东电梯厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 2.8,
+   "y1": 8.4,
+   "area": 20.16,
+   "doors": [
+    {
+     "raw": "东电梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.1,
+     "dir": "南",
+     "to": "东电梯",
+     "owner": "东电梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [],
+   "win": 0
   },
   {
    "floor": "1F",
    "name": "西藏珍廊",
-   "x0": 14.4,
-   "x1": 17.2,
-   "y0": 0,
-   "y1": 36,
-   "area": 100.8,
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
    "doors": [
     {
-     "raw": "主楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "主楼梯厅"
-    },
-    {
-     "raw": "西北前室敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西北前室"
-    },
-    {
-     "raw": "3号套房门",
+     "raw": "花园门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "3号套房"
+     "axis": "y",
+     "at": 20.4,
+     "width": 1.8,
+     "dir": "东",
+     "to": "花园",
+     "owner": "花园",
+     "main": false,
+     "glass": true,
+     "refDir": null
     },
     {
-     "raw": "西南起居厅门",
+     "raw": "晨间厅门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西南起居厅"
+     "axis": "y",
+     "at": 16.2,
+     "width": 1.4,
+     "dir": "西",
+     "to": "晨间厅",
+     "owner": "晨间厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
-     "raw": "自然史大厅门",
+     "raw": "园艺间门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "自然史大厅"
-    },
-    {
-     "raw": "自然史大厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "自然史大厅"
-    },
-    {
-     "raw": "典礼前厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "典礼前厅"
-    },
-    {
-     "raw": "穹顶议事厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "穹顶议事厅"
+     "axis": "y",
+     "at": 24.6,
+     "width": 1,
+     "dir": "西",
+     "to": "园艺间",
+     "owner": "园艺间",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "北廊西段",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [
+    {
+     "to": "花园",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
   },
   {
    "floor": "1F",
    "name": "东织锦廊",
-   "x0": 34.8,
-   "x1": 37.6,
-   "y0": 0,
-   "y1": 36,
-   "area": 100.8,
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
    "doors": [
-    {
-     "raw": "东北前室敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "东北前室"
-    },
-    {
-     "raw": "晨间厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "晨间厅"
-    },
-    {
-     "raw": "迎宾前厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "迎宾前厅"
-    },
-    {
-     "raw": "音乐沙龙门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "音乐沙龙"
-    },
-    {
-     "raw": "典礼前厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "典礼前厅"
-    },
-    {
-     "raw": "穹顶议事厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "穹顶议事厅"
-    },
-    {
-     "raw": "厨房套区门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "厨房套区"
-    },
-    {
-     "raw": "宴饮厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "宴饮厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "主楼梯厅",
-   "x0": 17.4,
-   "x1": 23.8,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 52.48,
-   "doors": [
-    {
-     "raw": "西口 y=1.5，宽2，通西藏珍廊",
-     "open": false,
-     "axis": "y",
-     "at": 1.5,
-     "width": 2,
-     "dir": "西",
-     "to": "西藏珍廊"
-    },
-    {
-     "raw": "迎宾前厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "迎宾前厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "西北楼梯厅",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 29.6,
-   "y1": 36,
-   "area": 37.12,
-   "doors": [
-    {
-     "raw": "南口 x=11.3，宽1.8，通西北前室",
-     "open": false,
-     "axis": "x",
-     "at": 11.3,
-     "width": 1.8,
-     "dir": "南",
-     "to": "西北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "东北楼梯厅",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 29.6,
-   "y1": 36,
-   "area": 37.12,
-   "doors": [
-    {
-     "raw": "南口 x=40.7，宽1.8，通东北前室",
-     "open": false,
-     "axis": "x",
-     "at": 40.7,
-     "width": 1.8,
-     "dir": "南",
-     "to": "东北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "西北前室",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 27.8,
-   "y1": 29.4,
-   "area": 9.28,
-   "doors": [
-    {
-     "raw": "西北楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西北楼梯厅"
-    },
-    {
-     "raw": "东口 y=28.6，宽1.2，通西藏珍廊",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 1.2,
-     "dir": "东",
-     "to": "西藏珍廊"
-    },
-    {
-     "raw": "2号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "2号套房"
-    },
     {
      "raw": "自然史大厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "自然史大厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "东北前室",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 27.8,
-   "y1": 29.4,
-   "area": 9.28,
-   "doors": [
-    {
-     "raw": "东北楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "东北楼梯厅"
-    },
-    {
-     "raw": "西口 y=28.6，宽1.2，通东织锦廊",
+     "ref": true,
      "open": false,
      "axis": "y",
-     "at": 28.6,
-     "width": 1.2,
+     "at": 20.4,
+     "width": 1.8,
      "dir": "西",
-     "to": "东织锦廊"
+     "to": "自然史大厅",
+     "owner": "自然史大厅",
+     "main": false,
+     "glass": true,
+     "refDir": null
     },
     {
-     "raw": "5号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "5号套房"
-    },
-    {
-     "raw": "宴饮厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "宴饮厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "1号套房",
-   "x0": 0,
-   "x1": 8.2,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "东门 y=5.8，宽0.95，通西南起居厅",
+     "raw": "古兽厅门",
+     "ref": true,
      "open": false,
      "axis": "y",
-     "at": 5.8,
-     "width": 0.95,
+     "at": 20.4,
+     "width": 1.6,
      "dir": "东",
-     "to": "西南起居厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "2号套房",
-   "x0": 0,
-   "x1": 8.2,
-   "y0": 27.8,
-   "y1": 36,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "东门 y=28.6，宽0.95，通西北前室",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 0.95,
-     "dir": "东",
-     "to": "西北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "3号套房",
-   "x0": 17.4,
-   "x1": 24.4,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 67.2,
-   "doors": [
-    {
-     "raw": "西门 y=13.2，宽0.95，通西藏珍廊",
-     "open": false,
-     "axis": "y",
-     "at": 13.2,
-     "width": 0.95,
-     "dir": "西",
-     "to": "西藏珍廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "4号套房",
-   "x0": 43.8,
-   "x1": 52,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "西门 y=5.8，宽0.95，通晨间厅",
-     "open": false,
-     "axis": "y",
-     "at": 5.8,
-     "width": 0.95,
-     "dir": "西",
-     "to": "晨间厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "5号套房",
-   "x0": 43.8,
-   "x1": 52,
-   "y0": 27.8,
-   "y1": 36,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "西门 y=28.6，宽0.95，通东北前室",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 0.95,
-     "dir": "西",
-     "to": "东北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "列柱序廊",
-   "x0": 24.6,
-   "x1": 27.4,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 26.88,
-   "doors": [
-    {
-     "raw": "南口 x=26，宽2，通迎宾前厅",
-     "open": false,
-     "axis": "x",
-     "at": 26,
-     "width": 2,
-     "dir": "南",
-     "to": "迎宾前厅"
+     "to": "古兽厅",
+     "owner": "古兽厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
-     "raw": "典礼前厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "典礼前厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "西南起居厅",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 47.56,
-   "doors": [
-    {
-     "raw": "1号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "1号套房"
-    },
-    {
-     "raw": "东门 y=2.4，宽1，通西藏珍廊",
+     "raw": "古兽厅门",
+     "ref": true,
      "open": false,
      "axis": "y",
-     "at": 2.4,
+     "at": 27,
      "width": 1,
      "dir": "东",
-     "to": "西藏珍廊"
-    },
-    {
-     "raw": "自然史大厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "自然史大厅"
+     "to": "古兽厅",
+     "owner": "古兽厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "北廊东段",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [
+    {
+     "to": "自然史大厅",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
   },
   {
    "floor": "1F",
-   "name": "晨间厅",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 47.56,
-   "doors": [
-    {
-     "raw": "4号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "4号套房"
-    },
-    {
-     "raw": "西门 y=2.4，宽1，通东织锦廊",
-     "open": false,
-     "axis": "y",
-     "at": 2.4,
-     "width": 1,
-     "dir": "西",
-     "to": "东织锦廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "自然史大厅",
+   "name": "南廊西段",
+   "kind": "corridor",
+   "shape": "rect",
    "x0": 0,
-   "x1": 14.2,
+   "x1": 26.4,
    "y0": 8.4,
-   "y1": 27.6,
-   "area": 272.64,
+   "y1": 12,
+   "area": 95.04,
    "doors": [
     {
-     "raw": "东门 y=12.2，宽2，通西藏珍廊",
-     "open": false,
+     "raw": "门厅敞接",
+     "ref": true,
+     "open": true,
      "axis": "y",
-     "at": 12.2,
-     "width": 2,
+     "at": 10.2,
+     "width": 3.6,
      "dir": "东",
-     "to": "西藏珍廊"
+     "to": "门厅",
+     "owner": "门厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
-     "raw": "东门 y=24，宽2，通西藏珍廊",
-     "open": false,
-     "axis": "y",
-     "at": 24,
-     "width": 2,
-     "dir": "东",
-     "to": "西藏珍廊"
-    },
-    {
-     "raw": "南门 x=12.6，宽1.2，通西南起居厅",
+     "raw": "花园门",
+     "ref": true,
      "open": false,
      "axis": "x",
-     "at": 12.6,
-     "width": 1.2,
-     "dir": "南",
-     "to": "西南起居厅"
-    },
-    {
-     "raw": "北门 x=11.3，宽1.2，通西北前室",
-     "open": false,
-     "axis": "x",
-     "at": 11.3,
-     "width": 1.2,
+     "at": 17.4,
+     "width": 1.8,
      "dir": "北",
-     "to": "西北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "迎宾前厅",
-   "x0": 24,
-   "x1": 34.6,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 86.92,
-   "doors": [
-    {
-     "raw": "列柱序廊敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "列柱序廊"
-    },
-    {
-     "raw": "西口 y=1.5，宽2，通主楼梯厅",
-     "open": false,
-     "axis": "y",
-     "at": 1.5,
-     "width": 2,
-     "dir": "西",
-     "to": "主楼梯厅"
-    },
-    {
-     "raw": "东门 y=5.8，宽1.4，通东织锦廊",
-     "open": false,
-     "axis": "y",
-     "at": 5.8,
-     "width": 1.4,
-     "dir": "东",
-     "to": "东织锦廊"
+     "to": "花园",
+     "owner": "花园",
+     "main": false,
+     "glass": true,
+     "refDir": null
     },
     {
      "raw": "衣帽间门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "衣帽间"
-    },
-    {
-     "raw": "公共盥洗室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "公共盥洗室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "音乐沙龙",
-   "x0": 27.6,
-   "x1": 34.6,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 67.2,
-   "doors": [
-    {
-     "raw": "东门 y=13.2，宽1.2，通东织锦廊",
-     "open": false,
-     "axis": "y",
-     "at": 13.2,
-     "width": 1.2,
-     "dir": "东",
-     "to": "东织锦廊"
-    },
-    {
-     "raw": "北门 x=31.1，宽1.2，通典礼前厅",
+     "ref": true,
      "open": false,
      "axis": "x",
-     "at": 31.1,
-     "width": 1.2,
-     "dir": "北",
-     "to": "典礼前厅"
+     "at": 15.6,
+     "width": 1,
+     "dir": "南",
+     "to": "衣帽间",
+     "owner": "衣帽间",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "盥洗室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 22.8,
+     "width": 1,
+     "dir": "南",
+     "to": "盥洗室",
+     "owner": "盥洗室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "1号套房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "南",
+     "to": "1号套房",
+     "owner": "1号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "西电梯厅",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "西藏珍廊",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [
+    {
+     "to": "花园",
+     "side": "北",
+     "a": 12,
+     "b": 26.4
+    }
+   ],
+   "win": 1
   },
   {
    "floor": "1F",
-   "name": "典礼前厅",
-   "x0": 17.4,
-   "x1": 34.6,
-   "y0": 18.2,
-   "y1": 21.8,
-   "area": 61.92,
+   "name": "南廊东段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 69.6,
+   "y0": 8.4,
+   "y1": 12,
+   "area": 95.04,
    "doors": [
+    {
+     "raw": "门厅敞接",
+     "ref": true,
+     "open": true,
+     "axis": "y",
+     "at": 10.2,
+     "width": 3.6,
+     "dir": "西",
+     "to": "门厅",
+     "owner": "门厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "自然史大厅门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 52.2,
+     "width": 1.8,
+     "dir": "北",
+     "to": "自然史大厅",
+     "owner": "自然史大厅",
+     "main": false,
+     "glass": true,
+     "refDir": null
+    },
     {
      "raw": "音乐沙龙门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "音乐沙龙"
-    },
-    {
-     "raw": "西门 y=20，宽1.6，通西藏珍廊",
-     "open": false,
-     "axis": "y",
-     "at": 20,
-     "width": 1.6,
-     "dir": "西",
-     "to": "西藏珍廊"
-    },
-    {
-     "raw": "东门 y=20，宽1.6，通东织锦廊",
-     "open": false,
-     "axis": "y",
-     "at": 20,
-     "width": 1.6,
-     "dir": "东",
-     "to": "东织锦廊"
-    },
-    {
-     "raw": "南口 x=26，宽2，通列柱序廊",
+     "ref": true,
      "open": false,
      "axis": "x",
-     "at": 26,
-     "width": 2,
+     "at": 54,
+     "width": 1.6,
      "dir": "南",
-     "to": "列柱序廊"
+     "to": "音乐沙龙",
+     "owner": "音乐沙龙",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
-     "raw": "穹顶议事厅门",
+     "raw": "4号套房门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "穹顶议事厅"
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "南",
+     "to": "4号套房",
+     "owner": "4号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "东电梯厅",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "东织锦廊",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [
+    {
+     "to": "自然史大厅",
+     "side": "北",
+     "a": 43.2,
+     "b": 57.6
+    }
+   ],
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "北廊西段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 0,
+   "x1": 26.4,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 95.04,
+   "doors": [
+    {
+     "raw": "西北后楼梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.4,
+     "dir": "北",
+     "to": "西北后楼梯",
+     "owner": "西北后楼梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "花园门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 17.4,
+     "width": 1.8,
+     "dir": "南",
+     "to": "花园",
+     "owner": "花园",
+     "main": false,
+     "glass": true,
+     "refDir": null
+    },
+    {
+     "raw": "起居厅门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 17.4,
+     "width": 1.6,
+     "dir": "北",
+     "to": "起居厅",
+     "owner": "起居厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "2号套房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "北",
+     "to": "2号套房",
+     "owner": "2号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "西藏珍廊",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "北过厅",
+     "side": "东",
+     "a": 28.8,
+     "b": 32.4
+    }
+   ],
+   "glass": [
+    {
+     "to": "花园",
+     "side": "南",
+     "a": 12,
+     "b": 26.4
+    }
+   ],
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "北过厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 60.48,
+   "doors": [
+    {
+     "raw": "宴饮厅门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 1.6,
+     "dir": "北",
+     "to": "宴饮厅",
+     "owner": "宴饮厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "北廊西段",
+     "side": "西",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "北廊东段",
+     "side": "东",
+     "a": 28.8,
+     "b": 32.4
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "1F",
+   "name": "北廊东段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 69.6,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 95.04,
+   "doors": [
+    {
+     "raw": "东北后楼梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.4,
+     "dir": "北",
+     "to": "东北后楼梯",
+     "owner": "东北后楼梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "自然史大厅门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 52.2,
+     "width": 1.8,
+     "dir": "南",
+     "to": "自然史大厅",
+     "owner": "自然史大厅",
+     "main": false,
+     "glass": true,
+     "refDir": null
+    },
+    {
+     "raw": "厨房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 55.2,
+     "width": 1,
+     "dir": "北",
+     "to": "厨房",
+     "owner": "厨房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "3号套房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "北",
+     "to": "3号套房",
+     "owner": "3号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "东织锦廊",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "北过厅",
+     "side": "西",
+     "a": 28.8,
+     "b": 32.4
+    }
+   ],
+   "glass": [
+    {
+     "to": "自然史大厅",
+     "side": "南",
+     "a": 43.2,
+     "b": 57.6
+    }
+   ],
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "西北后楼梯",
+   "kind": "stair",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 32.4,
+   "y1": 40.8,
+   "area": 30.24,
+   "doors": [
+    {
+     "raw": "后楼梯门",
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.4,
+     "dir": "南",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "东北后楼梯",
+   "kind": "stair",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 32.4,
+   "y1": 40.8,
+   "area": 30.24,
+   "doors": [
+    {
+     "raw": "后楼梯门",
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.4,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "门厅",
+   "kind": "room",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 0,
+   "y1": 12,
+   "shape": "rect",
+   "area": 201.6,
+   "areaNet": false,
+   "netW": 16.56,
+   "netH": 11.88,
+   "doors": [
+    {
+     "raw": "南墙正门 x=34.8，宽3.6，通屋外（1.4）",
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 3.6,
+     "dir": "南",
+     "to": "屋外",
+     "main": true,
+     "glass": false,
+     "outside": true
+    },
+    {
+     "raw": "西、东两边 y=8.4—12 敞接南廊",
+     "open": true,
+     "axis": "y",
+     "at": 10.2,
+     "width": 3.6,
+     "dir": "西",
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "西、东两边 y=8.4—12 敞接南廊",
+     "open": true,
+     "axis": "y",
+     "at": 10.2,
+     "width": 3.6,
+     "dir": "东",
+     "to": "南廊东段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "议事厅南门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 2.4,
+     "dir": "北",
+     "refDir": "南",
+     "to": "穹顶议事厅",
+     "glass": false,
+     "owner": "穹顶议事厅"
+    },
+    {
+     "raw": "音乐沙龙门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 1.3,
+     "width": 1.8,
+     "dir": "东",
+     "refDir": null,
+     "to": "音乐沙龙",
+     "glass": false,
+     "owner": "音乐沙龙"
+    }
+   ],
+   "parent": null,
+   "win": 1
   },
   {
    "floor": "1F",
    "name": "穹顶议事厅",
-   "x0": 17.4,
-   "x1": 34.6,
-   "y0": 22,
-   "y1": 36,
-   "area": 240.8,
+   "kind": "room",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 12,
+   "y1": 28.8,
+   "shape": "circle",
+   "cx": 34.8,
+   "cy": 20.4,
+   "r": 6.6,
+   "rOuter": 7.8,
+   "area": 137,
+   "areaNet": true,
    "doors": [
     {
-     "raw": "南门 x=26，宽2.4，通典礼前厅",
+     "raw": "南门 x=34.8，宽2.4，通门厅",
      "open": false,
      "axis": "x",
-     "at": 26,
+     "at": 34.8,
      "width": 2.4,
      "dir": "南",
-     "to": "典礼前厅"
+     "to": "门厅",
+     "main": false,
+     "glass": false
     },
     {
-     "raw": "西门 y=29.8，宽1.4，通西藏珍廊",
+     "raw": "西门 y=20.4，宽2.4，通花园",
      "open": false,
      "axis": "y",
-     "at": 29.8,
-     "width": 1.4,
+     "at": 20.4,
+     "width": 2.4,
      "dir": "西",
-     "to": "西藏珍廊"
+     "to": "花园",
+     "main": false,
+     "glass": false
     },
     {
-     "raw": "东门 y=29.8，宽1.4，通东织锦廊",
+     "raw": "东门 y=20.4，宽2.4，通自然史大厅",
      "open": false,
      "axis": "y",
-     "at": 29.8,
-     "width": 1.4,
+     "at": 20.4,
+     "width": 2.4,
      "dir": "东",
-     "to": "东织锦廊"
+     "to": "自然史大厅",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 0
   },
   {
    "floor": "1F",
-   "name": "厨房套区",
-   "x0": 37.8,
-   "x1": 52,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 136.32,
+   "name": "花园",
+   "kind": "room",
+   "x0": 12,
+   "x1": 26.4,
+   "y0": 12,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 241.9,
+   "areaNet": false,
+   "netW": 14.23,
+   "netH": 16.7,
    "doors": [
     {
-     "raw": "西门 y=13.4，宽1.2，通东织锦廊",
-     "open": false,
-     "axis": "y",
-     "at": 13.4,
-     "width": 1.2,
-     "dir": "西",
-     "to": "东织锦廊"
-    },
-    {
-     "raw": "北门 x=43.4，宽1.2，通宴饮厅",
+     "raw": "北门 x=17.4，宽1.8，通北廊西段",
      "open": false,
      "axis": "x",
-     "at": 43.4,
-     "width": 1.2,
+     "at": 17.4,
+     "width": 1.8,
      "dir": "北",
-     "to": "宴饮厅"
+     "to": "北廊西段",
+     "main": false,
+     "glass": true
     },
     {
-     "raw": "食品储藏间门",
+     "raw": "南门 x=17.4，宽1.8，通南廊西段",
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "食品储藏间"
+     "axis": "x",
+     "at": 17.4,
+     "width": 1.8,
+     "dir": "南",
+     "to": "南廊西段",
+     "main": false,
+     "glass": true
     },
     {
-     "raw": "洗消间门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "洗消间"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "1F",
-   "name": "宴饮厅",
-   "x0": 37.8,
-   "x1": 52,
-   "y0": 18.2,
-   "y1": 27.6,
-   "area": 133.48,
-   "doors": [
-    {
-     "raw": "厨房套区门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "厨房套区"
-    },
-    {
-     "raw": "西门 y=23，宽1.8，通东织锦廊",
+     "raw": "西门 y=20.4，宽1.8，通西藏珍廊",
      "open": false,
      "axis": "y",
-     "at": 23,
+     "at": 20.4,
      "width": 1.8,
      "dir": "西",
-     "to": "东织锦廊"
+     "to": "西藏珍廊",
+     "main": false,
+     "glass": true
     },
     {
-     "raw": "北门 x=40.7，宽1.2，通东北前室",
+     "raw": "议事厅西门",
+     "ref": true,
      "open": false,
-     "axis": "x",
-     "at": 40.7,
-     "width": 1.2,
-     "dir": "北",
-     "to": "东北前室"
+     "axis": "y",
+     "at": 20.4,
+     "width": 2.4,
+     "dir": "东",
+     "refDir": "西",
+     "to": "穹顶议事厅",
+     "glass": false,
+     "owner": "穹顶议事厅"
     }
    ],
-   "parent": null
+   "parent": null,
+   "court": true,
+   "glass": [
+    {
+     "to": "西藏珍廊",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    },
+    {
+     "to": "南廊西段",
+     "side": "南",
+     "a": 12,
+     "b": 26.4
+    },
+    {
+     "to": "北廊西段",
+     "side": "北",
+     "a": 12,
+     "b": 26.4
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "1F",
+   "name": "自然史大厅",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 12,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 241.9,
+   "areaNet": false,
+   "netW": 14.23,
+   "netH": 16.7,
+   "doors": [
+    {
+     "raw": "北门 x=52.2，宽1.8，通北廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 52.2,
+     "width": 1.8,
+     "dir": "北",
+     "to": "北廊东段",
+     "main": false,
+     "glass": true
+    },
+    {
+     "raw": "东门 y=20.4，宽1.8，通东织锦廊",
+     "open": false,
+     "axis": "y",
+     "at": 20.4,
+     "width": 1.8,
+     "dir": "东",
+     "to": "东织锦廊",
+     "main": false,
+     "glass": true
+    },
+    {
+     "raw": "南门 x=52.2，宽1.8，通南廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 52.2,
+     "width": 1.8,
+     "dir": "南",
+     "to": "南廊东段",
+     "main": false,
+     "glass": true
+    },
+    {
+     "raw": "议事厅东门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 20.4,
+     "width": 2.4,
+     "dir": "西",
+     "refDir": "东",
+     "to": "穹顶议事厅",
+     "glass": false,
+     "owner": "穹顶议事厅"
+    }
+   ],
+   "parent": null,
+   "court": true,
+   "glass": [
+    {
+     "to": "东织锦廊",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    },
+    {
+     "to": "南廊东段",
+     "side": "南",
+     "a": 43.2,
+     "b": 57.6
+    },
+    {
+     "to": "北廊东段",
+     "side": "北",
+     "a": 43.2,
+     "b": 57.6
+    }
+   ],
+   "win": 0
   },
   {
    "floor": "1F",
    "name": "衣帽间",
-   "x0": 27.6,
-   "x1": 31,
+   "kind": "room",
+   "x0": 12,
+   "x1": 19.2,
    "y0": 0,
-   "y1": 3.9,
-   "area": 13.26,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 60.5,
+   "areaNet": false,
+   "netW": 6.96,
+   "netH": 8.28,
    "doors": [
     {
-     "raw": "北门 x=29.3，宽0.9，通迎宾前厅",
+     "raw": "北门 x=15.6，宽1，通南廊西段",
      "open": false,
      "axis": "x",
-     "at": 29.3,
-     "width": 0.9,
+     "at": 15.6,
+     "width": 1,
      "dir": "北",
-     "to": "迎宾前厅"
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": "迎宾前厅"
+   "parent": null,
+   "win": 1
   },
   {
    "floor": "1F",
-   "name": "公共盥洗室",
-   "x0": 31.2,
-   "x1": 34.6,
+   "name": "盥洗室",
+   "kind": "room",
+   "x0": 19.2,
+   "x1": 26.4,
    "y0": 0,
-   "y1": 3.9,
-   "area": 13.26,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 60.5,
+   "areaNet": false,
+   "netW": 6.96,
+   "netH": 8.28,
    "doors": [
     {
-     "raw": "北门 x=31.9，宽0.9，通迎宾前厅",
+     "raw": "北门 x=22.8，宽1，通南廊西段",
      "open": false,
      "axis": "x",
-     "at": 31.9,
-     "width": 0.9,
+     "at": 22.8,
+     "width": 1,
      "dir": "北",
-     "to": "迎宾前厅"
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": "迎宾前厅"
+   "parent": null,
+   "win": 1
   },
   {
    "floor": "1F",
-   "name": "食品储藏间",
-   "x0": 47.6,
-   "x1": 52,
-   "y0": 8.4,
-   "y1": 12.8,
-   "area": 19.36,
+   "name": "音乐沙龙",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
    "doors": [
     {
-     "raw": "西门 y=10.6，宽0.9，通厨房套区",
+     "raw": "北门 x=54，宽1.6，通南廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 54,
+     "width": 1.6,
+     "dir": "北",
+     "to": "南廊东段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "西门 y=1.3，宽1.8，通门厅",
      "open": false,
      "axis": "y",
-     "at": 10.6,
-     "width": 0.9,
+     "at": 1.3,
+     "width": 1.8,
      "dir": "西",
-     "to": "厨房套区"
+     "to": "门厅",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": "厨房套区"
+   "parent": null,
+   "win": 2
   },
   {
    "floor": "1F",
-   "name": "洗消间",
-   "x0": 47.6,
-   "x1": 52,
-   "y0": 13,
-   "y1": 18,
-   "area": 22,
+   "name": "晨间厅",
+   "kind": "room",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 12,
+   "y1": 20.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
    "doors": [
     {
-     "raw": "西门 y=15.5，宽0.9，通厨房套区",
+     "raw": "东门 y=16.2，宽1.4，通西藏珍廊",
      "open": false,
      "axis": "y",
-     "at": 15.5,
-     "width": 0.9,
-     "dir": "西",
-     "to": "厨房套区"
+     "at": 16.2,
+     "width": 1.4,
+     "dir": "东",
+     "to": "西藏珍廊",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": "厨房套区"
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "园艺间",
+   "kind": "room",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 20.4,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
+   "doors": [
+    {
+     "raw": "东门 y=24.6，宽1，通西藏珍廊",
+     "open": false,
+     "axis": "y",
+     "at": 24.6,
+     "width": 1,
+     "dir": "东",
+     "to": "西藏珍廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "古兽厅",
+   "kind": "room",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 12,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 141.1,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 16.56,
+   "doors": [
+    {
+     "raw": "西门 y=20.4，宽1.6，通东织锦廊",
+     "open": false,
+     "axis": "y",
+     "at": 20.4,
+     "width": 1.6,
+     "dir": "西",
+     "to": "东织锦廊",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "西门 y=27，宽1，通东织锦廊",
+     "open": false,
+     "axis": "y",
+     "at": 27,
+     "width": 1,
+     "dir": "西",
+     "to": "东织锦廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 2
+  },
+  {
+   "floor": "1F",
+   "name": "起居厅",
+   "kind": "room",
+   "x0": 12,
+   "x1": 26.4,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "南门 x=17.4，宽1.6，通北廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 17.4,
+     "width": 1.6,
+     "dir": "南",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "宴饮厅门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 37.8,
+     "width": 1.4,
+     "dir": "东",
+     "refDir": null,
+     "to": "宴饮厅",
+     "glass": false,
+     "owner": "宴饮厅"
+    }
+   ],
+   "parent": null,
+   "win": 3
+  },
+  {
+   "floor": "1F",
+   "name": "宴饮厅",
+   "kind": "room",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 141.1,
+   "areaNet": false,
+   "netW": 16.56,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "南门 x=34.8，宽1.6，通北过厅",
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 1.6,
+     "dir": "南",
+     "to": "北过厅",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "西门 y=37.8，宽1.4，通起居厅",
+     "open": false,
+     "axis": "y",
+     "at": 37.8,
+     "width": 1.4,
+     "dir": "西",
+     "to": "起居厅",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "厨房门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 38.4,
+     "width": 1,
+     "dir": "东",
+     "refDir": null,
+     "to": "厨房",
+     "glass": false,
+     "owner": "厨房"
+    }
+   ],
+   "parent": null,
+   "win": 3
+  },
+  {
+   "floor": "1F",
+   "name": "厨房",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "南门 x=55.2，宽1，通北廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 55.2,
+     "width": 1,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "西门 y=38.4，宽1，通宴饮厅",
+     "open": false,
+     "axis": "y",
+     "at": 38.4,
+     "width": 1,
+     "dir": "西",
+     "to": "宴饮厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 3
+  },
+  {
+   "floor": "1F",
+   "name": "1号套房",
+   "kind": "suite",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 1,
+   "doors": [
+    {
+     "raw": "北门 x=4.2，宽1，通南廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "北",
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "2号套房",
+   "kind": "suite",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 2,
+   "doors": [
+    {
+     "raw": "南门 x=4.2，宽1，通北廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "南",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "3号套房",
+   "kind": "suite",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 3,
+   "doors": [
+    {
+     "raw": "南门 x=65.4，宽1，通北廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "1F",
+   "name": "4号套房",
+   "kind": "suite",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 4,
+   "doors": [
+    {
+     "raw": "北门 x=65.4，宽1，通南廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "北",
+     "to": "南廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
   },
   {
    "floor": "2F",
-   "name": "西藏书廊",
-   "x0": 14.4,
-   "x1": 17.2,
+   "name": "西电梯",
+   "kind": "elevator",
+   "shape": "rect",
+   "x0": 9,
+   "x1": 11.4,
    "y0": 0,
-   "y1": 36,
-   "area": 100.8,
+   "y1": 2.8,
+   "area": 6.72,
    "doors": [
     {
-     "raw": "主楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "主楼梯厅"
-    },
-    {
-     "raw": "西北前室敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西北前室"
-    },
-    {
-     "raw": "8号套房门",
+     "raw": "电梯门",
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "8号套房"
-    },
-    {
-     "raw": "西南阅览厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西南阅览厅"
-    },
-    {
-     "raw": "大图书室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "大图书室"
-    },
-    {
-     "raw": "大图书室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "大图书室"
-    },
-    {
-     "raw": "藏书前厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "藏书前厅"
-    },
-    {
-     "raw": "书画工作室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "书画工作室"
-    },
-    {
-     "raw": "挂毯长厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "挂毯长厅"
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.1,
+     "dir": "北",
+     "to": "西电梯厅",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "东电梯",
+   "kind": "elevator",
+   "shape": "rect",
+   "x0": 58.2,
+   "x1": 60.6,
+   "y0": 0,
+   "y1": 2.8,
+   "area": 6.72,
+   "doors": [
+    {
+     "raw": "电梯门",
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.1,
+     "dir": "北",
+     "to": "东电梯厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "西电梯厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 2.8,
+   "y1": 8.4,
+   "area": 20.16,
+   "doors": [
+    {
+     "raw": "西电梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.1,
+     "dir": "南",
+     "to": "西电梯",
+     "owner": "西电梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "东电梯厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 2.8,
+   "y1": 8.4,
+   "area": 20.16,
+   "doors": [
+    {
+     "raw": "东电梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.1,
+     "dir": "南",
+     "to": "东电梯",
+     "owner": "东电梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "西画廊",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
+   "doors": [
+    {
+     "raw": "地图室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 16.2,
+     "width": 1.4,
+     "dir": "西",
+     "to": "地图室",
+     "owner": "地图室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "棋艺室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 24.6,
+     "width": 1.4,
+     "dir": "西",
+     "to": "棋艺室",
+     "owner": "棋艺室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "北廊西段",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [
+    {
+     "to": "西院上空",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
   },
   {
    "floor": "2F",
    "name": "东肖像廊",
-   "x0": 34.8,
-   "x1": 37.6,
-   "y0": 0,
-   "y1": 36,
-   "area": 100.8,
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
    "doors": [
     {
-     "raw": "东北前室敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "东北前室"
-    },
-    {
-     "raw": "东南起居厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "东南起居厅"
-    },
-    {
-     "raw": "中央藏画厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "中央藏画厅"
-    },
-    {
-     "raw": "地图与地球仪室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "地图与地球仪室"
-    },
-    {
-     "raw": "藏书前厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "藏书前厅"
-    },
-    {
-     "raw": "棋艺室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "棋艺室"
-    },
-    {
-     "raw": "挂毯长厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "挂毯长厅"
-    },
-    {
-     "raw": "游戏酒廊门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "游戏酒廊"
-    },
-    {
-     "raw": "私人放映厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "私人放映厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "主楼梯厅",
-   "x0": 17.4,
-   "x1": 23.8,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 52.48,
-   "doors": [
-    {
-     "raw": "西口 y=1.5，宽2，通西藏书廊",
+     "raw": "标本陈列室门",
+     "ref": true,
      "open": false,
      "axis": "y",
-     "at": 1.5,
-     "width": 2,
-     "dir": "西",
-     "to": "西藏书廊"
-    },
-    {
-     "raw": "中央藏画厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "中央藏画厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "西北楼梯厅",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 29.6,
-   "y1": 36,
-   "area": 37.12,
-   "doors": [
-    {
-     "raw": "南口 x=11.3，宽1.8，通西北前室",
-     "open": false,
-     "axis": "x",
-     "at": 11.3,
-     "width": 1.8,
-     "dir": "南",
-     "to": "西北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "东北楼梯厅",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 29.6,
-   "y1": 36,
-   "area": 37.12,
-   "doors": [
-    {
-     "raw": "南口 x=40.7，宽1.8，通东北前室",
-     "open": false,
-     "axis": "x",
-     "at": 40.7,
-     "width": 1.8,
-     "dir": "南",
-     "to": "东北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "西北前室",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 27.8,
-   "y1": 29.4,
-   "area": 9.28,
-   "doors": [
-    {
-     "raw": "西北楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西北楼梯厅"
-    },
-    {
-     "raw": "东口 y=28.6，宽1.2，通西藏书廊",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 1.2,
+     "at": 20.4,
+     "width": 1.6,
      "dir": "东",
-     "to": "西藏书廊"
+     "to": "标本陈列室",
+     "owner": "标本陈列室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "标本陈列室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 27,
+     "width": 1,
+     "dir": "东",
+     "to": "标本陈列室",
+     "owner": "标本陈列室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "北廊东段",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [
+    {
+     "to": "东院上空",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "南廊西段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 0,
+   "x1": 26.4,
+   "y0": 8.4,
+   "y1": 12,
+   "area": 95.04,
+   "doors": [
+    {
+     "raw": "放映厅门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 22.8,
+     "width": 1.4,
+     "dir": "南",
+     "to": "放映厅",
+     "owner": "放映厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "5号套房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "南",
+     "to": "5号套房",
+     "owner": "5号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "西电梯厅",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "西画廊",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "楼梯平台",
+     "side": "东",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "西内廊",
+     "side": "北",
+     "a": 22.8,
+     "b": 26.4
+    }
+   ],
+   "glass": [
+    {
+     "to": "西院上空",
+     "side": "北",
+     "a": 12,
+     "b": 22.8
+    }
+   ],
+   "win": 1
+  },
+  {
+   "floor": "2F",
+   "name": "南廊东段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 69.6,
+   "y0": 8.4,
+   "y1": 12,
+   "area": 95.04,
+   "doors": [
+    {
+     "raw": "游戏室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 46.8,
+     "width": 1.4,
+     "dir": "南",
+     "to": "游戏室",
+     "owner": "游戏室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "8号套房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "南",
+     "to": "8号套房",
+     "owner": "8号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "东电梯厅",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "东肖像廊",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "楼梯平台",
+     "side": "西",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "东内廊",
+     "side": "北",
+     "a": 43.2,
+     "b": 46.8
+    }
+   ],
+   "glass": [
+    {
+     "to": "东院上空",
+     "side": "北",
+     "a": 46.8,
+     "b": 57.6
+    }
+   ],
+   "win": 1
+  },
+  {
+   "floor": "2F",
+   "name": "北廊西段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 0,
+   "x1": 26.4,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 95.04,
+   "doors": [
+    {
+     "raw": "西北后楼梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.4,
+     "dir": "北",
+     "to": "西北后楼梯",
+     "owner": "西北后楼梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "阅览室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 17.4,
+     "width": 1,
+     "dir": "北",
+     "to": "阅览室",
+     "owner": "阅览室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "6号套房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "北",
+     "to": "6号套房",
+     "owner": "6号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "西画廊",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "北过厅",
+     "side": "东",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "西内廊",
+     "side": "南",
+     "a": 22.8,
+     "b": 26.4
+    }
+   ],
+   "glass": [
+    {
+     "to": "西院上空",
+     "side": "南",
+     "a": 12,
+     "b": 22.8
+    }
+   ],
+   "win": 1
+  },
+  {
+   "floor": "2F",
+   "name": "北过厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 60.48,
+   "doors": [
+    {
+     "raw": "大图书室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 1.6,
+     "dir": "北",
+     "to": "大图书室",
+     "owner": "大图书室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "北廊西段",
+     "side": "西",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "北廊东段",
+     "side": "东",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "穹顶回廊",
+     "side": "南",
+     "a": 26.4,
+     "b": 43.2
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "北廊东段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 69.6,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 95.04,
+   "doors": [
+    {
+     "raw": "东北后楼梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.4,
+     "dir": "北",
+     "to": "东北后楼梯",
+     "owner": "东北后楼梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "二层起居室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 52.2,
+     "width": 1.4,
+     "dir": "北",
+     "to": "二层起居室",
+     "owner": "二层起居室",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
      "raw": "7号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "7号套房"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "东北前室",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 27.8,
-   "y1": 29.4,
-   "area": 9.28,
-   "doors": [
-    {
-     "raw": "东北楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "东北楼梯厅"
-    },
-    {
-     "raw": "西口 y=28.6，宽1.2，通东肖像廊",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 1.2,
-     "dir": "西",
-     "to": "东肖像廊"
-    },
-    {
-     "raw": "10号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "10号套房"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "6号套房",
-   "x0": 0,
-   "x1": 8.2,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "东门 y=5.8，宽0.95，通西南阅览厅",
-     "open": false,
-     "axis": "y",
-     "at": 5.8,
-     "width": 0.95,
-     "dir": "东",
-     "to": "西南阅览厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "7号套房",
-   "x0": 0,
-   "x1": 8.2,
-   "y0": 27.8,
-   "y1": 36,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "东门 y=28.6，宽0.95，通西北前室",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 0.95,
-     "dir": "东",
-     "to": "西北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "8号套房",
-   "x0": 17.4,
-   "x1": 24.4,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 67.2,
-   "doors": [
-    {
-     "raw": "西门 y=13.2，宽0.95，通西藏书廊",
-     "open": false,
-     "axis": "y",
-     "at": 13.2,
-     "width": 0.95,
-     "dir": "西",
-     "to": "西藏书廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "9号套房",
-   "x0": 43.8,
-   "x1": 52,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "西门 y=5.8，宽0.95，通东南起居厅",
-     "open": false,
-     "axis": "y",
-     "at": 5.8,
-     "width": 0.95,
-     "dir": "西",
-     "to": "东南起居厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "10号套房",
-   "x0": 43.8,
-   "x1": 52,
-   "y0": 27.8,
-   "y1": 36,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "西门 y=28.6，宽0.95，通东北前室",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 0.95,
-     "dir": "西",
-     "to": "东北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "手稿书廊",
-   "x0": 24.6,
-   "x1": 27.4,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 26.88,
-   "doors": [
-    {
-     "raw": "南口 x=26，宽2，通中央藏画厅",
+     "ref": true,
      "open": false,
      "axis": "x",
-     "at": 26,
-     "width": 2,
-     "dir": "南",
-     "to": "中央藏画厅"
-    },
-    {
-     "raw": "藏书前厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "藏书前厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "西南阅览厅",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 47.56,
-   "doors": [
-    {
-     "raw": "6号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "6号套房"
-    },
-    {
-     "raw": "东门 y=2.4，宽1，通西藏书廊",
-     "open": false,
-     "axis": "y",
-     "at": 2.4,
-     "width": 1,
-     "dir": "东",
-     "to": "西藏书廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "东南起居厅",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 47.56,
-   "doors": [
-    {
-     "raw": "9号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "9号套房"
-    },
-    {
-     "raw": "西门 y=2.4，宽1，通东肖像廊",
-     "open": false,
-     "axis": "y",
-     "at": 2.4,
-     "width": 1,
-     "dir": "西",
-     "to": "东肖像廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "大图书室",
-   "x0": 0,
-   "x1": 14.2,
-   "y0": 8.4,
-   "y1": 27.6,
-   "area": 272.64,
-   "doors": [
-    {
-     "raw": "东门 y=12.2，宽1.6，通西藏书廊",
-     "open": false,
-     "axis": "y",
-     "at": 12.2,
-     "width": 1.6,
-     "dir": "东",
-     "to": "西藏书廊"
-    },
-    {
-     "raw": "东门 y=24，宽1.6，通西藏书廊",
-     "open": false,
-     "axis": "y",
-     "at": 24,
-     "width": 1.6,
-     "dir": "东",
-     "to": "西藏书廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "中央藏画厅",
-   "x0": 24,
-   "x1": 34.6,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 86.92,
-   "doors": [
-    {
-     "raw": "手稿书廊敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "手稿书廊"
-    },
-    {
-     "raw": "西口 y=1.5，宽2，通主楼梯厅",
-     "open": false,
-     "axis": "y",
-     "at": 1.5,
-     "width": 2,
-     "dir": "西",
-     "to": "主楼梯厅"
-    },
-    {
-     "raw": "东门 y=4.1，宽1.4，通东肖像廊",
-     "open": false,
-     "axis": "y",
-     "at": 4.1,
-     "width": 1.4,
-     "dir": "东",
-     "to": "东肖像廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "地图与地球仪室",
-   "x0": 27.6,
-   "x1": 34.6,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 67.2,
-   "doors": [
-    {
-     "raw": "东门 y=13.2，宽1.2，通东肖像廊",
-     "open": false,
-     "axis": "y",
-     "at": 13.2,
-     "width": 1.2,
-     "dir": "东",
-     "to": "东肖像廊"
-    },
-    {
-     "raw": "北门 x=31.1，宽1，通藏书前厅",
-     "open": false,
-     "axis": "x",
-     "at": 31.1,
+     "at": 65.4,
      "width": 1,
      "dir": "北",
-     "to": "藏书前厅"
+     "to": "7号套房",
+     "owner": "7号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "东肖像廊",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "北过厅",
+     "side": "西",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "东内廊",
+     "side": "南",
+     "a": 43.2,
+     "b": 46.8
+    }
+   ],
+   "glass": [
+    {
+     "to": "东院上空",
+     "side": "南",
+     "a": 46.8,
+     "b": 57.6
+    }
+   ],
+   "win": 1
   },
   {
    "floor": "2F",
-   "name": "藏书前厅",
-   "x0": 17.4,
-   "x1": 34.6,
-   "y0": 18.2,
-   "y1": 21.8,
-   "area": 61.92,
+   "name": "西北后楼梯",
+   "kind": "stair",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 32.4,
+   "y1": 40.8,
+   "area": 30.24,
    "doors": [
     {
-     "raw": "地图与地球仪室门",
+     "raw": "后楼梯门",
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "地图与地球仪室"
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.4,
+     "dir": "南",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "2F",
+   "name": "东北后楼梯",
+   "kind": "stair",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 32.4,
+   "y1": 40.8,
+   "area": 30.24,
+   "doors": [
+    {
+     "raw": "后楼梯门",
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.4,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "2F",
+   "name": "楼梯平台",
+   "kind": "landing",
+   "shape": "rect",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 8.4,
+   "y1": 12,
+   "area": 60.48,
+   "doors": [],
+   "parent": null,
+   "over": "门厅",
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "西",
+     "a": 8.4,
+     "b": 12
     },
     {
-     "raw": "西门 y=20，宽1.6，通西藏书廊",
-     "open": false,
-     "axis": "y",
-     "at": 20,
-     "width": 1.6,
-     "dir": "西",
-     "to": "西藏书廊"
+     "to": "南廊东段",
+     "side": "东",
+     "a": 8.4,
+     "b": 12
     },
     {
-     "raw": "东门 y=20，宽1.6，通东肖像廊",
+     "to": "穹顶回廊",
+     "side": "北",
+     "a": 26.4,
+     "b": 43.2
+    }
+   ],
+   "rail": [
+    {
+     "to": "门厅上空",
+     "side": "南",
+     "a": 26.4,
+     "b": 43.2
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "门厅上空",
+   "kind": "void",
+   "shape": "rect",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 0,
+   "y1": 8.4,
+   "area": 141.12,
+   "doors": [],
+   "parent": null,
+   "over": "门厅",
+   "glass": [],
+   "rail": [
+    {
+     "to": "楼梯平台",
+     "side": "北",
+     "a": 26.4,
+     "b": 43.2
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "西内廊",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 22.8,
+   "x1": 26.4,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
+   "doors": [],
+   "parent": null,
+   "over": "花园",
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "南",
+     "a": 22.8,
+     "b": 26.4
+    },
+    {
+     "to": "北廊西段",
+     "side": "北",
+     "a": 22.8,
+     "b": 26.4
+    },
+    {
+     "to": "穹顶回廊",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "glass": [
+    {
+     "to": "西院上空",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "东内廊",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 46.8,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
+   "doors": [],
+   "parent": null,
+   "over": "自然史大厅",
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "南",
+     "a": 43.2,
+     "b": 46.8
+    },
+    {
+     "to": "北廊东段",
+     "side": "北",
+     "a": 43.2,
+     "b": 46.8
+    },
+    {
+     "to": "穹顶回廊",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "glass": [
+    {
+     "to": "东院上空",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "西院上空",
+   "kind": "void",
+   "shape": "rect",
+   "x0": 12,
+   "x1": 22.8,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 181.44,
+   "doors": [],
+   "parent": null,
+   "over": "花园",
+   "glass": [
+    {
+     "to": "西画廊",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    },
+    {
+     "to": "南廊西段",
+     "side": "南",
+     "a": 12,
+     "b": 22.8
+    },
+    {
+     "to": "北廊西段",
+     "side": "北",
+     "a": 12,
+     "b": 22.8
+    },
+    {
+     "to": "西内廊",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "东院上空",
+   "kind": "void",
+   "shape": "rect",
+   "x0": 46.8,
+   "x1": 57.6,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 181.44,
+   "doors": [],
+   "parent": null,
+   "over": "自然史大厅",
+   "glass": [
+    {
+     "to": "东肖像廊",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    },
+    {
+     "to": "南廊东段",
+     "side": "南",
+     "a": 46.8,
+     "b": 57.6
+    },
+    {
+     "to": "北廊东段",
+     "side": "北",
+     "a": 46.8,
+     "b": 57.6
+    },
+    {
+     "to": "东内廊",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "穹顶回廊",
+   "kind": "gallery",
+   "shape": "ring",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 91.11,
+   "doors": [],
+   "parent": null,
+   "cx": 34.8,
+   "cy": 20.4,
+   "hole": 7.8,
+   "adj": [
+    {
+     "to": "北过厅",
+     "side": "北",
+     "a": 26.4,
+     "b": 43.2
+    },
+    {
+     "to": "楼梯平台",
+     "side": "南",
+     "a": 26.4,
+     "b": 43.2
+    },
+    {
+     "to": "西内廊",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    },
+    {
+     "to": "东内廊",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "放映厅",
+   "kind": "room",
+   "x0": 12,
+   "x1": 26.4,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "北门 x=22.8，宽1.4，通南廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 22.8,
+     "width": 1.4,
+     "dir": "北",
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "2F",
+   "name": "游戏室",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "北门 x=46.8，宽1.4，通南廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 46.8,
+     "width": 1.4,
+     "dir": "北",
+     "to": "南廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 2
+  },
+  {
+   "floor": "2F",
+   "name": "地图室",
+   "kind": "room",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 12,
+   "y1": 20.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
+   "doors": [
+    {
+     "raw": "东门 y=16.2，宽1.4，通西画廊",
      "open": false,
      "axis": "y",
-     "at": 20,
-     "width": 1.6,
+     "at": 16.2,
+     "width": 1.4,
      "dir": "东",
-     "to": "东肖像廊"
-    },
-    {
-     "raw": "南口 x=26，宽2，通手稿书廊",
-     "open": false,
-     "axis": "x",
-     "at": 26,
-     "width": 2,
-     "dir": "南",
-     "to": "手稿书廊"
-    },
-    {
-     "raw": "书画工作室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "书画工作室"
-    },
-    {
-     "raw": "棋艺室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "棋艺室"
+     "to": "西画廊",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "书画工作室",
-   "x0": 17.4,
-   "x1": 25.8,
-   "y0": 22,
-   "y1": 30,
-   "area": 67.2,
-   "doors": [
-    {
-     "raw": "南门 x=21.6，宽1，通藏书前厅",
-     "open": false,
-     "axis": "x",
-     "at": 21.6,
-     "width": 1,
-     "dir": "南",
-     "to": "藏书前厅"
-    },
-    {
-     "raw": "西门 y=24.5，宽1，通西藏书廊",
-     "open": false,
-     "axis": "y",
-     "at": 24.5,
-     "width": 1,
-     "dir": "西",
-     "to": "西藏书廊"
-    },
-    {
-     "raw": "挂毯长厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "挂毯长厅"
-    }
-   ],
-   "parent": null
+   "parent": null,
+   "win": 1
   },
   {
    "floor": "2F",
    "name": "棋艺室",
-   "x0": 26,
-   "x1": 34.6,
-   "y0": 22,
-   "y1": 30,
-   "area": 68.8,
+   "kind": "room",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 20.4,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
    "doors": [
     {
-     "raw": "南门 x=30.3，宽1，通藏书前厅",
-     "open": false,
-     "axis": "x",
-     "at": 30.3,
-     "width": 1,
-     "dir": "南",
-     "to": "藏书前厅"
-    },
-    {
-     "raw": "东门 y=24.5，宽1，通东肖像廊",
+     "raw": "东门 y=24.6，宽1.4，通西画廊",
      "open": false,
      "axis": "y",
-     "at": 24.5,
-     "width": 1,
-     "dir": "东",
-     "to": "东肖像廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "2F",
-   "name": "挂毯长厅",
-   "x0": 17.4,
-   "x1": 34.6,
-   "y0": 30.2,
-   "y1": 36,
-   "area": 99.76,
-   "doors": [
-    {
-     "raw": "西门 y=33.1，宽1.4，通西藏书廊",
-     "open": false,
-     "axis": "y",
-     "at": 33.1,
-     "width": 1.4,
-     "dir": "西",
-     "to": "西藏书廊"
-    },
-    {
-     "raw": "东门 y=33.1，宽1.4，通东肖像廊",
-     "open": false,
-     "axis": "y",
-     "at": 33.1,
+     "at": 24.6,
      "width": 1.4,
      "dir": "东",
-     "to": "东肖像廊"
+     "to": "西画廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "2F",
+   "name": "标本陈列室",
+   "kind": "room",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 12,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 141.1,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 16.56,
+   "doors": [
+    {
+     "raw": "西门 y=20.4，宽1.6，通东肖像廊",
+     "open": false,
+     "axis": "y",
+     "at": 20.4,
+     "width": 1.6,
+     "dir": "西",
+     "to": "东肖像廊",
+     "main": false,
+     "glass": false
     },
     {
-     "raw": "南门 x=21.6，宽1，通书画工作室",
+     "raw": "西门 y=27，宽1，通东肖像廊",
+     "open": false,
+     "axis": "y",
+     "at": 27,
+     "width": 1,
+     "dir": "西",
+     "to": "东肖像廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 2
+  },
+  {
+   "floor": "2F",
+   "name": "阅览室",
+   "kind": "room",
+   "x0": 12,
+   "x1": 26.4,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "南门 x=17.4，宽1，通北廊西段",
      "open": false,
      "axis": "x",
-     "at": 21.6,
+     "at": 17.4,
      "width": 1,
      "dir": "南",
-     "to": "书画工作室"
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "大图书室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 37.8,
+     "width": 1,
+     "dir": "东",
+     "refDir": null,
+     "to": "大图书室",
+     "glass": false,
+     "owner": "大图书室"
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 3
   },
   {
    "floor": "2F",
-   "name": "游戏酒廊",
-   "x0": 37.8,
-   "x1": 52,
-   "y0": 8.4,
-   "y1": 17.2,
-   "area": 124.96,
+   "name": "大图书室",
+   "kind": "room",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 141.1,
+   "areaNet": false,
+   "netW": 16.56,
+   "netH": 8.28,
    "doors": [
     {
-     "raw": "西门 y=13.2，宽1.2，通东肖像廊",
+     "raw": "南门 x=34.8，宽1.6，通北过厅",
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 1.6,
+     "dir": "南",
+     "to": "北过厅",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "西门 y=37.8，宽1，通阅览室",
      "open": false,
      "axis": "y",
-     "at": 13.2,
-     "width": 1.2,
+     "at": 37.8,
+     "width": 1,
      "dir": "西",
-     "to": "东肖像廊"
+     "to": "阅览室",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "二层起居室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 37.8,
+     "width": 1,
+     "dir": "东",
+     "refDir": null,
+     "to": "二层起居室",
+     "glass": false,
+     "owner": "二层起居室"
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 3
   },
   {
    "floor": "2F",
-   "name": "私人放映厅",
-   "x0": 37.8,
-   "x1": 52,
-   "y0": 17.4,
-   "y1": 27.6,
-   "area": 144.84,
+   "name": "二层起居室",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
    "doors": [
     {
-     "raw": "西门 y=23，宽1.2，通东肖像廊",
+     "raw": "南门 x=52.2，宽1.4，通北廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 52.2,
+     "width": 1.4,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "西门 y=37.8，宽1，通大图书室",
      "open": false,
      "axis": "y",
-     "at": 23,
-     "width": 1.2,
+     "at": 37.8,
+     "width": 1,
      "dir": "西",
-     "to": "东肖像廊"
+     "to": "大图书室",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 3
+  },
+  {
+   "floor": "2F",
+   "name": "5号套房",
+   "kind": "suite",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 5,
+   "doors": [
+    {
+     "raw": "北门 x=4.2，宽1，通南廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "北",
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "2F",
+   "name": "6号套房",
+   "kind": "suite",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 6,
+   "doors": [
+    {
+     "raw": "南门 x=4.2，宽1，通北廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "南",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "2F",
+   "name": "7号套房",
+   "kind": "suite",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 7,
+   "doors": [
+    {
+     "raw": "南门 x=65.4，宽1，通北廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "2F",
+   "name": "8号套房",
+   "kind": "suite",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 8,
+   "doors": [
+    {
+     "raw": "北门 x=65.4，宽1，通南廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "北",
+     "to": "南廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "西电梯",
+   "kind": "elevator",
+   "shape": "rect",
+   "x0": 9,
+   "x1": 11.4,
+   "y0": 0,
+   "y1": 2.8,
+   "area": 6.72,
+   "doors": [
+    {
+     "raw": "电梯门",
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.1,
+     "dir": "北",
+     "to": "西电梯厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "东电梯",
+   "kind": "elevator",
+   "shape": "rect",
+   "x0": 58.2,
+   "x1": 60.6,
+   "y0": 0,
+   "y1": 2.8,
+   "area": 6.72,
+   "doors": [
+    {
+     "raw": "电梯门",
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.1,
+     "dir": "北",
+     "to": "东电梯厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "西电梯厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 2.8,
+   "y1": 8.4,
+   "area": 20.16,
+   "doors": [
+    {
+     "raw": "西电梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
+     "width": 1.1,
+     "dir": "南",
+     "to": "西电梯",
+     "owner": "西电梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [],
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "东电梯厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 2.8,
+   "y1": 8.4,
+   "area": 20.16,
+   "doors": [
+    {
+     "raw": "东电梯门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.1,
+     "dir": "南",
+     "to": "东电梯",
+     "owner": "东电梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [],
+   "win": 0
   },
   {
    "floor": "3F",
    "name": "西园廊",
-   "x0": 14.4,
-   "x1": 17.2,
-   "y0": 0,
-   "y1": 36,
-   "area": 100.8,
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
    "doors": [
     {
-     "raw": "主楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "主楼梯厅"
-    },
-    {
-     "raw": "西北前室敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西北前室"
-    },
-    {
-     "raw": "13号套房门",
+     "raw": "瓷器室门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "13号套房"
+     "axis": "y",
+     "at": 16.2,
+     "width": 1.4,
+     "dir": "西",
+     "to": "瓷器室",
+     "owner": "瓷器室",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
-     "raw": "兰香小厅门",
+     "raw": "修复室门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "兰香小厅"
-    },
-    {
-     "raw": "珍稀花园门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "珍稀花园"
-    },
-    {
-     "raw": "珍稀花园门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "珍稀花园"
-    },
-    {
-     "raw": "花艺前厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "花艺前厅"
-    },
-    {
-     "raw": "观花茶厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "观花茶厅"
-    },
-    {
-     "raw": "北端景廊门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "北端景廊"
+     "axis": "y",
+     "at": 26.4,
+     "width": 1,
+     "dir": "西",
+     "to": "修复室",
+     "owner": "修复室",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "北廊西段",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    }
+   ],
+   "glass": [
+    {
+     "to": "西院上空",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
   },
   {
    "floor": "3F",
    "name": "东陶瓷廊",
-   "x0": 34.8,
-   "x1": 37.6,
-   "y0": 0,
-   "y1": 36,
-   "area": 100.8,
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
    "doors": [
-    {
-     "raw": "东北前室敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "东北前室"
-    },
-    {
-     "raw": "瓷器茶室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "瓷器茶室"
-    },
-    {
-     "raw": "晨间餐室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "晨间餐室"
-    },
-    {
-     "raw": "手工与修复室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "手工与修复室"
-    },
-    {
-     "raw": "花艺前厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "花艺前厅"
-    },
     {
      "raw": "天象室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "天象室"
-    },
-    {
-     "raw": "北端景廊门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "北端景廊"
-    },
-    {
-     "raw": "舞蹈排练室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "舞蹈排练室"
-    },
-    {
-     "raw": "猎藏厅门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "猎藏厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "主楼梯厅",
-   "x0": 17.4,
-   "x1": 23.8,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 52.48,
-   "doors": [
-    {
-     "raw": "西口 y=1.5，宽2，通西园廊",
+     "ref": true,
      "open": false,
      "axis": "y",
-     "at": 1.5,
-     "width": 2,
-     "dir": "西",
-     "to": "西园廊"
-    },
-    {
-     "raw": "晨间餐室敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "晨间餐室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "西北楼梯厅",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 29.6,
-   "y1": 36,
-   "area": 37.12,
-   "doors": [
-    {
-     "raw": "南口 x=11.3，宽1.8，通西北前室",
-     "open": false,
-     "axis": "x",
-     "at": 11.3,
-     "width": 1.8,
-     "dir": "南",
-     "to": "西北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "东北楼梯厅",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 29.6,
-   "y1": 36,
-   "area": 37.12,
-   "doors": [
-    {
-     "raw": "南口 x=40.7，宽1.8，通东北前室",
-     "open": false,
-     "axis": "x",
-     "at": 40.7,
-     "width": 1.8,
-     "dir": "南",
-     "to": "东北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "西北前室",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 27.8,
-   "y1": 29.4,
-   "area": 9.28,
-   "doors": [
-    {
-     "raw": "西北楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "西北楼梯厅"
-    },
-    {
-     "raw": "东口 y=28.6，宽1.2，通西园廊",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 1.2,
+     "at": 16.2,
+     "width": 1.4,
      "dir": "东",
-     "to": "西园廊"
+     "to": "天象室",
+     "owner": "天象室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "三层起居室门",
+     "ref": true,
+     "open": false,
+     "axis": "y",
+     "at": 24.6,
+     "width": 1.4,
+     "dir": "东",
+     "to": "三层起居室",
+     "owner": "三层起居室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "北廊东段",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    }
+   ],
+   "glass": [
+    {
+     "to": "东院上空",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "南廊西段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 0,
+   "x1": 26.4,
+   "y0": 8.4,
+   "y1": 12,
+   "area": 95.04,
+   "doors": [
+    {
+     "raw": "舞蹈室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 22.8,
+     "width": 1.4,
+     "dir": "南",
+     "to": "舞蹈室",
+     "owner": "舞蹈室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "9号套房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "南",
+     "to": "9号套房",
+     "owner": "9号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "西电梯厅",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "西园廊",
+     "side": "北",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "楼梯平台",
+     "side": "东",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "西内廊",
+     "side": "北",
+     "a": 22.8,
+     "b": 26.4
+    }
+   ],
+   "glass": [
+    {
+     "to": "西院上空",
+     "side": "北",
+     "a": 12,
+     "b": 22.8
+    }
+   ],
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "南廊东段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 69.6,
+   "y0": 8.4,
+   "y1": 12,
+   "area": 95.04,
+   "doors": [
+    {
+     "raw": "茶室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 46.8,
+     "width": 1.4,
+     "dir": "南",
+     "to": "茶室",
+     "owner": "茶室",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
      "raw": "12号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "12号套房"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "东北前室",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 27.8,
-   "y1": 29.4,
-   "area": 9.28,
-   "doors": [
-    {
-     "raw": "东北楼梯厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "东北楼梯厅"
-    },
-    {
-     "raw": "西口 y=28.6，宽1.2，通东陶瓷廊",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 1.2,
-     "dir": "西",
-     "to": "东陶瓷廊"
-    },
-    {
-     "raw": "15号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "15号套房"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "11号套房",
-   "x0": 0,
-   "x1": 8.2,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "东门 y=5.8，宽0.95，通兰香小厅",
-     "open": false,
-     "axis": "y",
-     "at": 5.8,
-     "width": 0.95,
-     "dir": "东",
-     "to": "兰香小厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "12号套房",
-   "x0": 0,
-   "x1": 8.2,
-   "y0": 27.8,
-   "y1": 36,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "东门 y=28.6，宽0.95，通西北前室",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 0.95,
-     "dir": "东",
-     "to": "西北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "13号套房",
-   "x0": 17.4,
-   "x1": 24.4,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 67.2,
-   "doors": [
-    {
-     "raw": "西门 y=13.2，宽0.95，通西园廊",
-     "open": false,
-     "axis": "y",
-     "at": 13.2,
-     "width": 0.95,
-     "dir": "西",
-     "to": "西园廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "14号套房",
-   "x0": 43.8,
-   "x1": 52,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "西门 y=5.8，宽0.95，通瓷器茶室",
-     "open": false,
-     "axis": "y",
-     "at": 5.8,
-     "width": 0.95,
-     "dir": "西",
-     "to": "瓷器茶室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "15号套房",
-   "x0": 43.8,
-   "x1": 52,
-   "y0": 27.8,
-   "y1": 36,
-   "area": 67.24,
-   "doors": [
-    {
-     "raw": "西门 y=28.6，宽0.95，通东北前室",
-     "open": false,
-     "axis": "y",
-     "at": 28.6,
-     "width": 0.95,
-     "dir": "西",
-     "to": "东北前室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "香木廊",
-   "x0": 24.6,
-   "x1": 27.4,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 26.88,
-   "doors": [
-    {
-     "raw": "南口 x=26，宽2，通晨间餐室",
+     "ref": true,
      "open": false,
      "axis": "x",
-     "at": 26,
-     "width": 2,
+     "at": 65.4,
+     "width": 1,
      "dir": "南",
-     "to": "晨间餐室"
-    },
-    {
-     "raw": "花艺前厅敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "花艺前厅"
+     "to": "12号套房",
+     "owner": "12号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "东电梯厅",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "东陶瓷廊",
+     "side": "北",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "楼梯平台",
+     "side": "西",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "东内廊",
+     "side": "北",
+     "a": 43.2,
+     "b": 46.8
+    }
+   ],
+   "glass": [
+    {
+     "to": "东院上空",
+     "side": "北",
+     "a": 46.8,
+     "b": 57.6
+    }
+   ],
+   "win": 1
   },
   {
    "floor": "3F",
-   "name": "兰香小厅",
-   "x0": 8.4,
-   "x1": 14.2,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 47.56,
-   "doors": [
-    {
-     "raw": "11号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "11号套房"
-    },
-    {
-     "raw": "东门 y=2.4，宽1，通西园廊",
-     "open": false,
-     "axis": "y",
-     "at": 2.4,
-     "width": 1,
-     "dir": "东",
-     "to": "西园廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "瓷器茶室",
-   "x0": 37.8,
-   "x1": 43.6,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 47.56,
-   "doors": [
-    {
-     "raw": "14号套房门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "14号套房"
-    },
-    {
-     "raw": "西门 y=2.4，宽1，通东陶瓷廊",
-     "open": false,
-     "axis": "y",
-     "at": 2.4,
-     "width": 1,
-     "dir": "西",
-     "to": "东陶瓷廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "珍稀花园",
+   "name": "北廊西段",
+   "kind": "corridor",
+   "shape": "rect",
    "x0": 0,
-   "x1": 14.2,
-   "y0": 8.4,
-   "y1": 27.6,
-   "area": 272.64,
+   "x1": 26.4,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 95.04,
    "doors": [
     {
-     "raw": "东门 y=15，宽1.5，通西园廊",
-     "open": false,
-     "axis": "y",
-     "at": 15,
-     "width": 1.5,
-     "dir": "东",
-     "to": "西园廊"
-    },
-    {
-     "raw": "东门 y=24，宽1.5，通西园廊",
-     "open": false,
-     "axis": "y",
-     "at": 24,
-     "width": 1.5,
-     "dir": "东",
-     "to": "西园廊"
-    },
-    {
-     "raw": "园艺间门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "园艺间"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "晨间餐室",
-   "x0": 24,
-   "x1": 34.6,
-   "y0": 0,
-   "y1": 8.2,
-   "area": 86.92,
-   "doors": [
-    {
-     "raw": "香木廊敞口",
-     "open": true,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "香木廊"
-    },
-    {
-     "raw": "西口 y=1.5，宽2，通主楼梯厅",
-     "open": false,
-     "axis": "y",
-     "at": 1.5,
-     "width": 2,
-     "dir": "西",
-     "to": "主楼梯厅"
-    },
-    {
-     "raw": "东门 y=4.1，宽1.4，通东陶瓷廊",
-     "open": false,
-     "axis": "y",
-     "at": 4.1,
-     "width": 1.4,
-     "dir": "东",
-     "to": "东陶瓷廊"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "手工与修复室",
-   "x0": 27.6,
-   "x1": 34.6,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 67.2,
-   "doors": [
-    {
-     "raw": "东门 y=13.2，宽1，通东陶瓷廊",
-     "open": false,
-     "axis": "y",
-     "at": 13.2,
-     "width": 1,
-     "dir": "东",
-     "to": "东陶瓷廊"
-    },
-    {
-     "raw": "北门 x=31.1，宽1，通花艺前厅",
+     "raw": "西北后楼梯门",
+     "ref": true,
      "open": false,
      "axis": "x",
-     "at": 31.1,
+     "at": 10.2,
+     "width": 1.4,
+     "dir": "北",
+     "to": "西北后楼梯",
+     "owner": "西北后楼梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "画室门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 17.4,
      "width": 1,
      "dir": "北",
-     "to": "花艺前厅"
+     "to": "画室",
+     "owner": "画室",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "10号套房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "北",
+     "to": "10号套房",
+     "owner": "10号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "西园廊",
+     "side": "南",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "北过厅",
+     "side": "东",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "西内廊",
+     "side": "南",
+     "a": 22.8,
+     "b": 26.4
+    }
+   ],
+   "glass": [
+    {
+     "to": "西院上空",
+     "side": "南",
+     "a": 12,
+     "b": 22.8
+    }
+   ],
+   "win": 1
   },
   {
    "floor": "3F",
-   "name": "花艺前厅",
-   "x0": 17.4,
-   "x1": 34.6,
-   "y0": 18.2,
-   "y1": 21.8,
-   "area": 61.92,
+   "name": "北过厅",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 60.48,
    "doors": [
     {
-     "raw": "手工与修复室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "手工与修复室"
-    },
-    {
-     "raw": "西门 y=20，宽1.6，通西园廊",
-     "open": false,
-     "axis": "y",
-     "at": 20,
-     "width": 1.6,
-     "dir": "西",
-     "to": "西园廊"
-    },
-    {
-     "raw": "东门 y=20，宽1.6，通东陶瓷廊",
-     "open": false,
-     "axis": "y",
-     "at": 20,
-     "width": 1.6,
-     "dir": "东",
-     "to": "东陶瓷廊"
-    },
-    {
-     "raw": "南口 x=26，宽2，通香木廊",
+     "raw": "画室门",
+     "ref": true,
      "open": false,
      "axis": "x",
-     "at": 26,
-     "width": 2,
-     "dir": "南",
-     "to": "香木廊"
+     "at": 28.5,
+     "width": 1,
+     "dir": "北",
+     "to": "画室",
+     "owner": "画室",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
-     "raw": "观花茶厅门",
+     "raw": "猎藏厅门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "观花茶厅"
+     "axis": "x",
+     "at": 41.1,
+     "width": 1,
+     "dir": "北",
+     "to": "猎藏厅",
+     "owner": "猎藏厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
     },
     {
-     "raw": "天象室门",
+     "raw": "13号套房门",
+     "ref": true,
      "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "天象室"
+     "axis": "x",
+     "at": 34.8,
+     "width": 1,
+     "dir": "北",
+     "to": "13号套房",
+     "owner": "13号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
     }
    ],
-   "parent": null
+   "parent": null,
+   "adj": [
+    {
+     "to": "北廊西段",
+     "side": "西",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "北廊东段",
+     "side": "东",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "穹顶回廊",
+     "side": "南",
+     "a": 26.4,
+     "b": 43.2
+    }
+   ],
+   "glass": [],
+   "win": 0
   },
   {
    "floor": "3F",
-   "name": "观花茶厅",
-   "x0": 17.4,
-   "x1": 27.2,
-   "y0": 22,
-   "y1": 31.8,
-   "area": 96.04,
+   "name": "北廊东段",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 69.6,
+   "y0": 28.8,
+   "y1": 32.4,
+   "area": 95.04,
    "doors": [
     {
-     "raw": "南门 x=22.3，宽1.4，通花艺前厅",
+     "raw": "东北后楼梯门",
+     "ref": true,
      "open": false,
      "axis": "x",
-     "at": 22.3,
+     "at": 59.4,
+     "width": 1.4,
+     "dir": "北",
+     "to": "东北后楼梯",
+     "owner": "东北后楼梯",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "猎藏厅门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 52.2,
+     "width": 1.6,
+     "dir": "北",
+     "to": "猎藏厅",
+     "owner": "猎藏厅",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    },
+    {
+     "raw": "11号套房门",
+     "ref": true,
+     "open": false,
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "北",
+     "to": "11号套房",
+     "owner": "11号套房",
+     "main": false,
+     "glass": false,
+     "refDir": null
+    }
+   ],
+   "parent": null,
+   "adj": [
+    {
+     "to": "东陶瓷廊",
+     "side": "南",
+     "a": 57.6,
+     "b": 61.2
+    },
+    {
+     "to": "北过厅",
+     "side": "西",
+     "a": 28.8,
+     "b": 32.4
+    },
+    {
+     "to": "东内廊",
+     "side": "南",
+     "a": 43.2,
+     "b": 46.8
+    }
+   ],
+   "glass": [
+    {
+     "to": "东院上空",
+     "side": "南",
+     "a": 46.8,
+     "b": 57.6
+    }
+   ],
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "西北后楼梯",
+   "kind": "stair",
+   "shape": "rect",
+   "x0": 8.4,
+   "x1": 12,
+   "y0": 32.4,
+   "y1": 40.8,
+   "area": 30.24,
+   "doors": [
+    {
+     "raw": "后楼梯门",
+     "open": false,
+     "axis": "x",
+     "at": 10.2,
      "width": 1.4,
      "dir": "南",
-     "to": "花艺前厅"
-    },
-    {
-     "raw": "西门 y=24.5，宽1.2，通西园廊",
-     "open": false,
-     "axis": "y",
-     "at": 24.5,
-     "width": 1.2,
-     "dir": "西",
-     "to": "西园廊"
-    },
-    {
-     "raw": "北端景廊门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "北端景廊"
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "东北后楼梯",
+   "kind": "stair",
+   "shape": "rect",
+   "x0": 57.6,
+   "x1": 61.2,
+   "y0": 32.4,
+   "y1": 40.8,
+   "area": 30.24,
+   "doors": [
+    {
+     "raw": "后楼梯门",
+     "open": false,
+     "axis": "x",
+     "at": 59.4,
+     "width": 1.4,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "楼梯平台",
+   "kind": "landing",
+   "shape": "rect",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 8.4,
+   "y1": 12,
+   "area": 60.48,
+   "doors": [],
+   "parent": null,
+   "over": "门厅",
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "西",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "南廊东段",
+     "side": "东",
+     "a": 8.4,
+     "b": 12
+    },
+    {
+     "to": "穹顶回廊",
+     "side": "北",
+     "a": 26.4,
+     "b": 43.2
+    }
+   ],
+   "rail": [
+    {
+     "to": "门厅上空",
+     "side": "南",
+     "a": 26.4,
+     "b": 43.2
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "门厅上空",
+   "kind": "void",
+   "shape": "rect",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 0,
+   "y1": 8.4,
+   "area": 141.12,
+   "doors": [],
+   "parent": null,
+   "over": "门厅",
+   "glass": [],
+   "rail": [
+    {
+     "to": "楼梯平台",
+     "side": "北",
+     "a": 26.4,
+     "b": 43.2
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "西内廊",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 22.8,
+   "x1": 26.4,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
+   "doors": [],
+   "parent": null,
+   "over": "花园",
+   "adj": [
+    {
+     "to": "南廊西段",
+     "side": "南",
+     "a": 22.8,
+     "b": 26.4
+    },
+    {
+     "to": "北廊西段",
+     "side": "北",
+     "a": 22.8,
+     "b": 26.4
+    },
+    {
+     "to": "穹顶回廊",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "glass": [
+    {
+     "to": "西院上空",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "东内廊",
+   "kind": "corridor",
+   "shape": "rect",
+   "x0": 43.2,
+   "x1": 46.8,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 60.48,
+   "doors": [],
+   "parent": null,
+   "over": "自然史大厅",
+   "adj": [
+    {
+     "to": "南廊东段",
+     "side": "南",
+     "a": 43.2,
+     "b": 46.8
+    },
+    {
+     "to": "北廊东段",
+     "side": "北",
+     "a": 43.2,
+     "b": 46.8
+    },
+    {
+     "to": "穹顶回廊",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "glass": [
+    {
+     "to": "东院上空",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "西院上空",
+   "kind": "void",
+   "shape": "rect",
+   "x0": 12,
+   "x1": 22.8,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 181.44,
+   "doors": [],
+   "parent": null,
+   "over": "花园",
+   "glass": [
+    {
+     "to": "西园廊",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    },
+    {
+     "to": "南廊西段",
+     "side": "南",
+     "a": 12,
+     "b": 22.8
+    },
+    {
+     "to": "北廊西段",
+     "side": "北",
+     "a": 12,
+     "b": 22.8
+    },
+    {
+     "to": "西内廊",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "东院上空",
+   "kind": "void",
+   "shape": "rect",
+   "x0": 46.8,
+   "x1": 57.6,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 181.44,
+   "doors": [],
+   "parent": null,
+   "over": "自然史大厅",
+   "glass": [
+    {
+     "to": "东陶瓷廊",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    },
+    {
+     "to": "南廊东段",
+     "side": "南",
+     "a": 46.8,
+     "b": 57.6
+    },
+    {
+     "to": "北廊东段",
+     "side": "北",
+     "a": 46.8,
+     "b": 57.6
+    },
+    {
+     "to": "东内廊",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "穹顶回廊",
+   "kind": "gallery",
+   "shape": "ring",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 12,
+   "y1": 28.8,
+   "area": 91.11,
+   "doors": [],
+   "parent": null,
+   "cx": 34.8,
+   "cy": 20.4,
+   "hole": 7.8,
+   "adj": [
+    {
+     "to": "北过厅",
+     "side": "北",
+     "a": 26.4,
+     "b": 43.2
+    },
+    {
+     "to": "楼梯平台",
+     "side": "南",
+     "a": 26.4,
+     "b": 43.2
+    },
+    {
+     "to": "西内廊",
+     "side": "西",
+     "a": 12,
+     "b": 28.8
+    },
+    {
+     "to": "东内廊",
+     "side": "东",
+     "a": 12,
+     "b": 28.8
+    }
+   ],
+   "win": 0
+  },
+  {
+   "floor": "3F",
+   "name": "舞蹈室",
+   "kind": "room",
+   "x0": 12,
+   "x1": 26.4,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "北门 x=22.8，宽1.4，通南廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 22.8,
+     "width": 1.4,
+     "dir": "北",
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 2
+  },
+  {
+   "floor": "3F",
+   "name": "茶室",
+   "kind": "room",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 121,
+   "areaNet": false,
+   "netW": 14.16,
+   "netH": 8.28,
+   "doors": [
+    {
+     "raw": "北门 x=46.8，宽1.4，通南廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 46.8,
+     "width": 1.4,
+     "dir": "北",
+     "to": "南廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 2
+  },
+  {
+   "floor": "3F",
+   "name": "瓷器室",
+   "kind": "room",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 12,
+   "y1": 20.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
+   "doors": [
+    {
+     "raw": "东门 y=16.2，宽1.4，通西园廊",
+     "open": false,
+     "axis": "y",
+     "at": 16.2,
+     "width": 1.4,
+     "dir": "东",
+     "to": "西园廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "修复室",
+   "kind": "room",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 20.4,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
+   "doors": [
+    {
+     "raw": "东门 y=26.4，宽1，通西园廊",
+     "open": false,
+     "axis": "y",
+     "at": 26.4,
+     "width": 1,
+     "dir": "东",
+     "to": "西园廊",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
   },
   {
    "floor": "3F",
    "name": "天象室",
-   "x0": 27.4,
-   "x1": 34.6,
-   "y0": 22,
-   "y1": 31.8,
-   "area": 70.56,
+   "kind": "room",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 12,
+   "y1": 20.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
    "doors": [
     {
-     "raw": "南门 x=31，宽1，通花艺前厅",
-     "open": false,
-     "axis": "x",
-     "at": 31,
-     "width": 1,
-     "dir": "南",
-     "to": "花艺前厅"
-    },
-    {
-     "raw": "东门 y=24.5，宽1，通东陶瓷廊",
+     "raw": "西门 y=16.2，宽1.4，通东陶瓷廊",
      "open": false,
      "axis": "y",
-     "at": 24.5,
-     "width": 1,
-     "dir": "东",
-     "to": "东陶瓷廊"
-    },
-    {
-     "raw": "北端景廊门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "北端景廊"
+     "at": 16.2,
+     "width": 1.4,
+     "dir": "西",
+     "to": "东陶瓷廊",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 1
   },
   {
    "floor": "3F",
-   "name": "北端景廊",
-   "x0": 17.4,
-   "x1": 34.6,
-   "y0": 32,
-   "y1": 36,
-   "area": 68.8,
+   "name": "三层起居室",
+   "kind": "room",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 20.4,
+   "y1": 28.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.28,
+   "netH": 8.16,
    "doors": [
     {
-     "raw": "西门 y=34，宽1.4，通西园廊",
+     "raw": "西门 y=24.6，宽1.4，通东陶瓷廊",
      "open": false,
      "axis": "y",
-     "at": 34,
+     "at": 24.6,
      "width": 1.4,
      "dir": "西",
-     "to": "西园廊"
-    },
-    {
-     "raw": "东门 y=34，宽1.4，通东陶瓷廊",
-     "open": false,
-     "axis": "y",
-     "at": 34,
-     "width": 1.4,
-     "dir": "东",
-     "to": "东陶瓷廊"
-    },
-    {
-     "raw": "南门 x=22.3，宽1.2，通观花茶厅",
-     "open": false,
-     "axis": "x",
-     "at": 22.3,
-     "width": 1.2,
-     "dir": "南",
-     "to": "观花茶厅"
-    },
-    {
-     "raw": "南门 x=31，宽1，通天象室",
-     "open": false,
-     "axis": "x",
-     "at": 31,
-     "width": 1,
-     "dir": "南",
-     "to": "天象室"
+     "to": "东陶瓷廊",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 1
   },
   {
    "floor": "3F",
-   "name": "舞蹈排练室",
-   "x0": 37.8,
-   "x1": 52,
-   "y0": 8.4,
-   "y1": 18,
-   "area": 136.32,
+   "name": "画室",
+   "kind": "room",
+   "x0": 12,
+   "x1": 30.6,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 156.2,
+   "areaNet": false,
+   "netW": 18.36,
+   "netH": 8.28,
    "doors": [
     {
-     "raw": "西门 y=13.2，宽1.4，通东陶瓷廊",
+     "raw": "南门 x=17.4，宽1，通北廊西段",
      "open": false,
-     "axis": "y",
-     "at": 13.2,
-     "width": 1.4,
-     "dir": "西",
-     "to": "东陶瓷廊"
+     "axis": "x",
+     "at": 17.4,
+     "width": 1,
+     "dir": "南",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "南门 x=28.5，宽1，通北过厅",
+     "open": false,
+     "axis": "x",
+     "at": 28.5,
+     "width": 1,
+     "dir": "南",
+     "to": "北过厅",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": null
+   "parent": null,
+   "win": 4
   },
   {
    "floor": "3F",
    "name": "猎藏厅",
-   "x0": 37.8,
-   "x1": 45.2,
-   "y0": 18.2,
-   "y1": 27.6,
-   "area": 69.56,
+   "kind": "room",
+   "x0": 39,
+   "x1": 57.6,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 156.2,
+   "areaNet": false,
+   "netW": 18.36,
+   "netH": 8.28,
    "doors": [
     {
-     "raw": "西门 y=23，宽1.2，通东陶瓷廊",
-     "open": false,
-     "axis": "y",
-     "at": 23,
-     "width": 1.2,
-     "dir": "西",
-     "to": "东陶瓷廊"
-    },
-    {
-     "raw": "标本陈列室门",
-     "open": false,
-     "axis": null,
-     "at": null,
-     "width": null,
-     "dir": null,
-     "to": "标本陈列室"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "标本陈列室",
-   "x0": 45.4,
-   "x1": 52,
-   "y0": 18.2,
-   "y1": 27.6,
-   "area": 62.04,
-   "doors": [
-    {
-     "raw": "西门 y=22.9，宽1，通猎藏厅",
-     "open": false,
-     "axis": "y",
-     "at": 22.9,
-     "width": 1,
-     "dir": "西",
-     "to": "猎藏厅"
-    }
-   ],
-   "parent": null
-  },
-  {
-   "floor": "3F",
-   "name": "园艺间",
-   "x0": 10.6,
-   "x1": 14.2,
-   "y0": 8.4,
-   "y1": 13.2,
-   "area": 17.28,
-   "doors": [
-    {
-     "raw": "北门 x=12.4，宽0.9，通珍稀花园",
+     "raw": "南门 x=41.1，宽1，通北过厅",
      "open": false,
      "axis": "x",
-     "at": 12.4,
-     "width": 0.9,
-     "dir": "北",
-     "to": "珍稀花园"
+     "at": 41.1,
+     "width": 1,
+     "dir": "南",
+     "to": "北过厅",
+     "main": false,
+     "glass": false
+    },
+    {
+     "raw": "南门 x=52.2，宽1.6，通北廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 52.2,
+     "width": 1.6,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
     }
    ],
-   "parent": "珍稀花园"
+   "parent": null,
+   "win": 4
+  },
+  {
+   "floor": "3F",
+   "name": "9号套房",
+   "kind": "suite",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 9,
+   "doors": [
+    {
+     "raw": "北门 x=4.2，宽1，通南廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "北",
+     "to": "南廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "10号套房",
+   "kind": "suite",
+   "x0": 0,
+   "x1": 8.4,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 10,
+   "doors": [
+    {
+     "raw": "南门 x=4.2，宽1，通北廊西段",
+     "open": false,
+     "axis": "x",
+     "at": 4.2,
+     "width": 1,
+     "dir": "南",
+     "to": "北廊西段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "11号套房",
+   "kind": "suite",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 11,
+   "doors": [
+    {
+     "raw": "南门 x=65.4，宽1，通北廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "南",
+     "to": "北廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "12号套房",
+   "kind": "suite",
+   "x0": 61.2,
+   "x1": 69.6,
+   "y0": 0,
+   "y1": 8.4,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 12,
+   "doors": [
+    {
+     "raw": "北门 x=65.4，宽1，通南廊东段",
+     "open": false,
+     "axis": "x",
+     "at": 65.4,
+     "width": 1,
+     "dir": "北",
+     "to": "南廊东段",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
+  },
+  {
+   "floor": "3F",
+   "name": "13号套房",
+   "kind": "suite",
+   "x0": 30.6,
+   "x1": 39,
+   "y0": 32.4,
+   "y1": 40.8,
+   "shape": "rect",
+   "area": 70.6,
+   "areaNet": false,
+   "netW": 8.16,
+   "netH": 8.16,
+   "suite": 13,
+   "doors": [
+    {
+     "raw": "南门 x=34.8，宽1，通北过厅",
+     "open": false,
+     "axis": "x",
+     "at": 34.8,
+     "width": 1,
+     "dir": "南",
+     "to": "北过厅",
+     "main": false,
+     "glass": false
+    }
+   ],
+   "parent": null,
+   "win": 1
   }
  ],
+ "hall": {
+  "name": "穹顶议事厅",
+  "floor": "1F",
+  "cx": 34.8,
+  "cy": 20.4,
+  "r": 6.6,
+  "wall": 1.2,
+  "rOuter": 7.8,
+  "square": [
+   26.4,
+   43.2,
+   12,
+   28.8
+  ],
+  "doorDepth": 1.8,
+  "springAt": 6.6,
+  "apex": 13.2,
+  "oculus": 2.4,
+  "doorHeight": 3.6,
+  "seats": 13,
+  "disc": 8.4,
+  "table": {
+   "d": 4.8,
+   "h": 0.76,
+   "t": 2.6
+  },
+  "chairW": 0.62,
+  "screens": 13,
+  "lamps": 13,
+  "plaque": {
+   "cx": 40.7,
+   "cy": 17.7,
+   "w": 0.9,
+   "h": 1.6,
+   "z": 1.6
+  },
+  "counter": {
+   "cx": 40,
+   "cy": 23.4,
+   "l": 2.4,
+   "d": 0.65,
+   "h": 1.8,
+   "top": 1.05,
+   "niche": {
+    "w": 1.6,
+    "h": 0.64,
+    "d": 0.12,
+    "z": 1.12
+   },
+   "rows": [
+    [
+     1,
+     7
+    ],
+    [
+     8,
+     13
+    ]
+   ]
+  },
+  "sideboard": {
+   "w": 2.4,
+   "d": 0.55,
+   "h": 0.95,
+   "where": "西门北侧"
+  },
+  "cabinets": {
+   "w": 2.2,
+   "d": 0.55,
+   "h": 1.25,
+   "where": "北墙",
+   "west": "神圣罗马帝国皇冠",
+   "east": "良渚文化反山十二号墓玉琮王"
+  },
+  "floorPlan": {
+   "w": 2.4,
+   "h": 1,
+   "z": 1.1,
+   "where": "西侧侧案上方的弧墙",
+   "order": [
+    "B1",
+    "1F",
+    "2F",
+    "3F"
+   ]
+  },
+  "compass": {
+   "floor": "1F",
+   "room": "门厅",
+   "cx": 34.8,
+   "cy": 4.8,
+   "d": 1.2
+  }
+ },
+ "courts": [
+  {
+   "name": "花园",
+   "side": "西",
+   "x0": 12,
+   "x1": 26.4,
+   "y0": 12,
+   "y1": 28.8,
+   "voidX0": 12,
+   "voidX1": 22.8
+  },
+  {
+   "name": "自然史大厅",
+   "side": "东",
+   "x0": 43.2,
+   "x1": 57.6,
+   "y0": 12,
+   "y1": 28.8,
+   "voidX0": 46.8,
+   "voidX1": 57.6
+  }
+ ],
+ "foyer": {
+  "name": "门厅",
+  "floor": "1F",
+  "spans": [
+   "1F",
+   "2F",
+   "3F"
+  ],
+  "mainDoor": {
+   "x": 34.8,
+   "width": 3.6,
+   "height": 3.6,
+   "lock": false
+  },
+  "doorHeight": 2.5,
+  "keys": 13
+ },
+ "circulation": {
+  "corridorWidth": 3.6,
+  "glassBase": 0.45,
+  "grand": {
+   "floors": [
+    "1F",
+    "2F",
+    "3F"
+   ],
+   "steps": 15,
+   "width": 1.6,
+   "rail": 1.1,
+   "fromY": 8.4,
+   "mid": [
+    2.6,
+    4.2
+   ],
+   "midRise": 2.5,
+   "west": {
+    "outer": [
+     26.4,
+     28
+    ],
+    "inner": [
+     28.2,
+     29.8
+    ]
+   },
+   "east": {
+    "outer": [
+     41.6,
+     43.2
+    ],
+    "inner": [
+     39.8,
+     41.4
+    ]
+   }
+  },
+  "back": [
+   {
+    "name": "西北后楼梯",
+    "floors": [
+     "B1",
+     "1F",
+     "2F",
+     "3F"
+    ],
+    "x0": 8.4,
+    "x1": 12,
+    "y0": 32.4,
+    "y1": 40.8,
+    "steps": 15,
+    "width": 1.5,
+    "runs": [
+     [
+      8.55,
+      10.05
+     ],
+     [
+      10.35,
+      11.85
+     ]
+    ],
+    "landing": [
+     32.4,
+     34.2
+    ],
+    "mid": [
+     38.4,
+     40.8
+    ],
+    "door": {
+     "dir": "南",
+     "x": 10.2,
+     "y": 32.4,
+     "width": 1.4,
+     "to": "北廊西段"
+    }
+   },
+   {
+    "name": "东北后楼梯",
+    "floors": [
+     "B1",
+     "1F",
+     "2F",
+     "3F"
+    ],
+    "x0": 57.6,
+    "x1": 61.2,
+    "y0": 32.4,
+    "y1": 40.8,
+    "steps": 15,
+    "width": 1.5,
+    "runs": [
+     [
+      57.75,
+      59.25
+     ],
+     [
+      59.55,
+      61.05
+     ]
+    ],
+    "landing": [
+     32.4,
+     34.2
+    ],
+    "mid": [
+     38.4,
+     40.8
+    ],
+    "door": {
+     "dir": "南",
+     "x": 59.4,
+     "y": 32.4,
+     "width": 1.4,
+     "to": "北廊东段"
+    }
+   }
+  ],
+  "elevators": [
+   {
+    "name": "西电梯",
+    "floors": [
+     "B1",
+     "1F",
+     "2F",
+     "3F"
+    ],
+    "x0": 9,
+    "x1": 11.4,
+    "y0": 0,
+    "y1": 2.8,
+    "car": [
+     1.4,
+     2
+    ],
+    "door": {
+     "dir": "北",
+     "x": 10.2,
+     "y": 2.8,
+     "width": 1.1
+    },
+    "lobby": "西电梯厅",
+    "start": "1F"
+   },
+   {
+    "name": "东电梯",
+    "floors": [
+     "B1",
+     "1F",
+     "2F",
+     "3F"
+    ],
+    "x0": 58.2,
+    "x1": 60.6,
+    "y0": 0,
+    "y1": 2.8,
+    "car": [
+     1.4,
+     2
+    ],
+    "door": {
+     "dir": "北",
+     "x": 59.4,
+     "y": 2.8,
+     "width": 1.1
+    },
+    "lobby": "东电梯厅",
+    "start": "1F"
+   }
+  ],
+  "elevatorTiming": {
+   "perFloor": 6,
+   "open": 3,
+   "dwell": 5,
+   "close": 3,
+   "example": 32
+  }
+ },
+ "outside": {
+  "wall": {
+   "cx": 34.8,
+   "cy": 20.4,
+   "r": 300
+  },
+  "ground": -0.45,
+  "lawn": 15,
+  "lawnBox": {
+   "x0": -15.6,
+   "x1": 85.2,
+   "y0": -15.6,
+   "y1": 56.4
+  },
+  "steps": 3,
+  "forecourt": {
+   "w": 20,
+   "d": 12,
+   "x0": 24.8,
+   "x1": 44.8,
+   "y0": -12.6,
+   "y1": -0.6,
+   "approx": true
+  },
+  "forest": {
+   "southY": -15.6,
+   "trees": "松树和山毛榉",
+   "sight": [
+    20,
+    30
+   ]
+  },
+  "beach": {
+   "y0": -80.6,
+   "y1": -15.6,
+   "w": 65
+  },
+  "sea": {
+   "y1": -80.6,
+   "waist": 20,
+   "overhead": 50,
+   "wallDepth": 15,
+   "temp": 17,
+   "tide": false
+  },
+  "climate": {
+   "day": 20,
+   "night": 16,
+   "humidity": 80
+  },
+  "noLife": true,
+  "noFreshWater": true
+ },
+ "light": {
+  "rows": [
+   {
+    "from": "05:00",
+    "to": "07:00",
+    "fromMin": 300,
+    "toMin": 420,
+    "window": "由无渐亮",
+    "lit": "亮",
+    "unlit": "亮"
+   },
+   {
+    "from": "07:00",
+    "to": "17:00",
+    "fromMin": 420,
+    "toMin": 1020,
+    "window": "恒定最亮",
+    "lit": "灭",
+    "unlit": "亮"
+   },
+   {
+    "from": "17:00",
+    "to": "19:00",
+    "fromMin": 1020,
+    "toMin": 1140,
+    "window": "由亮渐无",
+    "lit": "亮",
+    "unlit": "亮"
+   },
+   {
+    "from": "19:00",
+    "to": "23:00",
+    "fromMin": 1140,
+    "toMin": 1380,
+    "window": "无",
+    "lit": "亮",
+    "unlit": "亮"
+   },
+   {
+    "from": "23:00",
+    "to": "05:00",
+    "fromMin": 1380,
+    "toMin": 300,
+    "window": "无",
+    "lit": "低亮",
+    "unlit": "低亮"
+   }
+  ],
+  "sky": "阴着",
+  "windowed": "3.2所列的房间、十三间套房、两院和门厅",
+  "investigationAllLit": true,
+  "mirrorWhenDark": true
+ },
+ "windows": [
+  {
+   "floor": "1F",
+   "room": "1号套房",
+   "side": "南",
+   "kind": "suite",
+   "at": 4.2,
+   "a": 1.8,
+   "b": 6.6,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "2号套房",
+   "side": "北",
+   "kind": "suite",
+   "at": 4.2,
+   "a": 1.8,
+   "b": 6.6,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "3号套房",
+   "side": "北",
+   "kind": "suite",
+   "at": 65.4,
+   "a": 63,
+   "b": 67.8,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "4号套房",
+   "side": "南",
+   "kind": "suite",
+   "at": 65.4,
+   "a": 63,
+   "b": 67.8,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "2F",
+   "room": "5号套房",
+   "side": "南",
+   "kind": "suite",
+   "at": 4.2,
+   "a": 1.8,
+   "b": 6.6,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "2F",
+   "room": "6号套房",
+   "side": "北",
+   "kind": "suite",
+   "at": 4.2,
+   "a": 1.8,
+   "b": 6.6,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "2F",
+   "room": "7号套房",
+   "side": "北",
+   "kind": "suite",
+   "at": 65.4,
+   "a": 63,
+   "b": 67.8,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "2F",
+   "room": "8号套房",
+   "side": "南",
+   "kind": "suite",
+   "at": 65.4,
+   "a": 63,
+   "b": 67.8,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "3F",
+   "room": "9号套房",
+   "side": "南",
+   "kind": "suite",
+   "at": 4.2,
+   "a": 1.8,
+   "b": 6.6,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "3F",
+   "room": "10号套房",
+   "side": "北",
+   "kind": "suite",
+   "at": 4.2,
+   "a": 1.8,
+   "b": 6.6,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "3F",
+   "room": "11号套房",
+   "side": "北",
+   "kind": "suite",
+   "at": 65.4,
+   "a": 63,
+   "b": 67.8,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "3F",
+   "room": "12号套房",
+   "side": "南",
+   "kind": "suite",
+   "at": 65.4,
+   "a": 63,
+   "b": 67.8,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "3F",
+   "room": "13号套房",
+   "side": "北",
+   "kind": "suite",
+   "at": 34.8,
+   "a": 32.4,
+   "b": 37.2,
+   "width": 4.8,
+   "height": 1.8,
+   "sill": 1.2,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "衣帽间",
+   "side": "南",
+   "kind": "room",
+   "at": 15.6,
+   "a": 14.4,
+   "b": 16.8,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "盥洗室",
+   "side": "南",
+   "kind": "room",
+   "at": 22.8,
+   "a": 21.6,
+   "b": 24,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "音乐沙龙",
+   "side": "南",
+   "kind": "room",
+   "at": 46.8,
+   "a": 45.6,
+   "b": 48,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "音乐沙龙",
+   "side": "南",
+   "kind": "room",
+   "at": 54,
+   "a": 52.8,
+   "b": 55.2,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "游戏室",
+   "side": "南",
+   "kind": "room",
+   "at": 46.8,
+   "a": 45.6,
+   "b": 48,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "游戏室",
+   "side": "南",
+   "kind": "room",
+   "at": 54,
+   "a": 52.8,
+   "b": 55.2,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "舞蹈室",
+   "side": "南",
+   "kind": "room",
+   "at": 15.6,
+   "a": 14.4,
+   "b": 16.8,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "舞蹈室",
+   "side": "南",
+   "kind": "room",
+   "at": 22.8,
+   "a": 21.6,
+   "b": 24,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "茶室",
+   "side": "南",
+   "kind": "room",
+   "at": 46.8,
+   "a": 45.6,
+   "b": 48,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "茶室",
+   "side": "南",
+   "kind": "room",
+   "at": 54,
+   "a": 52.8,
+   "b": 55.2,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "晨间厅",
+   "side": "西",
+   "kind": "room",
+   "at": 16.2,
+   "a": 14.4,
+   "b": 18,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "园艺间",
+   "side": "西",
+   "kind": "room",
+   "at": 24.6,
+   "a": 22.8,
+   "b": 26.4,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "古兽厅",
+   "side": "东",
+   "kind": "room",
+   "at": 16.2,
+   "a": 14.4,
+   "b": 18,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "古兽厅",
+   "side": "东",
+   "kind": "room",
+   "at": 24.6,
+   "a": 22.8,
+   "b": 26.4,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "地图室",
+   "side": "西",
+   "kind": "room",
+   "at": 16.2,
+   "a": 14.4,
+   "b": 18,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "棋艺室",
+   "side": "西",
+   "kind": "room",
+   "at": 24.6,
+   "a": 22.8,
+   "b": 26.4,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "标本陈列室",
+   "side": "东",
+   "kind": "room",
+   "at": 16.2,
+   "a": 14.4,
+   "b": 18,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "标本陈列室",
+   "side": "东",
+   "kind": "room",
+   "at": 24.6,
+   "a": 22.8,
+   "b": 26.4,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "瓷器室",
+   "side": "西",
+   "kind": "room",
+   "at": 16.2,
+   "a": 14.4,
+   "b": 18,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "修复室",
+   "side": "西",
+   "kind": "room",
+   "at": 24.6,
+   "a": 22.8,
+   "b": 26.4,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "天象室",
+   "side": "东",
+   "kind": "room",
+   "at": 16.2,
+   "a": 14.4,
+   "b": 18,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "三层起居室",
+   "side": "东",
+   "kind": "room",
+   "at": 24.6,
+   "a": 22.8,
+   "b": 26.4,
+   "width": 3.6,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "起居厅",
+   "side": "北",
+   "kind": "room",
+   "at": 14.4,
+   "a": 13.2,
+   "b": 15.6,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "起居厅",
+   "side": "北",
+   "kind": "room",
+   "at": 19.2,
+   "a": 18,
+   "b": 20.4,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "起居厅",
+   "side": "北",
+   "kind": "room",
+   "at": 24,
+   "a": 22.8,
+   "b": 25.2,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "宴饮厅",
+   "side": "北",
+   "kind": "room",
+   "at": 29.2,
+   "a": 28,
+   "b": 30.4,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "宴饮厅",
+   "side": "北",
+   "kind": "room",
+   "at": 34.8,
+   "a": 33.6,
+   "b": 36,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "宴饮厅",
+   "side": "北",
+   "kind": "room",
+   "at": 40.4,
+   "a": 39.2,
+   "b": 41.6,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "厨房",
+   "side": "北",
+   "kind": "room",
+   "at": 45.6,
+   "a": 44.4,
+   "b": 46.8,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "厨房",
+   "side": "北",
+   "kind": "room",
+   "at": 50.4,
+   "a": 49.2,
+   "b": 51.6,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "厨房",
+   "side": "北",
+   "kind": "room",
+   "at": 55.2,
+   "a": 54,
+   "b": 56.4,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "阅览室",
+   "side": "北",
+   "kind": "room",
+   "at": 14.4,
+   "a": 13.2,
+   "b": 15.6,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "阅览室",
+   "side": "北",
+   "kind": "room",
+   "at": 19.2,
+   "a": 18,
+   "b": 20.4,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "阅览室",
+   "side": "北",
+   "kind": "room",
+   "at": 24,
+   "a": 22.8,
+   "b": 25.2,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "大图书室",
+   "side": "北",
+   "kind": "room",
+   "at": 29.2,
+   "a": 28,
+   "b": 30.4,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "大图书室",
+   "side": "北",
+   "kind": "room",
+   "at": 34.8,
+   "a": 33.6,
+   "b": 36,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "大图书室",
+   "side": "北",
+   "kind": "room",
+   "at": 40.4,
+   "a": 39.2,
+   "b": 41.6,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "二层起居室",
+   "side": "北",
+   "kind": "room",
+   "at": 45.6,
+   "a": 44.4,
+   "b": 46.8,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "二层起居室",
+   "side": "北",
+   "kind": "room",
+   "at": 50.4,
+   "a": 49.2,
+   "b": 51.6,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "2F",
+   "room": "二层起居室",
+   "side": "北",
+   "kind": "room",
+   "at": 55.2,
+   "a": 54,
+   "b": 56.4,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "画室",
+   "side": "北",
+   "kind": "room",
+   "at": 14.33,
+   "a": 13.13,
+   "b": 15.53,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "画室",
+   "side": "北",
+   "kind": "room",
+   "at": 18.98,
+   "a": 17.78,
+   "b": 20.18,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "画室",
+   "side": "北",
+   "kind": "room",
+   "at": 23.63,
+   "a": 22.43,
+   "b": 24.83,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "画室",
+   "side": "北",
+   "kind": "room",
+   "at": 28.28,
+   "a": 27.08,
+   "b": 29.48,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "猎藏厅",
+   "side": "北",
+   "kind": "room",
+   "at": 41.33,
+   "a": 40.13,
+   "b": 42.53,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "猎藏厅",
+   "side": "北",
+   "kind": "room",
+   "at": 45.98,
+   "a": 44.78,
+   "b": 47.18,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "猎藏厅",
+   "side": "北",
+   "kind": "room",
+   "at": 50.63,
+   "a": 49.43,
+   "b": 51.83,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "3F",
+   "room": "猎藏厅",
+   "side": "北",
+   "kind": "room",
+   "at": 55.28,
+   "a": 54.08,
+   "b": 56.48,
+   "width": 2.4,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "even"
+  },
+  {
+   "floor": "1F",
+   "room": "南廊西段",
+   "side": "西",
+   "kind": "corridor",
+   "at": 10.2,
+   "a": 9,
+   "b": 11.4,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "南廊东段",
+   "side": "东",
+   "kind": "corridor",
+   "at": 10.2,
+   "a": 9,
+   "b": 11.4,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "北廊西段",
+   "side": "西",
+   "kind": "corridor",
+   "at": 30.6,
+   "a": 29.4,
+   "b": 31.8,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "北廊东段",
+   "side": "东",
+   "kind": "corridor",
+   "at": 30.6,
+   "a": 29.4,
+   "b": 31.8,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "2F",
+   "room": "南廊西段",
+   "side": "西",
+   "kind": "corridor",
+   "at": 10.2,
+   "a": 9,
+   "b": 11.4,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "2F",
+   "room": "南廊东段",
+   "side": "东",
+   "kind": "corridor",
+   "at": 10.2,
+   "a": 9,
+   "b": 11.4,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "2F",
+   "room": "北廊西段",
+   "side": "西",
+   "kind": "corridor",
+   "at": 30.6,
+   "a": 29.4,
+   "b": 31.8,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "2F",
+   "room": "北廊东段",
+   "side": "东",
+   "kind": "corridor",
+   "at": 30.6,
+   "a": 29.4,
+   "b": 31.8,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "3F",
+   "room": "南廊西段",
+   "side": "西",
+   "kind": "corridor",
+   "at": 10.2,
+   "a": 9,
+   "b": 11.4,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "3F",
+   "room": "南廊东段",
+   "side": "东",
+   "kind": "corridor",
+   "at": 10.2,
+   "a": 9,
+   "b": 11.4,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "3F",
+   "room": "北廊西段",
+   "side": "西",
+   "kind": "corridor",
+   "at": 30.6,
+   "a": 29.4,
+   "b": 31.8,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "3F",
+   "room": "北廊东段",
+   "side": "东",
+   "kind": "corridor",
+   "at": 30.6,
+   "a": 29.4,
+   "b": 31.8,
+   "width": 2.4,
+   "height": 3.6,
+   "sill": 0.6,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "西北后楼梯",
+   "side": "北",
+   "kind": "stair",
+   "at": 10.2,
+   "a": 9.3,
+   "b": 11.1,
+   "width": 1.8,
+   "height": 2.8,
+   "sill": 0.3,
+   "opens": true,
+   "placed": "center",
+   "aboveMidLanding": true
+  },
+  {
+   "floor": "2F",
+   "room": "西北后楼梯",
+   "side": "北",
+   "kind": "stair",
+   "at": 10.2,
+   "a": 9.3,
+   "b": 11.1,
+   "width": 1.8,
+   "height": 2.8,
+   "sill": 0.3,
+   "opens": true,
+   "placed": "center",
+   "aboveMidLanding": true
+  },
+  {
+   "floor": "3F",
+   "room": "西北后楼梯",
+   "side": "北",
+   "kind": "stair",
+   "at": 10.2,
+   "a": 9.3,
+   "b": 11.1,
+   "width": 1.8,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "东北后楼梯",
+   "side": "北",
+   "kind": "stair",
+   "at": 59.4,
+   "a": 58.5,
+   "b": 60.3,
+   "width": 1.8,
+   "height": 2.8,
+   "sill": 0.3,
+   "opens": true,
+   "placed": "center",
+   "aboveMidLanding": true
+  },
+  {
+   "floor": "2F",
+   "room": "东北后楼梯",
+   "side": "北",
+   "kind": "stair",
+   "at": 59.4,
+   "a": 58.5,
+   "b": 60.3,
+   "width": 1.8,
+   "height": 2.8,
+   "sill": 0.3,
+   "opens": true,
+   "placed": "center",
+   "aboveMidLanding": true
+  },
+  {
+   "floor": "3F",
+   "room": "东北后楼梯",
+   "side": "北",
+   "kind": "stair",
+   "at": 59.4,
+   "a": 58.5,
+   "b": 60.3,
+   "width": 1.8,
+   "height": 2.8,
+   "sill": 0.9,
+   "opens": true,
+   "placed": "center"
+  },
+  {
+   "floor": "1F",
+   "room": "门厅",
+   "side": "南",
+   "kind": "foyer",
+   "at": 34.8,
+   "a": 30,
+   "b": 39.6,
+   "width": 9.6,
+   "height": 9.6,
+   "sill": 4.8,
+   "opens": false,
+   "placed": "center"
+  }
+ ],
+ "skylights": [
+  {
+   "over": "门厅",
+   "x0": 26.4,
+   "x1": 43.2,
+   "y0": 0,
+   "y1": 12,
+   "z": 14.6
+  },
+  {
+   "over": "花园",
+   "x0": 12,
+   "x1": 22.8,
+   "y0": 12,
+   "y1": 28.8,
+   "z": 14.6
+  },
+  {
+   "over": "自然史大厅",
+   "x0": 46.8,
+   "x1": 57.6,
+   "y0": 12,
+   "y1": 28.8,
+   "z": 14.6
+  }
+ ],
+ "clocks": {
+  "list": [
+   {
+    "kind": "落地钟",
+    "floor": "1F",
+    "room": "门厅",
+    "wall": "北",
+    "x": 32.8,
+    "y": 12,
+    "height": 2.2,
+    "chimes": true,
+    "approx": true
+   },
+   {
+    "kind": "挂钟",
+    "floor": "1F",
+    "room": "穹顶议事厅",
+    "wall": "北",
+    "x": 34.8,
+    "y": 27,
+    "z": 2.5,
+    "chimes": false,
+    "approx": true,
+    "note": "两座罩柜中间上方"
+   },
+   {
+    "kind": "挂钟",
+    "floor": "1F",
+    "room": "宴饮厅",
+    "wall": "南",
+    "x": 32.4,
+    "y": 32.4,
+    "z": 2.5,
+    "chimes": false,
+    "approx": true,
+    "note": ""
+   },
+   {
+    "kind": "挂钟",
+    "floor": "2F",
+    "room": "阅览室",
+    "wall": "北",
+    "x": 19.2,
+    "y": 40.8,
+    "z": 2.5,
+    "chimes": false,
+    "approx": true,
+    "note": ""
+   },
+   {
+    "kind": "挂钟",
+    "floor": "3F",
+    "room": "三层起居室",
+    "wall": "北",
+    "x": 65.4,
+    "y": 28.8,
+    "z": 2.5,
+    "chimes": false,
+    "approx": true,
+    "note": ""
+   }
+  ],
+  "countable": "门厅、大楼梯、二三层楼梯平台和各层南廊靠门厅的一段",
+  "silent": "地下和两座后楼梯"
+ },
+ "timed": [
+  {
+   "when": "每日05:00—07:00、17:00—19:00",
+   "what": "窗光渐亮、渐暗",
+   "ref": "3.1",
+   "times": [
+    "05:00",
+    "07:00",
+    "17:00",
+    "19:00"
+   ]
+  },
+  {
+   "when": "每日05:00、07:00、17:00、23:00",
+   "what": "灯光切换",
+   "ref": "3.1",
+   "times": [
+    "05:00",
+    "07:00",
+    "17:00",
+    "23:00"
+   ]
+  },
+  {
+   "when": "每个整点",
+   "what": "报时钟报时",
+   "ref": "3.3",
+   "times": []
+  },
+  {
+   "when": "每日05:00",
+   "what": "套房日用品、日常药品与女性住客用品在原位补足",
+   "ref": "各室/套房.md",
+   "times": [
+    "05:00"
+   ]
+  },
+  {
+   "when": "每日05:30、17:30",
+   "what": "花园根区滴灌各三分钟",
+   "ref": "各室/1F_花园与园艺间.md",
+   "times": [
+    "05:30",
+    "17:30"
+   ]
+  },
+  {
+   "when": "兑换来的吃喝交付满三小时；封着能存放的，开封满三小时",
+   "what": "没吃完喝完的连同餐具收走",
+   "ref": "价目表第 9 节",
+   "times": []
+  }
+ ],
+ "weather": {
+  "default": "阴天",
+  "hours": 8
+ },
  "identities": [
   {
    "no": 1,
-   "front": "法官",
-   "back": "典狱长",
-   "state": null,
+   "front": "隐者",
+   "back": "暗杀者",
    "noReverse": false,
-   "frontText": "每次普通投票期间，法官可秘密指定一名角色，使其本轮总票数增加一票。指定对象可以与法官本人的票选对象不同。",
-   "backText": "受命者视为同时拥有此身份。\n\n仅一次，典狱长可随时指定馆内一扇门，使门扇按原方向强行闭合并锁住一小时。闭合路径上的人或物会受到推挤、碰撞或夹压，不能阻止门扇最终关闭。期间无论以何种方式均无法开启；一小时后，门自动弹开。因强行闭合或锁门造成的人员死亡，视为完成行凶任务。发动时，主持人将向全馆说明这是典狱长能力造成的结果。",
-   "notes": "典狱长对原本开着的门同样生效；弹开时不恢复原锁态。因强行闭合或封闭造成的死亡，按身份能力致死的实际因果认定行凶者；房内另有独立杀人行为时，按实际因果另认凶手。"
+   "frontText": "每次普通投票结算时，隐者的总票数减少一票。\n\n隐者的能力不会被沉默。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n没有其他人看见暗杀者时，暗杀者本人的身体动作无声：脚步、呼吸、衣物摩擦都不出声。他使物件发出的声音不在此列。",
+   "notes": "暗杀者以其他人的实际视野为条件。他使物件发出的声音照物理层第 4 节结算。"
   },
   {
    "no": 2,
-   "front": "小丑",
-   "back": "背刺者",
-   "state": null,
+   "front": "沉默者",
+   "back": "盲视者",
    "noReverse": false,
-   "frontText": "每次普通投票结算时，小丑的总票数减少一票。\n\n小丑的能力不会被沉默。",
-   "backText": "受命者视为同时拥有此身份。\n\n没有其他人看见背刺者时，背刺者本人的身体动作无声：脚步、呼吸、衣物摩擦都不出声。他使物件发出的声音不在此列。",
-   "notes": "背刺者以其他人的实际视野为条件。他使物件发出的声音照物理层第 4 节结算。"
+   "frontText": "每次审判仅一次，沉默者可在辩论期间秘密指定一名角色，使其正位能力失效，持续至本场审判结束。期间该角色新取得的正位能力同样失效。对方不会收到被沉默的通知。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n仅一次，盲视者可随时使全馆陷入完全无法视物的黑暗，持续三分钟。期间一切人造光源与自然光均不能提供照明，包括打火机、火柴以及任何随身带入的光源，开灯无效。黑暗对盲视者本人不生效。发动时，主持人将向全馆说明这是盲视者能力造成的结果。",
+   "notes": "盲视者的黑暗持续三分钟后，恢复该时刻应有的光照。"
   },
   {
    "no": 3,
-   "front": "变形者",
-   "back": "史莱姆",
-   "state": null,
+   "front": "占卜家",
+   "back": "梦游神",
    "noReverse": false,
-   "frontText": "投票及审判环节之外，变形者可指定一名角色，将自身正位身份替换为对方当前正位身份的副本，同时继承该身份的能力、使用状态与代价。对方不受影响。复制前，变形者没有其他正位能力。",
-   "backText": "受命者视为同时拥有此身份。\n\n仅一次，史莱姆可随时重置一名角色当前的正位与逆位身份，使两面的能力次数、使用状态与代价分别恢复至初始状态。重置不改变当前身份名称，也不作用于史莱姆这一身份本身。",
-   "notes": "史莱姆的目标收到私人通知，得知自己两面的身份状态已被重置，不获知是谁所为。"
+   "frontText": "仅一次，占卜家可随时查验一名角色，得知其当前正位身份的名称和详细能力说明。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n仅一次，梦游神可随时查验一名角色，得知其当前逆位身份的名称和详细能力说明，并获得使用该能力一次的机会。对方没有逆位身份，或者该能力没有可以使用的一次（一直生效，或者已经用掉）时，不消耗本次机会。\n\n梦游神使用该能力时，对方收到私人通知，得知自己的逆位身份因梦游神的能力被人使用了一次。对方的能力为仅一次的，同时消耗。",
+   "notes": "占卜家、梦游神查的是对方此刻记着的身份（以记录为准）。获知逆位身份不等于获知受命者资格。\n\n逆位里一直生效、没有可以使用的一次的，是暗杀者、敲钟人。\n\n借来的能力照原卡的时机和条件使用。卡上指持有者本人的地方，都指梦游神；广播里说是哪个身份的能力，照原卡。借来的是窃贼的能力时，换掉的是梦游神自己的逆位。\n\n梦游神借到的这一次，查验的那一刻就归他：此后对方用掉、换掉了那个能力，或者死去、离馆，都不收回；他使用时，对方那个能力还在、又是仅一次的，照卡同时消耗，已经用掉的不再消耗。"
   },
   {
    "no": 4,
-   "front": "沉默者",
-   "back": "典律官",
-   "state": null,
+   "front": "愚者",
+   "back": "世界",
    "noReverse": false,
-   "frontText": "每次审判仅一次，沉默者可在辩论期间秘密指定一名角色，使其正位能力失效，持续至本场审判结束。期间该角色新取得的正位能力同样失效。对方不会收到被沉默的通知。",
-   "backText": "受命者视为同时拥有此身份。\n\n仅一次，典律官可在审判流程之外向主持人提出一条明确的规则。主持人即刻向全馆发布该规则的原文，并说明这是典律官的能力所致，不公布提案者。\n\n随后就该规则举行一次特殊开庭，由全体存活在馆者辩论并表决它实行与否。这一场里，所有身份的能力一律失效。主持人也参加投票。\n\n通过的规则即刻生效。无论通过与否，本次机会均消耗。",
-   "notes": "典律官在审判流程外随时可发动。主持人按第 7 节广播提案原文并召集全员到一层穹顶议事厅，按固定座次进行辩论与表决。\n\n这一场里全体的正位与逆位能力一律失效，持续至该场结束：加减票、反弹、跟票、撤销、免死、票数修正都不发生，恋人的同票约束也停用。已生效的持续效果不受影响。\n\n参与者按座次记名公开表决，每人一票，投「实行」或「不实行」，弃票不计入任何一方。参与者全部投完后，演出者按运行规则 1.2 甲项停笔，报出参与者各自的票，等主持人定他自己的三票；三票可以分散，也可以全部弃掉。主持人答复后才公布最终总票数。投票期间众人只知道主持人参加投票，不知道他有几票、投向哪边、有没有分散。\n\n「实行」多于「不实行」即通过；平票视为不实行，规则作废，视为从未发布。通过的规则此后永久有效，除非主持人自行废除。\n\n下列形式要求由演出者当场核对，不满足的当即退回持有者修改，不消耗机会，也不停笔：\n\n1. 明确、可执行、可判定成立与否。\n2. 适用于全体，不指名某人。\n3. 公布时内容完整，不得有隐藏部分，事后不得追加或修改。\n4. 不得直接指定某人受罚，不得直接致人死亡。\n5. 不得改动本次特殊开庭本身的规则。"
+   "frontText": "仅一次，在投票后成为唯一待处刑者时，愚者可在处刑前公开身份发动能力。\n\n若愚者不是本批案件的实际凶手，撤销该处刑结果并重新投票；本场审判剩余期间，愚者不能投票，也不能被投票。若愚者是实际凶手，能力失败，并向全体确认其为凶手。\n\n无论成功或失败，本次机会均消耗。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n仅一次，世界可随时暂停时间三秒。暂停期间，持有者可自由活动，接触、移动他人及物件；时间恢复后，其间行动造成的变化保留。",
+   "notes": "愚者优先于律师。\n\n世界暂停期间其他人停止活动；持有者的动作按物理层第 8 节的耗时结算。"
   },
   {
    "no": 5,
-   "front": "圣女",
-   "back": null,
-   "state": "贞德",
-   "noReverse": true,
-   "frontText": "圣女不会被选中成为受命者。\n\n场上存在受命者时，圣女有一次主动代替其成为新受命者的机会，不刷新行凶期限。圣女不会获知原受命者是谁；原受命者将获知受命资格取消，并已由圣女领受。\n\n发动后，圣女变为贞德。\n\n贞德可以不在行凶期限内杀人；逾期后，展开一场特殊审判。贞德在该场审判中的总票数天然减少一票。唯一最高票者若为贞德，不予处刑；若为其他人，将其处死。平票重投，连续两次无法产生唯一结果时，处死所有得票最高者。\n\n特殊审判完成后，存活的贞德恢复为圣女，主动接任能力无法再次发动。特殊审判未发生，不能恢复圣女；其他角色杀人不会取消贞德的受命资格。\n\n圣女及贞德全程不得以任何形式透露、宣布或暗示自身身份及能力信息。违反者直接处死。",
-   "backText": "圣女不会被选中成为受命者。\n\n场上存在受命者时，圣女有一次主动代替其成为新受命者的机会，不刷新行凶期限。圣女不会获知原受命者是谁；原受命者将获知受命资格取消，并已由圣女领受。\n\n发动后，圣女变为贞德。\n\n贞德可以不在行凶期限内杀人；逾期后，展开一场特殊审判。贞德在该场审判中的总票数天然减少一票。唯一最高票者若为贞德，不予处刑；若为其他人，将其处死。平票重投，连续两次无法产生唯一结果时，处死所有得票最高者。\n\n特殊审判完成后，存活的贞德恢复为圣女，主动接任能力无法再次发动。特殊审判未发生，不能恢复圣女；其他角色杀人不会取消贞德的受命资格。\n\n圣女及贞德全程不得以任何形式透露、宣布或暗示自身身份及能力信息。违反者直接处死。",
-   "notes": "接任继承原期限的剩余时间或待起算状态。圣女可以随时提出接任请求；场上没有受命者，或者她本人就是受命者时，请求不成立，机会不消耗，她只得知「不成立」。原受命者私下获知任务取消，并已由圣女领受。\n\n若普通案件使本轮期限结束，按普通规则审理及重新起算，贞德身份继续保留。\n\n贞德到期未完成行凶时，不执行普通超时处刑。特殊审判没有调查阶段，众人经辩论票选本轮应被处刑者；广播不自动公开贞德持有者、免死条件或减票效果。本场仍按固定座次记名投票及能力结算。\n\n唯一最高票者为其他人时处死该人，不作凶手正误核验。连续两次无法产生唯一结果而处死多人时，不适用仅针对唯一待处刑者的能力。\n\n特殊审判完成后接任能力记为已用，其受命资格结束；游戏继续时重新指定。\n\n是否构成泄密，结合具体言行与语境判定，不以关键词触发处罚；普通沉默、紧张、回避或拉票本身不构成泄密。"
+   "front": "执行者",
+   "back": "敲钟人",
+   "noReverse": false,
+   "frontText": "仅一次，执行者可在辩论期间公开身份与能力，指定一名角色，立即发起针对其的特殊表决。\n\n有投票权者按座次公开票选。指定对象获得的有效基础票超过本场存活在馆玩家总数的一半，即成为待处刑者；否则恢复辩论。该表决不受加减票影响。\n\n表决通过并处刑后，若被处刑者并非本批案件的实际凶手，执行者身份永久失去投票权；指认正确或表决未通过，则保留投票权。本次能力无论通过与否均消耗。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n敲钟人行凶后，死者被有效发现时，调查时间被取消。主持人将向全馆说明这是敲钟人能力造成的结果。",
+   "notes": "执行者发动即终止当前辩论。表决通过、处刑之后，正误照 3.3 的标准结算，播报照第 7 节：处死的是本批案件的实际凶手，算查明；不是，算一次误判，一同致死的案件只处死其中一人也算判定错误。此后本场继续还是结束，也照 3.3。表决仍依座次公开票选，可投其他对象、自投或弃票；只统计投给指定对象的有效基础票，无投票权者仍计入总人数。特殊表决不使用加减票；恋人同票及国王最后强制选票仍生效。愚者与律师可在通过后按条件介入；处刑结果被撤销的，不产生代价，也不退还次数。\n\n敲钟人的能力在他行凶的那一刻就落在这起死亡上：此后他死去、离馆、受命结束或者逆位被换掉，这具尸体被有效发现时照样取消调查。"
   },
   {
    "no": 6,
-   "front": "先知",
-   "back": "盲视者",
-   "state": null,
-   "noReverse": false,
-   "frontText": "每当有人死亡，先知立即收到\"有人死亡\"的私人通知。通知不提供死者、地点或死因。",
-   "backText": "受命者视为同时拥有此身份。\n\n仅一次，盲视者可随时使全馆陷入完全无法视物的黑暗，持续三分钟。期间一切人造光源与自然光均不能提供照明，包括打火机、火柴以及任何随身带入的光源，开灯无效。黑暗对盲视者本人不生效。发动时，主持人将向全馆说明这是盲视者能力造成的结果。",
-   "notes": "先知的通知包括主持人处刑，在死亡成立的那一刻送达。盲视者的黑暗持续三分钟后，恢复该时刻应有的光照。"
-  },
-  {
-   "no": 7,
-   "front": "占卜家",
-   "back": "梦访者",
-   "state": null,
-   "noReverse": false,
-   "frontText": "占卜家每天可随时查验一名角色，得知其当前正位身份名称。查验机会于每日零点刷新，不累计。",
-   "backText": "受命者视为同时拥有此身份。\n\n梦访者有一次秘密传讯机会，可随时将通过占卜家查验取得的身份信息，经主持人秘密告知一名其他角色。\n\n梦访者另有一次深入查验机会，可在使用占卜家查验时，同时查看该角色的正位身份、逆位身份及两者的详细能力说明。",
-   "notes": "梦访者的两项能力分别计次；深入查验须伴随一次有效的占卜家查验，不额外增加当日次数。获知逆位身份不等于获知受命者资格。"
-  },
-  {
-   "no": 8,
-   "front": "魔术师",
-   "back": "窃贼",
-   "state": null,
-   "noReverse": false,
-   "frontText": "魔术师有一次交换身份的机会。投票及审判环节之外，可选择两名角色，包括本人，交换双方当前的正位身份、能力、使用状态及身份代价。\n\n本次机会先消耗，再执行交换。双方分别获知自己的新身份及状态；逆位身份、受命任务与人物关系不随之交换。",
-   "backText": "受命者视为同时拥有此身份。\n\n仅一次，窃贼可随时指定一名角色，将自身的窃贼身份替换为该角色当前的逆位身份，继承其能力与使用状态。对方的身份不变。对方没有逆位身份时，窃贼不获得任何逆位身份。",
-   "notes": "魔术师交换的双方不自动获知交换另一方或发动者。窃贼取的是对方此刻记着的逆位（以记录为准，不看卡背印的字），不论对方是否受命；对方没有逆位时，窃贼的逆位变为空，不退还机会。"
-  },
-  {
-   "no": 9,
-   "front": "倒吊人",
-   "back": "世界",
-   "state": null,
-   "noReverse": false,
-   "frontText": "每次审判仅一次，倒吊人可在普通投票期间，将另一名角色投给本人的一张基础票秘密反弹给原投票者。自投与能力增加的票数不能反弹。",
-   "backText": "受命者视为同时拥有此身份。\n\n仅一次，世界可随时暂停时间三秒。暂停期间，持有者可自由活动，接触、移动他人及物件；时间恢复后，其间行动造成的变化保留。",
-   "notes": "倒吊人须在最终结果公布前指定。世界暂停期间其他人停止活动；持有者的动作按物理层第 8 节的耗时结算。"
-  },
-  {
-   "no": 10,
-   "front": "执行者",
-   "back": "敲钟人",
-   "state": null,
-   "noReverse": false,
-   "frontText": "仅一次，执行者可在辩论期间公开身份与能力，指定一名角色，立即发起针对其的特殊表决。\n\n有投票权者按座次公开票选。指定对象获得的有效基础票超过本场存活在馆参与者总数的一半，即成为待处刑者；否则恢复辩论。该表决不受加减票及反弹影响。\n\n表决通过并处刑后，若被处刑者并非本批案件的实际凶手，执行者身份永久失去投票权；指认正确或表决未通过，则保留投票权。本次能力无论通过与否均消耗。",
-   "backText": "受命者视为同时拥有此身份。\n\n敲钟人行凶后，死者被有效发现时，调查时间缩短为三十分钟。主持人将向全馆说明这是敲钟人能力造成的结果。",
-   "notes": "执行者发动即终止当前辩论。表决通过、处刑之后，正误照 3.3 的标准结算，播报照第 7 节：处死的是本批案件的实际凶手，算查明；不是，算一次误判，一同致死的案件只处死其中一人也算判定错误。此后本场继续还是结束，也照 3.3。表决仍依座次公开票选，可投其他对象、自投或弃票；只统计投给指定对象的有效基础票，无投票权者仍计入总人数。特殊表决不使用加减票或反弹；恋人同票及国王最后强制选票仍生效。白痴与身怀希望之人可在通过后按条件介入；处刑结果被撤销的，不产生代价，也不退还次数。"
-  },
-  {
-   "no": 11,
    "front": "丘比特",
    "back": null,
-   "state": null,
    "noReverse": true,
    "frontText": "仅一次，丘比特可在投票及审判环节之外指定两名存活在馆角色，包括本人，使其成为恋人。双方获知彼此的恋人身份及当时的正位身份与能力。\n\n双方都有投票权时，须票选同一对象，以先投票者的选择为准；一方没有投票权时，另一方正常投票。\n\n恋人中的一方成为受命者，另一方同时成为其帮凶，并收到私人通知。该受命者被主持人处刑时，帮凶一同处死。\n\n丘比特本人为受命者时，其帮凶同时获得自身对应的逆位身份。",
    "backText": "仅一次，丘比特可在投票及审判环节之外指定两名存活在馆角色，包括本人，使其成为恋人。双方获知彼此的恋人身份及当时的正位身份与能力。\n\n双方都有投票权时，须票选同一对象，以先投票者的选择为准；一方没有投票权时，另一方正常投票。\n\n恋人中的一方成为受命者，另一方同时成为其帮凶，并收到私人通知。该受命者被主持人处刑时，帮凶一同处死。\n\n丘比特本人为受命者时，其帮凶同时获得自身对应的逆位身份。",
    "notes": "弃票作为自投参与同票约束；国王最后结算时可以覆盖该约束。\n\n帮凶的连坐只由主持人处刑触发，受命者独立遭人杀害不触发。受命资格取消时，对应帮凶资格结束，恋人关系保留。\n\n丘比特本人为受命者时才有那项额外授予；仅是被他结成的一对恋人中有人受命，不产生。此资格随相应帮凶资格延续。"
   },
   {
-   "no": 12,
+   "no": 7,
    "front": "河豚",
-   "back": "女巫",
-   "state": null,
+   "back": "幽灵",
    "noReverse": false,
    "frontText": "河豚可在辩论期间选择一个有人的席位；除非该席位成为空席，否则不可变更。\n\n每次审判可查询一次，得知所选席位左右相邻席是否存在本批案件的实际凶手。结果只有\"有\"或\"没有\"，不说明方向、人数，也不查验中心席位；空席不跨越。",
-   "backText": "受命者视为同时拥有此身份。\n\n仅一次，女巫可随时取得五毫升无色无味的毒药。饮下全部五毫升者，将在饮下后三十分钟准时死去，呈现明显的中毒特征。\n\n发动后，装有毒药的小玻璃瓶及瓶塞放置在女巫房间的书桌上，遗失不补。",
-   "notes": "河豚的中心不因一场审判结束而解除，仅该席位因死亡或离馆成为空席时才可另选。\n\n女巫的五毫升须一次饮尽才生效。兑换来的解毒剂对它无效。饮下后前二十五分钟没有任何感觉；最后五分钟胸口发紧、喘不上气、出冷汗、站不稳，倒下后很快失去知觉，到三十分钟整死去。尸体口唇和指甲发紫，嘴边有少量白沫，没有气味。"
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n幽灵可随时打开任意一扇门。",
+   "notes": "河豚的中心不因一场审判结束而解除，仅该席位因死亡或离馆成为空席时才可另选。\n\n幽灵能开的是通行门（洋馆物理层 2.1），柜门和电梯门不算；主持人关着的门也不算：开局第六条播报以前、开庭到这一场结束的议事厅门。他开哪一扇，照普通开门，编号锁和插销都挡不住；锁和插销本身不动，门关回去以后照原样锁着、插着，不留痕迹。门后抵着的东西照常挡着。"
+  },
+  {
+   "no": 8,
+   "front": "律师",
+   "back": "法官",
+   "noReverse": false,
+   "frontText": "仅一次，在投票产生唯一待处刑者后、处刑前，律师可公开身份与能力，撤销结果并立即重新投票。待处刑者必须为其他角色。\n\n本次重投采用普通票数规则，所有人均不能选择刚才的待处刑者；限制在本次重投结束后解除。该能力可撤销已经通过的特殊表决结果。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n每次普通投票期间，法官可秘密指定一名角色，使其本轮总票数增加一票。指定对象可以与法官本人的票选对象不同。",
+   "notes": "律师造成的重投里，刚才的待处刑者弃票的，不算投自己，这一票不产生；不能选他的限制，这一次重投结束就解除。这一次重投仍属于原本的普通审判。"
+  },
+  {
+   "no": 9,
+   "front": "骑士",
+   "back": "国王",
+   "noReverse": false,
+   "frontText": "仅一次，骑士可在辩论期间公开身份与能力，指定一名角色进行揭发。\n\n若目标为本批案件的实际凶手，主持人向全体确认揭发成功，最终处刑仍须经过投票。否则揭发失败，骑士身份永久失去投票权；此后被错指者每次将基础票投给骑士，骑士本轮总票数额外增加一票。\n\n无论成功或失败，本次机会均消耗。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n仅一次，在审判流程外，国王可将当前正位身份替换为国王，同时将自身逆位身份变为骑士。\n\n国王为正位身份时，有一次在投票期间公开国王身份并发动号令的机会。国王指定左边或右边，那一边最近的存活角色必须跟随国王票选同一对象，或弃票自投。他已经投出的票取消，重新选择。国王的能力最后结算，优先级最高。\n\n骑士为逆位身份时，有一次在本人行凶后转移死者尸体的机会。尸体可被转移至馆内任一房间，呈现形态由主持人决定。",
+   "notes": "骑士揭发失败后，记录被错指者；此后该人每次把有效基础票投给骑士，骑士额外受一票。\n\n国王翻面后当前正位由国王替换，即使当前正位已经不是骑士，也按这一组合结算。翻面、国王控票及逆位骑士移尸分别计次；当前仍承担的骑士身份代价不因翻面清除。\n\n翻面以后，卡面改成下面两段（见 flip）。\n\n逆位骑士只有移尸，没有揭发。\n\n梦游神查到的逆位是国王的，借到的是翻面：他用了，自己的正位换成国王、逆位换成骑士，卡面照上面改写，号令和移尸从此是他自己身份上的机会；对方的翻面同时消耗。梦游神查到的逆位是骑士的，借到的是移尸。\n\n国王的号令沿座次，在国王指定的那一边寻找最近的存活参与者，越过空席。\n\n同一次投票里两个国王都发动号令的，只有先提出的那一个生效；后提出的不生效，这一次机会不消耗。",
+   "flip": {
+    "front": "国王",
+    "back": "骑士",
+    "frontText": "仅一次，国王可在投票期间公开国王身份并发动号令。国王指定左边或右边，那一边最近的存活角色必须跟随国王票选同一对象，或弃票自投。他已经投出的票取消，重新选择。国王的能力最后结算，优先级最高。",
+    "backText": "成为受命者时，视为同时拥有此身份。\n\n仅一次，骑士可在本人行凶后转移死者尸体。尸体可被转移至馆内任一房间，呈现形态由主持人决定。"
+   }
+  },
+  {
+   "no": 10,
+   "front": "魔术师",
+   "back": "窃贼",
+   "noReverse": false,
+   "frontText": "魔术师有一次交换身份的机会。投票及审判环节之外，可选择两名角色，包括本人，交换双方当前的正位身份、能力、使用状态及身份代价。\n\n本次机会先消耗，再执行交换。双方分别获知自己的新身份及状态；逆位身份、受命任务与人物关系不随之交换。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n仅一次，窃贼可随时指定一名角色，将自身的窃贼身份替换为该角色当前的逆位身份，继承其能力与使用状态。对方的身份不变。对方没有逆位身份时，能力视为未发动。",
+   "notes": "魔术师交换的两个人，不会自动知道交换的另一方是谁，也不知道是谁发动的。窃贼取的是对方此刻记着的逆位（以记录为准），不论对方受没受命；对方没有逆位时，窃贼的身份不变，机会不消耗。"
+  },
+  {
+   "no": 11,
+   "front": "变形者",
+   "back": "史莱姆",
+   "noReverse": false,
+   "frontText": "投票及审判环节之外，变形者可指定一名角色，将自身正位身份替换为对方当前正位身份的副本，同时继承该身份的能力、使用状态与代价。对方不受影响。复制前，变形者没有其他正位能力。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n仅一次，史莱姆可随时重置一名角色当前的正位与逆位身份，使两面的能力次数、使用状态与代价分别恢复至初始状态。重置不改变当前身份名称，也不作用于史莱姆这一身份本身。",
+   "notes": "史莱姆的目标收到私人通知，得知自己两面的身份状态已被重置，不知道是谁做的。"
+  },
+  {
+   "no": 12,
+   "front": "先知",
+   "back": "兆示",
+   "noReverse": false,
+   "frontText": "每当有人在馆内死亡，先知立即收到私人通知，得知有人死亡。通知不提供死者、死因或地点。",
+   "backText": "成为受命者时，视为同时拥有此身份。\n\n仅一次，兆示可随时得知馆内所有存活角色此刻的位置。",
+   "notes": "先知的通知包括主持人的处刑，在死亡成立的那一刻送到。\n\n兆示得知的是发动那一刻每个活着在馆的人在哪里：按房号说，几号在哪一层、哪一处（物理层 1.2、1.3）。"
   },
   {
    "no": 13,
-   "front": "白痴",
-   "back": "智者",
-   "state": null,
-   "noReverse": false,
-   "frontText": "仅一次，在投票后成为唯一待处刑者时，白痴可在处刑前公开身份发动能力。\n\n若白痴不是本批案件的实际凶手，撤销该处刑结果并重新投票；本场审判剩余期间，白痴不能投票，也不能被投票。若白痴是实际凶手，能力失败，并向全体确认其为凶手。\n\n无论成功或失败，本次机会均消耗。",
-   "backText": "受命者视为同时拥有此身份。\n\n庭审期间，智者看见每一名参与者的头上浮着一个数字，那是此人此刻的真实总票数。只有智者看得见。",
-   "notes": "白痴优先于身怀希望之人。\n\n智者头上所见的数字随每一次实际变化即时更新，包括 3.2 四步结算中的每一次变化。它不显示数字为什么会变：不显示某一次加减来自哪个身份、哪个人。\n\n凡是有票数结算的场合都看得见：普通投票、平票重投、执行者的特殊表决、贞德的特殊审判。典律官的特殊开庭里一切能力失效，那一场看不见。"
-  },
-  {
-   "no": 14,
-   "front": "身怀希望之人",
-   "back": "背负绝望之人",
-   "state": null,
-   "noReverse": false,
-   "frontText": "仅一次，在投票产生唯一待处刑者后、处刑前，身怀希望之人可公开身份与能力，撤销结果并立即重新投票。待处刑者必须为其他角色。\n\n本次重投采用普通票数规则，所有人均不能选择刚才的待处刑者；限制在本次重投结束后解除。该能力可撤销已经通过的特殊表决结果。",
-   "backText": "受命者视为同时拥有此身份。\n\n仅一次，背负绝望之人可要求主持人向全馆发布并执行一场小游戏。游戏的参与人数、场地、所需道具、规则、通过条件、惩罚与时长，全部由持有者事先定妥；游戏必须存在通过的可能性，时长不超过一小时。\n\n参加不参加由各人自愿决定。游戏可以规定必须有人参加；除此之外，不得对参加与否作任何规定。\n\n因惩罚造成的死亡，视为完成行凶任务。全体将获知这是背负绝望之人发动能力的结果。",
-   "notes": "身怀希望之人造成的重投，排除在下一次投票后结束；该次重投仍属于原本的普通审判或贞德特殊审判。\n\n背负绝望之人的提案按运行规则 1.2 甲项停笔一次提交全文。主持人可以通过、驳回或要求修改，驳回不消耗机会。\n\n**提案必须写明七样：**\n\n1. **参与人数** —— 一个确定的数目，不得超过公布时能报名的人数；另写明报名期限，不超过时长的一半。期满报名不足这个数目的，游戏不举行，机会照常消耗，无人受罚。\n2. **场地** —— 馆内某一处，须容得下这个人数（按物理层的坐标与面积算）。\n3. **道具** —— 需不需要主持人提供，以及是什么。\n4. **规则与游戏内容。**\n5. **通过条件。**\n6. **惩罚。**\n7. **时长** —— 不超过一小时。\n\n能自愿报名的是公布时存活、在馆、且能行动的人。规则与惩罚对全体参加者相同。\n\n下列六条，有一条不满足就驳回：\n\n1. 通过条件可验证——主持人能客观判定谁达成了、谁没达成。\n2. 通过条件可达成，且是参加者凭自己能做到的事；不得依赖猜中任何人心里想的东西，不得依赖只有持有者知道的信息。\n3. 规则公布时完整，没有隐藏条件，开始后不得追加或修改。\n4. 惩罚只落在未达成的参加者身上，同一种、同一强度；已达成的人不受任何惩罚。\n5. 致死的惩罚只落在一名参加者身上——按规则本身写明的排序（最后一名、得分最低、最慢的）取一人承受，其余未达成者不受任何惩罚。非致死的惩罚落在所有未达成者身上。\n6. 不得要求进入受保护的部分，不得改动门锁、钟、灯与已有条文（尤其不得改动投票、审判、期限的规则），不得要求任何人公开身份或交出身份卡，不得以任何身份、能力或案件真相的信息作为奖励或惩罚。奖惩只能是金币、物品、身体状态或性命。"
-  },
-  {
-   "no": 15,
-   "front": "骑士",
-   "back": "国王",
-   "state": null,
-   "noReverse": false,
-   "frontText": "仅一次，骑士可在辩论期间公开身份与能力，指定一名角色进行揭发。\n\n若目标为本批案件的实际凶手，主持人向全体确认揭发成功，最终处刑仍须经过投票。否则揭发失败，骑士身份永久失去投票权；此后被错指者每次将基础票投给骑士，骑士本轮总票数额外增加一票。\n\n无论成功或失败，本次机会均消耗。",
-   "backText": "受命者视为同时拥有此身份。\n\n仅一次，在审判流程外，国王可将当前正位身份替换为国王，同时将自身逆位身份变为骑士。\n\n国王为正位身份时，有一次在投票期间公开国王身份并发动号令的机会。左右两边最近的存活角色必须跟随国王票选同一对象，或弃票自投。两人已经投出的票取消，重新选择。国王的能力最后结算，优先级最高。\n\n骑士为逆位身份时，有一次在本人行凶后转移死者尸体的机会。尸体可被转移至馆内任一房间，呈现形态由主持人决定。",
-   "notes": "骑士揭发失败后，记录被错指者；此后该人每次把有效基础票投给骑士，骑士额外受一票。\n\n国王翻面后当前正位由国王替换，即使当前正位已经不是骑士，也按这一组合结算。翻面、国王控票及逆位骑士移尸分别计次；当前仍承担的骑士身份代价不因翻面清除。\n\n国王的号令沿座次寻找左右两边最近的存活参与者，越过空席。"
+   "front": "平民",
+   "back": null,
+   "noReverse": true,
+   "frontText": "平民不会被选为受命者。\n\n仅一次，平民可随时公开身份。公开以后，平民若被当时的受命者杀死，审理这起死亡的那一场审判里，那个人得到的票数以两倍计。\n\n平民不能被复制、交换或沉默。以平民为目标发动这些能力时，发动者会得知无效，能力次数不消耗。",
+   "backText": "平民不会被选为受命者。\n\n仅一次，平民可随时公开身份。公开以后，平民若被当时的受命者杀死，审理这起死亡的那一场审判里，那个人得到的票数以两倍计。\n\n平民不能被复制、交换或沉默。以平民为目标发动这些能力时，发动者会得知无效，能力次数不消耗。",
+   "notes": "\"当时的受命者\"指杀死平民的那一刻有受命资格的人；几个人一同致死的，其中有受命资格的那一个照此加倍。\n\n加倍的是那一场审判里他得到的票：普通投票和重投里，是第 1 到第 3 步算完以后的总票数（3.2）；执行者的特殊表决里，是投给他的有效基础票。结论和共同指认不加倍（3.2）。\n\n魔术师、变形者、沉默者以平民为目标时，发动的人收到私人通知\"无效\"，机会不消耗；魔术师选的另一方也不受影响。"
   }
  ],
+ "identityNote": "主动能力须在心中向主持人明确提出发动请求及必要选择。要求公开身份的能力，须完成相应公开步骤。身份卡上写明会向全馆说明的能力，发动时全馆广播能力名称与发生了什么，不公布发动者；没有这样写的能力不广播。",
  "prices": {
   "how": [
-   "说出或默念要换的东西，报价之后同意，即成交。",
-   "用身上带着的金币付：一枚一百分，按整枚付，不找零。",
-   "东西出现在身边。",
-   "未列之物，问价即答。"
+   "说出或默念要换的东西或要办的事，报价之后同意，即成交。",
+   "用身上带着的金币付：一枚一百分，按整枚付，不找零；总价不足整枚的，添东西凑满，或者不成交。",
+   "东西出现在身边，事照说定的办。",
+   "未列的，问价即答。"
   ],
   "chapters": [
    {
@@ -4007,8 +7444,8 @@ window.WORLD = {
       "points": 100
      },
      {
-      "item": "十五人份的同一餐",
-      "points": 1000
+      "item": "十三人份的同一餐",
+      "points": 870
      },
      {
       "item": "一人一餐份的生食材",
@@ -4103,10 +7540,6 @@ window.WORLD = {
      {
       "item": "强效止痛药十片",
       "points": 400
-     },
-     {
-      "item": "安眠药十片",
-      "points": 600
      },
      {
       "item": "广谱解毒剂",
@@ -4543,7 +7976,7 @@ window.WORLD = {
    ]
   },
   "void": {
-   "text": "会直接破坏游戏本身的兑换，不成立：比如买回自己被封住的本事，买带超常本事的东西，打听谁是受命者、谁拿着什么身份、馆里别人的来历，请主持人替他杀人，买能绕过洋馆的门、锁、墙、出口或者联络馆外的东西，买一个馆外的人进来。不收金币，不停笔，他只得知不成立。",
+   "text": "会直接破坏游戏本身的兑换，不成立：比如买回自己被封住的本事，买带超常本事的东西，打听谁是受命者、谁拿着什么身份、馆里别人的来历和行踪，请主持人替他杀人，买能绕过洋馆的门、锁、墙、出口、透明的墙或者联络馆外的东西，买一个馆外的人进来。不收金币，不停笔，他只得知不成立。",
    "kinds": [
     {
      "key": "power",
@@ -4555,7 +7988,7 @@ window.WORLD = {
     },
     {
      "key": "ask",
-     "text": "打听谁是受命者、谁拿着什么身份、馆里别人的来历"
+     "text": "打听谁是受命者、谁拿着什么身份、馆里别人的来历和行踪"
     },
     {
      "key": "kill",
@@ -4563,7 +7996,7 @@ window.WORLD = {
     },
     {
      "key": "bypass",
-     "text": "买能绕过洋馆的门、锁、墙、出口或者联络馆外的东西"
+     "text": "买能绕过洋馆的门、锁、墙、出口、透明的墙或者联络馆外的东西"
     },
     {
      "key": "outsider",
@@ -4582,52 +8015,60 @@ window.WORLD = {
     },
     {
      "key": "repair",
-     "text": "在馆里受的伤，不论多重，都是伤势，不在此列；伤口、出血、骨折、中毒、烧伤、失温、疼痛，一概不管。请求的是治伤，或者对象身上没有卡上写明的残疾，报价时就告知不成立，不收金币。"
+     "text": "在馆里受的伤，不论多重，都是伤势，不在此列；伤口、出血、骨折、中毒、烧伤、失温、疼痛，一概不管。疾病本身也不修。请求的是治伤、治病，或者对象身上没有卡上写明的残疾，报价时就告知不成立，不收金币。"
+    },
+    {
+     "key": "service",
+     "text": "别人的身体（修复身体残疾照第 9 节）、别人的套房和别人带着的东西、尸体、没审结的命案现场，都不成立（8.2）。"
     }
    ]
+  }
+ },
+ "coins": {
+  "points": 100,
+  "startEach": 10,
+  "seats": 13,
+  "startTotal": 130,
+  "d01": 5,
+  "batch": 5,
+  "solvedBonus": 5,
+  "unsolvedKiller": 10,
+  "ticket": 500,
+  "repair": 5,
+  "fine": 5,
+  "size": {
+   "d": 26.5,
+   "t": 1.8,
+   "g": 19,
+   "stack10mm": 18,
+   "stack10g": 190
   }
  },
  "broadcasts": {
   "fixed": [
    {
     "when": "尸体被有效发现",
-    "text": "发现尸体。调查时间一百二十分钟，于〈开庭时刻〉在穹顶议事厅开庭。"
+    "text": "发现尸体。〈开庭时刻〉开庭。"
    },
    {
     "when": "同上，敲钟人生效",
-    "text": "发现尸体。由于敲钟人的能力，调查时间为三十分钟，于〈开庭时刻〉在穹顶议事厅开庭。"
+    "text": "发现尸体。由于敲钟人的能力，现在开庭。"
    },
    {
     "when": "调查期内又发现尸体，庭期未变",
-    "text": "又发现一具尸体。并入本批，庭期不变。"
+    "text": "又发现一具尸体。"
    },
    {
-    "when": "调查期内又发现尸体，敲钟人缩短庭期",
-    "text": "又发现一具尸体。并入本批。由于敲钟人的能力，于〈新的开庭时刻〉在穹顶议事厅开庭。"
+    "when": "调查期内又发现尸体，敲钟人生效",
+    "text": "又发现一具尸体。由于敲钟人的能力，现在开庭。"
    },
    {
-    "when": "主持人只以【】喊停辩论",
+    "when": "辩论结束，主持人没有亲自开口",
     "text": "辩论结束，开始投票。"
    },
    {
     "when": "能力造成异变",
     "text": "由于〈身份名〉的能力，〈对异变的客观描述〉。"
-   },
-   {
-    "when": "典律官提出规则",
-    "text": "由于典律官的能力，现提出一条规则：〈规则原文〉。即刻就它开庭表决。"
-   },
-   {
-    "when": "该场表决结束",
-    "text": "表决结果：实行〈n〉票，不实行〈n〉票。"
-   },
-   {
-    "when": "表决通过",
-    "text": "〈规则原文〉自即刻起生效。"
-   },
-   {
-    "when": "表决未通过",
-    "text": "该规则不实行，视为从未发布。"
    },
    {
     "when": "判定正确",
@@ -4666,7 +8107,7 @@ window.WORLD = {
     "text": "揭发成功，〈某某〉是本批案件的凶手。／揭发失败。"
    },
    {
-    "when": "白痴发动",
+    "when": "愚者发动",
     "text": "〈某某〉不是凶手，处刑撤销，重新投票。／〈某某〉是凶手，能力无效。"
    },
    {
@@ -4674,16 +8115,15 @@ window.WORLD = {
     "text": "〈某某〉是受命者，未在期限内完成任务。"
    },
    {
-    "when": "贞德逾期",
-    "text": "由于贞德的能力，现进入特殊审判。"
+    "when": "违反主持人的指令",
+    "text": "〈某某〉违反了指令。罚款五百积分。"
+   },
+   {
+    "when": "同上，积分不够扣",
+    "text": "〈某某〉违反了指令，积分不足。处死。"
    }
   ],
   "abilities": [
-   {
-    "kind": "发动时全馆广播",
-    "ability": "典狱长",
-    "text": "由于典狱长的能力，一扇门被强行关闭并锁住。"
-   },
    {
     "kind": "发动时全馆广播",
     "ability": "盲视者",
@@ -4691,44 +8131,315 @@ window.WORLD = {
    },
    {
     "kind": "发动时全馆广播",
-    "ability": "典律官",
-    "text": "见上表"
-   },
-   {
-    "kind": "发动时全馆广播",
-    "ability": "背负绝望之人",
-    "text": "由于背负绝望之人的能力，现发布一场游戏：〈参与人数、场地、所需道具、规则、通过条件、惩罚与时长原文〉。"
-   },
-   {
-    "kind": "发动时全馆广播",
     "ability": "敲钟人",
     "text": "随尸体发现广播，见上表"
    },
    {
-    "kind": "发动时全馆广播",
-    "ability": "贞德（逾期时）",
-    "text": "见上表"
-   },
-   {
     "kind": "本人公开发动，不另广播",
-    "ability": "执行者、骑士、白痴、身怀希望之人、正位国王",
+    "ability": "执行者、骑士、愚者、律师、正位国王、平民",
     "text": "由持有者本人的公开言行为众人所知"
    },
    {
     "kind": "不广播",
-    "ability": "世界、女巫、背刺者、逆位骑士的移尸、逆位国王的翻面",
+    "ability": "世界、幽灵、暗杀者、逆位骑士的移尸、逆位国王的翻面",
     "text": "无。只留下实际的物理后果"
    },
    {
     "kind": "不广播",
-    "ability": "法官、小丑、倒吊人、沉默者、变形者、窃贼、占卜家、魔术师、丘比特、先知、河豚、圣女、史莱姆、梦访者",
+    "ability": "隐者、沉默者、占卜家、丘比特、河豚、梦游神、法官、魔术师、窃贼、变形者、史莱姆、先知、兆示",
     "text": "无。条文规定的私人通知照常送达当事人"
-   },
-   {
-    "kind": "不广播",
-    "ability": "智者",
-    "text": "无。数字只有智者本人看得见"
    }
   ]
+ },
+ "opening": [
+  {
+   "no": 1,
+   "title": "第一条播报",
+   "when": "所有人都醒了以后",
+   "text": "大家好，都醒了吧，欢迎来到这座馆，各位可以称呼我为主持人。\n\n我将大家请来这里，是为了参加一场游戏，而我会实现获胜者的一个愿望。一个不管内容是什么都可以实现的愿望。\n\n在说明游戏的具体规则之前，请各位先分配收纳台上的十三把钥匙，一人一把，号码自选。钥匙的编号，就是各位今后居住的房号，请保管好，遗失不补。我现在可以透露的是：编号会影响各位的命运。请慎重选择。\n\n钥匙分配完毕后，请按自己所选的编号重新入座。",
+   "lines": [
+    "大家好，都醒了吧，欢迎来到这座馆，各位可以称呼我为主持人。",
+    "我将大家请来这里，是为了参加一场游戏，而我会实现获胜者的一个愿望。一个不管内容是什么都可以实现的愿望。",
+    "在说明游戏的具体规则之前，请各位先分配收纳台上的十三把钥匙，一人一把，号码自选。钥匙的编号，就是各位今后居住的房号，请保管好，遗失不补。我现在可以透露的是：编号会影响各位的命运。请慎重选择。",
+    "钥匙分配完毕后，请按自己所选的编号重新入座。"
+   ],
+   "effect": {}
+  },
+  {
+   "no": 2,
+   "title": "第二条播报",
+   "when": "所有人都坐好以后",
+   "text": "现在为大家发放的是每个人的初始积分，一枚金币代表一百分。\n\n金币可以自由交易、赠与；抢夺他人的金币在本馆内视为许可的行为。\n\n积分可以向我兑换物品。兑换方法和价目，刻在收纳台旁边的铜牌上。为了使游戏更加公平，修复身体残疾只要500积分。\n\n积分有额外的获取方式，时机到来时自会知晓。\n\n接下来，请各位从一号开始，按顺序进行自我介绍。\n\n自我介绍有着严格的格式要求，分别说出自己的名称，愿望，以及如果一定要有一个人先死，希望是在座的几号？\n\n想要在自我介绍撒谎也是诸位的自由，只是必须符合格式。",
+   "lines": [
+    "现在为大家发放的是每个人的初始积分，一枚金币代表一百分。",
+    "金币可以自由交易、赠与；抢夺他人的金币在本馆内视为许可的行为。",
+    "积分可以向我兑换物品。兑换方法和价目，刻在收纳台旁边的铜牌上。为了使游戏更加公平，修复身体残疾只要500积分。",
+    "积分有额外的获取方式，时机到来时自会知晓。",
+    "接下来，请各位从一号开始，按顺序进行自我介绍。",
+    "自我介绍有着严格的格式要求，分别说出自己的名称，愿望，以及如果一定要有一个人先死，希望是在座的几号？",
+    "想要在自我介绍撒谎也是诸位的自由，只是必须符合格式。"
+   ],
+   "effect": {
+    "coins": 10,
+    "coinsAt": "first"
+   }
+  },
+  {
+   "no": 3,
+   "title": "第三条播报",
+   "when": "所有人介绍完以后",
+   "text": "接下来，进行第二次表决，同意立即处死刚才获票最多者的，请举手，我会根据举手人数考虑是否执行。",
+   "lines": [
+    "接下来，进行第二次表决，同意立即处死刚才获票最多者的，请举手，我会根据举手人数考虑是否执行。"
+   ],
+   "effect": {
+    "hostDecides": true
+   }
+  },
+  {
+   "no": 4,
+   "title": "第四条播报",
+   "when": "所有人都表过态以后",
+   "text": "现在说明规则。\n\n一：我不说谎。\n\n二：除了问价，我不回答问题。\n\n三：除了处刑和惩罚外，我不会主动杀死你们。\n\n四：会有人秘密成为受命者，受命者必须在二十四小时内杀死一个人。\n\n五：逾期的受命者，会被公开处死。\n\n六：受命者死去或离开后，会有新的受命者。\n\n七：任何人都可以杀人。\n\n八：馆内有人死亡，受命者的期限暂停。\n\n九：当馆内的尸体被发现后，启动为期一百二十分钟的调查，期满后开庭审判。\n\n十：凶手本人看见尸体不算发现，除非他在心里向我提出播报要求。\n\n十一：没有可能被发现的尸体，我会直接播报。\n\n十二：审判时，所有人先按席位号依次发言，再公开讨论，最后投票。\n\n十三：投票从一号席起依次进行，每人一票，可以投给自己，可以投给一同杀人的几个人，也可以对某一次死亡投自杀或意外；弃票算投给自己。\n\n十四：已经死去或离开的凶手，也可以被投。\n\n十五：得票唯一最高的人如果还活在馆内，就会被处死，不论他是不是凶手。\n\n十六：同一场审判投错两次，审判即结束。\n\n十七：最高票出现并列时，投票重新进行一次，并列的人这一次不能投票，但可以被投；连续两次投票都没有产生唯一的最高票，审判结束，不处刑。\n\n十八：审判全部结束后，受命者重新获得完整的二十四小时期限。\n\n十九：馆内最后活着的一个人，就是获胜者。",
+   "lines": [
+    "现在说明规则。",
+    "一：我不说谎。",
+    "二：除了问价，我不回答问题。",
+    "三：除了处刑和惩罚外，我不会主动杀死你们。",
+    "四：会有人秘密成为受命者，受命者必须在二十四小时内杀死一个人。",
+    "五：逾期的受命者，会被公开处死。",
+    "六：受命者死去或离开后，会有新的受命者。",
+    "七：任何人都可以杀人。",
+    "八：馆内有人死亡，受命者的期限暂停。",
+    "九：当馆内的尸体被发现后，启动为期一百二十分钟的调查，期满后开庭审判。",
+    "十：凶手本人看见尸体不算发现，除非他在心里向我提出播报要求。",
+    "十一：没有可能被发现的尸体，我会直接播报。",
+    "十二：审判时，所有人先按席位号依次发言，再公开讨论，最后投票。",
+    "十三：投票从一号席起依次进行，每人一票，可以投给自己，可以投给一同杀人的几个人，也可以对某一次死亡投自杀或意外；弃票算投给自己。",
+    "十四：已经死去或离开的凶手，也可以被投。",
+    "十五：得票唯一最高的人如果还活在馆内，就会被处死，不论他是不是凶手。",
+    "十六：同一场审判投错两次，审判即结束。",
+    "十七：最高票出现并列时，投票重新进行一次，并列的人这一次不能投票，但可以被投；连续两次投票都没有产生唯一的最高票，审判结束，不处刑。",
+    "十八：审判全部结束后，受命者重新获得完整的二十四小时期限。",
+    "十九：馆内最后活着的一个人，就是获胜者。"
+   ],
+   "effect": {
+    "ruleCard": true
+   }
+  },
+  {
+   "no": 5,
+   "title": "第五条播报",
+   "when": "第四条播报说完三分钟以后",
+   "text": "现在，为所有人发放身份卡，那是决定各位命运的另一项道具，身份无法转让、拒绝。",
+   "lines": [
+    "现在，为所有人发放身份卡，那是决定各位命运的另一项道具，身份无法转让、拒绝。"
+   ],
+   "effect": {
+    "after": 4,
+    "afterMin": 3,
+    "identityCard": true
+   }
+  },
+  {
+   "no": 6,
+   "title": "第六条播报",
+   "when": "第五条播报说完三分钟以后",
+   "text": "现在，发布仅限今天二十四点之前完成的任务，只要去过馆内除套房外的每个房间，并在房间内待满至少五分钟，便可获得500积分的奖励，每人只能完成一次。",
+   "lines": [
+    "现在，发布仅限今天二十四点之前完成的任务，只要去过馆内除套房外的每个房间，并在房间内待满至少五分钟，便可获得500积分的奖励，每人只能完成一次。"
+   ],
+   "effect": {
+    "after": 5,
+    "afterMin": 3,
+    "hallDoorsOpen": "start"
+   }
+  },
+  {
+   "no": 7,
+   "title": "第七条播报",
+   "when": "紧接着第六条播报",
+   "text": "我会不定期和大家进行一些小游戏，胜利会有奖励，失败则会有惩罚。\n\n现在进行第一次小游戏。",
+   "lines": [
+    "我会不定期和大家进行一些小游戏，胜利会有奖励，失败则会有惩罚。",
+    "现在进行第一次小游戏。"
+   ],
+   "effect": {
+    "after": 6,
+    "afterMin": 0,
+    "hostDecides": true
+   }
+  },
+  {
+   "no": 8,
+   "title": "第一天晚上八点",
+   "when": "D01 20:00",
+   "day": 1,
+   "minute": 1200,
+   "text": "现在为所有还存活的玩家发放500积分的奖励。\n\n希望大家在馆内生活愉快。",
+   "lines": [
+    "现在为所有还存活的玩家发放500积分的奖励。",
+    "希望大家在馆内生活愉快。"
+   ],
+   "effect": {
+    "coins": 5
+   }
+  }
+ ],
+ "ruleCard": [
+  {
+   "n": 1,
+   "no": "一",
+   "text": "我不说谎。"
+  },
+  {
+   "n": 2,
+   "no": "二",
+   "text": "除了问价，我不回答问题。"
+  },
+  {
+   "n": 3,
+   "no": "三",
+   "text": "除了处刑和惩罚外，我不会主动杀死你们。"
+  },
+  {
+   "n": 4,
+   "no": "四",
+   "text": "会有人秘密成为受命者，受命者必须在二十四小时内杀死一个人。"
+  },
+  {
+   "n": 5,
+   "no": "五",
+   "text": "逾期的受命者，会被公开处死。"
+  },
+  {
+   "n": 6,
+   "no": "六",
+   "text": "受命者死去或离开后，会有新的受命者。"
+  },
+  {
+   "n": 7,
+   "no": "七",
+   "text": "任何人都可以杀人。"
+  },
+  {
+   "n": 8,
+   "no": "八",
+   "text": "馆内有人死亡，受命者的期限暂停。"
+  },
+  {
+   "n": 9,
+   "no": "九",
+   "text": "当馆内的尸体被发现后，启动为期一百二十分钟的调查，期满后开庭审判。"
+  },
+  {
+   "n": 10,
+   "no": "十",
+   "text": "凶手本人看见尸体不算发现，除非他在心里向我提出播报要求。"
+  },
+  {
+   "n": 11,
+   "no": "十一",
+   "text": "没有可能被发现的尸体，我会直接播报。"
+  },
+  {
+   "n": 12,
+   "no": "十二",
+   "text": "审判时，所有人先按席位号依次发言，再公开讨论，最后投票。"
+  },
+  {
+   "n": 13,
+   "no": "十三",
+   "text": "投票从一号席起依次进行，每人一票，可以投给自己，可以投给一同杀人的几个人，也可以对某一次死亡投自杀或意外；弃票算投给自己。"
+  },
+  {
+   "n": 14,
+   "no": "十四",
+   "text": "已经死去或离开的凶手，也可以被投。"
+  },
+  {
+   "n": 15,
+   "no": "十五",
+   "text": "得票唯一最高的人如果还活在馆内，就会被处死，不论他是不是凶手。"
+  },
+  {
+   "n": 16,
+   "no": "十六",
+   "text": "同一场审判投错两次，审判即结束。"
+  },
+  {
+   "n": 17,
+   "no": "十七",
+   "text": "最高票出现并列时，投票重新进行一次，并列的人这一次不能投票，但可以被投；连续两次投票都没有产生唯一的最高票，审判结束，不处刑。"
+  },
+  {
+   "n": 18,
+   "no": "十八",
+   "text": "审判全部结束后，受命者重新获得完整的二十四小时期限。"
+  },
+  {
+   "n": 19,
+   "no": "十九",
+   "text": "馆内最后活着的一个人，就是获胜者。"
+  }
+ ],
+ "openingTask": {
+  "rooms": {
+   "B1": [
+    "更衣室",
+    "泳池厅",
+    "浴疗室",
+    "泳池机房",
+    "健身房",
+    "保龄球馆",
+    "洗衣房",
+    "物资库",
+    "工具间",
+    "酒窖",
+    "品酒室",
+    "机房",
+    "家具储藏室",
+    "箱笼储藏室",
+    "地毯储藏室",
+    "杂物储藏室"
+   ],
+   "1F": [
+    "穹顶议事厅",
+    "花园",
+    "自然史大厅",
+    "古兽厅",
+    "起居厅",
+    "晨间厅",
+    "园艺间",
+    "衣帽间",
+    "盥洗室",
+    "音乐沙龙",
+    "宴饮厅",
+    "厨房"
+   ],
+   "2F": [
+    "大图书室",
+    "阅览室",
+    "地图室",
+    "放映厅",
+    "游戏室",
+    "棋艺室",
+    "二层起居室",
+    "标本陈列室"
+   ],
+   "3F": [
+    "画室",
+    "修复室",
+    "瓷器室",
+    "茶室",
+    "天象室",
+    "三层起居室",
+    "舞蹈室",
+    "猎藏厅"
+   ]
+  },
+  "minutes": 5,
+  "points": 500,
+  "until": "D01 24:00"
  }
 };
