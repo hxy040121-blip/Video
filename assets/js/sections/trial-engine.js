@@ -1638,6 +1638,8 @@
     if (T.exposed && T.exposed[t]) s += 1.6
     // 自己察觉到的破绽（只是推测，不是证据）
     if (T.tellSeen && T.tellSeen[a]) s += 1.1 * T.tellSeen[a].filter(x => x === t).length
+    // 当众公开过平民身份的人（平民不会受命；卡认主，拿给人看就是证明）
+    if (g.people[t] && g.people[t].civilPublic != null && frontName(g, t) === ID.CIVILIAN) s -= 1.2
     const pi = T.puffInfo[a]
     if (pi) {
       const nb = neighborsOf(g, pi.seat)
