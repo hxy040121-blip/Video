@@ -1118,6 +1118,7 @@
     accomplice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="9" width="9" height="6" rx="3"/><rect x="12" y="9" width="9" height="6" rx="3"/></svg>',
     swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg>',
     // 梦游神借用了你的逆位一次（主持人游戏 5.3）：一只闭着的眼
+    void: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M6.5 17.5l11-11"/></svg>',
     sleepwalk: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 12c2.5 3 5.5 4.5 9 4.5s6.5-1.5 9-4.5"/><path d="M7 15.5l-1.5 2M12 16.5V19M17 15.5l1.5 2"/></svg>',
   }
   function note(type, text, sub, extra) {
@@ -1150,6 +1151,12 @@
       else if (n.type === 'sleepwalk') note('sleepwalk', n.name, hhmm(n.at))
       await wait(500)
     }
+  }
+  // 「无效」的私人通知（以平民为目标的复制、交换、沉默；主持人游戏 4、5.13）：机会不消耗
+  async function voidMark(id) {
+    note('void', '无效', id ? nameOf(id) : '')
+    App.audio.sfx('wrong', { volume: 0.35 })
+    await wait(500)
   }
   function mini(id) {
     const m = el('div.trial-note-face')
@@ -1656,20 +1663,20 @@
     resetSeatStates()
     if (S.me && !S.seats.includes(S.me)) S.me = null
     if (S.me) S.seat[seatOf(S.me)].root.classList.add('is-me')
-    E.count.innerHTML = `<b>${U.roman(Math.max(1, seatedCount())) || '—'}</b><i></i><span>XV</span>`
+    E.count.innerHTML = `<b>${U.roman(Math.max(1, seatedCount())) || '—'}</b><i></i><span>${U.roman(NS)}</span>`
     if (!seatedCount()) E.count.querySelector('b').textContent = '0'
-    E.mood.textContent = '十五把椅子，一个愿望'
+    E.mood.textContent = '十三把椅子，一个愿望'
     const ui = E.ui
     ui.innerHTML = ''
     if (seatedCount() < 5) {
-      // 默认八人局（三案左右，十几分钟）；十五人局留作可选
+      // 默认八人局（三案左右，十几分钟）；十三人局（坐满）留作可选
       const g = el('div.trial-fillset', null, [el('span.trial-fill-label', { text: '随机补满' })])
       const b8 = button('八人', 'btn--blood', 'fill8')
-      const b15 = button('十五人', '', 'fill15')
+      const b13 = button('十三人', '', 'fill13')
       b8.classList.add('is-breath')
       b8.addEventListener('click', e => { e.stopPropagation(); randomFill(8) })
-      b15.addEventListener('click', e => { e.stopPropagation(); randomFill(15) })
-      g.append(b8, b15)
+      b13.addEventListener('click', e => { e.stopPropagation(); randomFill(NS) })
+      g.append(b8, b13)
       ui.appendChild(g)
     } else {
       const rnd = button('随机', '', 'random')
@@ -1686,8 +1693,9 @@
     const pool = U.shuffle(App.chars.map(c => c.id).filter(id => !S.seats.includes(id)))
     const seats = S.seats.slice()
     let need = n - seats.filter(Boolean).length
-    // 先填满空位（八人时隔席入座，圆桌更匀称）
-    const order = n >= 15 ? Array.from({ length: 15 }, (_, i) => i) : [0, 2, 4, 6, 8, 10, 12, 13, 1, 3, 5, 7, 9, 11, 14]
+    // 先填满空位（八人时在十三席里均匀散开，圆桌更匀称）
+    const spread = Array.from({ length: 8 }, (_, i) => Math.round(i * NS / 8))
+    const order = n >= NS ? Array.from({ length: NS }, (_, i) => i) : spread.concat(Array.from({ length: NS }, (_, i) => i).filter(i => !spread.includes(i)))
     for (const i of order) {
       if (need <= 0) break
       if (!seats[i] && pool.length) { seats[i] = pool.shift(); need-- }
@@ -1881,7 +1889,7 @@
     S.deadShown = false
     S.left = false
     S.consumed = {}
-    // 本局钱袋：规则宣告之后，有人坐的那几摞已各自取走，你身上 10 枚（不跨局累积）
+    // 本局钱袋（plan711/ECON.md）：第二条播报时每人十枚出现在各人面前，各人已拿起面前那一摞——你身上 10 枚（不跨局累积）
     const e = App.econ ? App.econ.newGame({ me: S.me, seats: S.seats }) : null
     S.econGame = e ? e.game : 0
     setCoins(e ? e.coins : TE.START_COINS)
