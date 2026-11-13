@@ -2390,8 +2390,7 @@
       const pool = placed.find(p => p.k === 'pool' || p.k === 'bath')
       for (let tries = 0; tries < 200 && !body; tries++) {
         let u, v
-        if (cause === 'door' && tries < 120) { const d = doors[tries % doors.length]; const p = doorIn(d); u = p.u + (r() - 0.5) * 0.8; v = p.v + (r() - 0.5) * 0.8 }
-        else if (cause === 'drown' && pool && tries < 120) {
+        if (cause === 'drown' && pool && tries < 120) {
           const side = Math.floor(r() * 4)
           u = side < 2 ? pool.u + (r() - 0.5) * pool.a : pool.u + (side === 2 ? 1 : -1) * (pool.a / 2 + 0.7)
           v = side >= 2 ? pool.v + (r() - 0.5) * pool.b : pool.v + (side === 0 ? 1 : -1) * (pool.b / 2 + 0.7)
