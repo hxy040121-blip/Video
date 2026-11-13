@@ -1,7 +1,7 @@
 /* ==========================================================
-   十五席 · 模拟庭审引擎（纯逻辑，不碰 DOM）
-   依据：主持人游戏.md 第 2、3、5、7、8 节；开局流程.md；人物卡/00_卡司总则.md 第 5 节；
-         运行规则.md 第 5.4、6、7.5 节；洋馆物理层.md 第 7、8 节；身体结算.md。
+   十三席 · 模拟庭审引擎（纯逻辑，不碰 DOM）
+   依据（v7.11）：主持人游戏.md 第 2、3、4、5、7、8 节；开局流程.md 2.3、第 4 节；人物卡/00_卡司总则.md 第 5 节；
+         运行规则.md 1.1、5.2—5.4、6.3、6.6；洋馆物理层.md 3.1、第 7、8 节；身体结算.md 1、2、4；价目表.md 第 8 节、10.6。
 
    - 浏览器：window.TrialEngine；Node：module.exports。
    - 所有随机都来自 game.r（mulberry32，可注入 seed）。
@@ -9,40 +9,66 @@
      它逐个产出要演出的事件；遇到需要玩家决定的地方产出 ask-* 事件，
      由界面用 it.next(输入) 把选择送回。测试与旁观模式用 autoTrial 代答。
      产出的每个非 ask-* 事件同时记进 T.log（见 logEntry）；每次投票记进 T.rounds。
-   - 辩论分两段（主持人游戏 3.2；开局流程 2.4）：
+   - 席位：十三席成环，1 号正北、顺时针；「左右相邻」是环上号码紧挨的两席，1 号的左边是 2 号、右边是 13 号；
+     「左右最近」沿环找第一个有人的席位（主持人游戏 3.2）。投票从一号席起依次公开。
+   - 辩论分两段（主持人游戏 3.2：从一号席起依次各发言一次，再公开讨论，到论点说尽）：
      ① 依次发言：turn → 指认 accuse → 旁人插话 interject{stance: agree|doubt}（0—2 人）
         → 被指认者回应：defend 辩解 / counter 反咬 / alibi 交代去向（玩家被指认时先产出 ask-respond）
         → expose 当众拆穿（说法与在场者的真实去向矛盾）；不指认时：speech{mode: statement|clue} / alibi / silent；
-        也可以当众出示 present 一张证物（见下）。
-     ② 公开讨论：discuss 之后若干拍（八人局 4—6、十五人局 6—8），每拍由「最有话说」的人发言
+        也可以当众出示 present 一张证物（见下）；平民可以 reveal 公开身份。
+     ② 公开讨论：discuss 之后若干拍（在座八人及以下 4—6、十二人以上 6—8），每拍由「最有话说」的人发言
         （手里有没谈过的证物、知道谁的说法与自己的去向矛盾、刚被指认、想追问谁的去向、凶手要误导）；
         玩家举手（raiseHand，每场 3 次）后在下一拍产出 ask-interject：出示、对质两张证言、追问去向、附议或质疑当前指认、
-        拿排除性事实反驳误导。没有新论点时主持人喊停，产出 debate-end（广播「辩论结束，开始投票。」）。
-   - 当众出示（运行规则 3.2、4.6）：present{speaker, target, clue} → 不相符的人 rebut 拿出反证（看得见的特征当场可见；
+        拿排除性事实反驳误导。论点说尽时主持人宣布结束，产出 debate-end（广播「辩论结束，开始投票。」；
+        主持人游戏 7「辩论结束，主持人没有亲自开口」；运行规则 6.3「辩论说尽了才停」）。
+   - 计票（主持人游戏 3.2；运行规则 6.3 计票表）：① 基础票与恋人同票 ② 法官、隐者、骑士罚票 ③ 国王号令（最后结算：
+     受号令那一人的基础票改为跟票或弃票自投，再按替换后的基础票重算）④ 平民加倍先算，再定结果；唯一待处刑者先过愚者、再过律师，最后裁决。
+   - 当众出示（运行规则 1.1 听说）：present{speaker, target, clue} → 不相符的人 rebut 拿出反证（看得见的特征当场可见；
      看不见的只是他自己的说法，算听说）；相符的人只能 defend 辩解，持秘密者掷破绽。玩家每场至多出示 3 次。
      出示「让死亡时间窗偏移」的证物 = 识破假窗口：之后大家按真正的死亡时刻对去向（T.refTime）。
-   - 破绽（运行规则 5.4）：持秘密者被指认、被出示证物时掷一次，结果挂在他的回应事件上（ev.tell）；
-     看见自己留下的痕迹被人谈起、谎言被当面戳穿时另产出 tell 事件。依次发言算一场，公开讨论另算一场。
+   - 破绽（运行规则 5.4）：持秘密者被指认、被出示证物、被问到案发时间地点时掷一次，结果挂在他的回应事件上（ev.tell）；
+     看见自己留下的痕迹被人谈起、谎言被当面戳穿时另产出 tell 事件。庭审里一次辩论连同随后的投票算一场（T.tells 一本账）。
    - 去向：newCase 时为每人生成「这个时段你在哪」的两段时间线（c.where[id].segs，切点 c.span.cut）；凶手亲手行凶时
      在含真正死亡时刻的那一段说谎；借冷池、蚕丝被、热池、冷冻柜让死亡时间窗偏移时，另一段（假窗口）他真的和别人在一起。
    - 死亡时间（洋馆物理层 7.4、7.5）：验尸得三格读数（体温、僵硬、尸斑，lore.bodyReadings），各对应一个死亡时段；
      医护「有 / 战场急救 / 基本常识」由窄到宽自动给出窗口；被干扰的读数按偏移后的样子读（内行也会估错）。
    - 调查的文字（诱饵点的排除性事实与陈设描写、疑似线索、验尸、发现线索的动作）与去向只用子随机数，不消耗 g.r。
-   - 称呼：广播与台词里的〈某某〉{X}{V} 用 callOf（此人在馆里报的名字；同局重名或不报名时说「N号」）。
-   - 结案对账：closeTrial 把本案的真相、线索的发现者、每轮选票与决定性的一票写进 c.record，并收进 g.records。
+     窗是真窗（物理层 3.1、3.2）：窗光为「无」的时段（19:00—05:00）窗面映出屋里的倒影，白天看得见屋外。
+   - 称呼：广播与台词里的〈某某〉{X}{V} 用 callOf（此人在馆里报的名字；同局重名或不报名时说「N号」；主持人游戏 7）。
+   - 结案回放：closeTrial 把本案的真相、留下的东西（线索与发现者）、每轮选票与决定性的一票写进 c.record，并收进 g.records。
+     这是网站自设的回放，不是条文（v7.11 运行规则已删去结案对账；依据是 7.3 记下的「真相」与「留下的东西」）。
 
    本模拟的取舍（与原文一致之处见各函数注释）：
-   - 受命者 = 本批唯一凶手（不是玩家）；死者不是玩家、不是凶手。
-   - 不发放逆位能力，只把凶手卡背的敲钟人（三十分钟）、女巫（毒）、
-     典狱长（门）当作行凶手段；国王、贞德等流程略去。
-   - 凶手看见尸体时有时会在心里要求播报（主持人游戏 3.1），自己成为发现者。
+   - 受命者 = 本批唯一凶手（不是玩家）；死者不是玩家、不是凶手。主持人选受命者原本不受限制（主持人游戏 2.1，平民除外）；
+     本模拟在有资格的人里随机挑，而且只挑有可行手法的人：不能行走的人（卡上 canWalk 为 false、没修复过残疾）
+     只能用兑换来的毒，买不起就永远不会被选为受命者。
+   - 每局十三组全发（主持人游戏 5）；不满十三人时，洗牌后只发人数那么多组。
+   - 判定只掷破绽与察觉（运行规则 5.4：伪装 高 10%、中 25%、低 45%，承压 +10%，极限 +25%；察觉 一般 50%、善于读人 75%）。
+     5.3 的五档（90 / 70 / 50 / 30 / 10%）不用：行凶照 5.2「有准备的一方占优」默认成功，不演搏斗、潜行与追逃。
+   - 正位：隐者、沉默者、占卜家（仅一次，得知名称与卡面原文）、愚者、执行者、丘比特、河豚、律师、骑士、魔术师、变形者、
+     先知（馆内的死亡，含处刑）、平民（不会受命；公开过、又被受命者杀死时，那一场凶手得到的票 ×2；不能被复制、交换、沉默，
+     以平民为目标时无效、机会不消耗）都照卡面结算。AI 平民在自己的发言轮里随机公开；玩家的平民身份在辩论中可公开
+     （玩家不会是死者，所以加倍只落在 AI 平民身上）。平民的「随时公开」只在庭审辩论里演。
+   - 逆位只有受命者（凶手）拿得到（「成为受命者时，视为同时拥有此身份」），演到这些程度：
+     敲钟人：这起死亡被有效发现时取消调查，立即开庭（investMinutes = 0；没有人来得及搜查，只有发现者看过尸体）；
+     法官：每次普通投票秘密给替罪羊加一票；兆示：行凶前看一次全馆的人在哪里，挑一间那一刻没人的房说谎，没人拆得穿；
+     窃贼：受命时换来另一人的逆位（对方没有逆位时视为未发动，机会不消耗）；梦游神：受命时查一人的逆位、借来一次
+     （查到暗杀者、敲钟人、幽灵、法官这种一直生效的，或没有逆位的，不消耗；借来的只有兆示会演出）；
+     国王：行凶后翻面（正位换成国王、逆位换成骑士），投票时对一侧最近的存活者发号令（他改投国王的对象或弃票自投）。
+     暗杀者（无声）、盲视者（黑暗）、世界（时停）、幽灵（开任意一扇门：模拟不演门锁）、史莱姆（重置）、逆位骑士的移尸，
+     以及丘比特本人受命时帮凶得到的逆位，只在卡面上，模拟不演。
+   - 手法：没有卡背给的毒，也没有门（典狱长已删去）。毒只能兑换：牌外价目 10.6「致死的毒一剂，可指定是哪一种」8,000 分
+     = 80 枚（lore causes.poison.points），凶手身上加套房书桌上够 80 枚才会用，决定的那一刻付清；本站替他选了氰化物。
+     下毒不必在场，凶手照实交代去向。
    - 每案三条线索，维度（身高、性别、体格、医护、现场观察、年代与器械、随身物、死亡时间）互不重复，死因要求的维度也算在内。
-     「死亡时间」一维是让时间窗偏移的处理，不筛人。
-   - 持秘密者只算凶手与他的帮凶；破绽每一场至多一次：调查期的询问算一场，依次发言算一场，公开讨论算一场。
+     「死亡时间」一维是让时间窗偏移的处理，不筛人。线索的文字与地面相容（木地板的鞋渍、石地的擦洗、地毯的压痕）。
+   - 持秘密者只算凶手与他的帮凶；破绽每一场至多一次：调查期的询问算一场，庭审（辩论连同随后的投票）算一场。
    - AI 只凭看得见的特征（身高、性别、体格、随身物）对照证物；医护、现场观察、年代这类看不见的，只从当众出示的回应里得知。
-   - 金币（主持人游戏 8；价目表 8.1；物理层 7.4）：每人开局身上 10 枚（规则宣告时各取一摞）；余波时存活在馆者各得本轮的 5 或 10 枚，
-     未查明时凶手另 10 枚在套房书桌（coinsDesk，不在身上）；死者身上的金币留在尸体处，有人取走（1 分钟）才转手，没人取就留在现场；
-     被处刑者、离馆者身上的金币条文没写，不动。AI 每到饭点（8:00、12:00、18:00）用 1 枚吃一餐（只记账，不演出）。
+   - 金币（主持人游戏 8；价目表 8.1；开局流程 2.3、第 4 节；运行规则 6.6）：开局每人 10 枚（第二条播报时出现在各人面前，
+     本模拟从第一日 18:00 起算，那时已各自收起）；D01 20:00 存活在馆者每人 +5（g.d01）；每批审判结束时存活在馆者各得 5 或 10 枚，
+     未查明时凶手另 10 枚在套房书桌（coinsDesk，不在身上）；死者身上的金币留在尸体处，有人取走（1 分钟）才转手；
+     被处刑者尸体消失，身上的金币留在他的席位上（g.seatCoins），有人拾取才转手；逾期处死的人身上的金币留在原地，不再转手；
+     离馆者身上的金币条文没写，不动。AI 每到饭点（8:00、12:00、18:00）用 1 枚吃一餐（只记账，不演出）。
    - 身体（身体结算 1、2、4）：起点第一日 12:00 吃过饭、7:00 起床。馆内没有食物，只有兑换来的饭才算吃过。
      未进食 24 小时以上「复杂推理慢一半」→ 验尸与询问耗时 ×1.5，「持续体力活每二十分钟要歇五分钟」→ 去别的房间追踪 +5 分钟；
      48 小时以上「不能做持续体力活」→ 不能去别的房间追踪。连续清醒 24 小时以上「反应时间翻倍」→ 验尸与询问同样 ×1.5（两项合计至多 ×2）。
@@ -50,8 +76,9 @@
      冷、地面、有人来往让睡眠少算）；兑换「热水浴、按摩、一夜安眠的服务」才算睡足七小时，回到 0。
    - 调查期的兑换只给物理事实（物理层 7.5）：鲁米诺要先用毛毯罩出暗处，只对有血的死因有用，漂白剂擦过处也会亮；
      指纹粉显出对凶手成立的手印（若有）；录音笔录下本案的询问，开庭对质时可以放录音；拍立得在尸体移走前拍下，开庭可出示。
-     打听谁是凶手、谁是受命者之类一律不成立（价目表 8.2）。
-   - 退出券（开局流程 2.4；主持人游戏 6）：持券离馆的人 inMansion = false，不是死亡；不再参加庭审与愿望的争夺。
+     打听谁是受命者、谁拿着什么身份、别人的行踪之类一律不成立（价目表 8.2）。
+   - 退出券（价目表第 6 节、8.2；主持人游戏 6）：持券离馆的人 inMansion = false，不是死亡；不再参加庭审与愿望的争夺。
+   - 不演：光幕、违反指令的罚款、事件、小游戏、开局任务；共同指认与自杀、事故的结论（投票只投人）。
    ========================================================== */
 (function (root) {
   'use strict'
@@ -103,12 +130,17 @@
     return predCache[src]
   }
 
-  /* ---------- 身份名 ---------- */
+  /* ---------- 身份名（主持人游戏 5：十三组，正位／逆位） ---------- */
   const ID = {
-    JUDGE: '法官', CLOWN: '小丑', SHIFTER: '变形者', SILENCER: '沉默者', SAINT: '圣女',
-    SEER: '先知', FORTUNE: '占卜家', MAGICIAN: '魔术师', HANGED: '倒吊人', EXECUTOR: '执行者',
-    CUPID: '丘比特', PUFFER: '河豚', IDIOT: '白痴', HOPE: '身怀希望之人', KNIGHT: '骑士',
+    HERMIT: '隐者', ASSASSIN: '暗杀者', SILENCER: '沉默者', BLIND: '盲视者', FORTUNE: '占卜家', SLEEPWALKER: '梦游神',
+    FOOL: '愚者', WORLD: '世界', EXECUTOR: '执行者', BELL: '敲钟人', CUPID: '丘比特', PUFFER: '河豚', GHOST: '幽灵',
+    LAWYER: '律师', JUDGE: '法官', KNIGHT: '骑士', KING: '国王', MAGICIAN: '魔术师', THIEF: '窃贼',
+    SHIFTER: '变形者', SLIME: '史莱姆', SEER: '先知', OMEN: '兆示', CIVILIAN: '平民',
   }
+  // 逆位里一直生效、没有可以使用的一次的（5.3 结算要点：暗杀者、敲钟人；幽灵「随时」、法官「每次普通投票」同理）：梦游神借不到
+  const BACK_ALWAYS = ['暗杀者', '敲钟人', '幽灵', '法官']
+  // 席位数（主持人游戏 3.2：十三个编号席位）
+  const NS = 13
 
   /* ---------- 线索：证物卡短名（≤12 字）与地点 ---------- */
   const LABELS = {
@@ -117,7 +149,7 @@
     spareclothes: ['大码换洗衣物', '小码换洗衣物'],
     bloodshirt: ['{v}血衣', '女式血衣'],
     lipstick: ['杯沿唇印', '卫生巾包装纸', '卸妆油渍'],
-    defense: ['防御伤与颈部瘀痕', '地板刮痕', '杯底药粉'],
+    defense: ['防御伤与颈部瘀痕', '地板刮痕', '颈侧针眼'],
     freezer: ['冻硬的尸体', '球道重抹油', '手搓血衣'],
     coldpool: ['冷池浸尸', '蚕丝被裹尸', '热池泡尸'],
     vessel: ['大腿一刀', '颈侧一刀', '凌乱刀伤'],
@@ -132,7 +164,11 @@
   const dimOf = t => (t && (t.glyph || DIM_OF[t.attribute])) || null
   // 要压低侧光、贴地扫过才看得见的痕迹（洋馆物理层 7.1「侧光下」、7.2「要侧光近看」）：手印、湿鞋淡渍、刮痕、擦洗边界、压痕与色差、污印
   const RAKING = { handprint: [0, 1, 2], woodprint: [0], defense: [1], scrub: [0, 1], furniture: [0, 1], gloves: [0] }
-  const isWood = room => /木|柚|枫|橡|黄花梨|楠/.test(String(room.floorSurface || '').split('·')[0])
+  // 地面（洋馆物理层 4.2、7.1；lore floorSurface 写成「底面·上面铺的」）：橡木、枫木、弹性木地板算木地板，健身房的橡胶垫不算
+  const surfOf = room => String((room && room.floorSurface) || '')
+  const isWood = room => /木/.test(surfOf(room).split('·')[0])
+  const hasStone = room => /石/.test(surfOf(room))
+  const hasRug = room => /毯/.test(surfOf(room) + (room.objects || []).join(''))
   const isSuite = room => /套房/.test(room.name)
   // 变体与死因、现场是否相容（避免自相矛盾的现场）
   function compatible(tpl, vi, c) {
@@ -144,6 +180,10 @@
         if (vi === 1) return ['strangle', 'blunt', 'stab', 'smother'].includes(k) && isWood(c.roomInfo)
         return ['smother', 'drown', 'alcohol', 'fall', 'stab', 'blunt'].includes(k)
       case 'coldpool': return k !== 'drown' || vi !== 2
+      // 木地板上的湿鞋渍（7.1 橡木地板）；石地的拼缝与防滑纹（7.1 石材、湿区）；地毯压痕与蜡面色差（7.2）
+      case 'woodprint': return vi !== 0 || isWood(c.roomInfo)
+      case 'scrub': return hasStone(c.roomInfo)
+      case 'furniture': return vi === 0 ? hasRug(c.roomInfo) : isWood(c.roomInfo)
       default: return true
     }
   }
@@ -151,17 +191,17 @@
   function placeOf(tpl, vi, room) {
     switch (tpl) {
       case 'woodprint':
-        if (vi === 0) return isWood(room) ? ['room'] : ['away', '廊']
-        return room.name === '珍稀花园' ? ['room'] : ['away', '珍稀花园']
-      case 'spareclothes': return room.name === '洗衣布草室' ? ['room'] : ['away', '洗衣布草室']
+        if (vi === 0) return ['room']
+        return room.name === '花园' ? ['room'] : ['away', '花园']
+      case 'spareclothes': return room.name === '洗衣房' ? ['room'] : ['away', '洗衣房']
       case 'bloodshirt': return isSuite(room) ? ['room'] : ['away', '套房']
       case 'freezer':
         if (vi === 0) return ['body']
-        if (vi === 1) return room.name === '双道保龄球馆' ? ['room'] : ['away', '双道保龄球馆']
+        if (vi === 1) return room.name === '保龄球馆' ? ['room'] : ['away', '保龄球馆']
         return isSuite(room) ? ['room'] : ['away', '套房']
       case 'coldpool': case 'vessel': return ['body']
       case 'defense': return vi === 1 ? ['room'] : ['body']
-      case 'gloves': return vi === 1 && room.name !== '工具修理室' ? ['away', '工具修理室'] : ['room']
+      case 'gloves': return vi === 1 && room.name !== '工具间' ? ['away', '工具间'] : ['room']
       default: return ['room']
     }
   }
@@ -173,23 +213,30 @@
     return ''
   }
 
-  // 死因与房间（洋馆物理层 6、7.4；身体结算）
-  const CAUSE_WEIGHT = { stab: 3, blunt: 3, strangle: 2, smother: 2, drown: 1.5, fall: 1, alcohol: 1, poison: 4, door: 4 }
+  // 死因与房间（lore causes 的 where；洋馆物理层 1.2、4.4、7.4；各室/；身体结算 7）
+  const CAUSE_WEIGHT = { stab: 3, blunt: 3, strangle: 2, smother: 2, drown: 1.5, fall: 1, alcohol: 1, poison: 2 }
   function roomFits(cause, room) {
     const all = (room.objects || []).concat(room.weapons || []).join('、') + room.name
     switch (cause) {
-      case 'drown': return /池水|浴池|浴缸|泳池/.test(all)
+      // 泳池、浴疗室冷热池、套房浴缸、花园喷泉（屋外的海不是本模拟的现场）；泳池机房只有管道，不算
+      case 'drown': return /池水|浴池|浴缸|泳池(?!机房)|喷泉/.test(all)
       case 'alcohol': return /酒/.test(all)
-      case 'fall': return /梯架|霸王龙|标本|拱架|天窗|骨架/.test(all)
-      case 'door': return true
+      // 书梯、木梯、人字梯、楼梯平台的栏杆，以及能攀上去的骨架、标本与拱架
+      case 'fall': return /梯架|霸王龙|标本|拱架|骨架|书梯|木梯|人字梯|栏杆|楼梯平台/.test(all)
       default: return true
     }
+  }
+  // 兑换来的毒（价目表 10.6）：几枚
+  const poisonCoins = g => {
+    const k = ((g.data.lore && g.data.lore.causes) || []).find(x => x.id === 'poison')
+    return Math.ceil(((k && k.points) || 8000) / 100)
   }
 
   /* ==========================================================
      对局
      ========================================================== */
-  const START_COINS = 10
+  const START_COINS = 10 // 开局每人十枚（开局流程 2.3；WORLD.coins.startEach）
+  const D01_AT = 20 * 60, D01_COINS = 5 // 第一天晚上八点，存活在馆者每人五枚（开局流程第 4 节；主持人游戏 8）
   function create(opts = {}) {
     const data = {
       chars: opts.chars || (root.CHARACTERS || []),
@@ -201,18 +248,18 @@
     const r = rng(seed)
     const charMap = {}
     for (const c of data.chars) charMap[c.id] = c
-    const seats = (opts.seats || []).slice(0, 15)
-    while (seats.length < 15) seats.push(null)
+    const seats = (opts.seats || []).slice(0, NS)
+    while (seats.length < NS) seats.push(null)
     const order = []
     seats.forEach((id, i) => { if (id && charMap[id] && !order.includes(id)) order.push(id); else if (id && order.includes(id)) seats[i] = null })
-    for (let i = 0; i < 15; i++) if (seats[i] && !charMap[seats[i]]) seats[i] = null
+    for (let i = 0; i < NS; i++) if (seats[i] && !charMap[seats[i]]) seats[i] = null
 
     const g = {
       seed, r, data, charMap, seats, order,
       player: opts.player && order.includes(opts.player) ? opts.player : null,
       spectator: false,
       people: {},
-      minutes: opts.startMinutes == null ? 18 * 60 : opts.startMinutes, // 第一日 18:00：规则宣告之后
+      minutes: opts.startMinutes == null ? 18 * 60 : opts.startMinutes, // 第一日 18:00：开局七条播报与第一次小游戏之后
       caseNo: 0,
       mandated: null,
       mandateAt: null,
@@ -223,13 +270,15 @@
       deaths: [],
       hooks: opts.hooks || null, // 可注入的 AI 决策（测试用），如 { ballot(g, T, V, voter, aiBallot) }
       lastCourt: null, // 上一场庭审结束的时刻（两案之间的作息从这里算）
+      d01: null,       // D01 20:00 的发放：{at, ids}（开局流程第 4 节）
+      seatCoins: Array(NS).fill(0), // 被处刑者留在席位上的金币（运行规则 6.6），下标 = 席位号 − 1
     }
     g.startMinutes = g.minutes
-    // 同局里报同一个名字的人（两位乔瑟夫、两位承太郎）：广播与台词改说「N号」（主持人游戏 7）
+    // 同局里报同一个名字的人：广播与台词改说「N号」（主持人游戏 7）
     const callCount = {}
     for (const id of order) { const cn = callNameRaw(charMap[id]); if (cn) callCount[cn] = (callCount[cn] || 0) + 1 }
     g.dupCalls = Object.keys(callCount).filter(k => callCount[k] > 1)
-    // 身份：十五组洗牌，每人一组（主持人游戏 1、5；运行规则 0）
+    // 身份：十三组洗牌，每人一组（主持人游戏 1、5「每局十三组全发，一组只给一人」）；不满十三人时只发人数那么多组
     const groups = shuffle(r, data.identities)
     order.forEach((id, i) => {
       const grp = (opts.assign && opts.assign[id] && data.identities.find(x => x.front === opts.assign[id])) || groups[i % groups.length]
@@ -240,16 +289,18 @@
         alive: true,
         inMansion: true,
         ident: makeIdent(grp),
-        back: grp ? grp.back : null,
+        back: grp ? grp.back : null, // 当前逆位（受命时才拿得到它的能力）；丘比特、平民没有逆位
+        bused: {},          // 逆位的使用状态（窃贼取来时连同继承）
+        borrowed: null,     // 梦游神借来的一次：{name, from}
+        civilPublic: null,  // 平民公开身份的时刻
         lover: null,
         coinsTable: 0,
         coinsDesk: 0,
-        coins: START_COINS, // 身上带着的枚数（开局各取一摞）；玩家的这一份由界面与 App.econ 同步
+        coins: START_COINS, // 身上带着的枚数（开局面前那一摞）；玩家的这一份由界面与 App.econ 同步
         ate: 12 * 60,       // 最近一次进食：第一日 12:00（身体结算 1）
         slept: 7 * 60,      // 最近一次睡醒：第一日 07:00
         mealAt: null,       // AI 已结算到哪一顿饭
         puffSeat: null,
-        fortuneDay: 0,
         deathAt: null,
         deathBy: null,
       }
@@ -284,6 +335,18 @@
   const silenced = (g, id) => !!(g.trial && !g.trial.ended && g.trial.silenced.includes(id))
   // 正位能力此刻是否生效（被沉默者封锁的不生效）
   const frontActive = (g, id, name) => isLiving(g, id) && frontName(g, id) === name && !silenced(g, id)
+  // 逆位：「成为受命者时，视为同时拥有此身份」——只有活着在馆的现任受命者能用；沉默只封正位（5.2）
+  const backName = (g, id) => (g.people[id] ? g.people[id].back : null)
+  const backActive = (g, id, name) => isLiving(g, id) && g.mandated === id && backName(g, id) === name
+  // 卡面原文（主持人游戏 5「正面」「背面」下的引用块）：国王翻面以后的两面取自 5.9 结算要点
+  function identText(g, name) {
+    const ids = g.data.identities || []
+    const grp = ids.find(x => x.front === name) || ids.find(x => x.back === name)
+    if (grp) return grp.front === name ? grp.frontText || '' : grp.backText || ''
+    const fl = ids.find(x => x.flip && (x.flip.front === name || x.flip.back === name))
+    if (fl) return fl.flip.front === name ? fl.flip.frontText || '' : fl.flip.backText || ''
+    return ''
+  }
   const lineOf = (g, id, key, x) => {
     const c = charOf(g, id)
     const s = (c && c.lines && c.lines[key]) || ''
@@ -295,21 +358,25 @@
     g.notices.push(Object.assign({ at: g.minutes }, n))
   }
 
-  // 死亡：先知立即收到「有人死亡」（含主持人处刑）；河豚的中心席成为空席时解除
+  // 死亡：馆内有人死亡，先知立即收到「有人死亡」（含主持人处刑；5.12）；河豚的中心席成为空席时解除。
+  // 处刑（运行规则 6.6）：尸体消失，衣服、金币和身上的东西留在原地——审判判出来的，留在他的席位上；逾期处死的留在他当时所在之处
   function kill(g, id, how, at) {
     const p = P(g, id)
     if (!p || !p.alive) return
+    const inside = p.inMansion
+    if (how === 'executed' && p.coins > 0) { g.seatCoins[p.seat - 1] += p.coins; p.left = { n: p.coins, where: 'seat' }; p.coins = 0 }
+    else if (how === 'overdue' && p.coins > 0) { p.left = { n: p.coins, where: 'place' }; p.coins = 0 }
     p.alive = false
     p.deathAt = at == null ? g.minutes : at
     p.deathBy = how
     g.deaths.push({ id, how, at: p.deathAt })
-    for (const sid of livingIds(g)) {
+    if (inside) for (const sid of livingIds(g)) {
       if (frontActive(g, sid, ID.SEER) && sid === g.player) notify(g, { type: 'death', at: p.deathAt })
     }
     for (const q of Object.values(g.people)) if (q.puffSeat === p.seat) q.puffSeat = null
     if (g.mandated === id) g.mandated = null
   }
-  // 持退出券离馆（开局流程 2.4；主持人游戏 6）：不是死亡，席位留空；身上的金币条文没写，不动
+  // 持退出券离馆（价目表 8.2；主持人游戏 6）：不是死亡，席位留空；身上的金币条文没写，不动
   function leave(g, id) {
     const p = P(g, id)
     if (!p || !isLiving(g, id)) return false
@@ -333,7 +400,7 @@
     const mult = Math.min(2, 1 + (hunger >= 2 ? 0.5 : 0) + (sleep >= 2 ? 0.5 : 0))
     return { hungerH, awakeH, hunger, sleep, mult, awayPlus: hunger === 2 ? 5 : 0, noAway: hunger >= 3 }
   }
-  // 吃了一餐（兑换来的饭）；ids 可以是一组人（十五人份的同一餐）
+  // 吃了一餐（兑换来的饭）；ids 可以是一组人（十三人份的同一餐）
   function eat(g, ids, at) {
     for (const id of [].concat(ids)) { const p = P(g, id); if (p && isLiving(g, id)) p.ate = at == null ? g.minutes : at }
   }
@@ -356,10 +423,25 @@
     return slept
   }
   /* ---------- 金币：只记账（主持人游戏 8；价目表 8.1） ---------- */
+  // D01 20:00：存活在馆者每人五枚（开局流程第 4 节）。模拟走过这一刻时发一次；玩家那一份由界面经 App.econ.d01() 同步
+  function payD01(g, upTo) {
+    const t = upTo == null ? g.minutes : upTo
+    if (g.d01 || t < D01_AT) return null
+    if (g.startMinutes > D01_AT) { g.d01 = { at: D01_AT, ids: [], n: 0 }; return null } // 这一局从那之后才开始
+    const ids = livingIds(g)
+    for (const id of ids) P(g, id).coins += D01_COINS
+    g.d01 = { at: D01_AT, ids, n: D01_COINS }
+    return g.d01
+  }
   // AI 每到饭点用 1 枚吃一餐（8:00、12:00、18:00）；没钱就饿着
   const MEALS = [8 * 60, 12 * 60, 18 * 60]
   function aiMeals(g, upTo) {
     const t = upTo == null ? g.minutes : upTo
+    // 先按时刻发 D01 20:00 的五枚（早于 20:00 的饭照旧用开局的金币）
+    if (!g.d01 && t >= D01_AT) { mealsTo(g, D01_AT); payD01(g, D01_AT) }
+    mealsTo(g, t)
+  }
+  function mealsTo(g, t) {
     for (const id of livingIds(g)) {
       if (id === g.player) continue
       const p = P(g, id)
@@ -383,6 +465,15 @@
     return true
   }
   function gainCoins(g, id, n) { const p = P(g, id); if (p && n > 0) p.coins += Math.floor(n) }
+  // 拾取被处刑者留在席位上的金币（运行规则 6.6）：k 是席位号；by 默认玩家
+  function takeSeatCoins(g, k, by) {
+    const who = by || g.player
+    const n = (g.seatCoins && g.seatCoins[k - 1]) || 0
+    if (!n || !isLiving(g, who) || (g.trial && !g.trial.ended)) return null
+    g.seatCoins[k - 1] = 0
+    gainCoins(g, who, n)
+    return { n, by: who, seat: k }
+  }
   // 拾取死者衣袋里的金币：耗 1 分钟（调查期内）；by 默认玩家
   function takeBodyCoins(g, c, by) {
     const who = by || g.player
@@ -473,16 +564,18 @@
     return null
   }
 
-  /* ---------- 受命资格 ---------- */
+  /* ---------- 受命资格 ----------
+     平民不会被选中（主持人游戏 2.1、5.13）。本模拟只挑有可行手法的人（见头注）：
+     兑换来的毒要身上加套房书桌上够 80 枚（价目表 10.6）；其余手法要能走到现场（canWalk，修复过残疾的按能走算）。 */
+  const purseOf = p => p.coins + (p.coinsDesk || 0)
   function validCauses(g, id) {
     const c = charOf(g, id)
     const p = P(g, id)
     const list = []
     const L = g.data.lore.causes || []
     for (const k of L) {
-      if (k.id === 'poison' && p.back !== '女巫') continue
-      if (k.id === 'door' && p.back !== '典狱长') continue
-      if (c && c.canWalk === false && k.id !== 'poison' && k.id !== 'door') continue
+      if (k.id === 'poison') { if (purseOf(p) < poisonCoins(g)) continue }
+      else if (!walks(g, id)) continue
       if (k.needs && !pred(k.needs)(c)) continue
       list.push(k)
     }
@@ -490,12 +583,77 @@
   }
   function eligibleMandate(g, id) {
     if (!isLiving(g, id) || id === g.player) return false
-    if (frontName(g, id) === ID.SAINT) return false // 圣女不会被选中
+    if (frontName(g, id) === ID.CIVILIAN) return false // 平民不会被选中
     return validCauses(g, id).length > 0
   }
   function accompliceOf(g, id) {
     const p = P(g, id)
     return p && p.lover && isLiving(g, p.lover) ? p.lover : null
+  }
+  // 付出 n 枚：先用身上带着的；不够就先回套房书桌拿（价目表 8.2「藏在别处的……想用就得先去拿」）
+  function spendCoins(g, id, n) {
+    const p = P(g, id)
+    if (!p || purseOf(p) < n) return false
+    const a = Math.min(p.coins, n)
+    p.coins -= a
+    p.coinsDesk -= n - a
+    return true
+  }
+
+  /* ---------- 逆位（受命者的）：窃贼、梦游神、国王翻面 ----------
+     返回 null：不能发动（不是受命者、没有这个逆位、已经用过、目标不在馆）。void：对方没有逆位，或没有可以借的一次——机会不消耗。 */
+  // 窃贼（5.10）：把自身的窃贼替换为对方此刻记着的逆位，继承能力与使用状态；对方的身份不变
+  function thief(g, actor, target) {
+    const p = P(g, actor)
+    if (!backActive(g, actor, ID.THIEF) || p.bused[ID.THIEF] || !isLiving(g, target) || actor === target) return null
+    const q = P(g, target)
+    if (!q.back) return { actor, target, void: true }
+    p.bused[ID.THIEF] = true
+    p.back = q.back
+    p.bused = Object.assign({}, q.bused, { [ID.THIEF]: true })
+    return { actor, target, got: q.back }
+  }
+  // 梦游神（5.3）：查一人此刻的逆位（名称与卡面原文），借来使用一次；一直生效的、已经用掉的、没有逆位的，不消耗
+  function sleepwalk(g, actor, target) {
+    const p = P(g, actor)
+    if (!backActive(g, actor, ID.SLEEPWALKER) || p.bused[ID.SLEEPWALKER] || !isLiving(g, target) || actor === target) return null
+    const q = P(g, target)
+    const name = q.back
+    if (!name || BACK_ALWAYS.includes(name) || q.bused[name]) return { actor, target, name: name || null, text: name ? identText(g, name) : '', void: true }
+    p.bused[ID.SLEEPWALKER] = true
+    p.borrowed = { name, from: target, used: false }
+    return { actor, target, name, text: identText(g, name), borrowed: name }
+  }
+  // 用掉一次逆位能力 name：自己的逆位，或梦游神借来的那一次（对方收到私人通知，仅一次的同时消耗）
+  function useBack(g, id, name) {
+    const p = P(g, id)
+    if (!isLiving(g, id) || g.mandated !== id) return false
+    if (p.back === name && !p.bused[name]) { p.bused[name] = true; return true }
+    const b = p.borrowed
+    if (b && !b.used && b.name === name) {
+      b.used = true
+      const q = P(g, b.from)
+      if (q && q.back === name) q.bused[name] = true
+      if (b.from === g.player && isLiving(g, b.from)) notify(g, { type: 'sleepwalk', name })
+      return true
+    }
+    return false
+  }
+  // 国王翻面（5.9）：仅一次，在审判流程外；当前正位换成国王，逆位换成骑士（骑士的身份代价不清除）
+  function kingFlip(g, actor) {
+    const p = P(g, actor)
+    if (!backActive(g, actor, ID.KING) || p.bused[ID.KING] || g.trial) return null
+    p.bused[ID.KING] = true
+    const grp = (g.data.identities || []).find(x => x.flip && x.flip.front === ID.KING)
+    p.ident = { no: grp ? grp.no : 9, name: ID.KING, used: {}, noVote: !!p.ident.noVote, wrongTarget: p.ident.wrongTarget || null }
+    p.back = ID.KNIGHT
+    return { actor }
+  }
+  // 受命之后，AI 受命者手里的逆位：窃贼先换来一张，梦游神查人借一次（都在受命的当下；没有逆位的不消耗，接着查下一个）
+  function mandateBacks(g, m) {
+    const others = () => shuffle(g.r, livingIds(g).filter(x => x !== m))
+    if (backActive(g, m, ID.THIEF)) for (const t of others()) { const r = thief(g, m, t); if (r && !r.void) break }
+    if (backActive(g, m, ID.SLEEPWALKER)) for (const t of others()) { const r = sleepwalk(g, m, t); if (r && !r.void) break }
   }
 
   /* ==========================================================
@@ -514,12 +672,15 @@
       g.mandateAt = g.minutes
       const acc = accompliceOf(g, m)
       if (acc === g.player) notify(g, { type: 'accomplice', with: m })
+      mandateBacks(g, m)
     }
     if (g.mandateAt == null) g.mandateAt = g.minutes
     const deadline = g.mandateAt + 1440
     const victims = living.filter(id => id !== m && id !== g.player)
-    if (!victims.length) {
-      // 受命者逾期：公开受命者身份并处死；帮凶一同处死（主持人游戏 2、5.11）
+    const causes = victims.length ? validCauses(g, m) : []
+    if (!victims.length || !causes.length) {
+      // 受命者逾期：公开受命者身份并处死；帮凶一同处死（主持人游戏 2.1、5.6）
+      aiMeals(g, deadline)
       g.minutes = Math.max(g.minutes, deadline)
       const executed = [m]
       const acc = accompliceOf(g, m)
@@ -531,34 +692,44 @@
       return c
     }
 
-    const causes = validCauses(g, m)
     const cause = weighted(g.r, causes.map(k => ({ v: k, w: CAUSE_WEIGHT[k.id] || 1 })))
     const roomsAll = Object.keys(g.data.lore.rooms || {}).map(k => Object.assign({ key: k }, g.data.lore.rooms[k])).filter(x => x.crimeScene)
     let rooms = roomsAll.filter(x => roomFits(cause.id, x))
     if (!rooms.length) rooms = roomsAll
     const roomInfo = pick(g.r, rooms)
     const plan = (g.data.world.rooms || []).find(w => w.floor === roomInfo.floor && w.name === roomInfo.name) || null
-    const victim = pick(g.r, victims)
+    // 公开过的平民：杀了他，那一场自己的票加倍（5.13）——受命者能避就避
+    const victim = weighted(g.r, victims.map(id => ({ v: id, w: P(g, id).civilPublic != null ? 0.25 : 1 })))
     const start = Math.max(g.minutes, g.mandateAt)
     const tMurder = Math.min(deadline - 30, start + randInt(g.r, 150, 840))
+    // 兑换来的毒：决定的那一刻付清（价目表 8.2：只能用身上带着的；书桌上的先去拿）
+    let buy = null
+    if (cause.id === 'poison') {
+      const n = poisonCoins(g)
+      if (spendCoins(g, m, n)) buy = { item: '致死的毒一剂', kind: cause.kind || null, coins: n, at: start }
+    }
     aiMeals(g, tMurder)
+    // 国王：行凶以后、开庭以前翻面（审判流程外）
+    if (backActive(g, m, ID.KING) && !P(g, m).bused[ID.KING] && chance(g.r, 0.5)) kingFlip(g, m)
     g.minutes = tMurder
+    const civil = frontName(g, victim) === ID.CIVILIAN && P(g, victim).civilPublic != null
     kill(g, victim, 'murder', tMurder)
 
     const c = {
       type: 'case', no: ++g.caseNo, murderer: m, victim, cause, roomInfo, plan,
       tMandate: g.mandateAt, tMurder, tDiscover: null, tCourt: null,
-      bell: P(g, m).back === '敲钟人', investMinutes: 120,
+      // 敲钟人的能力在他行凶的那一刻就落在这起死亡上（5.5 结算要点）：被有效发现时取消调查
+      bell: backActive(g, m, ID.BELL), investMinutes: 120,
+      // 公开过的平民被当时的受命者杀死：那一场审判里凶手得到的票以两倍计（5.13）
+      double: civil ? m : null,
       discoverer: null, selfReport: false, clues: [], spots: [], bodySeen: false, remaining: [],
       // 死者身上的金币随衣物留在尸体处（物理层 7.4）；有人取走才转手
       bodyCoins: P(g, victim).coins, coinsTaken: null,
       shift: null, // 让死亡时间窗偏移的处理（buildClues 决定）：{clue, dir, minutes, reads}
+      buy,         // 兑换来的毒：{item, kind, coins, at}
+      backs: { back: P(g, m).back, borrowed: P(g, m).borrowed ? Object.assign({}, P(g, m).borrowed) : null, king: frontName(g, m) === ID.KING },
     }
     P(g, victim).coins = 0
-    // 女巫的毒：发动后小玻璃瓶及瓶塞放在女巫房间的书桌上（主持人游戏 5.12）——受命者视为同时拥有女巫身份，即凶手的套房
-    if (cause.id === 'poison') c.bottle = { room: P(g, m).seat + '号套房', at: Math.max(g.mandateAt, tMurder - randInt(subRng(g, tMurder), 40, 200)) }
-    // 典狱长：发动时全馆广播（主持人游戏 5.1、7）；门锁一小时后自动弹开
-    if (cause.id === 'door') c.doorLock = { at: tMurder, until: tMurder + 60 }
     g.cases.push(c)
     const after = livingIds(g)
     if (after.length <= 1) { c.lastStanding = after[0] || null; return c }
@@ -566,13 +737,14 @@
     // 有效发现：存活在馆的人看见尸体（主持人游戏 3.1）；不能行走者不去发现。
     // 凶手看见时可以在心里要求播报，那一刻也算有效发现——偶尔由他自己「发现」（子随机数，不消耗 g.r）
     const finders = after.filter(id => id !== m)
-    let pool = finders.filter(id => id !== g.player && charOf(g, id).canWalk !== false)
-    if (!pool.length) pool = finders.filter(id => charOf(g, id).canWalk !== false)
+    let pool = finders.filter(id => id !== g.player && walks(g, id))
+    if (!pool.length) pool = finders.filter(id => walks(g, id))
     if (!pool.length) pool = finders
     c.discoverer = pick(g.r, pool)
-    if (charOf(g, m).canWalk !== false && subRng(g, c.no * 6151 + 7)() < 0.12) { c.discoverer = m; c.selfReport = true }
+    if (walks(g, m) && subRng(g, c.no * 6151 + 7)() < 0.12) { c.discoverer = m; c.selfReport = true }
     c.tDiscover = tMurder + randInt(g.r, 12, 190)
-    c.investMinutes = c.bell ? 30 : 120 // 敲钟人：三十分钟
+    // 敲钟人：没有调查，有效发现的那一刻就移走尸体、开庭（主持人游戏 3.1、5.5）
+    c.investMinutes = c.bell ? 0 : 120
     c.tCourt = c.tDiscover + c.investMinutes
     aiMeals(g, c.tDiscover)
     // 两案之间的作息（只算玩家：调查耗时随之变化）
@@ -586,7 +758,7 @@
 
   /* ---------- 线索生成：每案三条，维度互不重复 ----------
      ① 让死亡时间窗偏移的处理（冷池、蚕丝被、热池、冷冻柜；lore 模板的 shift）：凶手想得到（模板的 predicate）、
-        能走动、亲手行凶（毒与门不在场）时，约四成案件用它——这一条占「死亡时间」一维，不筛人（predicate 为 null）。
+        能走动、亲手行凶（下毒不必在场）时，约四成案件用它——这一条占「死亡时间」一维，不筛人（predicate 为 null）。
      ② 其余先贪心排除（每次在还没用过的维度里挑排除嫌疑人最多的一条），剩 1–2 名嫌疑人或已有三条为止；
         不足三条时只从没用过的维度里补足。死因要求的维度（扼颈要受训 → 体格）算作已用。筛人的线索都对凶手为真。 */
   function suspectsOf(g, c) {
@@ -606,7 +778,7 @@
       for (const v of vs) {
         const s = sh(v.vi)
         if (!s || !pred(v.predicate)(m) || !compatible(t.id, v.vi, c)) continue
-        if (m.canWalk === false || ['poison', 'door'].includes(c.cause.id)) continue
+        if (!walks(g, c.murderer) || c.cause.id === 'poison') continue
         shifts.push({ t, v, s })
       }
       const ok = vs.filter(v => !sh(v.vi) && pred(v.predicate)(m) && compatible(t.id, v.vi, c))
@@ -686,14 +858,15 @@
   }
 
   /* ---------- 调查的文字：陈设点的排除性事实与描写、疑似线索、验尸、发现线索时的动作 ----------
-     调查期全馆灯都亮着（洋馆物理层 3.1）；馆刚打扫过，没有陈年积灰（物理层 9、7.2）；馆内没有食物，
-     除了每人套房的那一把钥匙没有别的钥匙，柜、箱都没有锁（物理层 2.4）。描写只写馆里实有的东西。
+     调查期全馆灯都亮着（洋馆物理层 3.1）；全馆初态刚清理过（物理层 9），之后按常态落灰（第 7 节开头），一两天里看不出积灰；
+     馆内没有食物，除了每人套房的那一把钥匙没有别的钥匙，柜门不上锁（物理层 2.2、2.4）。窗是真窗：白天看得见屋外，
+     窗光为「无」的时段窗面映出屋里的倒影（物理层 3.1、3.2）。描写只写馆里实有的东西。
      陈设点先给「排除性事实」（地毯毛没有倒伏、工具一件不少……），它们由本案的现场推出，不与本案的线索矛盾；
      没有合适的事实时才只给一句描写。同一局里不重复（用尽才重来）。
      这些文字只用子随机数（subRng），不消耗 g.r，规则结果不受影响。 */
   function subRng(g, salt) { return rng(((g.seed >>> 0) ^ Math.imul((salt >>> 0) + 1, 0x9e3779b1)) >>> 0) }
   const FLAVOR_KINDS = [
-    ['thing', /梯架|银幕/], ['coin', /理币盘|金币/], ['lanes', /球道|置瓶机|保龄|球瓶|计分屏/], ['water', /泳池|浴池|喷泉/],
+    ['thing', /梯架|银幕/], ['lanes', /球道|置瓶机|保龄|球瓶|计分屏/], ['water', /泳池|浴池|喷泉/],
     ['basin', /浴缸|淋浴|盥洗台|洗手台|水槽|坐便器|内衬盆|洗涤台|水台$/], ['art', /挂毯|织锦|织画|解剖课|星月夜|十二庭|画架|画报/],
     ['mat', /软垫|练习垫|橡胶/], ['rug', /毯/], ['cloth', /床帘|窗帘|浴袍|长枕|油布|棉绳|胶带|软管|脏衣篮/], ['bed', /床(?!头)/],
     ['music', /钢琴|竖琴|四琴|谱架|音乐柜/], ['instrument', /放大镜|望远镜|六分仪|分规|量角仪|星盘|电子秤|温湿度表/],
@@ -701,7 +874,7 @@
     ['mirror', /镜/], ['window', /窗/], ['lamp', /灯|烛台/], ['plant', /兰$|金花茶|拱架/],
     ['notebook', /绢面本|硬面簿/], ['book', /书柜|圣经|手稿|书刊/], ['desk', /笔匣|端砚|镇纸/],
     ['gym', /哑铃|划船机|力量架|扶杆|把杆|球拍/], ['pieces', /象棋|围棋|国际象棋|麻将|扑克|台球$|乒乓球$/], ['game', /球台|台球桌|计分牌/],
-    ['tool', /刀|剪|钳|工具板|开瓶器|刷杆|救生杆|熨斗|缝纫机|急救箱/],
+    ['tool', /刀|剪|钳|工具墙|开瓶器|刷杆|救生杆|熨斗|缝纫机|急救箱/],
     ['fridge', /冷冻柜|保鲜柜/],
     ['machine', /洗衣机|烘干机|泵|过滤罐|水箱|咖啡机|投影机|电磁灶|洗碗机|总控柜|轮阀|电热座/],
     ['fixture', /插销|门铃|号码牌|编号锁|银钩|罗盘花|隔间|隔板|钥匙龛|酒款签/],
@@ -713,13 +886,26 @@
     for (const [k, re] of FLAVOR_KINDS) if (re.test(name)) return k
     return 'thing'
   }
-  // 地面怎么叫（皮毯、橡胶垫铺在什么上面）
+  // 地面怎么叫（洋馆物理层 4.2 的五类：石材、橡木地板、羊毛地毯、湿区防滑石、运动与花园）
   function floorWord(room) {
-    const base = String((room && room.floorSurface) || '').split('·')[0]
+    const base = surfOf(room).split('·')[0]
     if (isWood(room)) return '木地板'
-    if (/翡翠/.test(base)) return '翡翠地面'
-    if (/玉|石|岩/.test(base)) return '玉面'
+    if (/橡胶/.test(base)) return '橡胶垫'
+    if (/毯/.test(base)) return '地毯'
+    if (/石/.test(base)) return '石地'
     return '地面'
+  }
+  // 窗光为「无」（19:00—05:00）：窗面映出屋里的倒影（物理层 3.1 光的时段表；WORLD.light）
+  function windowDark(g, t) {
+    const m = ((t % 1440) + 1440) % 1440
+    const rows = (g.data.world && g.data.world.light && g.data.world.light.rows) || null
+    if (rows) {
+      for (const r of rows) {
+        const inRow = r.fromMin <= r.toMin ? m >= r.fromMin && m < r.toMin : m >= r.fromMin || m < r.toMin
+        if (inRow) return r.window === '无'
+      }
+    }
+    return m >= 19 * 60 || m < 5 * 60
   }
   // 本案现场的事实：哪些排除性的说法会与线索、死因相矛盾（由 caseFacts 推出，供 FACTS 的 bad 判断）
   function caseFacts(c) {
@@ -735,13 +921,12 @@
       gardenPrint: has('woodprint', [1]),
       laneOil: has('freezer', [1]),
       freezer: has('freezer', [0]),
-      cupUsed: k === 'poison' || has('lipstick', [0]) || has('defense', [2]),
+      cupUsed: k === 'poison' || has('lipstick', [0]),
       blood: ['stab', 'blunt', 'fall'].includes(k),
-      door: k === 'door',
       rope: k === 'strangle',
       drown: k === 'drown',
       wardrobe: has('bloodshirt') && /套房/.test(c.roomInfo.name),
-      toolGloves: has('gloves', [1]) && c.roomInfo.name === '工具修理室',
+      toolGloves: has('gloves', [1]) && c.roomInfo.name === '工具间',
       smoke: has('pipe'),
     }
   }
@@ -779,16 +964,15 @@
     pieces: [{ t: '{O}都在原处，一件不少。', key: 'untouched', bad: () => false }],
     game: [{ t: '{O}周围什么也没有，地上没有挪动的痕迹。', key: 'not-moved', bad: f => f.scuffed }],
     tool: [
-      { t: '{O}上的东西一件不少——凶器不是从这里拿的。', key: 'weapon-not-here', bad: f => f.toolGloves, re: /工具板/ },
+      { t: '{O}上的东西一件不少——凶器不是从这里拿的。', key: 'weapon-not-here', bad: f => f.toolGloves, re: /工具墙/ },
       { t: '{O}里的刀一把不少——凶器不是从这里拿的。', key: 'weapon-not-here', bad: () => false, re: /刀具抽屉/ },
       { t: '{O}扣着，里面的东西一样没少。', key: 'untouched', bad: () => false, re: /急救箱/ },
-      { t: '{O}在原处，刃口和握柄都干干净净，没有沾过血。', key: 'weapon-not-here', bad: () => false, re: /^(?!.*(工具板|刀具抽屉|急救箱))/ },
+      { t: '{O}在原处，刃口和握柄都干干净净，没有沾过血。', key: 'weapon-not-here', bad: () => false, re: /^(?!.*(工具墙|刀具抽屉|急救箱))/ },
     ],
     fridge: [{ t: '打开{O}——空的，只有一股冷气，里面没有放过东西的痕迹。', key: 'not-used', bad: f => f.freezer }],
     machine: [{ t: '{O}停着，开关上没有手印。', key: 'no-handprint', bad: f => f.handprint }],
-    fixture: [{ t: '{O}好好的，没有撬过、碰过的痕迹。', key: 'no-forced', bad: f => f.door }],
+    fixture: [{ t: '{O}好好的，没有撬过、碰过的痕迹。', key: 'no-forced', bad: () => false }],
     vessel: [{ t: '{O}是干的，没有人用过。', key: 'not-used', bad: f => f.cupUsed }],
-    coin: [{ t: '{O}是空的，盘底一枚也没有。', key: 'empty', bad: () => false }],
     exhibit: [
       { t: '{O}在原位，底座和地上的印子对得上——没有被挪下来当凶器。', key: 'weapon-not-here', bad: () => false, re: /^(?!.*(霸王龙|骨架|屏风|标本))/ },
       { t: '{O}稳稳立在原位，周围没有碰撞的痕迹。', key: 'untouched', bad: () => false, re: /霸王龙|骨架|屏风|标本/ },
@@ -809,7 +993,7 @@
     rug: ['{O}吸走了所有脚步声。', '手指插进{O}的毛里，是凉的。', '{O}的边压得平平整整。'],
     mat: ['{O}踩上去软软的，又弹回来。', '{O}铺得平平整整。'],
     bed: ['{O}的被面铺得太平，像从没人睡过。', '掀开{O}的帷幔，里面只有叠好的被。'],
-    cloth: ['{O}叠得方方正正，折痕锋利。', '{O}垂着，下摆一动不动。', '抖开{O}——什么也没掉出来。', '{O}上有沉香的味道，很淡。'],
+    cloth: ['{O}叠得方方正正，折痕锋利。', '{O}垂着，下摆一动不动。', '抖开{O}——什么也没掉出来。', '{O}上有熏橡木的气味，很淡。'],
     basin: ['拧开{O}的水——水声在空屋里格外响。', '灯光映在{O}上，晃了一下就停了。'],
     water: ['{O}的水面很平，倒映着灯光。', '{O}底什么也没有，只有灯影。', '{O}的水一圈圈循环着，声音一直没停。'],
     lanes: ['{O}的漆面光可鉴人，映出一道灯光。', '{O}旁的球按号排好，一个不少。'],
@@ -819,7 +1003,9 @@
     clock: ['{O}还在走，和别处的钟差了几分钟。', '{O}的指针一格一格地走，不快不慢。'],
     instrument: ['{O}的刻度停在一个没有意义的位置。', '{O}擦得很亮。', '{O}摆在原位，角度分毫不差。'],
     mirror: ['{O}里只有你，和你身后的灯。', '{O}擦得很亮，映出半间屋子。'],
-    window: ['{O}后面没有天光，只有一层背光。', '{O}外什么也看不见。'],
+    // 窗：白天看得见屋外的草地、林子或海（阴天，看不见太阳）；入夜后玻璃里只有屋里的倒影（物理层 1.4、3.1、3.2）
+    window: ['{O}外的天灰白一片，看不见太阳。', '{O}外是草地，再远是林子和海。', '{O}能往里推开，外面的空气湿而凉。'],
+    windowDark: ['{O}上映出屋里的灯，和你自己。', '{O}黑着，玻璃里只有这间屋子的倒影。'],
     lamp: ['{O}亮着，灯罩是凉的——它一直这么亮。', '{O}的光晕里浮着细尘。', '{O}微微晃了一下。没有风。'],
     plant: ['{O}落了一片花瓣，边缘已经卷了。', '{O}的香气很重，盖住了别的味道。'],
     notebook: ['翻开{O}——一页页都空着。'],
@@ -833,7 +1019,6 @@
     machine: ['{O}低低嗡了一声，又安静下来。', '{O}的指示灯一明一暗，像在呼吸。', '{O}的门缝里什么也没夹。'],
     fixture: ['{O}摸上去冰凉。', '{O}纹丝不动，和别处的一样。', '{O}在灯下反着光。'],
     vessel: ['{O}擦得锃亮，映出一张变形的脸。', '轻敲{O}——声音清脆，没有裂。'],
-    coin: ['{O}在灯下泛着白光。'],
     exhibit: ['{O}的影子在墙上被拉得很长。', '{O}静静立着，什么也不肯说。', '绕着{O}走了一圈，没有一处新痕。', '{O}比看上去更冷，像刚从地下取出来。'],
     cabinet: ['{O}合着，木香很淡。', '{O}的把手是凉的。'],
     table: ['{O}上什么也没有，映着灯光。', '{O}上的东西都在原处，像一幅静物。'],
@@ -842,7 +1027,7 @@
   }
   // 氛围细节：接在描写后面（本房间的氛围句每间房一局只用一次）
   const DECOY_DETAIL = [
-    '空气里一股淡淡的沉香味。', '远处有钟在走。', '门外好像有脚步声，停了。',
+    '空气里一股熏橡木的气味。', '远处有钟在走。', '门外好像有脚步声，停了。',
     '灯光很稳，每个角落都照得清清楚楚。', '这里比走廊冷一点。', '墙后一声闷响，再没有了。', '你听见自己的心跳。',
     '香味散得很快，像刚有人路过。', '安静得能听见自己的呼吸。', '有一瞬间，像有人在背后。',
   ]
@@ -862,16 +1047,15 @@
     { bait: '{O}下一小撮白色的东西。', truth: '捻开，是棉絮——擦布上掉的。', when: f => !f.cupUsed },
     { bait: '{O}底下压着半张撕下的纸。', truth: '上面只有一行乐谱。', when: (f, room) => /谱架|钢琴|竖琴|音乐柜/.test((room.objects || []).join('')) },
   ]
-  // 验尸：按死因（毒：口唇和指甲发紫、少量白沫、没有气味、杯子喝空——主持人游戏 5.12）
+  // 验尸：按死因（兑换来的毒，本站替凶手选了氰化物：口唇发绀，皮肤与尸斑偏鲜红，口边有苦杏仁气味——lore causes.poison.sign）
   const BODY_TEXT = {
     stab: ['衣襟被血浸透，伤口边缘整齐。', '伤口不止一处，血已经发暗。', '身下一摊血，还留着倒下时的弧度。'],
     blunt: ['后脑塌陷，发间结着血块。', '额角重重一击，地上溅着细小的血点。', '一侧肋骨摸上去是断的。'],
     strangle: ['颈上一圈瘀紫，指痕叠着指痕。', '眼睑里布满针尖大的红点。', '领口被扯开，颈侧发青。'],
     smother: ['口鼻周围一圈压痕，唇色发绀。', '脸上没有伤，只有鼻梁一道浅压印。', '指甲里嵌着细小的织物纤维。'],
-    poison: ['嘴边一点白沫，口唇和指甲发紫。', '身旁倒着一只喝空的杯子。', '凑近闻，什么气味也没有。', '死前抓过胸口，衣扣崩了一颗。'],
+    poison: ['口唇发绀，皮肤却透着鲜红。', '身旁倒着一只喝空的杯子。', '凑近，口边一股苦杏仁的气味。', '死前抓过胸口，衣扣崩了一颗。'],
     drown: ['衣服湿透，口鼻一圈细白泡沫。', '指甲缝里有池壁的滑腻。', '头发湿贴在脸上，水还在往下滴。'],
     fall: ['四肢扭成不自然的角度，头先着地。', '断骨顶起了袖管。', '身下的{FLOOR}上磕出一道新痕。'],
-    door: ['肩胸一道笔直的压痕，像被门扇夹住。', '{DOOR}', '手指伸向门缝，指甲劈了。'],
     alcohol: ['浓重的酒气，仰面，口鼻有呕吐物。', '身旁一只倒空的酒瓶。', '脸色紫红，衣襟上一片酒渍。'],
   }
   // 发现线索时的动作（无主语：玩家与旁观时的调查者都能用）
@@ -894,6 +1078,7 @@
   // 一处陈设：先找一条与本案不矛盾、本局没说过的排除性事实；没有就给一句描写
   function decoyText(g, c, rr, object, facts) {
     const kind = flavorKind(object)
+    const dk = kind === 'window' && windowDark(g, c.tDiscover == null ? g.minutes : c.tDiscover) ? 'windowDark' : kind
     const seen = g.flavorSeen || (g.flavorSeen = new Set())
     let text = '', fact = null
     const cands = (FACTS[kind] || FACTS.thing).filter(x => (!x.re || x.re.test(object)) && !x.bad(facts, object))
@@ -904,8 +1089,8 @@
     // 同一件陈设（同一间房再次成为现场）不说同一句；本类用尽时借用通用的说法
     for (let n = 0; n < 8 && (!text || seen.has(text)); n++) {
       fact = null
-      const list = n < 6 ? DECOY_TEXT[kind] || DECOY_TEXT.thing : DECOY_TEXT.thing
-      text = fillO(flavorPick(g, rr, 'd:' + (n < 6 ? kind : 'thing'), list), object)
+      const list = n < 6 ? DECOY_TEXT[dk] || DECOY_TEXT.thing : DECOY_TEXT.thing
+      text = fillO(flavorPick(g, rr, 'd:' + (n < 6 ? dk : 'thing'), list), object)
     }
     seen.add(text)
     let detail = ''
@@ -923,9 +1108,7 @@
      界面点热点 → inspect；疑似线索要「再看一次」→ reexamine；询问 → interview；空闲时 → spend。 */
   const DECOY_WORDS = ['如常', '无痕', '没有异样', '干净', '空']
   function bodyObs(g, c, rr) {
-    const list = (BODY_TEXT[c.cause.id] || ['']).map(s => s
-      .split('{FLOOR}').join(floorWord(c.roomInfo))
-      .split('{DOOR}').join(c.tDiscover - c.tMurder < 60 ? '身旁那扇门锁死了，推不动。' : '身旁那扇门已经弹开，门扇上一道新压痕。'))
+    const list = (BODY_TEXT[c.cause.id] || ['']).map(s => s.split('{FLOOR}').join(floorWord(c.roomInfo)))
     return flavorPick(g, rr, 'b:' + c.cause.id, list)
   }
   function buildSpots(g, c) {
@@ -1072,7 +1255,8 @@
      无辜者照实说两段（连同同在一处的人）；凶手若亲手行凶，含真正死亡时刻的那一段说谎、说自己没有同伴——
      他说的那间房里那一段若真有人，那人就能拆穿他。借冷池、蚕丝被、热池、冷冻柜让时间窗偏移时，
      他在「看上去」的那一段真的和别人在一起（假窗口里的不在场证明是真的），真正的那一段多半说自己在套房里，没人能拆穿——
-     只有识破偏移，才看得出他在真正的死亡时刻没有人作证。下毒与关门不必在场，凶手照实说。
+     只有识破偏移，才看得出他在真正的死亡时刻没有人作证。下毒不必在场，凶手照实说。
+     凶手有兆示（自己的逆位，或梦游神借来的）：行凶前用掉它，知道那一刻各人在哪，说自己在一间没人的房里——没人拆得穿。
      where[id] = {segs[{room, floor, with}], claim{segs[{room, with}]}, lie, lieSeg}；room/with/claim.room/claim.with 是含真正死亡时刻那一段的简写。
      只用子随机数（subRng），不消耗 g.r。 */
   const walks = (g, id) => (g.walkFix && g.walkFix[id]) || charOf(g, id).canWalk !== false
@@ -1083,7 +1267,7 @@
     const crime = c.roomInfo.name
     const common = all.filter(x => x.crimeScene && !/套房/.test(x.name) && x.name !== crime)
     const suiteOf = id => { const r = all.find(x => x.name === P(g, id).seat + '号套房'); return r && r.name !== crime ? r : null }
-    const lying = !['poison', 'door'].includes(c.cause.id) && isLiving(g, c.murderer)
+    const lying = c.cause.id !== 'poison' && isLiving(g, c.murderer)
     const m = c.murderer
     const tA = apparentDeath(c)
     const r10 = x => Math.round(x / 10) * 10
@@ -1151,7 +1335,10 @@
       const freeRoom = () => (free.length ? free[Math.floor(rr() * free.length)] : common[Math.floor(rr() * common.length)] || { name: '走廊' }).name
       const x = rr()
       let lie
-      if (c.shift) lie = own && x < 0.75 ? own.name : freeRoom()
+      // 兆示（5.12）：仅一次，得知馆内所有存活角色此刻的位置——挑那一刻没人的地方说
+      const omen = !c.shift && (useBack(g, m, ID.OMEN))
+      if (omen) { c.omen = true; lie = own && x < 0.5 ? own.name : freeRoom() }
+      else if (c.shift) lie = own && x < 0.75 ? own.name : freeRoom()
       else if (x < 0.5 && occupied.length) lie = occupied[Math.floor(rr() * occupied.length)]
       else if (x < 0.8 && own) lie = own.name
       else lie = freeRoom()
@@ -1263,12 +1450,11 @@
   /* ---------- 调查期内 AI 的秘密能力（不广播；条文规定的私人通知照常送达） ---------- */
   function aiInvestigation(g, c) {
     const ev = []
-    const day = dayOf(g.minutes)
     const ais = livingIds(g).filter(id => id !== g.player)
     for (const id of ais) {
       const p = P(g, id)
       const nm = p.ident.name
-      if (nm === ID.FORTUNE && p.fortuneDay !== day) {
+      if (nm === ID.FORTUNE && !p.ident.used.fortune && chance(g.r, 0.5)) {
         const t = pick(g.r, livingIds(g).filter(x => x !== id))
         if (t) { const r = fortune(g, id, t); if (r) ev.push({ type: 'fortune', actor: id, target: t }) }
       } else if (nm === ID.CUPID && !p.ident.used.cupid && chance(g.r, 0.55)) {
@@ -1282,31 +1468,34 @@
         const others = shuffle(g.r, livingIds(g).filter(x => x !== id))
         if (others.length >= 2) {
           const pair = chance(g.r, 0.5) ? [id, others[0]] : [others[0], others[1]]
-          magic(g, id, pair[0], pair[1])
-          ev.push({ type: 'magic', actor: id, pair })
+          const r = magic(g, id, pair[0], pair[1])
+          if (r && !r.void) ev.push({ type: 'magic', actor: id, pair })
         }
       } else if (nm === ID.SHIFTER && chance(g.r, 0.8)) {
         const t = pick(g.r, livingIds(g).filter(x => x !== id && frontName(g, x) !== ID.SHIFTER))
-        if (t) { shapeshift(g, id, t); ev.push({ type: 'shift', actor: id, target: t }) }
+        if (t) { const r = shapeshift(g, id, t); if (r && !r.void) ev.push({ type: 'shift', actor: id, target: t }) }
       }
     }
     return ev
   }
 
   /* ---------- 审判流程外的能力 ---------- */
-  // 占卜家：每天一次，得知当前正位身份名。被查验者不收到任何通知（主持人游戏 5.7，v4.71 已删去旧版的「身份已被知悉」）
+  // 占卜家（5.3）：仅一次，随时查验一人，得知其当前正位身份的名称和详细能力说明（卡面原文）。被查验者不收到任何通知。
+  // 目标已死或离馆：无效，机会不消耗（主持人游戏 4）
   function fortune(g, actor, target) {
     const p = P(g, actor)
-    if (!p || frontName(g, actor) !== ID.FORTUNE || !isLiving(g, target)) return null
-    const day = dayOf(g.minutes)
-    if (p.fortuneDay === day) return null
-    p.fortuneDay = day
-    return { target, name: frontName(g, target) }
+    if (!p || frontName(g, actor) !== ID.FORTUNE || p.ident.used.fortune || !isLiving(g, actor) || !isLiving(g, target)) return null
+    p.ident.used.fortune = true
+    const name = frontName(g, target)
+    return { target, name, text: identText(g, name) }
   }
+  // 平民不能被复制、交换或沉默：以平民为目标时发动者得知「无效」，机会不消耗（5.13）
+  const isCivil = (g, id) => frontName(g, id) === ID.CIVILIAN
   // 变形者：复制对方当前正位（含使用状态与代价）
   function shapeshift(g, actor, target) {
     const p = P(g, actor)
     if (!p || frontName(g, actor) !== ID.SHIFTER || !isLiving(g, target) || actor === target) return null
+    if (isCivil(g, target)) return { void: true, target }
     const src = P(g, target).ident
     p.ident = JSON.parse(JSON.stringify(src))
     return { name: p.ident.name }
@@ -1316,6 +1505,7 @@
     const p = P(g, actor)
     if (!p || frontName(g, actor) !== ID.MAGICIAN || p.ident.used.magic) return null
     if (!isLiving(g, a) || !isLiving(g, b) || a === b) return null
+    if (isCivil(g, a) || isCivil(g, b)) return { void: true, a, b } // 另一方也不受影响
     p.ident.used.magic = true
     const A = P(g, a), B = P(g, b)
     const t = A.ident; A.ident = B.ident; B.ident = t
@@ -1341,15 +1531,17 @@
   /* ==========================================================
      开庭
      ========================================================== */
-  // 调查期里玩家没找到的线索，由他人以一半的概率找到；尸体由发现者查看过
+  // 调查期里玩家没找到的线索，由他人以一半的概率找到；尸体由发现者查看过。
+  // 敲钟人：没有调查（investMinutes 0），有效发现的那一刻就移走尸体开庭——谁也来不及搜查，只有发现者看过尸体
   function courtOpen(g, c, p = 0.5) {
+    if (!c.investMinutes) p = 0
     g.minutes = Math.max(g.minutes, c.tCourt)
     const shared = []
     let finders = livingIds(g).filter(id => id !== g.player && id !== c.murderer)
     if (!finders.length) finders = livingIds(g).filter(id => id !== g.player)
     for (const k of c.clues) {
       if (k.foundBy) continue
-      if (finders.length && (g.spectator || !isLiving(g, g.player) || chance(g.r, p))) {
+      if (finders.length && p > 0 && (g.spectator || !isLiving(g, g.player) || chance(g.r, p))) {
         k.foundBy = pick(g.r, finders)
         shared.push(k)
       }
@@ -1373,16 +1565,17 @@
     const T = {
       case: c, murderer: c.murderer, victim: c.victim,
       phase: 'debate', noResult: 0, misjudge: 0, ended: false, solved: false, endReason: null,
-      tieBan: [], hopeBan: null, idiotOut: [], silenced: [],
-      used: { hanged: {}, silencer: {}, puffer: {} },
+      tieBan: [], lawyerBan: null, foolOut: [], silenced: [],
+      used: { silencer: {}, puffer: {}, king: null },
+      // 平民加倍（5.13）：这一场里这个人得到的票以两倍计
+      double: c.double || null,
       knownMurderer: null, accuse: {}, noise: {}, puffInfo: {}, decoy: null,
       queue: [], votes: 0, vote: null,
       log: [],     // 本场产出的事件（logEntry 的精简记录），结案对账与第二段辩论用
       rounds: [],  // 每次投票（含执行者的特殊表决）：beginVote 时登记，settle 后带结果
       executed: [], // 处刑：{id, correct, via, t}
       agree: {}, doubt: {}, exposed: {}, claimed: {}, lastMode: null,
-      tells: {},    // 本场已判过破绽的人（依次发言算一场）
-      tellsOpen: {}, // 公开讨论另算一场
+      tells: {},    // 本场已判过破绽的人（运行规则 5.4：一次辩论连同随后的投票算一场）
       tellSeen: {}, // 谁察觉了谁的破绽：{观察者: [持秘密者]}（AI 的怀疑度据此加权）
       tellLog: [],  // 本场成立与否的每一次破绽判定
       stage: 'turns', // 辩论的哪一段：turns 依次发言 / open 公开讨论
@@ -1469,16 +1662,29 @@
     if (!pool) T.decoy = d
     return d
   }
+  // 环上的席位：k 号的左边是 k+1 号、右边是 k−1 号（1 号的左边是 2 号，右边是 13 号）
+  const seatLeft = k => (k % NS) + 1
+  const seatRight = k => ((k - 2 + NS) % NS) + 1
+  // 左右相邻（河豚）：环上号码紧挨的两席；空席不跨越
   function neighborsOf(g, seat) {
-    const l = ((seat - 2 + 15) % 15) + 1, r = (seat % 15) + 1
     const out = []
-    for (const s of [l, r]) { const id = g.seats[s - 1]; if (id && isLiving(g, id)) out.push(id) }
+    for (const s of [seatRight(seat), seatLeft(seat)]) { const id = g.seats[s - 1]; if (id && isLiving(g, id)) out.push(id) }
     return out
+  }
+  // 那一边最近的存活者（国王的号令；主持人游戏 3.2「左右最近」）：越过空席与死者
+  function nearestOf(g, seat, side) {
+    let k = seat
+    for (let n = 1; n < NS; n++) {
+      k = side === 'left' ? seatLeft(k) : seatRight(k)
+      const id = g.seats[k - 1]
+      if (id && isLiving(g, id)) return id
+    }
+    return null
   }
 
   /* ---------- 辩论期间的能力 ---------- */
   function hasVoteRight(g, T, id) {
-    return isLiving(g, id) && !P(g, id).ident.noVote && !T.idiotOut.includes(id)
+    return isLiving(g, id) && !P(g, id).ident.noVote && !T.foolOut.includes(id)
   }
   // 骑士：公开揭发（仅一次）；失败则骑士身份永久失去投票权，并记下被错指者
   function knight(g, T, actor, target) {
@@ -1491,9 +1697,10 @@
     else { p.ident.noVote = true; p.ident.wrongTarget = target }
     return { actor, target, success }
   }
-  // 沉默者：每次审判一次，秘密封锁一人的正位能力至本场结束
+  // 沉默者：每次审判一次，秘密封锁一人的正位能力至本场结束；对平民无效，机会不消耗（5.13）
   function silence(g, T, actor, target) {
     if (frontName(g, actor) !== ID.SILENCER || T.used.silencer[actor] || !isLiving(g, target) || T.phase !== 'debate') return null
+    if (isCivil(g, target)) return { actor, target, void: true, civil: true }
     T.used.silencer[actor] = true
     if (silenced(g, actor)) return { actor, target, void: true }
     if (!T.silenced.includes(target)) T.silenced.push(target)
@@ -1518,19 +1725,29 @@
     T.puffInfo[actor] = { seat: p.puffSeat, yes }
     return { actor, seat: p.puffSeat, yes }
   }
+  // 平民公开身份（5.13）：仅一次，随时（本模拟只在辩论里演）；公开以后若被当时的受命者杀死，那一场凶手的票加倍
+  function revealCivilian(g, T, actor) {
+    const p = P(g, actor)
+    if (!p || !isLiving(g, actor) || frontName(g, actor) !== ID.CIVILIAN || p.ident.used.civilian) return null
+    p.ident.used.civilian = true
+    p.civilPublic = g.minutes
+    return { actor, name: ID.CIVILIAN }
+  }
   function canUse(g, T, id, type, V) {
     if (!isLiving(g, id)) return false
     const p = P(g, id)
     const nm = p.ident.name
-    const day = dayOf(g.minutes)
     switch (type) {
       case 'knight': return nm === ID.KNIGHT && !p.ident.used.knight && T && T.phase === 'debate' && !T.ended
       case 'executor': return nm === ID.EXECUTOR && !p.ident.used.executor && T && T.phase === 'debate' && !T.ended
       case 'silencer': return nm === ID.SILENCER && T && !T.used.silencer[id] && T.phase === 'debate' && !T.ended
       case 'puffer': return nm === ID.PUFFER && T && !T.used.puffer[id] && T.phase === 'debate' && !T.ended
-      case 'judge': return nm === ID.JUDGE && V && V.kind === 'normal' && !V.settled && !V.judges.some(j => j.actor === id)
-      case 'hanged': return nm === ID.HANGED && V && V.kind === 'normal' && !V.settled && !T.used.hanged[id] && V.ballots.some(b => b.target === id && b.voter !== id)
-      case 'fortune': return nm === ID.FORTUNE && p.fortuneDay !== day && !T
+      case 'civilian': return nm === ID.CIVILIAN && !p.ident.used.civilian && T && T.phase === 'debate' && !T.ended
+      // 法官是律师的逆位（5.8）：只有受命者有；玩家不会是受命者
+      case 'judge': return backActive(g, id, ID.JUDGE) && V && V.kind === 'normal' && !V.settled && !V.judges.some(j => j.actor === id)
+      // 正位国王的号令（5.9）：投票期间，仅一次；同一次投票里只有先提出的那一个生效
+      case 'king': return nm === ID.KING && !p.ident.used.king && V && !V.settled && !V.order && V.ballots.length > 0
+      case 'fortune': return nm === ID.FORTUNE && !p.ident.used.fortune && !T
       case 'shifter': return nm === ID.SHIFTER && !T
       case 'magician': return nm === ID.MAGICIAN && !p.ident.used.magic && !T
       case 'cupid': return nm === ID.CUPID && !p.ident.used.cupid && !T
@@ -1546,10 +1763,10 @@
   function beginVote(g, T, kind = 'normal', extra = {}) {
     const living = livingIds(g)
     const voters = living.filter(id => hasVoteRight(g, T, id) && (kind === 'special' || !T.tieBan.includes(id)))
-    const targets = kind === 'special' ? living.slice() : living.filter(id => !T.idiotOut.includes(id) && id !== T.hopeBan)
+    const targets = kind === 'special' ? living.slice() : living.filter(id => !T.foolOut.includes(id) && id !== T.lawyerBan)
     const V = Object.assign({
-      kind, round: ++T.votes, voters, targets, ballots: [], judges: [], reflect: null, settled: false,
-      banned: kind === 'normal' ? T.tieBan.slice() : [], hopeBan: kind === 'normal' ? T.hopeBan : null,
+      kind, round: ++T.votes, voters, targets, ballots: [], judges: [], order: null, settled: false,
+      banned: kind === 'normal' ? T.tieBan.slice() : [], lawyerBan: kind === 'normal' ? T.lawyerBan : null,
       // 没有人能投（两人终局并列后的重投）：界面直接快进到结果
       empty: voters.length === 0,
     }, extra)
@@ -1596,80 +1813,108 @@
   function ballotOf(g, T, V, voter) {
     return g.hooks && g.hooks.ballot ? g.hooks.ballot(g, T, V, voter, aiBallot) : aiBallot(g, T, V, voter)
   }
-  // 法官：普通投票期间秘密指定一人 +1
+  // 法官（5.8 的逆位，受命者才有）：普通投票期间秘密指定一人 +1，可与本人票选对象不同。沉默只封正位，封不住它
   function judge(g, T, V, actor, target) {
-    if (!V || V.settled || V.kind !== 'normal' || frontName(g, actor) !== ID.JUDGE || !isLiving(g, actor)) return null
+    if (!V || V.settled || V.kind !== 'normal' || !backActive(g, actor, ID.JUDGE)) return null
     if (V.judges.some(j => j.actor === actor) || !V.targets.includes(target)) return null
-    const j = { actor, target, effective: !silenced(g, actor) }
+    const j = { actor, target, effective: true }
     V.judges.push(j)
     return j
   }
-  // 倒吊人：每次审判一次，把另一人投给本人的一张基础票反弹给原投票者
-  function reflect(g, T, V, actor, voter) {
-    if (!V || V.settled || V.kind !== 'normal' || frontName(g, actor) !== ID.HANGED || !isLiving(g, actor)) return null
-    if (T.used.hanged[actor] || voter === actor) return null
-    if (!V.ballots.some(b => b.voter === voter && b.target === actor)) return null
-    T.used.hanged[actor] = true
-    V.reflect = { hanged: actor, voter, effective: !silenced(g, actor) }
-    return V.reflect
+  // 国王的号令（5.9；主持人游戏 3.2 第 3 步）：公开国王身份，指定左边或右边，那一边最近的存活者原来的基础票取消，
+  // 改为跟国王票选同一对象，或弃票自投（follow：true 跟票 / false 弃票）；恋人同票不再约束这一票，原票附带的骑士罚票随之撤销。
+  // 国王本人还没投、或这一边没有人时不能发动，机会不消耗；被沉默时发动了也无效（正位）
+  function kingOrder(g, T, V, actor, side) {
+    const p = P(g, actor)
+    if (!canUse(g, T, actor, 'king', V)) return null
+    const mine = V.ballots.find(b => b.voter === actor)
+    const to = nearestOf(g, p.seat, side)
+    if (!mine || !to || to === actor) return null
+    p.ident.used.king = true
+    if (silenced(g, actor)) { V.order = { king: actor, side, to, target: mine.target, void: true }; return V.order }
+    V.order = { king: actor, side, to, target: mine.target, follow: null }
+    return V.order
+  }
+  // 受号令的人重新选：跟票或弃票自投；他没有投票权时只是没有票可改
+  function obeyOrder(g, T, V, follow) {
+    const o = V.order
+    if (!o || o.void || o.follow != null) return null
+    o.follow = !!follow
+    const b = V.ballots.find(x => x.voter === o.to)
+    if (!b) { o.none = true; return o }
+    o.was = b.target
+    const t = follow && V.targets.includes(o.target) ? o.target : (V.targets.includes(o.to) ? o.to : null)
+    b.target = t
+    b.ordered = true
+    b.forced = false
+    b.abstain = !follow
+    return o
+  }
+  // AI 受号令：跟票，除非国王要他投的是自己的恋人（那就弃票自投）
+  function aiObey(g, T, V) {
+    const o = V.order
+    if (!o) return true
+    return P(g, o.to).lover !== o.target
+  }
+  // AI 的国王（多半是翻过面的受命者）：投完以后，自己有危险（普通投票照基础票领先或并列领先；特殊表决里自己是被表决的人），
+  // 就对一侧发号令，把那一票拉到自己投的人身上
+  function aiKing(g, T, V) {
+    for (const id of livingIds(g)) {
+      if (id === g.player || !canUse(g, T, id, 'king', V)) continue
+      const mine = V.ballots.find(b => b.voter === id)
+      if (!mine || !mine.target || mine.target === id) continue
+      const base = {}
+      for (const b of V.ballots) if (b.target) base[b.target] = (base[b.target] || 0) + 1
+      const top = Math.max(0, ...Object.values(base))
+      const risk = V.kind === 'special' ? V.target === id : (base[id] || 0) >= top && top > 0
+      if (!risk) continue
+      const p = P(g, id)
+      const sides = ['left', 'right'].map(sd => ({ sd, to: nearestOf(g, p.seat, sd) })).filter(x => x.to && x.to !== id)
+      const pickSide = sides.find(x => { const b = V.ballots.find(y => y.voter === x.to); return b && b.target === id }) ||
+        (V.kind === 'special' ? null : sides.find(x => { const b = V.ballots.find(y => y.voter === x.to); return b && b.target !== mine.target }))
+      if (!pickSide) continue
+      const o = kingOrder(g, T, V, id, pickSide.sd)
+      if (o) return o
+    }
+    return null
   }
   function aiVoteAbilities(g, T, V) {
     const out = []
     if (V.kind !== 'normal') return out
-    for (const id of livingIds(g)) {
-      if (id === g.player) continue
-      const nm = frontName(g, id)
-      if (nm === ID.JUDGE && !V.judges.some(j => j.actor === id)) {
-        const b = V.ballots.find(x => x.voter === id)
-        let t = b && b.target !== id ? b.target : null
-        if (id === T.murderer) t = decoyOf(g, T, V.targets.filter(x => x !== id))
-        if (!t) { const rk = ranked(g, T, id, V.targets); t = rk.length ? rk[0].t : null }
-        if (t) { const j = judge(g, T, V, id, t); if (j) out.push({ type: 'judge', actor: id }) }
-      }
-      if (nm === ID.HANGED && !T.used.hanged[id] && !V.reflect) {
-        const base = {}
-        for (const b of V.ballots) if (b.target) base[b.target] = (base[b.target] || 0) + 1
-        const mine = base[id] || 0
-        const top = Math.max(0, ...Object.values(base))
-        const against = V.ballots.find(b => b.target === id && b.voter !== id)
-        if (against && mine >= top - 1 && mine >= 1) {
-          const r = reflect(g, T, V, id, against.voter)
-          if (r) out.push({ type: 'reflect', actor: id })
-        }
-      }
+    // 法官：受命者把这一票加在替罪羊身上
+    const m = T.murderer
+    if (m !== g.player && canUse(g, T, m, 'judge', V)) {
+      const t = decoyOf(g, T, V.targets.filter(x => x !== m))
+      if (t) { const j = judge(g, T, V, m, t); if (j) out.push({ type: 'judge', actor: m }) }
     }
     return out
   }
 
-  /* ---------- 计票（纯函数）：①基础票 ②反弹与修正 ④确定结果 ---------- */
-  function tally({ ballots = [], judges = [], clowns = [], reflect = null, knightBonus = [], candidates }) {
+  /* ---------- 计票（纯函数）：①基础票 ②法官、隐者、骑士罚票 ③国王（已改写进 ballots）④平民加倍，定结果 ---------- */
+  function tally({ ballots = [], judges = [], hermits = [], knightBonus = [], double = null, candidates }) {
     const base = {}, totals = {}
     const cand = candidates || Array.from(new Set(ballots.map(b => b.target).filter(Boolean)))
     for (const c of cand) base[c] = 0
     for (const b of ballots) if (b.target && b.target in base) base[b.target]++
     Object.assign(totals, base)
     const steps = []
-    // 倒吊人：只反弹他人投来的基础票；自投与能力加的票不能反弹
-    if (reflect && reflect.effective !== false && reflect.voter !== reflect.hanged &&
-      ballots.some(b => b.voter === reflect.voter && b.target === reflect.hanged) && reflect.hanged in totals) {
-      totals[reflect.hanged]--
-      if (reflect.voter in totals) totals[reflect.voter]++
-      steps.push({ kind: 'reflect', from: reflect.hanged, to: reflect.voter })
-    }
     for (const j of judges) {
       if (j.effective === false || !(j.target in totals)) continue
       totals[j.target]++
       steps.push({ kind: 'judge', target: j.target })
     }
-    for (const c of clowns) {
+    for (const c of hermits) {
       if (!(c in totals)) continue
       totals[c]--
-      steps.push({ kind: 'clown', target: c })
+      steps.push({ kind: 'hermit', target: c })
     }
     for (const k of knightBonus) {
       if (!(k.knight in totals)) continue
       if (ballots.some(b => b.voter === k.accuser && b.target === k.knight)) { totals[k.knight]++; steps.push({ kind: 'knight', target: k.knight }) }
     }
+    for (const b of ballots) if (b.ordered) steps.push({ kind: 'king', voter: b.voter, target: b.target })
+    // 平民的加倍在第 4 步先算：第 1 到第 3 步算完以后的总票数 ×2（5.13）
+    if (double && double in totals) { totals[double] *= 2; steps.push({ kind: 'double', target: double }) }
     const ids = Object.keys(totals)
     const max = ids.length ? Math.max(...ids.map(i => totals[i])) : 0
     const top = ids.filter(i => totals[i] === max)
@@ -1681,22 +1926,23 @@
   function settle(g, T, V) {
     V.settled = true
     if (V.kind === 'special') {
-      // 执行者特殊表决：只数投给指定对象的有效基础票；不受加减票与反弹影响；
-      // 超过本场存活在馆参与者总数的一半（无投票权者计入总数）
-      const count = V.ballots.filter(b => b.target === V.target).length
+      // 执行者特殊表决：只数投给指定对象的有效基础票；不受加减票影响（恋人同票、国王最后强制选票仍生效）；
+      // 超过本场存活在馆参与者总数的一半（无投票权者计入总数）。平民加倍：投给他的有效基础票 ×2（5.13）
+      let count = V.ballots.filter(b => b.target === V.target).length
+      if (T.double && V.target === T.double) count *= 2
       const total = livingIds(g).length
       const passed = count > total / 2
       V.result = { outcome: passed ? 'pass' : 'fail', count, total, need: Math.floor(total / 2) + 1, pending: passed ? V.target : null }
       T.phase = passed ? 'pending' : 'debate'
       return V.result
     }
-    // 小丑的能力不会被沉默（主持人游戏 5.2）：只看活着、在馆、当前正位是小丑
-    const clowns = livingIds(g).filter(id => frontName(g, id) === ID.CLOWN)
+    // 隐者的能力不会被沉默（主持人游戏 5.1）：只看活着、在馆、当前正位是隐者
+    const hermits = livingIds(g).filter(id => frontName(g, id) === ID.HERMIT)
     const knightBonus = livingIds(g).filter(id => P(g, id).ident.wrongTarget).map(id => ({ knight: id, accuser: P(g, id).ident.wrongTarget }))
-    const r = tally({ ballots: V.ballots, judges: V.judges, clowns, reflect: V.reflect, knightBonus, candidates: V.targets })
-    // 本次投票结束：并列者禁投、希望之人的排除都只管「紧接着的一次」
+    const r = tally({ ballots: V.ballots, judges: V.judges, hermits, knightBonus, double: T.double, candidates: V.targets })
+    // 本次投票结束：并列者禁投、律师的排除都只管「紧接着的一次」
     T.tieBan = []
-    T.hopeBan = null
+    T.lawyerBan = null
     if (r.result) {
       T.noResult = 0
       V.result = Object.assign({ outcome: 'unique', pending: r.result }, r)
@@ -1717,34 +1963,34 @@
     return V.result
   }
 
-  /* ---------- 唯一待处刑者：先白痴，再身怀希望之人，最后裁决 ---------- */
-  function idiotHolder(g, T, pending) {
+  /* ---------- 唯一待处刑者：先愚者，再律师，最后裁决（愚者优先于律师；主持人游戏 3.2 第 4 步、5.4） ---------- */
+  function foolHolder(g, T, pending) {
     const p = P(g, pending)
-    return p && p.ident.name === ID.IDIOT && !p.ident.used.idiot ? pending : null
+    return p && p.ident.name === ID.FOOL && !p.ident.used.fool ? pending : null
   }
-  function useIdiot(g, T, pending) {
+  function useFool(g, T, pending) {
     const p = P(g, pending)
-    if (idiotHolder(g, T, pending) !== pending) return null
-    p.ident.used.idiot = true
+    if (foolHolder(g, T, pending) !== pending) return null
+    p.ident.used.fool = true
     if (silenced(g, pending)) return { effect: 'void', holder: pending }
     if (pending === T.murderer) { T.knownMurderer = pending; return { effect: 'fail', holder: pending } }
-    T.idiotOut.push(pending)
+    T.foolOut.push(pending)
     T.phase = 'vote'
     return { effect: 'cancel', holder: pending }
   }
-  function hopeHolders(g, T, pending) {
-    return livingIds(g).filter(id => id !== pending && frontName(g, id) === ID.HOPE && !P(g, id).ident.used.hope)
+  function lawyerHolders(g, T, pending) {
+    return livingIds(g).filter(id => id !== pending && frontName(g, id) === ID.LAWYER && !P(g, id).ident.used.lawyer)
   }
-  function useHope(g, T, holder, pending) {
-    if (!hopeHolders(g, T, pending).includes(holder)) return null
-    P(g, holder).ident.used.hope = true
+  function useLawyer(g, T, holder, pending) {
+    if (!lawyerHolders(g, T, pending).includes(holder)) return null
+    P(g, holder).ident.used.lawyer = true
     if (silenced(g, holder)) return { effect: 'void', holder }
-    T.hopeBan = pending
+    T.lawyerBan = pending
     T.phase = 'vote'
     return { effect: 'cancel', holder, pending }
   }
-  function aiIdiot(g, T, pending) { return pending !== T.murderer }
-  function aiHope(g, T, holder, pending) {
+  function aiFool(g, T, pending) { return pending !== T.murderer }
+  function aiLawyer(g, T, holder, pending) {
     if (holder === T.murderer || T.knownMurderer === pending) return false
     const rk = ranked(g, T, holder, livingIds(g))
     if (!rk.length) return false
@@ -1765,12 +2011,14 @@
       if (via && via.kind === 'special' && isLiving(g, via.actor)) P(g, via.actor).ident.noVote = true // 执行者的代价
       if (T.misjudge >= 2) { T.ended = true; T.endReason = 'misjudge' }
     }
+    // 处刑（运行规则 6.6）：尸体消失，衣服、金币留在原地——他的席位上
+    const left = executed.map(id => P(g, id).coins)
     for (const id of executed) kill(g, id, 'executed', g.minutes)
-    if (T.executed) T.executed.push({ id: pending, correct, via: via ? via.kind : 'normal', t: g.minutes, with: executed.slice(1), round: T.vote ? T.vote.round : null })
+    if (T.executed) T.executed.push({ id: pending, correct, via: via ? via.kind : 'normal', t: g.minutes, with: executed.slice(1), round: T.vote ? T.vote.round : null, coins: left })
     // 一组处刑及其连坐全部结算完毕后判断胜者（主持人游戏 6）：只剩一人或无人，本场到此为止
     if (!T.ended && livingIds(g).length <= 1) { T.ended = true; T.endReason = 'last' }
     T.phase = T.ended ? 'ended' : 'vote'
-    return { correct, pending, executed, misjudge: T.misjudge, ended: T.ended }
+    return { correct, pending, executed, misjudge: T.misjudge, ended: T.ended, coins: left }
   }
 
   /* ---------- 审判结束：金币（主持人游戏 8） ---------- */
@@ -1797,7 +2045,7 @@
     g.trial = null
     return { table, desk, solved: T.solved }
   }
-  /* ---------- 结案对账（运行规则 7.5）：真相、线索被谁找到、每轮选票与决定性的一票 ----------
+  /* ---------- 结案回放（网站自设；依据运行规则 7.3 的「真相」与「留下的东西」）：真相、线索被谁找到、每轮选票与决定性的一票 ----------
      决定性的一票：在决定结果的那一轮里，从这一票起，待处刑者按基础票成为并保持唯一领先。 */
   function decisiveBallot(V) {
     const pend = V && V.result && V.result.pending
@@ -1817,8 +2065,9 @@
     const rounds = (T.rounds || []).map(V => ({
       round: V.round, kind: V.kind, target: V.target || null, actor: V.actor || null, empty: !!V.empty,
       voters: V.voters.slice(), banned: (V.banned || []).slice(),
-      ballots: V.ballots.map(b => ({ voter: b.voter, target: b.target, forced: !!b.forced, abstain: !!b.abstain })),
+      ballots: V.ballots.map(b => ({ voter: b.voter, target: b.target, forced: !!b.forced, abstain: !!b.abstain, ordered: !!b.ordered })),
       judges: (V.judges || []).map(j => ({ actor: j.actor, target: j.target, effective: j.effective !== false })),
+      order: V.order ? Object.assign({}, V.order) : null,
       result: V.result ? { outcome: V.result.outcome, pending: V.result.pending || null, totals: Object.assign({}, V.result.totals || {}), count: V.result.count, total: V.result.total } : null,
       decisive: decisiveBallot(V),
     }))
@@ -1826,7 +2075,8 @@
       no: c.no, victim: c.victim, murderer: c.murderer, accomplice: accompliceOf(g, c.murderer) || null,
       cause: (c.cause || {}).id || null, causeName: (c.cause || {}).name || '', room: (c.roomInfo || {}).name || '', floor: (c.roomInfo || {}).floor || '',
       tMandate: c.tMandate, tMurder: c.tMurder, tDiscover: c.tDiscover, tCourt: c.tCourt,
-      discoverer: c.discoverer, selfReport: !!c.selfReport, bottle: c.bottle || null, doorLock: c.doorLock || null,
+      discoverer: c.discoverer, selfReport: !!c.selfReport, buy: c.buy ? Object.assign({}, c.buy) : null,
+      bell: !!c.bell, omen: !!c.omen, double: c.double || null, backs: c.backs ? JSON.parse(JSON.stringify(c.backs)) : null,
       where: c.where && c.where[c.murderer] ? { room: c.where[c.murderer].room, claim: c.where[c.murderer].claim.room, lie: !!c.where[c.murderer].lie } : null,
       clues: (c.clues || []).map(k => ({ id: k.id, tpl: k.tpl, vi: k.vi, name: k.name, label: k.label, text: k.text, dim: k.dim, visible: !!k.visible, raking: !!k.raking, place: k.place, awayTo: k.awayTo, foundBy: k.foundBy || null })),
       herrings: (c.spots || []).filter(s => s.herring).map(s => ({ object: s.object, bait: s.herring.bait, truth: s.herring.truth, cleared: !!s.herring.cleared, seen: !!s.done })),
@@ -1872,6 +2122,8 @@
       if (isM && chance(g.r, 0.22)) { const d = decoyOf(g, T); if (d) out.ability = { type: 'executor', target: d } }
       else if (!isM && top && margin >= 1.3 && chance(g.r, 0.35)) out.ability = { type: 'executor', target: top.t }
     }
+    // 平民：随时可以公开（5.13）——在自己的发言轮里，四成公开
+    if (nm === ID.CIVILIAN && !P(g, id).ident.used.civilian && !out.ability && chance(g.r, 0.4)) out.ability = { type: 'civilian' }
     // 秘密能力
     if (nm === ID.SILENCER && !T.used.silencer[id] && chance(g.r, 0.65)) {
       const t = isM ? (g.player && isLiving(g, g.player) && chance(g.r, 0.5) ? g.player : pick(g.r, pool)) : top && top.t
@@ -1882,7 +2134,7 @@
       if (!p.puffSeat && top) {
         // 查询的是中心席的左右邻席，所以把中心选在头号嫌疑人的旁边
         const s0 = P(g, top.t).seat
-        const adj = [((s0 - 2 + 15) % 15) + 1, (s0 % 15) + 1].filter(s => g.seats[s - 1] && isLiving(g, g.seats[s - 1]))
+        const adj = [seatRight(s0), seatLeft(s0)].filter(s => g.seats[s - 1] && isLiving(g, g.seats[s - 1]))
         pufferChoose(g, id, adj.length ? pick(g.r, adj) : s0)
       }
       if (p.puffSeat) puffer(g, T, id)
@@ -1977,7 +2229,7 @@
   function logEntry(g, ev) {
     const e = { t: g.minutes, type: ev.type }
     for (const k of ['speaker', 'target', 'actor', 'against', 'accuser', 'stance', 'mode', 'room', 'time', 'to', 'seg', 'truth', 'response', 'pending', 'via', 'correct', 'misjudge', 'ability', 'effect', 'holder', 'success', 'silenced', 'void', 'yes', 'seat', 'tie', 'ended', 'solved', 'reason', 'at', 'shown', 'player',
-      'ok', 'liar', 'witness', 'recorded', 'a', 'b', 'beats', 'hearsay', 'visible', 'dim', 'photo', 'present', 'shift', 'from'])
+      'ok', 'liar', 'witness', 'recorded', 'a', 'b', 'beats', 'hearsay', 'visible', 'dim', 'photo', 'present', 'shift', 'from', 'name', 'side', 'follow', 'king'])
       if (ev[k] !== undefined) e[k] = ev[k]
     if (ev.claim) e.claim = { spot: ev.claim.spot, key: ev.claim.key, label: ev.claim.label }
     if (ev.with) e.with = ev.with.slice()
@@ -2012,11 +2264,11 @@
   function* trialFlowRaw(g, T) {
     const c = T.case
     const tick = n => { g.minutes += n }
-    // 破绽：本场每人至多判一次（依次发言一场，公开讨论另一场）；判过的记进 T.tellLog，察觉者记进 T.tellSeen
+    // 破绽：一次辩论连同随后的投票算一场，本场每人至多判一次（运行规则 5.4）；判过的记进 T.tellLog，察觉者记进 T.tellSeen
     const tellOf = (id, at) => {
-      const tl = rollTell(g, c, T.stage === 'open' ? T.tellsOpen : T.tells, id, livingIds(g).filter(x => x !== id), at, T)
+      const tl = rollTell(g, c, T.tells, id, livingIds(g).filter(x => x !== id), at, T)
       if (!tl) return null
-      T.tellLog.push(Object.assign({ t: g.minutes, scene: T.stage === 'open' ? 'discuss' : 'debate' }, tl))
+      T.tellLog.push(Object.assign({ t: g.minutes, scene: 'court', stage: T.stage }, tl))
       for (const w of tl.seen) (T.tellSeen[w] || (T.tellSeen[w] = [])).push(tl.holder)
       return tl
     }
@@ -2038,6 +2290,9 @@
           if (r) yield Object.assign({ type: 'secret', ability: 'puffer' }, r)
         } else if (act.type === 'executor') {
           yield* executorFlow(act.actor, act.target)
+        } else if (act.type === 'civilian') {
+          const r = revealCivilian(g, T, act.actor)
+          if (r) { tick(1); yield Object.assign({ type: 'reveal' }, r) }
         }
       }
     }
@@ -2061,6 +2316,9 @@
         const b = cast(g, T, V, v, t)
         if (b) { tick(1); yield { type: 'ballot', vote: V, ballot: b } }
       }
+      // 特殊表决不使用加减票，国王最后强制选票仍生效（5.5 结算要点）
+      if (g.player && isLiving(g, g.player) && canUse(g, T, g.player, 'king', V)) yield { type: 'vote-window', vote: V }
+      yield* kingFlow(V)
       const res = settle(g, T, V)
       yield { type: 'special-result', vote: V, result: res }
       if (res.outcome === 'pass') {
@@ -2068,32 +2326,47 @@
       } else T.phase = 'debate'
     }
 
-    // 唯一待处刑者之后：白痴 → 身怀希望之人 → 最后一句 → 裁决
+    // 国王的号令（主持人游戏 3.2 第 3 步，最后结算）：玩家是国王时已在 vote-window 里提出；否则看 AI 的国王。
+    // 受号令的人重新选：跟票或弃票自投（玩家时问他：ask-obey）
+    function* kingFlow(V) {
+      if (!V.order) aiKing(g, T, V)
+      const o = V.order
+      if (!o) return
+      tick(1)
+      yield { type: 'king', vote: V, actor: o.king, side: o.side, to: o.to, target: o.target, void: !!o.void }
+      if (o.void || !isLiving(g, o.to)) return
+      let follow
+      if (o.to === g.player && isLiving(g, g.player)) follow = yield { type: 'ask-obey', vote: V, actor: o.king, voter: o.to, target: o.target }
+      if (follow == null) follow = aiObey(g, T, V)
+      const r = obeyOrder(g, T, V, follow)
+      if (r && !r.none) { tick(1); yield { type: 'obey', vote: V, speaker: o.to, actor: o.king, follow: r.follow, from: r.was, target: V.ballots.find(b => b.voter === o.to).target } }
+    }
+    // 唯一待处刑者之后：愚者 → 律师 → 最后一句 → 裁决（愚者优先于律师）
     function* pendingFlow(pending, via) {
       T.phase = 'pending'
       yield { type: 'pending', pending, via: via ? via.kind : 'normal' }
-      // 白痴
-      if (idiotHolder(g, T, pending)) {
+      // 愚者
+      if (foolHolder(g, T, pending)) {
         let use
-        if (pending === g.player) use = yield { type: 'ask-idiot', holder: pending, pending }
-        else use = aiIdiot(g, T, pending)
+        if (pending === g.player) use = yield { type: 'ask-fool', holder: pending, pending }
+        else use = aiFool(g, T, pending)
         if (use) {
-          const r = useIdiot(g, T, pending)
+          const r = useFool(g, T, pending)
           if (r) {
-            yield Object.assign({ type: 'idiot', pending }, r)
+            yield Object.assign({ type: 'fool', pending }, r)
             if (r.effect === 'cancel') return 'revote'
           }
         }
       }
-      // 身怀希望之人
-      for (const h of hopeHolders(g, T, pending)) {
+      // 律师
+      for (const h of lawyerHolders(g, T, pending)) {
         let use
-        if (h === g.player) use = yield { type: 'ask-hope', holder: h, pending }
-        else use = aiHope(g, T, h, pending)
+        if (h === g.player) use = yield { type: 'ask-lawyer', holder: h, pending }
+        else use = aiLawyer(g, T, h, pending)
         if (!use) continue
-        const r = useHope(g, T, h, pending)
+        const r = useLawyer(g, T, h, pending)
         if (r) {
-          yield Object.assign({ type: 'hope', pending }, r)
+          yield Object.assign({ type: 'lawyer', pending }, r)
           if (r.effect === 'cancel') return 'revote'
         }
       }
@@ -2174,7 +2447,7 @@
         if (k) yield* exposeFlow(k.witness, target)
       }
     }
-    // 当众出示（运行规则 3.2、4.6）：不相符的人拿出反证（看不见的特征只是他的说法——听说），相符的人只能辩解，持秘密者掷破绽。
+    // 当众出示（运行规则 1.1 听说）：不相符的人拿出反证（看不见的特征只是他的说法——听说），相符的人只能辩解，持秘密者掷破绽。
     // 让时间窗偏移的证物：识破假窗口——此后大家按真正的死亡时刻对去向，被出示的人重新交代那一段。
     // 照片（拍立得）：尸体移走前的样子；出示时连同玩家自己框出的死亡时间窗（frame），大家按它对去向。
     function* presentFlow(speaker, target, k, opts = {}) {
@@ -2343,7 +2616,10 @@
             }
           }
         }
-        if (d.ability && d.ability.type === 'knight') {
+        if (d.ability && d.ability.type === 'civilian') {
+          const r = revealCivilian(g, T, id)
+          if (r) { tick(1); yield Object.assign({ type: 'reveal' }, r) }
+        } else if (d.ability && d.ability.type === 'knight') {
           const r = knight(g, T, id, d.ability.target)
           if (r) { tick(3); yield Object.assign({ type: 'knight' }, r) }
         } else if (d.ability && d.ability.type === 'executor') {
@@ -2447,7 +2723,8 @@
       T.stage = 'open'
       T.mayMislead = chance(g.r, 0.6) // 凶手这一场想不想拿陈设误导
       const n = livingIds(g).length
-      let beats = n <= 8 ? randInt(g.r, 4, 6) : n >= 13 ? randInt(g.r, 6, 8) : randInt(g.r, 5, 7)
+      // 在座八人及以下 4—6 拍；十二人以上（十三人局开第一庭时在座十二人）6—8 拍
+      let beats = n <= 8 ? randInt(g.r, 4, 6) : n >= 12 ? randInt(g.r, 6, 8) : randInt(g.r, 5, 7)
       T.beats = beats
       yield { type: 'discuss', beats }
       let b = 0, extra = 0, last = null, guardB = 0
@@ -2504,10 +2781,11 @@
         const b = cast(g, T, V, v, t)
         if (b) { tick(1); yield { type: 'ballot', vote: V, ballot: b } }
       }
-      // 隐藏修正窗口：法官、倒吊人仍可在结果公布前发动
-      if (g.player && isLiving(g, g.player) && (canUse(g, T, g.player, 'judge', V) || canUse(g, T, g.player, 'hanged', V))) {
+      // 结果公布前：玩家的国王号令（法官是受命者的逆位，玩家不会有）；然后 AI 的国王、受号令者重选；法官的秘密加票
+      if (g.player && isLiving(g, g.player) && canUse(g, T, g.player, 'king', V)) {
         yield { type: 'vote-window', vote: V }
       }
+      yield* kingFlow(V)
       aiVoteAbilities(g, T, V)
       const res = settle(g, T, V)
       tick(3)
@@ -2544,8 +2822,9 @@
       } else if (value.type === 'ask-interject') input = null
       else if (value.type === 'ask-respond') input = { kind: aiRespond(g, T, value.speaker, value.against) }
       else if (value.type === 'ask-vote') input = value.forced || aiBallot(g, T, value.vote, value.voter)
-      else if (value.type === 'ask-idiot') input = aiIdiot(g, T, value.pending)
-      else if (value.type === 'ask-hope') input = aiHope(g, T, value.holder, value.pending)
+      else if (value.type === 'ask-fool') input = aiFool(g, T, value.pending)
+      else if (value.type === 'ask-lawyer') input = aiLawyer(g, T, value.holder, value.pending)
+      else if (value.type === 'ask-obey') input = aiObey(g, T, value.vote)
     }
     return T
   }
@@ -2573,22 +2852,23 @@
   }
 
   const TrialEngine = {
-    version: 3, ID, LABELS, DIM_VISIBLE, RAKING, CLAIM, START_COINS, PRESENT_MAX, HAND_MAX,
+    version: 4, ID, NS, LABELS, DIM_VISIBLE, RAKING, CLAIM, START_COINS, D01_AT, D01_COINS, PRESENT_MAX, HAND_MAX, BACK_ALWAYS,
     texts: { FACTS, DECOY_TEXT, DECOY_DETAIL, HERRINGS, BODY_TEXT, CLUE_LEAD },
     rng, pred, tally,
     create, newCase, buildClues, buildSpots, bodyStage, inspect, reexamine, spend, aiInvestigation,
     caseFacts, floorWord, dimOf,
     bodyReadings, readingsWindow, medWindow, apparentDeath, knowsShift, segAt, segSpan, claimSegs, contradictSeg, raiseHand, publicMatches,
-    bodyState, eat, rest, nightRest, aiMeals, payCoins, gainCoins, takeBodyCoins, useTool, hasBlood, leave,
+    bodyState, eat, rest, nightRest, aiMeals, payD01, payCoins, gainCoins, takeBodyCoins, takeSeatCoins, useTool, hasBlood, leave,
+    poisonCoins, windowDark, identText, backActive,
     buildWhere, contradicts, interview, interviewCost, flavorKind, aiRespond, aiInterject, clueFor,
     secretHolders, tellChance, noticeChance, rollTell, decisiveBallot, logEntry, callOf,
-    fortune, shapeshift, magic, cupid,
+    fortune, shapeshift, magic, cupid, thief, sleepwalk, useBack, kingFlip, mandateBacks, revealCivilian,
     courtOpen, openTrial, knownClues, matches, testClue, suspicion,
     knight, silence, pufferChoose, puffer, canUse, request,
-    beginVote, forcedTarget, cast, aiBallot, judge, reflect, aiVoteAbilities, settle,
-    idiotHolder, useIdiot, hopeHolders, useHope, aiIdiot, aiHope, verdict,
+    beginVote, forcedTarget, cast, aiBallot, judge, kingOrder, obeyOrder, aiObey, aiKing, aiVoteAbilities, settle,
+    foolHolder, useFool, lawyerHolders, useLawyer, aiFool, aiLawyer, verdict,
     closeTrial, winner, aiDebate, trialFlow, autoTrial, autoGame,
-    livingIds, isLiving, nameOf, frontName, lineOf, dayOf, neighborsOf, hasVoteRight, eligibleMandate, validCauses,
+    livingIds, isLiving, nameOf, frontName, backName, lineOf, dayOf, neighborsOf, nearestOf, seatLeft, seatRight, hasVoteRight, eligibleMandate, validCauses,
     person: P,
   }
   root.TrialEngine = TrialEngine

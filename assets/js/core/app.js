@@ -198,14 +198,10 @@
     const CO = (window.WORLD && window.WORLD.coins) || {}
     const num = (v, d) => (Number.isFinite(+v) && +v > 0 ? +v : d)
     const NST = num(CO.seats, 13), PER = num(CO.startEach, 10)
-    // 卡上写明保留的残疾（人物卡「身体」一条原文；价目表第 9 节）。人物数据带 disability 字段时以数据为准；
-    // 这张表只给卡池里还有、数据里又没写 disability 的人兜底
+    // 卡上写明保留的残疾（人物卡「身体」一条原文；价目表第 9 节）。人物数据带 disability 字段时以数据为准。
+    // 卡池三十人里只有这两位（v7.11 人物卡「这是卡上写明保留的例外」）；三十人里没有不能行走的人
     const DISABLED = {
-      johnny: '腰以下瘫痪',
-      griffith: '手脚的筋被切断，舌头被割掉，人瘦得皮包骨头',
-      guts: '左前臂和右眼没了',
       sasuke: '左臂没有了',
-      shanks: '左臂从肩下不远处断掉，只剩一截上臂根',
       baku: '体弱，跑不了几步就喘，力气撑不久',
     }
     // 几条典型的「不成立」请求（价目表 8.2；key 对应 WORLD.prices.void.kinds）。trial.js 取前三条
@@ -215,6 +211,7 @@
       { label: '能打出去的电话', key: 'bypass' },
       { label: '买回被封住的本事', key: 'power' },
       { label: '他昨夜去过哪里', key: 'ask' },
+      { label: '替我搜他的套房', key: 'service' }, // 价目表 7.4：别人的套房不成立（WORLD.prices.void.other）
     ]
     let gameNo = 0
     const st = () => App.state.econ

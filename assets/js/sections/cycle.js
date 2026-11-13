@@ -1,13 +1,16 @@
 /* ==========================================================
    受命（cycle）—— 一局游戏的循环
    一段钉住的长滚动（约 7.85 屏），七个满屏镜头，硬切相接：
-     受命 → 行凶 → 发现 → 调查 → 庭审 → 判定 → 余波 →（倒卷）受命
+     受命 → 行凶 → 发现 → 调查 → 庭审 → 判定（含处刑） → 发放 →（倒卷）受命
+   依据：主持人游戏第 2、3 节（受命与期限、发现与调查一百二十分钟、十三席辩论与记名投票、判定与误判）、
+         第 8 节（审判的发放）、运行规则 6.6（处刑：尸体消失，衣服、金币和身上的东西留在原地）、
+         价目表 8.2（金币出现时无声无光，凭空出现）、洋馆物理层 3.1（廊里的顶灯）、7.4（调查期届满只移走身体）。
    光标：倒计时随光标速度加快；走廊随视线偏移、墨迹从光标处晕开并干涸成锈红；
          放大镜照出看不见的痕迹；最后一票与判定的两个结局随光标左右；
-         金币在光标附近闪光、躲开光标滚走；凶手书桌上的十枚只在光标靠近时看得见。
+         金币在光标附近闪光；凶手书桌上的十枚只在光标靠近时看得见。
    手机：触摸位置代替光标；没有触摸时自动演示。
    文字只有：阶段名、编号、时刻、馆内广播原句（WORLD.broadcasts）、人名、
-             LORE.phases 的阶段短句、LORE 的线索名与尸体变化。
+             LORE.phases 的阶段名与阶段短句、LORE 的线索名与尸体变化。
    ========================================================== */
 (function () {
   'use strict'
@@ -56,12 +59,16 @@
   const PHASES = {}
   for (const p of (LORE.phases || [])) PHASES[p.key] = p
   const pline = (key, fb) => (PHASES[key] && PHASES[key].line) || fb
+  const ptitle = (key, fb) => (PHASES[key] && PHASES[key].title) || fb
+  // 圆桌的席位数（主持人游戏 3.2：十三个编号席位，十三号和一号相邻）
+  const SEATS = (WORLD.coins && WORLD.coins.seats) || 13
 
+  // 机制广播原句（主持人游戏第 7 节）；WORLD 缺了时用同样的原句
   const BCAST = {}
   for (const b of ((WORLD.broadcasts && WORLD.broadcasts.fixed) || [])) BCAST[b.when] = b.text
   const BC_FB = {
-    '尸体被有效发现': '发现尸体。调查时间一百二十分钟，于〈开庭时刻〉在穹顶议事厅开庭。',
-    '主持人只以【】喊停辩论': '辩论结束，开始投票。',
+    '尸体被有效发现': '发现尸体。〈开庭时刻〉开庭。',
+    '辩论结束，主持人没有亲自开口': '辩论结束，开始投票。',
     '判定正确': '判定正确。〈某某〉是〈死者〉一案的凶手。',
     '误判': '判定错误。〈某某〉不是〈死者〉一案的凶手。本场第〈一／二〉次误判。',
   }
@@ -94,7 +101,7 @@
     { key: 'inv', name: '调查', w: 1.25, pal: { a: '#0a0c0f', b: '#8d98a6', glow: 0.26 }, tension: 0.5, line: pline('investigate', '一百二十分钟，谁找到算谁的。') },
     { key: 'court', name: '庭审', w: 1.25, pal: { a: '#16100a', b: '#c29a5b', glow: 0.38 }, tension: 1, line: pline('debate', '自一号席起，各说一次。') },
     { key: 'verdict', name: '判定', w: 1.15, pal: { a: '#1c0408', b: '#d10f45', glow: 0.55 }, tension: 1, line: '' },
-    { key: 'after', name: '余波', w: 1.3, pal: { a: '#130e08', b: '#c29a5b', glow: 0.42 }, tension: 0.16, line: pline('payout', '金币无声出现在圆桌上。') },
+    { key: 'after', name: ptitle('payout', '发放'), w: 1.3, pal: { a: '#130e08', b: '#c29a5b', glow: 0.42 }, tension: 0.16, line: pline('payout', '金币无声出现在各人手边。') },
   ]
   let acc = 0
   for (const s of SHOTS) { s.a = acc; acc += s.w; s.b = acc }
@@ -143,18 +150,18 @@
     const rnd = U.seeded(S.seed)
     const pick = arr => arr[Math.floor(rnd() * arr.length)]
     const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t } return a }
-    const seats = (App.state.seats || []).slice(0, 15)
-    while (seats.length < 15) seats.push(null)
+    const seats = (App.state.seats || []).slice(0, SEATS)
+    while (seats.length < SEATS) seats.push(null)
     const roster = seats.map(id => (id && App.char(id) ? id : null))
     if (roster.filter(Boolean).length < 5) {
       const pool = shuffle(App.chars.map(c => c.id).filter(id => roster.indexOf(id) < 0))
-      for (let i = 0; i < 15; i++) if (!roster[i] && pool.length) roster[i] = pool.pop()
+      for (let i = 0; i < SEATS; i++) if (!roster[i] && pool.length) roster[i] = pool.pop()
     }
     // 万一没有角色数据：用占位
-    for (let i = 0; i < 15; i++) if (!roster[i] && roster.filter(Boolean).length < 5) roster[i] = '__' + (i + 1)
+    for (let i = 0; i < SEATS; i++) if (!roster[i] && roster.filter(Boolean).length < 5) roster[i] = '__' + (i + 1)
     const ppl = []
     roster.forEach((id, i) => { if (id) ppl.push({ seat: i + 1, id }) })
-    const side = p => Math.sin(((p.seat - 1) / 15) * TAU)
+    const side = p => Math.sin(((p.seat - 1) / SEATS) * TAU)
     const walk = p => { const c = App.char(p.id); return !c || c.canWalk !== false }
     const swing = ppl[ppl.length - 1] // 最后一个投票的人
     const rest = ppl.filter(p => p !== swing)
@@ -559,7 +566,8 @@
   const csc = t => 1 / (1 + t * (1 / FAR - 1))
   const RIBS = [0.08, 0.2, 0.33, 0.45, 0.56, 0.66, 0.75, 0.82, 0.88, 0.93]
   const DOORS = [[-1, 0.24, 0.31], [1, 0.38, 0.45], [-1, 0.6, 0.65], [1, 0.71, 0.75], [-1, 0.84, 0.865]]
-  const LAMPS = [[-1, 0.14], [1, 0.14], [-1, 0.5], [1, 0.5], [-1, 0.7], [1, 0.7], [-1, 0.855], [1, 0.855]]
+  // 廊里的灯：顶上的乳白玻璃球灯，沿廊中线约每八米一盏（洋馆物理层 3.1）；不闪、不灭，只随时段亮或低亮
+  const LAMPS = [0.1, 0.3, 0.5, 0.7, 0.9]
   function corrGeo(vp) {
     const hw = S.W * 0.62, hh = S.H * 0.66
     const P = (u, v, t) => { const s = csc(t); return [vp.x + u * hw * s, vp.y + v * hh * s] }
@@ -777,9 +785,9 @@
     SK.geo = corrGeo(SK.vp0)
     corrDraw(SK.base, SK.geo)
     corrDraw(SK.lit, SK.geo)
-    LAMPS.forEach((l, i) => {
-      const p = SK.geo.P(l[0], -0.46, l[1])
-      const s = clamp(300 * csc(l[1]), 14, 140)
+    LAMPS.forEach((t, i) => {
+      const p = SK.geo.P(0, -0.9, t)
+      const s = clamp(300 * csc(t), 14, 140)
       const n = SK.lamps[i]
       n.style.transform = `translate(${fx(p[0] - s / 2)}px, ${fx(p[1] - s / 2)}px)`
       n.style.width = n.style.height = fx(s) + 'px'
@@ -791,6 +799,9 @@
     const R = DAY - S.story.E
     SK.stampT.textContent = hms(R)
     SK.stampD.textContent = dayText(S.story.death) + '  ' + hhmm(S.story.death)
+    // 23:00—05:00 廊道的灯是低亮（洋馆物理层 3.1）
+    const hr = Math.floor(S.story.death / 60) % 24
+    SK.lampsEl.classList.toggle('is-low', hr >= 23 || hr < 5)
     SK.frz.textContent = hms(R)
     SK.hb = 0.4
     SK.lastX = SK.lastY = -999
@@ -896,30 +907,15 @@
     SK.ink.step(dt)
     SK.ink.draw()
 
-    SK.flicker(t)
-
     SK.hb -= dt
     if (SK.hb <= 0 && !S.fast) { App.audio.sfx('heartbeat', { volume: 0.42 }); SK.hb = clamp(1.4 - S.cur.speed / 28, 0.55, 1.4) }
     setPhaseFill(lp)
-  }
-  /* 壁灯闪烁：原 CSS 动画 cycle-lamp 4.3s steps(1)，八盏各错开 0.73 秒。steps(1) 是一段段的常值，
-     CSS 动画却每帧都要在主线程上重算这八个元素的样式；改为只在换档的那一帧写 opacity（每盏 4.3 秒里换 6 次） */
-  const LAMP_K = [[0, 1], [0.41, 0.55], [0.43, 1], [0.71, 0.82], [0.72, 0.25], [0.74, 0.95]]
-  SK.flicker = function (t) {
-    SK.lamps.forEach((n, i) => {
-      const u = (((t + i * 0.73) % 4.3) + 4.3) % 4.3 / 4.3
-      let v = 1
-      for (const [a, o] of LAMP_K) if (u >= a) v = o
-      put(n, 'opacity', String(v))
-    })
   }
   SK.doPass = function () {
     gsap.killTweensOf(SK.pass)
     const h = S.H * 1.32, w = h * 0.75
     gsap.set(SK.pass, { display: 'block', x: -w * 1.02, skewX: -4 })
     gsap.to(SK.pass, { x: S.W + w * 0.05, skewX: -14, duration: App.reduced ? 1.4 : 0.66, ease: 'power3.inOut', onComplete: () => gsap.set(SK.pass, { display: 'none' }) })
-    SK.lampsEl.classList.add('is-out')
-    later(() => SK.lampsEl.classList.remove('is-out'), 560)
     App.audio.sfx('whoosh', { volume: 1, pitch: 0.75 })
     App.audio.sfx('heartbeat', { volume: 0.95, delay: 0.5 })
     App.bg.pulse(0.3, 0.8)
@@ -1097,7 +1093,7 @@
   SD.beats = [
     {
       at: 0.05,
-      on(q) { say(bcSegs('尸体被有效发现', { '开庭时刻': ' ' + hhmm(S.story.court) + ' ' }), { instant: q, delay: q ? 0 : 380 }) },
+      on(q) { say(bcSegs('尸体被有效发现', { '开庭时刻': hhmm(S.story.court) + ' ' }), { instant: q, delay: q ? 0 : 380 }) },
       off() { hush() },
     },
   ]
@@ -1401,7 +1397,7 @@
   ]
 
   /* =========================================================
-     镜头 5 · 庭审（十五席、发言、记名投票）
+     镜头 5 · 庭审（十三席、发言、记名投票）
      ========================================================= */
   const SC = { key: 'court', seats: [], di: -2, counts: {}, swingS: 0.5 }
   SC.build = function () {
@@ -1411,7 +1407,7 @@
     SC.who = el('b.cycle-c-who')
     SC.center = el('div.cycle-c-center', null, [SC.ghost, SC.who])
     SC.seatsEl = el('div.cycle-c-seats')
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= SEATS; k++) {
       const n = el('b.cycle-c-n', null, [el('span'), el('sup', { text: '+1' })])
       const root = el('div.cycle-c-seat', { 'data-seat': k }, [el('i.cycle-c-wave'), el('div.cycle-c-medal'), el('span.cycle-c-no', { text: U.roman(k) }), n])
       SC.seats[k] = { root, medal: root.querySelector('.cycle-c-medal'), n, nv: n.firstChild, sup: n.lastChild, x: 0, y: 0 }
@@ -1422,7 +1418,7 @@
   }
   SC.setCast = function () {
     const c = S.cast
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= SEATS; k++) {
       const s = SC.seats[k]
       s.medal.textContent = ''
       const id = c.roster[k - 1]
@@ -1446,8 +1442,8 @@
     SC.C = C; SC.Rr = Rr; SC.m = m
     SC.Rt = Rr - m * 0.82
     SC.el.style.setProperty('--m', fx(m) + 'px')
-    for (let k = 1; k <= 15; k++) {
-      const a = ((k - 1) / 15) * TAU
+    for (let k = 1; k <= SEATS; k++) {
+      const a = ((k - 1) / SEATS) * TAU
       const s = SC.seats[k]
       s.x = C[0] + Math.sin(a) * Rr
       s.y = C[1] - Math.cos(a) * Rr
@@ -1513,7 +1509,7 @@
     return `M${fx(a2[0])} ${fx(a2[1])}Q${fx(c[0])} ${fx(c[1])} ${fx(b2[0])} ${fx(b2[1])}`
   }
   SC.renderCounts = function () {
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= SEATS; k++) {
       const s = SC.seats[k]
       const n = SC.counts[k] || 0
       s.nv.textContent = n ? String(n) : ''
@@ -1534,7 +1530,7 @@
     if (i === SC.di) return
     const prev = SC.di
     SC.di = i
-    for (let k = 1; k <= 15; k++) SC.seats[k].root.classList.remove('is-speaking')
+    for (let k = 1; k <= SEATS; k++) SC.seats[k].root.classList.remove('is-speaking')
     SC.ghost.textContent = ''
     SC.who.textContent = ''
     SC.center.classList.toggle('is-on', i >= 0)
@@ -1544,7 +1540,7 @@
     SC.ghost.appendChild(App.portrait(p.id, { track: false, mono: true }))
     SC.who.textContent = nameOf(p.id)
     if (!S.fast && prev !== -2) {
-      App.audio.sfx('tick', { volume: 0.32, pitch: 0.8 + (p.seat / 15) * 0.6, pan: Math.sin(((p.seat - 1) / 15) * TAU) * 0.7 })
+      App.audio.sfx('tick', { volume: 0.32, pitch: 0.8 + (p.seat / SEATS) * 0.6, pan: Math.sin(((p.seat - 1) / SEATS) * TAU) * 0.7 })
       gsap.fromTo(SC.ghost, { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'power2.out', ...lift(SC.ghost, 'transform, opacity') })
     }
   }
@@ -1556,8 +1552,8 @@
     for (const n of [SC.tRim, SC.tTop]) { putAttr(n, 'r', fx(r)); putAttr(n, 'cx', fx(cx)); putAttr(n, 'cy', fx(cy)) }
     // 直接写不透明度/变换（原先写继承的 --tin、--pop，整组子元素跟着重算样式）
     put(SC.tInner, 'opacity', mo.toFixed(3))
-    for (let k = 1; k <= 15; k++) {
-      const s = eo3(seg(0.015 + k * 0.0042, 0.06 + k * 0.0042, lp))
+    for (let k = 1; k <= SEATS; k++) {
+      const s = eo3(seg(0.015 + k * (0.063 / SEATS), 0.06 + k * (0.063 / SEATS), lp))
       const root = SC.seats[k].root
       put(root, 'opacity', s.toFixed(3))
       put(root, 'transform', `scale(${(0.4 + s * 0.6).toFixed(3)})`)
@@ -1582,7 +1578,7 @@
         SC.counts[k] = (SC.counts[k] || 0) + (arrived ? 1 : -1)
         changed = true
         if (arrived && !quiet) {
-          App.audio.sfx('vote', { volume: 0.8, pan: Math.sin(((k - 1) / 15) * TAU) * 0.7 })
+          App.audio.sfx('vote', { volume: 0.8, pan: Math.sin(((k - 1) / SEATS) * TAU) * 0.7 })
           const b = SC.seats[k].n
           b.classList.remove('is-pop'); void b.offsetWidth; b.classList.add('is-pop')
         }
@@ -1633,13 +1629,13 @@
       at: 0.44,
       on(q) {
         SC.el.classList.add('is-vote')
-        say(bcSegs('主持人只以【】喊停辩论'), { pos: 'mid', instant: q, delay: q ? 0 : 150 })
+        say(bcSegs('辩论结束，主持人没有亲自开口'), { pos: 'mid', instant: q, delay: q ? 0 : 150 })
         setPhaseLine(LINE_VOTE, q)
         if (!q) { App.audio.sfx('stamp', { volume: 0.7 }); App.bg.pulse(0.4, 0.9) }
       },
       off() { SC.el.classList.remove('is-vote'); hush(); setPhaseLine(SHOTS[4].line, true) },
     },
-    { at: 0.545, on() { hush() }, off() { say(bcSegs('主持人只以【】喊停辩论'), { pos: 'mid', instant: true }) } },
+    { at: 0.545, on() { hush() }, off() { say(bcSegs('辩论结束，主持人没有亲自开口'), { pos: 'mid', instant: true }) } },
   ]
 
   /* =========================================================
@@ -1655,15 +1651,23 @@
      · 跟着人走的光晕（原 radial-gradient at var(--cx)）是独立的一层 .cycle-v-glow，只平移；
        粉点网放在光晕下面（同色半透明两层，上下次序互换颜色不变），不必再被逼成合成层；
      · 人像、大字的居中与缩放直接写 transform / opacity；分界线是一条转动、平移的细条。 */
+  // 处刑以后留在原地的：塌落的衣服、鞋，和散落的金币（运行规则 6.6：尸体消失，衣服、金币和身上的东西留在原地）
+  const REMAINS_SVG = '<svg class="cycle-v-remains" viewBox="0 0 300 400" aria-hidden="true">' +
+    '<g class="r-cloth"><path d="M40 394C46 372 66 360 92 362C104 346 140 340 162 350C184 338 222 344 240 364C258 368 268 382 266 394Z"/>' +
+    '<path d="M228 382C246 374 270 376 288 390L284 396C268 388 250 388 236 394Z"/></g>' +
+    '<g class="r-fold"><path d="M82 380Q114 366 146 382"/><path d="M128 360Q154 364 176 386"/><path d="M184 356Q206 366 214 388"/><path d="M100 392Q130 384 158 394"/></g>' +
+    '<g class="r-shoe"><path d="M18 396C18 386 30 382 44 386L58 390C62 392 62 397 58 398H22C19 398 18 397 18 396Z"/><path d="M60 388C64 380 76 378 86 384L94 390C96 393 94 396 90 396H64C60 396 59 392 60 388Z" transform="rotate(-18 76 390)"/></g>' +
+    '<g class="r-coin"><ellipse cx="206" cy="392" rx="11" ry="4"/><ellipse cx="206" cy="388" rx="11" ry="4"/><ellipse cx="206" cy="384" rx="11" ry="4"/><ellipse cx="207" cy="380" rx="11" ry="4"/>' +
+    '<ellipse cx="236" cy="397" rx="11" ry="4"/><ellipse cx="120" cy="398" rx="11" ry="4"/><ellipse cx="168" cy="399" rx="10" ry="3.6" transform="rotate(-8 168 399)"/></g></svg>'
   function vSide(k, head) {
     const fig = el('div.cycle-v-fig')
-    const dead = el('div.cycle-v-dead', null, [el('div.cycle-v-deadp'), el('i.cycle-v-x')])
+    const dead = el('div.cycle-v-dead', { html: REMAINS_SVG })
     const name = el('b.cycle-v-name')
     const glow = el('i.cycle-v-glow')
     const txt = el('div.cycle-v-txt', null, [el('h3.cycle-v-head', { text: head }), name])
     const inner = el('div.cycle-v-in', null, [el('div.cycle-v-bg', null, [el('i.cycle-v-dots'), glow])])
     const root = el('div.cycle-v-side.cycle-v-' + k, null, [inner, fig, dead, txt])
-    return { k, root, inner, fig, dead, deadp: dead.firstChild, name, glow, txt, shadow: false }
+    return { k, root, inner, fig, dead, name, glow, txt, shadow: false }
   }
   SV.build = function () {
     SV.L = vSide('l', '判定正确。')
@@ -1687,12 +1691,6 @@
     SV.R.figW2 = App.portrait(c.W2.id, { className: 'cycle-v-p is-alt', track: false })
     SV.L.fig.append(SV.L.figK)
     SV.R.fig.append(SV.R.figW, SV.R.figW2)
-    SV.L.deadp.textContent = ''
-    SV.R.deadp.textContent = ''
-    SV.L.deadp.append(App.portrait(c.K.id, { dead: true, track: false }))
-    SV.R.deadW = App.portrait(c.W.id, { dead: true, track: false })
-    SV.R.deadW2 = App.portrait(c.W2.id, { dead: true, track: false, className: 'is-alt' })
-    SV.R.deadp.append(SV.R.deadW, SV.R.deadW2)
     SV.L.name.textContent = nameOf(c.K.id)
     SV.R.name.textContent = nameOf(c.W.id)
     SV.eyes.textContent = ''
@@ -1855,7 +1853,13 @@
         shake(9, 0.45)
         App.bg.pulse(0.9, 1.4)
       }, 0.32)
-      .add(() => side.root.classList.add('is-gone'), 0.66)
+      .add(() => {
+        // 人消失：衣服塌落、金币落地
+        side.root.classList.add('is-gone')
+        App.audio.sfx('drop', { volume: 0.55, pitch: 0.8 })
+        App.audio.sfx('coin', { volume: 0.32, pitch: 1.1, delay: 0.14 })
+        App.audio.sfx('coin', { volume: 0.22, pitch: 1.3, delay: 0.27 })
+      }, 0.66)
       .set(SV.beam, { autoAlpha: 0 }, 0.82)
     SV.tls.push(tl)
   }
@@ -1915,9 +1919,12 @@
   ]
 
   /* =========================================================
-     镜头 7 · 余波（金币雨、滚走的一枚、收拢的光、回到受命）
+     镜头 7 · 发放（金币无声无光地出现在各人手边、凶手书桌上的十枚、收拢的光、回到受命）
+     主持人游戏第 8 节：一批案件审结，每一名存活在馆的参与者各得五枚；全部查明再各得五枚；
+     未能查明时，凶手另得的十枚出现在他套房的书桌上。价目表 8.2：出现时无声无光，凭空出现。
+     被处刑的人：尸体消失，衣服和金币留在他的席位上（运行规则 6.6）。
      ========================================================= */
-  const SA = { key: 'after', coins: [], roller: null, desk: 0, deskT: 0, rw: -1, palAfter: true }
+  const SA = { key: 'after', coins: [], desk: 0, deskT: 0, rw: -1, palAfter: true }
   SA.build = function () {
     SA.cv = el('canvas.cycle-a-cv')
     SA.ctx = SA.cv.getContext('2d')
@@ -1928,7 +1935,7 @@
     // 光标附近的暖光：原先每帧画在画布上（光标一动整张画布重画），改为一层只平移的小圆
     SA.light = el('i.cycle-a-light')
     SA.world = el('div.cycle-a-world', null, [SA.cv, SA.light, SA.loop])
-    // 不动的部分（椅背、桌面、席号、死者的叉）预先画在离屏画布上，重画时整块拷过去
+    // 不动的部分（椅背、桌面、席号、死者的叉、被处刑者留下的衣服与金币）预先画在离屏画布上，重画时整块拷过去
     SA.base = document.createElement('canvas')
     SA.bctx = SA.base.getContext('2d')
     SA.flare = el('i.cycle-a-flare')
@@ -1954,8 +1961,8 @@
     const rx = S.mob ? Math.min(W * 0.36, (W * 0.5 - 14) / fNo) : Math.max(160, Math.min(W * 0.29, (cx - 300) / fNo, 600, H * 0.62))
     const ry = rx * (S.mob ? 0.6 : 0.4)
     const seats = []
-    for (let s = 1; s <= 15; s++) {
-      const a = ((s - 1) / 15) * TAU
+    for (let s = 1; s <= SEATS; s++) {
+      const a = ((s - 1) / SEATS) * TAU
       const sx = Math.sin(a), sy = -Math.cos(a)
       seats.push({
         k: s, sx, sy, depth: (sy + 1) / 2,
@@ -1982,11 +1989,14 @@
     for (const c of SA.coins) { const s = seats[c.seat - 1]; c.x = s.spot[0] + c.jx * SA.G.r; c.y = s.spot[1] + c.jy * SA.G.r }
     SA.coins.forEach(c => { c.r = SA.G.r * (0.84 + 0.32 * seats[c.seat - 1].depth) })
   }
+  // 被处刑的人：判定正确是凶手，判定错误是两次错指的人
+  SA.executed = function () {
+    const c = S.cast
+    return S.branch === 'ok' ? [c.K] : [c.W, c.W2]
+  }
   SA.survivors = function () {
     const c = S.cast
-    const dead = new Set([c.V.id])
-    if (S.branch === 'ok') dead.add(c.K.id)
-    else dead.add(c.W.id), dead.add(c.W2.id)
+    const dead = new Set([c.V, ...SA.executed()].map(p => p.id))
     return c.ppl.filter(p => !dead.has(p.id))
   }
   SA.enter = function () {
@@ -1994,12 +2004,12 @@
     if (!S.branch) S.branch = (SV.split >= 0.5 || S.cur.nx <= 0.5) ? 'ok' : 'ng'
     SA.alive = SA.survivors()
     SA.deadSeats = new Set(S.cast.ppl.filter(p => SA.alive.indexOf(p) < 0).map(p => p.seat))
+    SA.execSeats = new Set(SA.executed().map(p => p.seat))
     const nextSeat = S.branch === 'ok' ? S.cast.NEXT.seat : S.cast.K.seat
     SA.rSeat.textContent = U.roman(nextSeat)
     SA.rw = -1
     SA.palAfter = true
     SA.coins = []
-    SA.roller = null
     SA.desk = 0
     SA.full = SA.baseDirty = true
     PH.root.classList.remove('is-rewind')
@@ -2008,91 +2018,24 @@
   SA.leave = function () {
     PH.root.classList.remove('is-rewind')
     SA.coins = []
-    SA.roller = null
     SA.desk = 0
   }
   SA.auto = function (t) { return [S.W * (0.5 + 0.38 * Math.sin(t * 0.45)), S.H * (0.4 + 0.22 * Math.sin(t * 0.7))] }
-  SA.rain = function (batch, q) {
+  // 每人五枚，凭空出现在各自面前：同一瞬间、无声无光（价目表 8.2）
+  SA.appear = function (batch) {
     const G = SA.G
     const rnd = Math.random
     for (const p of SA.alive) {
       const s = G.seats[p.seat - 1]
       for (let j = 0; j < 5; j++) {
         const jx = (rnd() - 0.5) * 0.35, jy = (rnd() - 0.5) * 0.2
-        const c = {
-          seat: p.seat, j: batch * 5 + j, jx, jy,
-          x: s.spot[0] + jx * G.r, y: s.spot[1] + jy * G.r,
-          r: G.r * (0.84 + 0.32 * s.depth),
-          h: 0, vh: 0, phi: rnd() * TAU, om: (rnd() < 0.5 ? -1 : 1) * U.rand(9, 17), bounces: 0,
-          delay: q ? 0 : rnd() * 1.1 + j * 0.11, state: q ? 'rest' : 'wait',
-        }
-        c.h = c.y + U.rand(40, 360)
-        if (q) c.h = 0
-        SA.coins.push(c)
+        SA.coins.push({ seat: p.seat, j: batch * 5 + j, jx, jy, x: s.spot[0] + jx * G.r, y: s.spot[1] + jy * G.r, r: G.r * (0.84 + 0.32 * s.depth) })
       }
     }
     SA.full = true
-    if (!q) {
-      App.audio.sfx('coins', { volume: 0.9 })
-      later(() => App.audio.sfx('coins', { volume: 0.7, pan: -0.4 }), 420)
-      later(() => App.audio.sfx('coins', { volume: 0.6, pan: 0.4 }), 860)
-    }
   }
-  SA.unrain = function (batch) { SA.coins = SA.coins.filter(c => Math.floor(c.j / 5) < batch); SA.full = true }
-  SA.roll = function (q) {
-    const G = SA.G
-    const goRight = S.cur.nx < 0.5
-    const cand = G.seats.filter(s => s.depth > 0.6 && !SA.deadSeats.has(s.k)).sort((a, b) => (goRight ? b.sx - a.sx : a.sx - b.sx))
-    const s = cand[0] || G.seats[7]
-    const r = G.r * (0.84 + 0.32 * s.depth)
-    const x = s.spot[0] + (goRight ? 1 : -1) * r * 1.6, y = s.spot[1] + G.ry * 0.12
-    const to = [goRight ? S.W - r * 0.55 : r * 0.55, S.H * (S.mob ? 0.86 : 0.9)]
-    SA.roller = { x, y, r, h: q ? 0 : y + 260, vh: 0, phi: 0, om: 13, state: q ? 'rest' : 'fall', from: [x, y], to, u: q ? 1 : 0, spin: q ? 1 : 0, dir: goRight ? 1 : -1, tick: 0 }
-    if (q) { SA.roller.x = to[0]; SA.roller.y = to[1] }
-    SA.full = true
-  }
+  SA.unappear = function (batch) { SA.coins = SA.coins.filter(c => Math.floor(c.j / 5) < batch); SA.full = true }
   SA.step = function (dt) {
-    const g = 2400
-    for (const c of SA.coins) {
-      if (c.state === 'wait') { c.delay -= dt; if (c.delay <= 0) c.state = 'fall'; continue }
-      if (c.state !== 'fall') continue
-      c.vh += g * dt
-      c.h -= c.vh * dt
-      c.phi += c.om * dt
-      const top = c.j * 2.3
-      if (c.h <= top) {
-        c.h = top
-        if (c.vh > 300 && c.bounces < 2) {
-          if (!S.fast) App.audio.sfx('coin', { volume: clamp(c.vh / 1400, 0.15, 0.7), pitch: U.rand(0.85, 1.25), pan: (c.x / S.W - 0.5) * 1.4 })
-          c.vh = -c.vh * 0.3; c.bounces++; c.om *= 0.45
-        } else { c.state = 'rest'; c.vh = 0 }
-      }
-    }
-    const R = SA.roller
-    if (R) {
-      if (R.state === 'fall') {
-        R.vh += g * dt; R.h -= R.vh * dt; R.phi += R.om * dt
-        if (R.h <= 0) {
-          R.h = 0
-          if (R.vh > 300) { R.vh = -R.vh * 0.36; if (!S.fast) App.audio.sfx('coin', { volume: 0.6, pan: (R.x / S.W - 0.5) * 1.4 }) } else { R.state = 'roll'; R.vh = 0 }
-        }
-      } else if (R.state === 'roll') {
-        R.u = Math.min(1, R.u + dt / 2.5)
-        const e = eo3(R.u)
-        R.x = lerp(R.from[0], R.to[0], e)
-        R.y = lerp(R.from[1], R.to[1], e) - Math.sin(e * Math.PI) * 18
-        R.phi += dt * (1 - e) * 14
-        R.tick -= dt
-        if (R.tick <= 0 && R.u < 0.9) { R.tick = 0.3 + R.u * 0.4; if (!S.fast) App.audio.sfx('coin', { volume: 0.12 + (1 - R.u) * 0.12, pitch: 1.6, pan: (R.x / S.W - 0.5) * 1.6 }) }
-        if (R.u >= 1) {
-          R.state = 'spin'; R.spin = 0
-          if (!S.fast) [0, 230, 400, 520, 600, 655, 690].forEach((ms, i) => later(() => App.audio.sfx('coin', { volume: 0.4 - i * 0.04, pitch: 1.1 + i * 0.08, pan: R.dir * 0.9 }), ms))
-        }
-      } else if (R.state === 'spin') {
-        R.spin = Math.min(1, R.spin + dt / 0.85)
-        if (R.spin >= 1) R.state = 'rest'
-      }
-    }
     if (SA.desk > 0 && SA.deskT < 1) SA.deskT = Math.min(1, SA.deskT + dt * 0.6)
   }
   function coinSprite(r, k) {
@@ -2114,29 +2057,7 @@
     x.beginPath(); x.ellipse(cx - r * 0.34, cy - r * 0.12, r * 0.3, r * 0.07, -0.18, 0, TAU); x.fill()
     return { c, w: w / k, h: h / k, ox: cx, oy: cy, r }
   }
-  function drawSpin(c, x, y, r, phi) {
-    const cw = Math.cos(phi)
-    const rx = Math.max(r * 0.12, r * Math.abs(cw))
-    c.fillStyle = '#6b4f25'
-    c.beginPath(); c.ellipse(x + (cw > 0 ? 1.4 : -1.4), y, rx, r, 0, 0, TAU); c.fill()
-    const g = c.createLinearGradient(x - rx, y - r, x + rx, y + r)
-    const lit = 0.55 + 0.45 * Math.abs(Math.sin(phi + 0.6))
-    g.addColorStop(0, `rgba(${(246 * lit) | 0},${(226 * lit) | 0},${(173 * lit) | 0},1)`)
-    g.addColorStop(0.5, '#c29a5b'); g.addColorStop(1, '#6f5532')
-    c.fillStyle = g
-    c.beginPath(); c.ellipse(x, y, rx, r, 0, 0, TAU); c.fill()
-    if (rx > r * 0.4) {
-      c.strokeStyle = 'rgba(88,62,26,.8)'; c.lineWidth = 0.8
-      c.beginPath(); c.ellipse(x, y, rx * 0.76, r * 0.76, 0, 0, TAU); c.stroke()
-      if (r > 11) {
-        c.save(); c.translate(x, y); c.scale(rx / r, 1)
-        c.fillStyle = 'rgba(70,48,18,.75)'; c.font = `700 ${Math.round(r * 0.62)}px Cinzel, serif`; c.textAlign = 'center'; c.textBaseline = 'middle'
-        c.fillText('100', 0, 1)
-        c.restore()
-      }
-    }
-  }
-  // 不动的部分：远处的椅背、桌面、席号、死者的叉（进入镜头、重排、字体到位时重画一次）
+  // 不动的部分：远处的椅背、桌面、席号、死者的叉、被处刑者留在椅上的衣服与金币（进入镜头、重排、字体到位时重画一次）
   SA.drawBase = function () {
     SA.baseDirty = false
     const c = SA.bctx, G = SA.G, k = SA.k
@@ -2191,15 +2112,34 @@
     for (const s of G.seats) {
       c.fillStyle = dead.has(s.k) ? 'rgba(160,40,40,.85)' : occupied.has(s.k) ? 'rgba(194,154,91,.7)' : 'rgba(91,83,77,.45)'
       c.fillText(U.roman(s.k), s.no[0], s.no[1])
-      if (dead.has(s.k)) {
+      if (SA.execSeats && SA.execSeats.has(s.k)) SA.drawRemains(c, s)
+      else if (dead.has(s.k)) {
         const [x, y] = s.spot, d = G.r * 0.7
         c.strokeStyle = 'rgba(125,22,22,.8)'; c.lineWidth = 1.4
         c.beginPath(); c.moveTo(x - d, y - d * 0.5); c.lineTo(x + d, y + d * 0.5); c.moveTo(x + d, y - d * 0.5); c.lineTo(x - d, y + d * 0.5); c.stroke()
       }
     }
   }
-  /* 重画：rect 为空时整张，否则只重画这一块（裁剪后从离屏画布拷回桌子，再按原次序画金币、滚走的一枚、书桌）。
-     静止时一笔不画；光标移动只重画光标附近（金币的高光、抖动）与书桌那一块。 */
+  // 被处刑的人坐过的椅子上：塌落的衣服和他的金币（运行规则 6.6）
+  SA.drawRemains = function (c, s) {
+    const G = SA.G, sp = SA.sprite
+    const [x, y] = s.chair
+    const w = G.rx * 0.1 * (0.75 + 0.5 * s.depth)
+    c.beginPath()
+    c.moveTo(x - w * 0.62, y)
+    c.bezierCurveTo(x - w * 0.58, y - w * 0.3, x - w * 0.24, y - w * 0.44, x - w * 0.02, y - w * 0.3)
+    c.bezierCurveTo(x + w * 0.2, y - w * 0.48, x + w * 0.58, y - w * 0.32, x + w * 0.66, y)
+    c.closePath()
+    c.fillStyle = '#0b0807'; c.fill()
+    c.strokeStyle = 'rgba(160,40,40,.85)'; c.lineWidth = 1; c.stroke()
+    c.beginPath(); c.moveTo(x - w * 0.3, y - w * 0.12); c.quadraticCurveTo(x, y - w * 0.24, x + w * 0.28, y - w * 0.06)
+    c.strokeStyle = 'rgba(160,40,40,.45)'; c.stroke()
+    const sc = (w * 0.2) / sp.r
+    for (let j = 0; j < 4; j++) c.drawImage(sp.c, x + w * 0.42 - sp.ox * sc, y + 1 - j * 1.6 - sp.oy * sc, sp.w * sc, sp.h * sc)
+    c.drawImage(sp.c, x - w * 0.5 - sp.ox * sc, y + 2 - sp.oy * sc, sp.w * sc, sp.h * sc)
+  }
+  /* 重画：rect 为空时整张，否则只重画这一块（裁剪后从离屏画布拷回桌子，再按原次序画金币、书桌）。
+     静止时一笔不画；光标移动只重画光标附近（金币的高光）与书桌那一块。 */
   SA.draw = function (t, rect) {
     const c = SA.ctx, G = SA.G, k = SA.k
     if (!G) return
@@ -2222,53 +2162,17 @@
     if (rect) c.restore()
   }
   SA.drawDyn = function (c, t) {
-    const G = SA.G
     const mx = S.cur.x, my = S.cur.y
-    // 金币（先远后近，先低后高）
+    // 金币（先远后近，先低后高）；光标附近的那几枚泛一点光
     const sp = SA.sprite
-    const rest = SA.coins.filter(x => x.state === 'rest').sort((a, b) => a.y - b.y || a.j - b.j)
-    for (const co of rest) {
+    const coins = SA.coins.slice().sort((a, b) => a.y - b.y || a.j - b.j)
+    for (const co of coins) {
       const sc = co.r / sp.r * 1.25
       const near = Math.hypot(co.x - mx, co.y - my)
-      const jig = near < 60 && S.cur.speed > 6 ? Math.sin(t * 40 + co.j) * 0.8 : 0
-      c.drawImage(sp.c, co.x - sp.ox * sc + jig, co.y - co.j * 2.3 - sp.oy * sc, sp.w * sc, sp.h * sc)
+      c.drawImage(sp.c, co.x - sp.ox * sc, co.y - co.j * 2.3 - sp.oy * sc, sp.w * sc, sp.h * sc)
       if (near < 120) {
         c.fillStyle = `rgba(255,240,205,${((1 - near / 120) * 0.35).toFixed(3)})`
         c.beginPath(); c.ellipse(co.x - co.r * 0.3, co.y - co.j * 2.3 - co.r * 0.12, co.r * 0.36, co.r * 0.09, -0.2, 0, TAU); c.fill()
-      }
-    }
-    for (const co of SA.coins) {
-      if (co.state !== 'fall') continue
-      drawSpin(c, co.x, co.y - co.h, co.r * 1.08, co.phi)
-    }
-    // 滚走的一枚
-    const R = SA.roller
-    if (R) {
-      const grow = 1 + 0.9 * clamp((R.y - R.from[1]) / Math.max(1, R.to[1] - R.from[1]))
-      const r = R.r * grow
-      if (R.state === 'fall') drawSpin(c, R.x, R.y - R.h, r, R.phi)
-      else if (R.state === 'roll') {
-        const lean = Math.sin(R.phi * 0.7) * 0.12
-        c.save(); c.translate(R.x, R.y - r); c.rotate(lean * R.dir)
-        c.fillStyle = '#5e4420'; c.beginPath(); c.ellipse(1.5 * R.dir, 0, r * 0.2, r, 0, 0, TAU); c.fill()
-        const g = c.createLinearGradient(-r * 0.2, -r, r * 0.2, r)
-        g.addColorStop(0, '#f2dba3'); g.addColorStop(1, '#7a5b2b')
-        c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, r * 0.2, r, 0, 0, TAU); c.fill()
-        const ty = Math.cos(R.phi) * r * 0.8
-        c.fillStyle = 'rgba(255,244,212,.7)'; c.fillRect(-r * 0.1, ty - 1, r * 0.2, 2)
-        c.restore()
-      } else {
-        const q = R.state === 'spin' ? eo3(R.spin) : 1
-        const rx = lerp(r * 0.2, r, q), ry = lerp(r, r * 0.42, q)
-        const rot = (1 - q) * Math.sin(q * 26) * 0.9
-        c.save(); c.translate(R.x, R.y - ry); c.rotate(rot)
-        c.fillStyle = '#4a3416'; c.beginPath(); c.ellipse(0, 2.4 * q, rx, ry, 0, 0, TAU); c.fill()
-        const g = c.createLinearGradient(-rx, -ry, rx, ry)
-        g.addColorStop(0, '#f6e2ad'); g.addColorStop(0.45, '#c9a161'); g.addColorStop(1, '#755729')
-        c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, TAU); c.fill()
-        c.strokeStyle = 'rgba(88,62,26,.85)'; c.lineWidth = 0.9
-        c.beginPath(); c.ellipse(0, 0, rx * 0.76, ry * 0.76, 0, 0, TAU); c.stroke()
-        c.restore()
       }
     }
     // 凶手套房的书桌：十枚，不广播，只在光标靠近时看得见
@@ -2347,7 +2251,7 @@
     put(SA.scan, 'visibility', so > 0.001 ? 'visible' : 'hidden')
     SA.scan.classList.toggle('is-run', so > 0.001) // 扫描线的无限动画只在看得见时跑
 
-    // 阶段名倒放：余波 → 判定 → … → 受命
+    // 阶段名倒放：发放 → 判定 → … → 受命
     if (lp < 0.66) {
       if (SA.rw !== -1) { SA.rw = -1; PH.root.classList.remove('is-rewind'); setPhase(6, { quiet: true, line: SHOTS[6].line }) }
       setPhaseFill(seg(0, 0.66, lp))
@@ -2379,45 +2283,24 @@
       SA.paint(t)
     }
   }
-  /* 画布只在有东西在动时重画；静止时一笔不画：
-     · 金币在落、那一枚在滚 → 整张重画（几秒钟）；
-     · 光标移动 / 快速晃动 → 只重画光标旧、新位置附近有金币的那一块（高光与抖动只在 120px 以内）；
+  /* 画布只在有东西变了时重画；静止时一笔不画（金币出现、消失时 SA.full 整张重画）：
+     · 光标移动 → 只重画光标旧、新位置附近有金币的那一块（高光只在 120px 以内）；
      · 书桌的明暗变了 → 只重画书桌那一块。 */
-  // 正在动的金币（下落的、滚走的那一枚）这一帧占的范围（CSS 像素）
-  SA.movingBox = function () {
-    const b = [Infinity, Infinity, -Infinity, -Infinity]
-    const add = (x, y, r) => { if (x - r < b[0]) b[0] = x - r; if (y - r < b[1]) b[1] = y - r; if (x + r > b[2]) b[2] = x + r; if (y + r > b[3]) b[3] = y + r }
-    for (const c of SA.coins) if (c.state === 'fall') add(c.x, c.y - c.h, c.r * 1.4 + 6) // 含落地后静止的那枚贴图
-    const R = SA.roller
-    if (R && R.state !== 'rest') {
-      const r = R.r * (1 + 0.9 * clamp((R.y - R.from[1]) / Math.max(1, R.to[1] - R.from[1]))) + 6
-      add(R.x, R.y - (R.state === 'fall' ? R.h : r), r * 1.6)
-    }
-    return b[0] < b[2] ? b : null
-  }
   SA.paint = function (t) {
     if (SA.full) {
       SA.full = false
       SA.draw(t)
-      SA.pmx = S.cur.x; SA.pmy = S.cur.y; SA.pfast = S.cur.speed > 6
-      SA.pbox = SA.movingBox()
+      SA.pmx = S.cur.x; SA.pmy = S.cur.y
       if (SA.desk > 0) SA.pDeskA = SA.deskAlpha(t, SA.deskGeo())
       return
     }
-    // 下落、滚动：只重画这一帧与上一帧它们占的范围（落地的那一帧由上一帧的范围盖住）
-    const box = SA.movingBox(), pb = SA.pbox
-    SA.pbox = box
-    if (box || pb) {
-      const u = box && pb ? [Math.min(box[0], pb[0]), Math.min(box[1], pb[1]), Math.max(box[2], pb[2]), Math.max(box[3], pb[3])] : (box || pb)
-      SA.draw(t, [u[0], u[1], u[2] - u[0], u[3] - u[1]])
-    }
-    const mx = S.cur.x, my = S.cur.y, fast = S.cur.speed > 6
+    const mx = S.cur.x, my = S.cur.y
     const RR = 175 // 高光半径 120 + 金币大小与叠高
-    const near = (x, y) => { for (const c of SA.coins) if (c.state === 'rest' && Math.abs(c.x - x) < 130 && Math.abs(c.y - y) < 130) return true; return false }
-    if (fast || mx !== SA.pmx || my !== SA.pmy || fast !== SA.pfast) {
+    const near = (x, y) => { for (const c of SA.coins) if (Math.abs(c.x - x) < 130 && Math.abs(c.y - y) < 130) return true; return false }
+    if (mx !== SA.pmx || my !== SA.pmy) {
       if (SA.pmx != null && near(SA.pmx, SA.pmy)) SA.draw(t, [SA.pmx - RR, SA.pmy - RR, RR * 2, RR * 2])
       if (near(mx, my)) SA.draw(t, [mx - RR, my - RR, RR * 2, RR * 2])
-      SA.pmx = mx; SA.pmy = my; SA.pfast = fast
+      SA.pmx = mx; SA.pmy = my
     }
     if (SA.desk > 0) {
       const g = SA.deskGeo()
@@ -2432,16 +2315,17 @@
   // 离开很远时释放画布（回来时整张重画）
   SA.release = function () { SA.cv.width = SA.cv.height = SA.base.width = SA.base.height = 1; SA.full = SA.baseDirty = true }
   SA.beats = [
-    { at: 0.05, on(q) { SA.rain(0, q) }, off() { SA.unrain(0) } },
+    // 审结：每人五枚
+    { at: 0.05, on() { SA.appear(0) }, off() { SA.unappear(0) } },
+    // 全部查明：每人再五枚；未能查明：凶手套房的书桌上另十枚，不广播
     {
       at: 0.21,
       on(q) {
-        if (S.branch === 'ok') SA.rain(1, q)
+        if (S.branch === 'ok') SA.appear(1)
         else { SA.desk = 1; SA.deskT = q ? 1 : 0; SA.full = true }
       },
-      off() { SA.unrain(1); SA.desk = 0; SA.deskT = 0; SA.full = true },
+      off() { SA.unappear(1); SA.desk = 0; SA.deskT = 0; SA.full = true },
     },
-    { at: 0.34, on(q) { SA.roll(q) }, off() { SA.roller = null; SA.full = true } },
     { at: 0.5, on(q) { if (!q) App.audio.sfx('whoosh', { volume: 0.5, pitch: 0.6 }) } },
     {
       at: 0.68,
@@ -2662,7 +2546,7 @@
     layout()
 
     // 进度与可见性都按板块的实时位置算，不依赖 ScrollTrigger 缓存的起止点：
-    // 上方板块（卡池、十五席……）事后变高而没有 refresh 时，本板块的镜头也不会错位。
+    // 上方板块（卡池、十三席……）事后变高而没有 refresh 时，本板块的镜头也不会错位。
     // ScrollTrigger 只用来读滚动速度（快速拖过时静默）。
     S.st = ScrollTrigger.create({ trigger: sec, start: 'top top', end: 'bottom bottom' })
     App.onVisible(sec, v => {
@@ -2677,7 +2561,7 @@
       if (e && e.boundingClientRect) { S.secTop = e.boundingClientRect.top + window.scrollY; S.secH = e.boundingClientRect.height }
     }, { rootMargin: '60% 0px' })
     S.near = (() => { const r = sec.getBoundingClientRect(), h = window.innerHeight; return r.bottom > -0.6 * h && r.top < 1.6 * h })()
-    // 离视口很远（scroll.js 的 is-far）：释放可以重画出来的画布（余波的金币画布、发现镜头的走廊画布），回来时重画
+    // 离视口很远（scroll.js 的 is-far）：释放可以重画出来的画布（发放镜头的金币画布、发现镜头的走廊画布），回来时重画
     App.bus.on('section:far', id => { if (id === 'cycle' && !S.far) { S.far = true; S.restore = false; SA.release(); SD.release() } })
     App.bus.on('section:near', id => { if (id === 'cycle' && S.far) { S.far = false; S.restore = true } })
 

@@ -8,7 +8,7 @@
 .wish-track { position: relative; height: 560vh; overflow: clip; }
 .wish-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 .wish-stage { position: absolute; inset: 0; touch-action: pan-y; }
-/* 穹顶肋拱画进同一张画布（半分辨率放大即景深，不再是第二张带 CSS 模糊的整屏画布） */
+/* 灯环与天眼口画进同一张画布（半分辨率放大即景深，不再是第二张带 CSS 模糊的整屏画布） */
 .wish-cv { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 
 /* ---------- 两端的暗（由 wish.js 按位置驱动） ---------- */

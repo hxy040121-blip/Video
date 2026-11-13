@@ -293,7 +293,7 @@
       lampCol: [226, 180, 112],    // 席位小光池
       beamCol: [235, 227, 214],    // 天眼落下的一束光
       skyCol: [196, 208, 228],     // 阴天的天光
-      skyPow: 0.75,
+      skyPow: 0.6,
       ringCol: [255, 232, 204],    // 灯环：乳白玻璃球灯
       ringPow: 0.3,
       doorCol: [206, 178, 136],    // 门外（门厅、两院）的光：天光渐暗以后是灯光
@@ -1304,17 +1304,17 @@
       PS.sc = sc; PS.hw = 0.12 + 0.11 * sc; PS.hd = 0.06 + 0.025 * sc
       return PS
     }
-    // 卡（63×88 mm，画大约 1.5 倍）：u 是从椅位看过去的左右
+    // 卡（63×88 mm，画大约 1.3 倍）：u 是从椅位看过去的左右
     function drawCard(ctx, s, u, a, rule) {
       const c = S.cam, zt = G.tableH + 0.004
-      const k = (1.45 + 0.35 * (S.numScale - 1)) * mix(1.4, 1, easeIO(clamp01(a)))
+      const k = (1.3 + 0.35 * (S.numScale - 1)) * mix(1.4, 1, easeIO(clamp01(a)))
       const hw = 0.0315 * k, hd = 0.044 * k, v = G.plateV + 0.27
       const q = c.poly([L2W(s, u - hw, v - hd, zt), L2W(s, u + hw, v - hd, zt), L2W(s, u + hw, v + hd, zt), L2W(s, u - hw, v + hd, zt)])
       if (!q) return
       const P = L2W(s, u, v, zt)
       ctx.globalAlpha = S.floorA * clamp01(a)
       pathPts(ctx, q)
-      ctx.fillStyle = shade(rule ? [0.72, 0.69, 0.62] : [0.78, 0.76, 0.7], P[0], P[1], zt, 0, 0, 1, seatExtra(s), 0.8)
+      ctx.fillStyle = shade(rule ? [0.5, 0.48, 0.43] : [0.56, 0.54, 0.5], P[0], P[1], zt, 0, 0, 1, seatExtra(s), 0.25)
       ctx.fill()
       // 规则卡一出现就有字（字在卡面上流动）；身份卡两面空白，主人碰到才现字
       if (rule && plane(ctx, P, [s.rx, s.ry, 0], [-s.fx, -s.fy, 0], 0.001)) {
@@ -1934,7 +1934,8 @@
     }
     // 天眼的天光：阴天的散光，从天眼口垂到桌面，一柱很淡的光（尘在里面）
     function drawSky(ctx) {
-      const A = S.sky * S.skyA * (1 - S.dark)
+      // 正俯视时整柱光叠在一处：压淡，免得桌心一团白
+      const A = S.sky * S.skyA * (1 - S.dark) * mix(0.4, 1, S.tilt)
       if (A <= 0.01) return
       const key = camKey()
       if (key !== skyKey) {
@@ -2393,7 +2394,8 @@
     E.tagNo = U.el('b.prologue-tag-no')
     E.tagName = U.el('span.prologue-tag-name')
     E.tagLine = U.el('p.prologue-tag-line')
-    E.tag = U.el('div.prologue-tag', { 'aria-hidden': 'true' }, [U.el('div.prologue-tag-in', null, [U.el('div.prologue-tag-head', null, [E.tagNo, E.tagName]), E.tagLine])])
+    E.tagIn = U.el('div.prologue-tag-in', null, [U.el('div.prologue-tag-head', null, [E.tagNo, E.tagName]), E.tagLine])
+    E.tag = U.el('div.prologue-tag', { 'aria-hidden': 'true' }, [E.tagIn])
     E.cue = U.el('div.prologue-cue.is-off', { 'aria-hidden': 'true' }, [U.el('i')])
     E.keyTag = U.el('span.prologue-key-no', { text: 'I' })
     E.key = U.el('div.prologue-key', { 'aria-hidden': 'true', html: KEY_SVG })
@@ -2595,6 +2597,8 @@
       E.tagName.textContent = c ? c.name : '—'
       if (P.lineK !== k) { P.lineK = -1; E.tagLine.textContent = ''; E.tagLine.classList.remove('is-on') }
       E.tag.style.setProperty('--acc', 'rgb(' + s.acc.map(v => v | 0).join(',') + ')')
+      // 名牌的宽度只在换人时量一次（帧循环里据此把名牌留在画面里）
+      P.tagW = E.tagIn.offsetWidth || 0
       gsap.fromTo(E.tag, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power2.out', overwrite: true })
       gsap.fromTo(E.tagName, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'expo.out' })
     }
@@ -2621,6 +2625,8 @@
     const el = P.E.tagLine
     el.classList.add('is-on')
     App.text.type(el, line, { speed: 34, cancel: () => P.lineK !== k })
+    // 台词逐字打出来，名牌会长到 max-width（桌面 19em、手机 62vw）
+    P.tagW = Math.max(P.tagW || 0, P.mob ? P.H.W * 0.62 : 19 * 14)
     P.tagUntil = performance.now() + 2400 + line.length * 110
   }
 
@@ -2847,7 +2853,11 @@
         if (side !== P.tagSide) { P.tagSide = side; E.tag.dataset.side = side }
         const vside = oy > 0.2 ? 'b' : 't'
         if (vside !== P.tagV) { P.tagV = vside; E.tag.dataset.v = vside }
-        x = U.clamp(x, 12, H.W - 12); y = U.clamp(y, 80, H.H - 30)
+        // 名牌整块留在画面里（往左排的从 x 起向右伸，往右排的到 x 为止，居中的两边各一半）
+        const tw = P.tagW || 0
+        const lo = side === 'r' ? 12 + tw : side === 'c' ? 12 + tw / 2 : 12
+        const hi = side === 'l' ? H.W - 12 - tw : side === 'c' ? H.W - 12 - tw / 2 : H.W - 12
+        x = hi > lo ? U.clamp(x, lo, hi) : H.W / 2; y = U.clamp(y, 80, H.H - 30)
         css(E.tag, 'transform', 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0)')
       }
     }

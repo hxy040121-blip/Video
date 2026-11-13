@@ -173,7 +173,6 @@
 .cycle-c-medal .portrait.is-photo > img,
 .cycle-c-ghost .portrait.is-photo > img,
 .cycle-k-pass .portrait.is-photo > img,
-.cycle-v-deadp .portrait.is-photo > img,
 .cycle-v-shade.is-photo > img { transform: scale(1.035); }
 
 /* 只显眼睛（剪影里发光的眼） */
@@ -316,15 +315,14 @@
 .cycle-k-lines.is-lit .k-run { stroke: rgba(255, 46, 126, .8); }
 .cycle-k-lines.is-lit .k-joint { stroke: rgba(240, 214, 170, .4); }
 .cycle-k-lines.is-lit .k-doorway { fill: none; stroke: rgba(240, 214, 170, .7); }
-.cycle-k-lamps { position: absolute; inset: 0; pointer-events: none; transition: opacity .08s; }
-.cycle-k-lamps.is-out { opacity: 0; }
+/* 廊里的顶灯（乳白玻璃球灯）：不闪、不灭；23:00—05:00 低亮（is-low，cycle.js 按死亡时刻加） */
+.cycle-k-lamps { position: absolute; inset: 0; pointer-events: none; }
+.cycle-k-lamps.is-low { opacity: .42; }
 .cycle-k-lamp {
   position: absolute; left: 0; top: 0; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 226, 180, .75) 0, rgba(255, 196, 130, .3) 7%, rgba(226, 150, 90, .1) 30%, transparent 66%);
+  background: radial-gradient(circle, rgba(255, 238, 214, .8) 0, rgba(255, 220, 178, .32) 7%, rgba(226, 180, 120, .1) 30%, transparent 66%);
   /* 原有 mix-blend-mode: screen：灯所在的走廊层底色是透明的，screen 与普通叠加只在压到细线处有差别，
      却要让整张走廊层多走一道离屏混合，去掉 */
-  /* 闪烁（原 CSS 动画 cycle-lamp）由 cycle.js 只在换档时写 opacity；小合成层，改 opacity 不重画 */
-  will-change: opacity;
 }
 .cycle-k.is-dead .cycle-k-lamp { background: radial-gradient(circle, rgba(255, 150, 175, .7) 0, rgba(255, 46, 126, .28) 7%, rgba(163, 16, 74, .12) 30%, transparent 66%); }
 .cycle-k-walker { position: absolute; left: 0; top: 0; display: none; pointer-events: none; }
@@ -547,7 +545,7 @@
 .cycle-c-center {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%;
   overflow: hidden; opacity: 0; transition: opacity .35s; pointer-events: none;
-  /* 不给它常驻 will-change：它一成层，压在上面的满屏票线 SVG 和十五个席位都会被逼成合成层 */
+  /* 不给它常驻 will-change：它一成层，压在上面的满屏票线 SVG 和十三个席位都会被逼成合成层 */
 }
 .cycle-c-center.is-on { opacity: 1; }
 .cycle-c-ghost { position: absolute; left: 12%; right: 12%; top: 4%; bottom: -10%; }
@@ -638,7 +636,7 @@
   transform: translateX(-50%) scale(.94); transform-origin: 50% 100%; will-change: transform;
 }
 .cycle-v-fig { --cut: 0; }
-.cycle-v-fig > .portrait, .cycle-v-dead .portrait { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cycle-v-fig > .portrait { position: absolute; inset: 0; width: 100%; height: 100%; }
 .cycle-v-fig > .portrait {
   clip-path: polygon(calc(var(--cut) * 160%) 0, 110% 0, 110% 100%, calc(var(--cut) * 160% - 60%) 100%);
   /* 下沿渐隐，左右两侧也渐隐：位图人物常被原图边缘截断，不渐隐会留下一道竖直的硬边 */
@@ -666,30 +664,27 @@
   mix-blend-mode: screen; pointer-events: none;
 }
 .cycle-v-side.is-shadow .cycle-v-fig::after { content: ''; }
-.cycle-v-p.is-alt, .cycle-v-deadp .is-alt { display: none; }
-.cycle-v-r.is-alt .cycle-v-p.is-alt, .cycle-v-r.is-alt .cycle-v-deadp .is-alt { display: block; }
-.cycle-v-r.is-alt .cycle-v-p:not(.is-alt), .cycle-v-r.is-alt .cycle-v-deadp .portrait:not(.is-alt) { display: none; }
-/* 死后的灰像：没死时 visibility: hidden（等淡出结束再藏），不留透明的合成层 */
+.cycle-v-p.is-alt { display: none; }
+.cycle-v-r.is-alt .cycle-v-p.is-alt { display: block; }
+.cycle-v-r.is-alt .cycle-v-p:not(.is-alt) { display: none; }
+/* 处刑以后：人消失，原地只剩塌落的衣服、鞋和散落的金币（运行规则 6.6）。
+   没处刑时 visibility: hidden（等淡出结束再藏），不留透明的合成层 */
 .cycle-v-dead { opacity: 0; visibility: hidden; transition: opacity .5s, visibility 0s .5s; pointer-events: none; }
-.cycle-v-side.is-gone .cycle-v-dead { opacity: 1; visibility: visible; transition: opacity .5s, visibility 0s; }
-.cycle-v-deadp {
-  position: absolute; inset: 0; opacity: .55;
-  -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(180deg, #000 60%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-  mask-composite: intersect;
-}
-.cycle-v-x { position: absolute; left: 22%; right: 22%; top: 24%; aspect-ratio: 1; }
-.cycle-v-x::before, .cycle-v-x::after {
-  content: ''; position: absolute; left: -10%; right: -10%; top: 50%; height: 6px; margin-top: -3px;
-  background: var(--blood); box-shadow: 0 0 20px var(--blood);
-  transform: rotate(45deg) scaleX(0);
-}
-.cycle-v-x::after { transform: rotate(-45deg) scaleX(0); }
-.cycle-v-side.is-gone .cycle-v-x::before { animation: cycle-x1 .3s .1s cubic-bezier(.7, 0, .2, 1) forwards; }
-.cycle-v-side.is-gone .cycle-v-x::after { animation: cycle-x2 .3s .32s cubic-bezier(.7, 0, .2, 1) forwards; }
-@keyframes cycle-x1 { to { transform: rotate(45deg) scaleX(1); } }
-@keyframes cycle-x2 { to { transform: rotate(-45deg) scaleX(1); } }
+.cycle-v-side.is-gone .cycle-v-dead { opacity: 1; visibility: visible; transition: opacity .25s, visibility 0s; }
+.cycle-v-remains { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cycle-v-remains g { transform-box: fill-box; transform-origin: 50% 100%; }
+.cycle-v-remains .r-cloth { fill: #070506; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.cycle-v-remains .r-fold { fill: none; stroke: currentColor; stroke-width: 1.1; stroke-linecap: round; opacity: .55; }
+.cycle-v-remains .r-shoe { fill: #050304; stroke: currentColor; stroke-width: 1.3; stroke-linejoin: round; }
+.cycle-v-remains .r-coin ellipse { fill: #b88f52; stroke: #5a4220; stroke-width: 1; }
+.cycle-v-l .cycle-v-remains { color: rgba(194, 154, 91, .75); }
+.cycle-v-r .cycle-v-remains { color: rgba(255, 46, 126, .7); }
+/* 落下：衣服先塌，金币随后落定（一次性的过渡，只动 transform / opacity） */
+.cycle-v-remains .r-cloth, .cycle-v-remains .r-fold, .cycle-v-remains .r-shoe { transform: scaleY(1.6) translateY(-6%); opacity: 0; }
+.cycle-v-remains .r-coin { transform: translateY(-40%); opacity: 0; }
+.cycle-v-side.is-gone .cycle-v-remains .r-cloth, .cycle-v-side.is-gone .cycle-v-remains .r-shoe { transform: none; opacity: 1; transition: transform .45s cubic-bezier(.5, 0, .75, 0), opacity .2s; }
+.cycle-v-side.is-gone .cycle-v-remains .r-fold { transform: none; opacity: .55; transition: transform .45s cubic-bezier(.5, 0, .75, 0), opacity .4s .2s; }
+.cycle-v-side.is-gone .cycle-v-remains .r-coin { transform: none; opacity: 1; transition: transform .32s .12s cubic-bezier(.55, 0, .9, .4), opacity .1s .12s; }
 .cycle-v-txt {
   position: absolute; z-index: 2; top: calc(var(--hud-h) + 6vh); left: 0;
   transform: translateX(-50%) scale(.79); transform-origin: 50% 0;
@@ -752,7 +747,7 @@
 @keyframes cycle-eyes { 0%, 100% { opacity: 1; } 47% { opacity: 1; } 48% { opacity: .1; } 50% { opacity: 1; } }
 
 /* =========================================================
-   镜头 7 · 余波
+   镜头 7 · 发放
    ========================================================= */
 .cycle-a::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 72% 70% at 50% 56%, rgba(26, 19, 10, .36), rgba(5, 4, 3, .92) 76%); }
 .cycle-a-world { position: absolute; inset: 0; will-change: transform; }

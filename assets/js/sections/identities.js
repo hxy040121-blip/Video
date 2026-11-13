@@ -1,16 +1,19 @@
 /* ==========================================================
    身份 · identities
-   十五组身份牌。进入板块：十五张牌从画外一张张发到圆桌上，排成扇面（牌背朝上，字尚未确定），
+   十三组身份牌。进入板块：十三张牌从画外一张张发到圆桌上，排成扇面（两面空白，字尚未现出），
    再依次翻成正位，纹章与卡面原文像墨一样浮出。
    光标：横向拨动扇面；离光标最近的牌抬起、放大、随光标 3D 倾斜，表面一道金箔反光。
    拿起：牌飞到画面中央，其余牌暗下后退；翻面 → 逆位（色差、背景烟雾转为血红）。
-   圣女：按住 1.2 秒，「圣女」二字被火烧穿，烧出「贞德」。丘比特：翻过去还是同一面。
+   丘比特、平民：只有一个身份，翻过去还是同一面。
+   国王：逆位朝上时按住 1.2 秒，国王翻面——卡认主，字随之改写：正面成了国王，背面成了骑士
+   （主持人游戏第 1 节；5.9 结算要点给了翻面以后的两面原文，即 WORLD.identities[].flip）。仅一次。
    无人触碰时一道光扫过整副牌；光标在一张牌上停久了，它会一瞬间露出逆位又若无其事地回来。
    滚到板块末尾：扇面收拢成一叠，逐张扣过去（牌背朝上，字隐去）。
    手机端：横向滑动的牌列，点按拿起，按钮翻面。
-   卡面原文、卡背原文取自 WORLD.identities（主持人游戏.md 第 5 节），
-   卡底极小的共同说明取自第 5 节开头的引用块。牌的尺寸取自洋馆物理层.md 第 9 节（63×88 mm，
-   与扑克牌同大、更厚更硬）；身份卡撕不开、烧不坏（物理层 0.3）。
+   卡面原文、卡背原文取自 WORLD.identities（主持人游戏.md 第 5 节）；
+   正面卡底极小的共同说明取自 WORLD.identityNote（第 5 节开头的引用块：印在正面、正位那段下面，背面没有）。
+   牌的尺寸取自洋馆物理层.md 第 9 节（63×88 mm，与扑克牌同大、更厚更硬）；
+   身份卡撕不开、剪不断、烧不着（物理层 0.3）。桌沿的记号是议事厅圆桌的十三个席位。
    ========================================================== */
 (function () {
   'use strict'
@@ -31,15 +34,23 @@
   const MID = (N - 1) / 2
   const RATIO = 88 / 63
   const DEG = Math.PI / 180
-  const OATH = '受命者视为同时拥有此身份。'
-  const COMMON = [
-    '主动能力须在心中向主持人明确提出发动请求及必要选择。要求公开身份的能力，须完成相应公开步骤。',
-    '身份卡上写明会向全馆说明的能力，发动时全馆广播能力名称与发生了什么，不公布发动者；没有这样写的能力不广播。',
-  ]
+  // 逆位卡背的第一段（主持人游戏 5.x「背面」）：单独排在名字下面
+  const OATH = '成为受命者时，视为同时拥有此身份。'
+  // 圆桌的席位数（主持人游戏 3.2：十三个编号席位）
+  const SEATS = (WORLD.coins && WORLD.coins.seats) || 13
+  // 正面卡底的共同说明：原文一段，按句拆成长短相近的两行
+  const COMMON = (() => {
+    const s = String(WORLD.identityNote || '').match(/[^。]+。/g) || []
+    if (s.length < 2) return [s.join(''), '']
+    const len = a => a.join('').length
+    let k = 1
+    for (let j = 1; j < s.length; j++) if (Math.abs(len(s.slice(0, j)) - len(s.slice(j))) < Math.abs(len(s.slice(0, k)) - len(s.slice(k)))) k = j
+    return [s.slice(0, k).join(''), s.slice(k).join('')]
+  })()
   const PAL = {
     base: { a: '#150c19', b: '#c29a5b', glow: 0.36 },
     rev: { a: '#1f0509', b: '#e3265a', glow: 0.58 },
-    fire: { a: '#1d0d05', b: '#ff7b2e', glow: 0.68 },
+    crown: { a: '#171006', b: '#e6c27a', glow: 0.64 },
   }
   const HOLD_MS = 1200
   // 金箔反光带的方向：原先 118° 线性渐变的走向（屏幕坐标，y 向下）
@@ -59,7 +70,7 @@
     cards: [], hover: -1, kb: -1, pointerIn: false, cursorForced: false,
     psi: 0, psiV: 0, pin: 0, gather: 0, rowX: 0,
     dealt: false, ready: false, focus: null, busy: false, rev: false,
-    fa: { v: 0 }, wheel: 0, hold: null, burning: false, lastPal: null, hush: false,
+    fa: { v: 0 }, wheel: 0, hold: null, turning: false, lastPal: null, hush: false,
     q: App.quality ? App.quality.level : 2,
   }
 
@@ -198,7 +209,7 @@ ${corners}${mid}
 <text x="0" y="10.4" textLength="482" lengthAdjust="spacingAndGlyphs">${U.esc(COMMON[0])}</text>
 <text x="0" y="24.2" textLength="482" lengthAdjust="spacingAndGlyphs">${U.esc(COMMON[1])}</text></g></svg>`
   }
-  // 同一段小字预先画成两张图（金 / 红），所有牌共用。
+  // 同一段小字预先画成一张图，所有牌的正面共用（逆位那一面没有共同说明）。
   // SVG <text> 会随祖先的 transform 变化重新排版、重画（牌每帧都在微微摆动），画成图之后就不会了。
   // 与 SVG 版等价：viewBox 482×28、两行基线 10.4 / 24.2、字号 9.4、每行横向拉伸到正好 482 宽。
   // 按拿起时的实际设备像素画（字重、清晰度与原来的 SVG 一致）；尺寸变了（resize）再画一次。
@@ -223,11 +234,10 @@ ${corners}${mid}
     }
     const apply = () => {
       try {
-        const pos = draw('#8a6838'), neg = draw('#8a2328')
-        if (!pos || !neg) return
-        S.stage.style.setProperty('--idn-fine-pos', `url(${pos})`)
-        S.stage.style.setProperty('--idn-fine-neg', `url(${neg})`)
-        for (const c of S.cards) for (const f of [c.front, c.back]) f.fine.replaceChildren()
+        const pos = draw('#8a6838')
+        if (!pos) return
+        S.stage.style.setProperty('--idn-fine', `url(${pos})`)
+        for (const c of S.cards) for (const f of [c.front, c.back]) if (f.fine) f.fine.replaceChildren()
         S.stage.classList.add('is-fineimg')
         S._fineK = k
       } catch (e) { /* 画不出来就保留 SVG */ }
@@ -239,16 +249,10 @@ ${corners}${mid}
   /* =====================================================================
      牌
      ===================================================================== */
+  // 一面牌：骨架只建一次；名字、纹章、原文由 writeFace 写进去（国王翻面时，同一面改写成另一个身份）
   function buildFace(c, side) {
     const d = c.def
-    const showFront = side === 'front' || d.noReverse
-    const neg = !showFront
-    const name = showFront ? d.front : d.back
-    const paras = typo(showFront ? d.frontText : d.backText).split(/\n{2,}/).map(s => s.trim()).filter(Boolean)
-    let oath = null
-    if (neg && paras[0] === OATH) oath = paras.shift()
-    const total = paras.join('').length
-
+    const neg = side === 'back' && !d.noReverse
     const face = el(`div.face.face--${side}.${neg ? 'is-neg' : 'is-pos'}.is-blank`, { 'aria-hidden': 'true' })
     face.style.setProperty('--tx-x', Math.round(U.rand(0, 100)) + '%')
     face.style.setProperty('--tx-y', Math.round(U.rand(0, 100)) + '%')
@@ -256,27 +260,39 @@ ${corners}${mid}
     const frame = el('div.frame')
     const num = el('div.num', {}, [el('span', { text: U.roman(d.no) })])
     const sig = el('div.sig')
-    sig.appendChild(App.sigil(name))
-    const nameT = el('span.name-t', { text: name })
+    const nameT = el('span.name-t')
     const nameEl = el('div.name', {}, [nameT])
-    setNameSize(nameEl, name)
     const div = el('div.div')
-    const tx = el('div.tx' + (total <= 40 && paras.length === 1 ? '.is-short' : ''))
-    for (const p of paras) tx.appendChild(U.el('p', { text: p }))
+    const tx = el('div.tx')
     const text = el('div.text', {}, [tx])
-    const fine = el('div.fine', { html: fineSVG() })
+    // 共同说明只印在正面（只有一个身份的牌，背面与正面同文，也印）
+    const fine = neg ? null : el('div.fine', { html: fineSVG() })
+    const oath = neg ? el('div.oath', {}, [el('span')]) : null
     // 叠放：纸 → 金色烫印（边框、编号、纹章、分隔）→ 箔光 → 墨字。暗化是整张牌（.identities-slot）上的 brightness 滤镜。
     // 箔光是 color-dodge / soft-light 混合层，只能压在纸和烫金上；放在墨字之上会把黑字染成紫红。
     // 箔光亮着时是独立的合成层：光标移动时只改它的 transform / opacity，牌面不重画。
-    let oathEl = null
-    if (oath) oathEl = el('div.oath', {}, [el('span', { text: oath })])
-    const ink = el('div.ink', {}, [nameEl, oathEl, text, fine])
+    const ink = el('div.ink', {}, [nameEl, oath, text, fine])
     const sheen = el('div.sheen'), glare = el('div.glare')
     for (const k of [paper, frame, num, sig, div, sheen, glare, ink]) face.appendChild(k)
-    return {
-      el: face, side, neg, name, nameEl, nameT, sig, div, text, tx, num, oath: oathEl, fine, tf: 1.6, tfr: 1.9, inked: false,
+    const f = {
+      el: face, side, neg, name: '', nameEl, nameT, sig, div, text, tx, num, oath, fine, tf: 1.6, tfr: 1.9, inked: false,
       sheen, glare, lit: false, _st: '', _so: '', _gt: '', _go: '',
     }
+    const one = side === 'front' || d.noReverse
+    writeFace(f, one ? d.front : d.back, one ? d.frontText : d.backText)
+    return f
+  }
+  function writeFace(f, name, raw) {
+    const paras = typo(raw).split(/\n{2,}/).map(s => s.trim()).filter(Boolean)
+    const oath = f.neg && paras[0] === OATH ? paras.shift() : ''
+    f.name = name
+    f.nameT.textContent = name
+    setNameSize(f.nameEl, name)
+    f.sig.replaceChildren(App.sigil(name))
+    f.sig._prep = null
+    if (f.oath) { f.oath.firstChild.textContent = oath; f.oath.hidden = !oath }
+    f.tx.classList.toggle('is-short', paras.length === 1 && paras[0].length <= 40)
+    f.tx.replaceChildren(...paras.map(p => U.el('p', { text: p })))
   }
   function setNameSize(nameEl, name) {
     const n = Array.from(name).length
@@ -288,15 +304,12 @@ ${corners}${mid}
 
   function buildCard(def, i) {
     const c = {
-      i, def, name: def.front, burned: false,
+      i, def, crowned: false,
       cur: { x: 0, y: 0, r: 0, s: 0.3 }, mode: 'deck', fly: null,
-      flip: 180, flipLift: 0, tx: 0, ty: 0, swing: 0, lift: 0, foil: 0, dim: 0, heat: 0,
+      flip: 180, flipLift: 0, tx: 0, ty: 0, swing: 0, lift: 0, foil: 0, dim: 0, glow: 0,
       fx: 0.5, fy: 0.5, z: i + 1, jit: U.rand(-2.4, 2.4), _t: '', _c: '', _z: -1, _d: '', _sh: '', _sho: '',
     }
-    const slot = el('div.slot', {
-      role: 'button', tabindex: '-1', 'data-i': i,
-      'aria-label': U.roman(def.no) + ' ' + def.front + (def.noReverse ? '' : ' / ' + def.back),
-    })
+    const slot = el('div.slot', { role: 'button', tabindex: '-1', 'data-i': i })
     const shadow = el('div.shadow')
     const glitch = el('div.glitch')
     const card = el('div.card')
@@ -305,6 +318,7 @@ ${corners}${mid}
     c.slot = slot; c.shadow = shadow; c.glitch = glitch; c.card = card
     c.front = buildFace(c, 'front')
     c.back = buildFace(c, 'back')
+    slot.setAttribute('aria-label', cardLabel(c))
     card.append(...edges, c.front.el, c.back.el)
     glitch.appendChild(card)
     slot.append(shadow, glitch)
@@ -321,6 +335,8 @@ ${corners}${mid}
     })
     return c
   }
+  // 编号与此刻两面的名字（国王翻面以后跟着变）
+  const cardLabel = c => U.roman(c.def.no) + ' ' + c.front.name + (c.def.noReverse ? '' : ' / ' + c.back.name)
   const faceOf = c => (Math.abs(mod360(c.flip) - 180) < 90 ? c.back : c.front)
   const isBack = c => Math.abs(mod360(c.flip) - 180) < 1
 
@@ -336,24 +352,23 @@ ${corners}${mid}
     f.el.style.setProperty(key, lo.toFixed(3))
     return lo
   }
-  function fitAll() {
-    for (const c of S.cards) {
-      // 量尺寸时关掉过渡（否则 top 的过渡让量到的是旧版式的高度）
-      const inst = [c.front.el, c.back.el].filter(n => !n.classList.contains('is-instant'))
-      inst.forEach(n => n.classList.add('is-instant'))
-      c.slot.classList.remove('is-read')
-      for (const f of [c.front, c.back]) f.tf = fitFace(f, false)
-      c.slot.classList.add('is-read')
-      for (const f of [c.front, c.back]) f.tfr = fitFace(f, true)
-      c.slot.classList.toggle('is-read', !!c._read)
-      for (const f of [c.front, c.back]) {
-        f.el.style.setProperty('--tf', f.tf.toFixed(3))
-        f.el.style.setProperty('--tfr', f.tfr.toFixed(3))
-      }
-      void c.slot.offsetWidth
-      inst.forEach(n => n.classList.remove('is-instant'))
+  function fitCard(c) {
+    // 量尺寸时关掉过渡（否则 top 的过渡让量到的是旧版式的高度）
+    const inst = [c.front.el, c.back.el].filter(n => !n.classList.contains('is-instant'))
+    inst.forEach(n => n.classList.add('is-instant'))
+    c.slot.classList.remove('is-read')
+    for (const f of [c.front, c.back]) f.tf = fitFace(f, false)
+    c.slot.classList.add('is-read')
+    for (const f of [c.front, c.back]) f.tfr = fitFace(f, true)
+    c.slot.classList.toggle('is-read', !!c._read)
+    for (const f of [c.front, c.back]) {
+      f.el.style.setProperty('--tf', f.tf.toFixed(3))
+      f.el.style.setProperty('--tfr', f.tfr.toFixed(3))
     }
+    void c.slot.offsetWidth
+    inst.forEach(n => n.classList.remove('is-instant'))
   }
+  function fitAll() { for (const c of S.cards) fitCard(c) }
   // 拿起时是否改用「细读」版式（纹章缩小，字更大）：正常版式下字小于约 11.5px 时
   const needsRead = c => Math.min(c.front.tf, c.back.tf) * S.mm < 11.5
 
@@ -381,7 +396,7 @@ ${corners}${mid}
 
     // 圆桌（俯视，只看得见桌沿的一段）
     S.table = el('div.table', { 'aria-hidden': 'true' })
-    // 桌沿双线、虚线圈静止；十五个席位记号在另一张 SVG 里，整张随扇面旋转（合成层，不重画）。
+    // 桌沿双线、虚线圈静止；十三个席位记号在另一张 SVG 里，整张随扇面旋转（合成层，不重画）。
     // 记号层只有几个小菱形：SVG 本身只是桌心的一个点（1 单位 = 1px），记号画在盒子外（overflow 可见）。
     // 画面与原先 2000×2000 视框、铺满整张桌子的写法相同；只是不再有一个两千多像素见方、几乎全透明的盒子。
     S.tableSvg = U.svg('svg', { viewBox: '-1000 -1000 2000 2000', preserveAspectRatio: 'none', class: PX + 'table-svg' })
@@ -415,7 +430,7 @@ ${corners}${mid}
     S.track = el('div.track')
     for (let i = 0; i < N; i++) S.track.appendChild(el('i.snap'))
     S.scroller.appendChild(S.track)
-    // 手机：牌列下方十五道刻度，指示当前位置，点按跳到那张
+    // 手机：牌列下方每张牌一道刻度，指示当前位置，点按跳到那张
     S.rticks = el('div.rticks')
     S.rtickEls = DEFS.map((d, i) => {
       const b = el('button.rtick', { type: 'button', 'aria-label': U.roman(d.no) + ' ' + d.front })
@@ -551,7 +566,7 @@ ${corners}${mid}
     Object.assign(S.tableLight.style, { left: (tcx - g.rt).toFixed(1) + 'px', top: (tcy - g.rt).toFixed(1) + 'px', width: (g.rt * 2).toFixed(1) + 'px', height: (g.rt * 2).toFixed(1) + 'px' })
     S.tableRot.style.left = (tcx - 1).toFixed(1) + 'px'
     S.tableRot.style.top = (tcy - 1).toFixed(1) + 'px'
-    // 桌沿（viewBox 半径 1000）：双线、十五个席位记号
+    // 桌沿（viewBox 半径 1000）：双线、十三个席位记号（一号正北，顺时针）
     const ns = 'http://www.w3.org/2000/svg'
     const svg = S.tableSvg
     svg.setAttribute('viewBox', `${(-tcx / u).toFixed(3)} ${(-tcy / u).toFixed(3)} ${(S.vw / u).toFixed(3)} ${(h / u).toFixed(3)}`)
@@ -574,8 +589,8 @@ ${corners}${mid}
     marks.setAttribute('class', PX + 'table-marks')
     // 原视框里的坐标换算成像素
     const f = v => +(v * u).toFixed(2)
-    for (let k = 0; k < 15; k++) {
-      const a = k * 24
+    for (let k = 0; k < SEATS; k++) {
+      const a = (k * 360) / SEATS
       const p = document.createElementNS(ns, 'path')
       p.setAttribute('d', `M0 ${f(-1010)}L${f(7)} ${f(-993)}L0 ${f(-976)}L${f(-7)} ${f(-993)}Z`)
       p.setAttribute('transform', `rotate(${a})`)
@@ -684,8 +699,8 @@ ${corners}${mid}
   /* ---------- 名牌 ---------- */
   function setPlate(c) {
     const num = c ? U.roman(c.def.no) : 'I — ' + U.roman(N)
-    const name = c ? c.name : '身份'
-    const rev = c ? (c.def.noReverse ? c.name : c.def.back) : ''
+    const name = c ? c.front.name : '身份'
+    const rev = c ? c.back.name : ''
     if (S.plateNum.textContent !== num) S.plateNum.textContent = num
     if (S._plateName !== name) {
       S._plateName = name
@@ -783,7 +798,7 @@ ${corners}${mid}
 
     // 倾斜与反光：抬起的牌、拿在手里的牌跟随光标
     let ttx = 0, tty = 0, foilT = 0
-    const active = (isH && S.mode === 'desk' && S.pointerIn) || (c.mode === 'focus' && S.focus === c.i && !S.burning)
+    const active = (isH && S.mode === 'desk' && S.pointerIn) || (c.mode === 'focus' && S.focus === c.i && !S.turning)
     if (active) {
       const a = p.r * DEG
       const dx = mx - p.x, dy = my - p.y
@@ -1077,7 +1092,7 @@ ${corners}${mid}
   function openFocus(i, nav) {
     if (!S.ready || (S.busy && !nav)) return
     const c = S.cards[i]
-    if (!c || S.burning) return
+    if (!c || S.turning) return
     S.focus = i
     S.openAt = performance.now()
     S.wheelArmed = false
@@ -1158,7 +1173,7 @@ ${corners}${mid}
   }
 
   function navTo(j) {
-    if (S.focus == null || S.burning) return
+    if (S.focus == null || S.turning) return
     if (j === S.focus) return
     closeFocus(false, true)
     if (S.rev) setRev(false)
@@ -1179,8 +1194,8 @@ ${corners}${mid}
     navTo((S.focus + dir + N) % N)
   }
 
-  function flipFocus(dirHint) {
-    if (S.focus == null || S.burning) return
+  function flipFocus(dirHint, done) {
+    if (S.focus == null || S.turning) return
     const c = S.cards[S.focus]
     if (c.flipTw) return
     const dir = dirHint || 1
@@ -1211,6 +1226,7 @@ ${corners}${mid}
         if (noRev) sameSide(c)
         updateCardCursor(c)
         updateUI()
+        if (done) done()
       },
     })
   }
@@ -1229,7 +1245,7 @@ ${corners}${mid}
     App.audio.setMood({ tension: on ? 0.45 : 0.12 })
   }
 
-  // 丘比特 / 圣女：没有另一面。翻过去还是同样的字
+  // 丘比特 / 平民：没有另一面。翻过去还是同样的字
   function sameSide(c) {
     const face = faceOf(c)
     // 巨字：一瞬间闪成「逆」，又回到「正」
@@ -1281,8 +1297,7 @@ ${corners}${mid}
 
   function updateCardCursor(c) {
     if (S.focus !== c.i) return
-    const saint = c.def.front === '圣女' && !c.burned
-    const label = saint ? '按住' : '翻面'
+    const label = canCrown(c) ? '按住' : '翻面'
     const tone = isBack(c) && !c.def.noReverse ? 'blood' : null
     const changed = c.slot.getAttribute('data-cursor') !== label || c.slot.getAttribute('data-cursor-tone') !== tone
     c.slot.setAttribute('data-cursor', label)
@@ -1323,35 +1338,35 @@ ${corners}${mid}
   }
 
   /* =====================================================================
-     圣女：按住 1.2 秒 → 「圣女」二字被火烧穿，烧出「贞德」
+     国王翻面：逆位「国王」朝上时按住 1.2 秒。仅一次，在审判流程外，正位换成国王、逆位变为骑士；
+     卡认主，字跟着主人此刻的身份变（主持人游戏第 1 节）——眼前这一面先改写成骑士，牌再翻过来，正面已是国王
      ===================================================================== */
+  const canCrown = c => !!c.def.flip && !c.crowned && isBack(c) && !c.flipTw
   function startHold(c, x, y, key) {
-    if (S.hold || S.burning || c.burned) return
+    if (S.hold || S.turning || !canCrown(c)) return
     S.hold = { c, t0: performance.now(), x, y, key, ticks: 0, done: false }
     S.ring.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`
     S.ring.classList.add('is-on')
-    gsap.killTweensOf(c, 'heat')
   }
   function updateHold() {
     const h = S.hold
     if (!h || h.done) return
     const p = U.clamp((performance.now() - h.t0) / HOLD_MS)
-    h.p = p
     S.ringP.style.strokeDashoffset = (188.5 * (1 - p)).toFixed(2)
-    setHeat(h.c, p)
+    setGlow(h.c, p)
     const tk = Math.floor(p * 4)
     if (tk > h.ticks && p < 1) { h.ticks = tk; App.audio.sfx('tick', { pitch: 1 + tk * 0.12, volume: 0.5 }) }
-    if (Math.random() < p * 0.9) emberAt(faceOf(h.c), 1)
-    if (p >= 1) { h.done = true; ignite(h.c) }
+    if (Math.random() < p * 0.8) moteAt(faceOf(h.c).nameEl, 1)
+    if (p >= 1) { h.done = true; crown(h.c) }
   }
-  function endHold(click) {
+  // 松手：按得很短就当作一次点击（翻面）
+  function endHold() {
     const h = S.hold
     if (!h) return false
-    const short = performance.now() - h.t0 < 260
     if (h.done) return true
+    const short = performance.now() - h.t0 < 260
     cancelHold()
-    if (click && short) return 'click'
-    return true
+    return short ? 'click' : true
   }
   function cancelHold(silent) {
     const h = S.hold
@@ -1360,240 +1375,73 @@ ${corners}${mid}
     S.ring.classList.remove('is-on')
     if (!h.done) {
       const c = h.c
-      const o = { v: c.heat }
-      gsap.to(o, { v: 0, duration: silent ? 0 : 0.4, ease: 'power2.out', onUpdate: () => setHeat(c, o.v) })
+      const o = { v: c.glow }
+      gsap.to(o, { v: 0, duration: silent ? 0 : 0.4, ease: 'power2.out', onUpdate: () => setGlow(c, o.v) })
     }
   }
-  function setHeat(c, v) {
-    c.heat = v
-    for (const f of [c.front, c.back]) {
-      if (c.burned) continue
-      f.nameEl.style.setProperty('--heat', v.toFixed(3))
-      f.sig.style.setProperty('--heat', v.toFixed(3))
-    }
+  // 按住时名字与纹章渐渐泛金（只改这两小块的颜色）
+  function setGlow(c, v) {
+    c.glow = v
+    const f = c.back
+    const val = v > 0.001 ? v.toFixed(3) : ''
+    for (const n of [f.nameEl, f.sig]) { if (val) n.style.setProperty('--glow', val); else n.style.removeProperty('--glow') }
   }
 
-  function ignite(c) {
-    S.burning = true
+  function crown(c) {
+    const fl = c.def.flip
+    S.turning = true
+    S.hold = null
     S.ring.classList.remove('is-on')
     S.ring.classList.add('is-burst')
     setTimeout(() => S.ring.classList.remove('is-burst'), 700)
-    S.hold = null
-    const face = faceOf(c)
-    const other = face === c.front ? c.back : c.front
-    // 声音：点燃、火势、钟
-    App.audio.sfx('whoosh', { pitch: 0.62, volume: 1 })
-    App.audio.sfx('wind', { pitch: 1.35, volume: 0.7 })
-    App.audio.sfx('bell', { delay: 1.15, pitch: 0.9, volume: 0.55 })
-    App.bg.setPalette(PAL.fire, 0.5)
-    App.bg.pulse(0.7, 1.8)
-    App.flash('#ff7a2c', { opacity: 0.16, duration: 0.9 })
-    App.audio.setMood({ tension: 0.5 })
-    burnName(c, face).then(() => {
-      // 两面都已是贞德
-      for (const f of [c.front, c.back]) {
-        f.nameT.textContent = '贞德'
-        f.name = '贞德'
-        setNameSize(f.nameEl, '贞德')
-        f.el.classList.add('is-joan')
-        f.nameEl.style.removeProperty('--heat')
-      }
-      c.name = '贞德'
-      c.burned = true
-      c.heat = 0
-      c.slot.setAttribute('aria-label', U.roman(c.def.no) + ' 贞德')
-      S.tickEls[c.i].setAttribute('aria-label', U.roman(c.def.no) + ' 贞德')
-      S.burning = false
-      if (App.state.section === 'identities') App.bg.setPalette(S.rev ? PAL.rev : PAL.base, 2.2)
-      App.audio.setMood({ tension: 0.15 })
-      updateCardCursor(c)
-    })
-    swapSigil(c, face, other)
-  }
-
-  // 纹章：圣女的纹章烧红、化灰，贞德的纹章从余烬里画出
-  function swapSigil(c, face, other) {
-    const old = face.sig.querySelector('.sigil')
-    face.sig.classList.add('is-ember')
-    gsap.to(old, { opacity: 0, y: -S.mm * 2.2, filter: 'blur(3px)', duration: 0.7, delay: 0.35, ease: 'power2.in' })
-    for (let k = 0; k < 26; k++) setTimeout(() => emberAt(face, 2, face.sig), 300 + k * 26)
+    c.crowned = true
+    const back = c.back, front = c.front
+    // 声音与光：一声印、一声低钟；烟雾转为暗金
+    App.audio.sfx('stamp', { volume: 0.9, pitch: 0.7 })
+    App.audio.sfx('chime', { delay: 0.12, pitch: 0.75, volume: 0.6 })
+    App.bg.setPalette(PAL.crown, 0.5)
+    App.bg.pulse(0.6, 1.6)
+    App.flash('#e6c27a', { opacity: 0.12, duration: 0.8 })
+    App.audio.setMood({ tension: 0.3 })
+    for (let k = 0; k < 22; k++) setTimeout(() => moteAt(back.sig, 2), k * 30)
+    // 眼前这一面：旧字褪去，名字乱码改写成「骑士」
+    back.el.classList.add('is-rewrite')
+    if (!RM) App.text.scramble(back.nameT, fl.back, { duration: 0.7, chars: '█▓▒░' })
     setTimeout(() => {
-      for (const f of [face, other]) {
-        const ns = App.sigil('贞德')
-        f.sig.innerHTML = ''
-        f.sig.appendChild(ns)
-        f.sig._prep = null
-      }
-      face.sig.classList.add('is-ember')
-      drawSigil(face.sig, 1.2)
-      setTimeout(() => face.sig.classList.remove('is-ember'), 1500)
-      face.sig.style.removeProperty('--heat')
-      other.sig.style.removeProperty('--heat')
-    }, 1000)
-  }
-
-  function burnName(c, face) {
-    return new Promise(resolve => {
-      const host = face.el
-      const nameEl = face.nameEl
-      const mm = S.mm
-      // 画布覆盖名字所在的一条（左右留出边框）
-      const top = nameEl.offsetTop - mm * 3.2
-      const h = nameEl.offsetHeight + mm * 6.4
-      const left = mm * 6.2
-      const w = host.offsetWidth - mm * 12.4
-      const dpr = Math.min(1.5, window.devicePixelRatio || 1)
-      const cw = Math.max(8, Math.round(w * dpr)), ch = Math.max(8, Math.round(h * dpr))
-      const mk = cls => { const cv = el('canvas.' + cls); cv.width = cw; cv.height = ch; Object.assign(cv.style, { left: left + 'px', top: top + 'px', width: w + 'px', height: h + 'px' }); host.appendChild(cv); return cv }
-      const base = mk('burn')
-      const glow = mk('burn-glow')
-      const bx = base.getContext('2d'), gx = glow.getContext('2d')
-      // 两个字形的遮罩
-      const cs = getComputedStyle(face.nameT)
-      const fontPx = parseFloat(cs.fontSize) || mm * 5.6
-      const ls = parseFloat(cs.letterSpacing) || 0
-      const fam = cs.fontFamily
-      const nameMid = nameEl.offsetTop + nameEl.offsetHeight / 2 - top
-      const glyphs = text => {
-        const cv = document.createElement('canvas')
-        cv.width = cw; cv.height = ch
-        const x = cv.getContext('2d')
-        x.scale(dpr, dpr)
-        x.font = `900 ${fontPx}px ${fam}`
-        x.textBaseline = 'middle'
-        x.fillStyle = '#000'
-        const chars = Array.from(text)
-        const ws = chars.map(t => x.measureText(t).width)
-        const tot = ws.reduce((a, b) => a + b, 0) + ls * (chars.length - 1)
-        let px = (w - tot) / 2
-        chars.forEach((t, k) => { x.fillText(t, px, nameMid + fontPx * 0.02); px += ws[k] + ls })
-        return x.getImageData(0, 0, cw, ch).data
-      }
-      const A = glyphs(face.nameT.textContent || '圣女')
-      const B = glyphs('贞德')
-      // 噪声 + 由中心向外
-      const field = new Float32Array(cw * ch)
-      const seed = U.seeded(Math.floor(Math.random() * 1e9))
-      const G = 9, gw = Math.ceil(cw / (ch / G)) + 2
-      const grid = []
-      for (let k = 0; k < (G + 2) * gw; k++) grid.push(seed())
-      const vn = (x, y) => {
-        const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi
-        const a = grid[(yi % (G + 2)) * gw + (xi % gw)], b = grid[(yi % (G + 2)) * gw + ((xi + 1) % gw)]
-        const c2 = grid[((yi + 1) % (G + 2)) * gw + (xi % gw)], d = grid[((yi + 1) % (G + 2)) * gw + ((xi + 1) % gw)]
-        const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf)
-        return a + (b - a) * u + (c2 - a) * v * (1 - u) + (d - b) * u * v
-      }
-      const cell = ch / G
-      const ox = cw / 2, oy = ch * 0.6
-      const maxD = Math.hypot(cw / 2, ch)
-      for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
-        const n1 = vn(x / cell, y / cell), n2 = vn(x / cell * 2.3 + 3.1, y / cell * 2.3 + 1.7)
-        const dd = Math.hypot((x - ox) * 0.55, (y - oy) * 1.2) / maxD
-        field[y * cw + x] = (n1 * 0.62 + n2 * 0.38) * 0.5 + dd * 0.62
-      }
-      let fmin = Infinity, fmax = -Infinity
-      for (let k = 0; k < field.length; k++) { if (field[k] < fmin) fmin = field[k]; if (field[k] > fmax) fmax = field[k] }
-      for (let k = 0; k < field.length; k++) field[k] = (field[k] - fmin) / (fmax - fmin)
-      const env = new Float32Array(cw * ch)
-      for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
-        const ex = Math.min(x / (cw * 0.16), (cw - x) / (cw * 0.16), 1)
-        const ey = Math.min(y / (ch * 0.3), (ch - y) / (ch * 0.3), 1)
-        env[y * cw + x] = U.clamp(ex) * U.clamp(ey)
-      }
-      const imgB = bx.createImageData(cw, ch), imgG = gx.createImageData(cw, ch)
-      const db = imgB.data, dg = imgG.data
-      const band = 0.075
-      const st = { front: -0.08, heal: 0, cool: 0 }
-      const rect = () => base.getBoundingClientRect()
-      const draw = () => {
-        const fr = st.front, heal = st.heal, cool = st.cool
-        for (let k = 0, q = 0; k < field.length; k++, q += 4) {
-          const d = field[k] - fr
-          const e = env[k]
-          const ta = A[q + 3] / 255, tb = B[q + 3] / 255
-          let r = 0, g = 0, b = 0, a = 0, gr = 0, gg = 0, gb = 0, ga = 0
-          if (d > band) {
-            // 未燃：圣女二字（烧红的墨）+ 火线前的焦痕
-            const pre = 1 - smooth(band, band + 0.2, d)
-            const sc = pre * 0.42 * e
-            r = 70; g = 32; b = 12; a = sc
-            if (ta > 0) {
-              const hot = 0.55 + pre * 0.45
-              const tr = U.lerp(36, 255, hot), tg = U.lerp(26, 112, hot), tbb = U.lerp(28, 40, hot)
-              r = tr * ta + r * (1 - ta); g = tg * ta + g * (1 - ta); b = tbb * ta + b * (1 - ta); a = ta + a * (1 - ta)
-            }
-          } else if (d > 0) {
-            // 火线
-            const z = d / band
-            const ga0 = (1 - Math.abs(z - 0.45) * 1.3) * e
-            r = 255; g = U.lerp(236, 120, z); b = U.lerp(170, 30, z); a = U.clamp(0.25 + ga0) * Math.max(e, ta)
-            gr = 255; gg = U.lerp(200, 90, z); gb = 40; ga = U.clamp(ga0 * 1.2)
-          } else {
-            // 已燃：焦黑（随后愈合）+ 贞德二字
-            const depth = -d
-            const char = (0.82 - smooth(0, 0.35, depth) * 0.22) * e * (1 - heal)
-            r = 38; g = 17; b = 8; a = char
-            const ember = (1 - smooth(0, 0.18, depth)) * e * (1 - heal)
-            if (ember > 0.01) { gr = 255; gg = 110; gb = 30; ga = ember * 0.7 }
-            if (tb > 0) {
-              const k2 = Math.min(1, cool + smooth(0, 0.5, depth) * 0.6)
-              const tr = U.lerp(255, 125, k2), tg = U.lerp(150, 22, k2), tbb = U.lerp(60, 22, k2)
-              r = tr * tb + r * (1 - tb); g = tg * tb + g * (1 - tb); b = tbb * tb + b * (1 - tb); a = tb + a * (1 - tb)
-              const gl = (1 - k2) * tb * 0.8
-              if (gl > ga) { gr = 255; gg = 120; gb = 40; ga = gl }
-            }
-          }
-          db[q] = r; db[q + 1] = g; db[q + 2] = b; db[q + 3] = a * 255
-          dg[q] = gr; dg[q + 1] = gg; dg[q + 2] = gb; dg[q + 3] = ga * 255
-        }
-        bx.putImageData(imgB, 0, 0)
-        gx.putImageData(imgG, 0, 0)
-        // 火星：从火线上随机取点
-        if (fr > -0.05 && fr < 1.05) {
-          const R = rect()
-          for (let s = 0; s < 14; s++) {
-            const k = (Math.random() * field.length) | 0
-            const d = field[k] - fr
-            if (d > 0 && d < band && env[k] > 0.2) {
-              const px = k % cw, py = (k / cw) | 0
-              spark(R.left - S.rect.left + (px / cw) * R.width, R.top - S.rect.top + (py / ch) * R.height)
-            }
-          }
-        }
-      }
-      draw()
-      face.el.classList.add('is-burning')
-      S.rect = S.stage.getBoundingClientRect()
-      const tl = gsap.timeline({ onComplete: () => {
-        gsap.to([base, glow], { opacity: 0, duration: 0.45, onComplete: () => { base.remove(); glow.remove() } })
-        face.el.classList.remove('is-burning')
-        resolve()
-      } })
-      tl.to(st, { front: 1.12, duration: RM ? 1 : 1.75, ease: 'power1.in', onUpdate: () => { S.rect = S.stage.getBoundingClientRect(); draw() } })
-        .to(st, { heal: 1, cool: 1, duration: 1.1, ease: 'power2.inOut', onUpdate: draw })
-        .add(() => {
-          // 换成 DOM 文字（与画布同色），画布淡出
-          face.nameT.textContent = '贞德'
-          setNameSize(face.nameEl, '贞德')
-          face.el.classList.add('is-joan')
-        })
-    })
+      writeFace(back, fl.back, fl.backText)
+      writeFace(front, fl.front, fl.frontText)
+      fitCard(c)
+      setGlow(c, 0)
+      back.el.classList.remove('is-rewrite')
+      drawSigil(back.sig, RM ? 0.4 : 1.1)
+      const label = cardLabel(c)
+      c.slot.setAttribute('aria-label', label)
+      for (const t of [S.tickEls[c.i], S.rtickEls[c.i]]) t.setAttribute('aria-label', U.roman(c.def.no) + ' ' + front.name)
+      updateCardCursor(c)
+      syncAria()
+    }, RM ? 120 : 520)
+    // 再把牌翻过来：正面已是国王（翻到一半时 setRev(false) 把烟雾带回原色）
+    setTimeout(() => {
+      S.turning = false
+      if (S.focus !== c.i) { if (App.state.section === 'identities') App.bg.setPalette(S.rev ? PAL.rev : PAL.base, 1.6); return }
+      flipFocus(1, () => {
+        front.sig.classList.add('is-halo')
+        setTimeout(() => front.sig.classList.remove('is-halo'), 1300)
+      })
+    }, RM ? 400 : 1700)
   }
 
   /* =====================================================================
-     粒子：火星、灰、灰尘
+     粒子：金尘（国王翻面）、灰尘（发牌）
      ===================================================================== */
   const parts = []
-  function spark(x, y) {
-    if (parts.length > 420) return
-    parts.push({ k: 'spark', x, y, vx: U.rand(-0.6, 0.6), vy: U.rand(-2.6, -0.8), life: 0, max: U.rand(36, 80), r: U.rand(0.8, 2.1) })
-    if (Math.random() < 0.18) parts.push({ k: 'ash', x, y, vx: U.rand(-0.4, 0.4), vy: U.rand(-1.1, -0.35), life: 0, max: U.rand(70, 130), r: U.rand(1.2, 2.6), a: U.rand(0, 6) })
+  function mote(x, y) {
+    if (parts.length > 360) return
+    parts.push({ k: 'mote', x, y, vx: U.rand(-0.35, 0.35), vy: U.rand(-1.5, -0.5), life: 0, max: U.rand(44, 96), r: U.rand(0.7, 1.9), ph: U.rand(0, 6) })
   }
-  function emberAt(face, n, node) {
-    const target = node || face.nameEl
-    const R = target.getBoundingClientRect(), SR = S.stage.getBoundingClientRect()
-    for (let k = 0; k < n; k++) spark(R.left - SR.left + U.rand(0.15, 0.85) * R.width, R.top - SR.top + U.rand(0.3, 0.8) * R.height)
+  function moteAt(node, n) {
+    const R = node.getBoundingClientRect(), SR = S.stage.getBoundingClientRect()
+    for (let k = 0; k < n; k++) mote(R.left - SR.left + U.rand(0.1, 0.9) * R.width, R.top - SR.top + U.rand(0.25, 0.85) * R.height)
   }
   function dust(c) {
     if (RM || S.q === 0 || parts.length > 300) return
@@ -1639,20 +1487,13 @@ ${corners}${mid}
       p.life += dt
       const t = p.life / p.max
       if (t >= 1) { parts.splice(i, 1); continue }
-      if (p.k === 'spark') {
-        p.vx += U.rand(-0.08, 0.08) * dt; p.vy -= 0.012 * dt
+      if (p.k === 'mote') {
+        p.vx += U.rand(-0.04, 0.04) * dt; p.vy *= Math.pow(0.992, dt)
         p.x += p.vx * dt; p.y += p.vy * dt
         x.globalCompositeOperation = 'lighter'
-        const g = Math.floor(U.lerp(230, 70, t)), b = Math.floor(U.lerp(140, 20, t))
-        x.strokeStyle = `rgba(255,${g},${b},${(1 - t) * 0.9})`
-        x.lineWidth = p.r * (1 - t * 0.6)
-        x.beginPath(); x.moveTo(p.x, p.y); x.lineTo(p.x - p.vx * 2.4, p.y - p.vy * 2.4); x.stroke()
-      } else if (p.k === 'ash') {
-        p.a += 0.05 * dt; p.vx += Math.sin(p.life * 0.08) * 0.01 * dt
-        p.x += p.vx * dt; p.y += p.vy * dt
-        x.globalCompositeOperation = 'source-over'
-        x.fillStyle = `rgba(40,30,28,${(1 - t) * 0.7})`
-        x.save(); x.translate(p.x, p.y); x.rotate(p.a); x.fillRect(-p.r, -p.r * 0.4, p.r * 2, p.r * 0.8); x.restore()
+        const tw = 0.55 + 0.45 * Math.sin(p.life * 0.35 + p.ph)
+        x.fillStyle = `rgba(255,${Math.floor(U.lerp(232, 170, t))},${Math.floor(U.lerp(170, 90, t))},${((1 - t) * 0.85 * tw).toFixed(3)})`
+        x.beginPath(); x.arc(p.x, p.y, p.r * (1 - t * 0.5), 0, Math.PI * 2); x.fill()
       } else {
         p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.97; p.vy *= 0.97
         x.globalCompositeOperation = 'source-over'
@@ -1677,7 +1518,7 @@ ${corners}${mid}
     hit.addEventListener('click', e => {
       if (S.focus != null) {
         // 刚拿起的一瞬（双击的第二下、牌还在飞）不算「点空白处」
-        if (S.burning || justOpened() || e.detail > 1) return
+        if (S.turning || justOpened() || e.detail > 1) return
         closeFocus()
         return
       }
@@ -1702,7 +1543,7 @@ ${corners}${mid}
       }
     })
 
-    // 拿在手里的牌：点击翻面；圣女按住发动
+    // 拿在手里的牌：点击翻面；逆位朝上的国王按住发动翻面
     for (const c of S.cards) {
       const s = c.slot
       s.addEventListener('pointerenter', () => { if (S.focus === c.i) { S.cardHover = true; updateCardCursor(c) } })
@@ -1712,11 +1553,10 @@ ${corners}${mid}
       })
       s.addEventListener('contextmenu', e => { if (S.focus === c.i) e.preventDefault() })
       s.addEventListener('pointerdown', e => {
-        if (S.focus !== c.i || S.burning || c.flipTw || justOpened()) return
-        if (c.def.front === '圣女' && !c.burned) {
+        if (S.focus !== c.i || S.turning || c.flipTw || justOpened()) return
+        if (canCrown(c)) {
           const r = S.stage.getBoundingClientRect()
           startHold(c, e.clientX - r.left, e.clientY - r.top, false)
-          S.holdPid = e.pointerId
           try { s.setPointerCapture(e.pointerId) } catch (err) { /* */ }
         }
       })
@@ -1730,8 +1570,7 @@ ${corners}${mid}
         if (S.focus !== c.i) return
         const h = S.hold
         if (h && h.c === c && !h.key) {
-          const res = endHold(true)
-          if (res === 'click') flipFromEvent(c, e)
+          if (endHold() === 'click') flipFromEvent(c, e)
           c._suppress = true
           setTimeout(() => { c._suppress = false }, 60)
         }
@@ -1740,8 +1579,7 @@ ${corners}${mid}
       s.addEventListener('pointercancel', () => { if (S.hold && S.hold.c === c) cancelHold() })
       s.addEventListener('click', e => {
         e.stopPropagation()
-        if (S.focus !== c.i || c._suppress || S.burning || justOpened()) return
-        if (c.def.front === '圣女' && !c.burned) return
+        if (S.focus !== c.i || c._suppress || S.turning || S.hold || justOpened()) return
         flipFromEvent(c, e)
       })
     }
@@ -1755,27 +1593,23 @@ ${corners}${mid}
       if (S.focus == null) return
       const t = e.target
       const onBtn = t && t.closest && t.closest('button')
-      if (e.key === 'Escape') { if (!S.burning) closeFocus(); return }
+      if (e.key === 'Escape') { if (!S.turning) closeFocus(); return }
       if (e.key === 'ArrowLeft') { e.preventDefault(); nav(-1) }
       else if (e.key === 'ArrowRight') { e.preventDefault(); nav(1) }
       else if ((e.key === 'Enter' || e.key === ' ') && !onBtn) {
         e.preventDefault()
         const c = S.cards[S.focus]
-        if (c.def.front === '圣女' && !c.burned) { if (!e.repeat) startHold(c, c.cur.x, c.cur.y - S.H * 0.06, true) }
-        else if (!e.repeat) flipFocus(1)
+        if (e.repeat || S.turning) return
+        if (canCrown(c)) startHold(c, c.cur.x, c.cur.y - S.H * 0.06, true)
+        else flipFocus(1)
       } else if (e.key === 'PageDown' || e.key === 'PageUp' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault()
-        if (!S.burning) closeFocus()
+        if (!S.turning) closeFocus()
       }
     })
     window.addEventListener('keyup', e => {
       if (!S.hold || !S.hold.key) return
-      if (e.key === 'Enter' || e.key === ' ') {
-        const c = S.hold.c
-        const res = endHold(true)
-        if (res === 'click') flipFocus(1)
-        void c
-      }
+      if ((e.key === 'Enter' || e.key === ' ') && endHold() === 'click') flipFocus(1)
     })
     // 拿在手里时滚轮：放回（页面此时不滚动）
     // 触控板的惯性滚动会在拿起之后继续送来一长串 wheel：只认拿起之后、停顿过再开始的一次新滚动
@@ -1783,7 +1617,7 @@ ${corners}${mid}
       const now = performance.now()
       const gap = now - (S.lastWheel || 0)
       S.lastWheel = now
-      if (S.focus == null || S.burning || !S.el.contains(e.target)) return
+      if (S.focus == null || S.turning || !S.el.contains(e.target)) return
       if (!S.wheelArmed) {
         if (gap > 240 && now - S.openAt > 420) { S.wheelArmed = true; S.wheel = 0 }
         else return
@@ -1794,7 +1628,7 @@ ${corners}${mid}
     }, { passive: true, capture: true })
     // 拿在手里时点到板块以外（HUD 等）：先放回
     document.addEventListener('pointerdown', e => {
-      if (S.focus != null && !S.el.contains(e.target) && !S.burning) closeFocus()
+      if (S.focus != null && !S.el.contains(e.target) && !S.turning) closeFocus()
     }, true)
 
     window.addEventListener('resize', U.debounce(() => {
@@ -1850,7 +1684,7 @@ ${corners}${mid}
       // 调试
       App._identities = {
         S, open: openFocus, close: closeFocus, flip: flipFocus, nav, deal,
-        ignite: () => { const c = S.cards.find(x => x.def.front === '圣女'); if (c) ignite(c) },
+        crown: () => { const c = S.cards.find(x => x.def.flip); if (c && !c.crowned) crown(c) },
         settle: (n = 30) => { for (let k = 0; k < n; k++) tick(0, 3.8) },
       }
     },

@@ -198,9 +198,7 @@
 .identities-sig {
   position: absolute; left: 50%; top: calc(var(--mm) * 11.3);
   width: calc(var(--mm) * 24); height: calc(var(--mm) * 24); margin-left: calc(var(--mm) * -12);
-  --heat: 0;
   color: #9a7238;
-  color: color-mix(in srgb, #9a7238, #ff6a1e calc(var(--heat) * 100%));
   transition: color .8s var(--ease-out), filter .8s var(--ease-out), top .5s var(--ease-out), width .5s var(--ease-out), height .5s var(--ease-out), margin .5s var(--ease-out);
 }
 .identities-sig .sigil, .identities-sig svg { display: block; width: 100%; height: 100%; overflow: visible; }
@@ -209,9 +207,10 @@
 .identities-face.is-neg .identities-sig {
   top: calc(var(--mm) * 13.8); width: calc(var(--mm) * 22); height: calc(var(--mm) * 22); margin-left: calc(var(--mm) * -11);
   color: #ff2e7e;
+  /* 国王翻面：按住时渐渐泛金（--glow 0–1 只在按住期间写在这一小块上） */
+  color: color-mix(in srgb, #ff2e7e, #f0cf86 calc(var(--glow, 0) * 100%));
 }
 .identities-slot.is-focus .identities-face.is-neg .identities-sig { filter: drop-shadow(0 0 calc(var(--mm) * .7) rgba(255, 46, 126, .45)); }
-.identities-sig.is-ember { color: #ff8432; filter: drop-shadow(0 0 calc(var(--mm) * .9) rgba(255, 106, 30, .9)); transition: none; }
 .identities-sig.is-halo { filter: drop-shadow(0 0 calc(var(--mm) * 1.3) rgba(214, 170, 104, .95)); }
 
 /* 身份名 */
@@ -220,24 +219,17 @@
   display: flex; align-items: center; justify-content: center;
   font-family: var(--f-display); font-weight: 900; font-size: calc(var(--mm) * var(--nf, 5.2)); line-height: 1;
   white-space: nowrap;
-  --heat: 0;
   color: #1c1315;
-  color: color-mix(in srgb, #1c1315, #ff5a14 calc(var(--heat) * 100%));
-  text-shadow: 0 0 calc(var(--mm) * var(--heat) * 1.6) rgba(255, 106, 30, calc(var(--heat) * .9));
   transition: top .5s var(--ease-out);
 }
 .identities-name-t { display: block; letter-spacing: var(--ns, .2em); padding-left: var(--ns, .2em); }
 .identities-face.is-neg .identities-name {
   top: calc(var(--mm) * 6.2);
   color: #efe6d8;
+  color: color-mix(in srgb, #efe6d8, #f3d48e calc(var(--glow, 0) * 100%));
   text-shadow: calc(var(--mm) * .2) 0 0 rgba(255, 46, 126, .62), calc(var(--mm) * -.2) 0 0 rgba(0, 229, 255, .16);
 }
 .identities-face.is-neg .identities-name-t { transform: rotate(180deg); }
-.identities-face.is-joan .identities-name {
-  color: #7d1616;
-  text-shadow: 0 0 calc(var(--mm) * 1.4) rgba(196, 84, 24, .28), 0 0 calc(var(--mm) * .3) rgba(80, 20, 10, .3);
-}
-.identities-face.is-burning .identities-name { color: transparent; text-shadow: none; }
 
 /* 分隔 */
 .identities-div {
@@ -263,6 +255,7 @@
   font-family: var(--f-display); font-weight: 900; font-size: calc(var(--mm) * 2.06); line-height: 1;
   color: #ff2e7e; white-space: nowrap; transition: top .5s var(--ease-out);
 }
+.identities-oath[hidden] { display: none; }
 .identities-oath span { letter-spacing: .1em; padding-left: .1em; }
 .identities-slot.is-focus .identities-oath { text-shadow: 0 0 calc(var(--mm) * .8) rgba(255, 46, 126, .4); }
 
@@ -272,7 +265,7 @@
   top: calc(var(--mm) * 46.6); bottom: calc(var(--mm) * 9.9);
   display: flex; flex-direction: column; justify-content: center; overflow: hidden;
 }
-.identities-face.is-neg .identities-text { top: calc(var(--mm) * 43.6); bottom: calc(var(--mm) * 14.2); }
+.identities-face.is-neg .identities-text { top: calc(var(--mm) * 43.6); bottom: calc(var(--mm) * 11.2); }
 .identities-tx {
   font-family: var(--f-serif); font-weight: 400; font-size: calc(var(--mm) * var(--tf, 1.6)); line-height: 1.62;
   text-align: justify; line-break: strict; word-break: normal; overflow-wrap: anywhere;
@@ -282,17 +275,15 @@
 .identities-face.is-pos .identities-tx { color: #2a2022; }
 .identities-face.is-neg .identities-tx { color: #bdb2a3; }
 
-/* 共同说明（极小，两行） */
+/* 共同说明（极小，两行；只印在正面） */
 .identities-fine {
   position: absolute; left: calc(var(--mm) * 7.5); right: calc(var(--mm) * 7.5);
   bottom: calc(var(--mm) * 6.5); height: calc(var(--mm) * 2.8);
   color: #8a6838;
 }
 .identities-fine svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.identities-face.is-neg .identities-fine { bottom: calc(var(--mm) * 10.6); color: #8a2328; }
 /* 预先画好的小字图（见 identities.js fineImages）：不随牌的摆动重排、重画 */
-.identities-stage.is-fineimg .identities-fine { background: var(--idn-fine-pos) 0 0 / 100% 100% no-repeat; }
-.identities-stage.is-fineimg .identities-face.is-neg .identities-fine { background-image: var(--idn-fine-neg); }
+.identities-stage.is-fineimg .identities-fine { background: var(--idn-fine) 0 0 / 100% 100% no-repeat; }
 
 /* 细读版式：纹章缩小，字放大（小屏拿起时） */
 .identities-slot.is-read .identities-face.is-pos .identities-sig { top: calc(var(--mm) * 11.2); width: calc(var(--mm) * 13); height: calc(var(--mm) * 13); margin-left: calc(var(--mm) * -6.5); }
@@ -357,9 +348,9 @@
 .identities-face--back.is-hush .identities-oath, .identities-face--back.is-hush .identities-text,
 .identities-face--back.is-hush .identities-fine { opacity: 0; }
 
-/* 焚名 */
-.identities-burn, .identities-burn-glow { position: absolute; pointer-events: none; }
-.identities-burn-glow { mix-blend-mode: screen; filter: blur(calc(var(--mm) * .45)); }
+/* 国王翻面：眼前这一面的旧字很快褪去（纹章随后一笔笔重画，原文按上面的过渡重新浮出） */
+.identities-face.is-rewrite .identities-sig, .identities-face.is-rewrite .identities-oath,
+.identities-face.is-rewrite .identities-text { opacity: 0; transition: opacity .3s var(--ease-out); }
 .identities-echo {
   position: absolute; inset: 0; border-radius: calc(var(--mm) * 3.2); pointer-events: none;
   border: calc(var(--mm) * .3) solid rgba(235, 227, 214, .72);
@@ -382,7 +373,7 @@
 .identities-snap { position: absolute; top: 0; bottom: 0; scroll-snap-align: center; scroll-snap-stop: normal; }
 .identities-stage.is-focus .identities-scroller { pointer-events: none; }
 
-/* 牌列下的十五道刻度（只在手机） */
+/* 牌列下的刻度，每张牌一道（只在手机） */
 .identities-rticks { display: none; }
 .identities.is-mob .identities-rticks {
   position: absolute; left: 50%; z-index: 7; display: flex; gap: 0;
@@ -398,7 +389,7 @@
 .identities-rtick.is-on::before { top: 2px; bottom: 2px; width: 2px; margin-left: -1px; background: var(--brass); }
 
 /* ==========================================================
-   拿起后的操作：上一张 / 下一张 / 翻面 / 十五道刻度
+   拿起后的操作：上一张 / 下一张 / 翻面 / 每张牌一道刻度
    ========================================================== */
 .identities-ui { position: absolute; inset: 0; z-index: 110; pointer-events: none; }
 .identities-nav, .identities-flip, .identities-ticks, .identities-close {
@@ -459,7 +450,7 @@
 
 .identities-close { display: none; }
 
-/* ---------- 按住进度环 ---------- */
+/* ---------- 按住进度环（国王翻面） ---------- */
 .identities-ring {
   position: absolute; left: -40px; top: -40px; width: 80px; height: 80px; z-index: 130;
   pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .2s, visibility 0s linear .2s;
@@ -469,9 +460,9 @@
 .identities-ring svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
 .identities-ring-t { fill: none; stroke: rgba(235, 227, 214, .2); stroke-width: 1.2; }
 .identities-ring-p {
-  fill: none; stroke: #ff6a2a; stroke-width: 2.4; stroke-linecap: round;
+  fill: none; stroke: #e6c27a; stroke-width: 2.4; stroke-linecap: round;
   stroke-dasharray: 188.5; stroke-dashoffset: 188.5;
-  filter: drop-shadow(0 0 4px rgba(255, 96, 32, .85));
+  filter: drop-shadow(0 0 4px rgba(230, 194, 122, .85));
 }
 .identities-ring.is-burst { opacity: 1; animation: identities-burst .7s cubic-bezier(.16, 1, .3, 1) forwards; }
 @keyframes identities-burst { 0% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 2.4; } }

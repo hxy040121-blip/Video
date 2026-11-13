@@ -1,7 +1,8 @@
 /* ==========================================================
    庭审（trial）：可以玩的模拟庭审
-   入局（默认八人）→ 发牌 → 受命与行凶（不可见）→ 发现 → 调查（灯亮着；按住压低侧光）→ 庭审（议事厅的门关上）
-   → 处刑 → 余波 → 结案对账（真相回放，可跳过）→ 下一案 … → 终局（一案一行的总表）
+   入局（默认八人，可选十三人）→ 发牌 → 受命与行凶（不可见；D01 20:00 的播报）→ 发现 → 调查（灯亮着；按住压低侧光）
+   → 庭审（议事厅的门关上）→ 处刑 → 发放（金币落桌）→ 结案回放（网站自设，可跳过）→ 下一案 … → 终局（一案一行的总表）
+   敲钟人的案子没有调查：发现即开庭（主持人游戏 3.1、5.5）。
    规则全部在 TrialEngine（trial-engine.js）里；这里只负责画面、声音与交互。
    称呼：广播、台词的 {X}{V}、证言卡用 callOf（馆里报的名字；同局重名或不报名时说「N号」）；名牌、档案用卡名。
    第二部分：
@@ -9,8 +10,9 @@
      「默念」兑换工具（鲁米诺要毛毯、指纹粉先问价、录音笔、拍立得）；询问得两段时间线，落在你的窗里的那段标亮。
    - 庭审：席位下的小点是你自己的笔记（拿起证物点人：✓ ✗ ?）；当众出示（每场三次）→ 反证或辩解与破绽；
      依次发言之后是公开讨论，举手（每场三次）可出示、对质（两张证言卡拖到桌心）、追问、附议、质疑、驳回误导。
-   - 余波：本轮的几枚落在各人面前（没有累计账）；「下一案」之前默念吃饭、一夜安眠；钱够可以买退出券，持券离馆。
-   - 钱袋是全站共用的 App.econ（开局 newGame；余波 gain；兑换 settle / pay；离馆 exit）。
+   - 发放：本轮的几枚落在各人面前（没有累计账）；被处刑者的金币留在他的席位上（运行规则 6.6），点一下可以拾起；
+     「下一案」之前默念吃饭、一夜安眠；钱够可以买退出券，持券离馆。
+   - 钱袋是全站共用的 App.econ（plan711/ECON.md：开局 newGame；D01 20:00 d01；发放与拾取 gain；兑换 settle / pay；离馆 exit）。
    ========================================================== */
 (function () {
   'use strict'
@@ -19,6 +21,8 @@
   if (!App || !TE) return
   const U = App.util
   const el = U.el
+  // 十三席（主持人游戏 3.2：十三个编号席位，1 号正北、顺时针）
+  const NS = TE.NS || 13
   const svg = U.svg
   const ABORT = { trialAbort: true }
 
@@ -36,15 +40,15 @@
   const TRACK = { intro: 'gallery', deal: 'gallery', cine: 'silence', inv: 'investigation', court: 'trial', exec: 'trial', after: 'trial', end: 'wish', dead: 'silence' }
 
   const VERB = {
-    knight: '揭发', executor: '表决', silencer: '封锁', puffer: '查询',
-    judge: '加票', hanged: '反弹', fortune: '查验', shifter: '复制', magician: '交换', cupid: '结成恋人',
+    knight: '揭发', executor: '表决', silencer: '封锁', puffer: '查询', civilian: '公开', king: '号令',
+    fortune: '查验', shifter: '复制', magician: '交换', cupid: '结成恋人',
   }
   const NUM = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
 
   /* ---------- 状态 ---------- */
   const S = {
     sec: null, stage: null, E: {},
-    seats: Array(15).fill(null), me: null, G: null,
+    seats: Array(NS).fill(null), me: null, G: null,
     active: false, paused: false, token: 0, scene: 'intro', running: false,
     spectate: false, deadShown: false, visible: false,
     seat: [], geo: null,
@@ -132,7 +136,7 @@
       cleanup = setup(v => end(true, v))
     })
   }
-  // quiet：动作描写（格里菲斯的台词）逐字浮现但不出打字声
+  // quiet：动作描写（说不出话的人的台词）逐字浮现但不出打字声
   async function typeIn(node, text, speed = 24, quiet = false) {
     const tok = S.token
     node.textContent = ''
@@ -163,7 +167,7 @@
   const linePool = (id, key) => { const P = window.TRIAL_LINES, a = P && P[id] && P[id][key]; return Array.isArray(a) ? a : [] }
   const holes = s => Array.from(String(s).matchAll(/\{(\w+)\}/g), m => m[1])
   const fillLine = (s, vars) => String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m))
-  // 整句以（开头、）结尾的是动作描写（格里菲斯不能说话）：不加引号、斜体、无打字声
+  // 整句以（开头、）结尾的是动作描写（说不出话的人）：不加引号、斜体、无打字声
   const isAct = s => /^（[\s\S]*）$/.test(String(s || '').trim())
   const quoted = s => (isAct(s) || s === '……' ? s : '「' + s + '」')
   const isFemaleName = n => !!(App.chars || []).find(c => (c.name === n || c.callName === n) && c.gender === '女')
@@ -172,7 +176,7 @@
     // 「{X}先生」只称呼男性（蝴蝶忍的旧句）
     if (/\{X\}先生/.test(s) && (isFemaleName(vars.X) || (ctx && ctx.female))) return false
     if (ctx) {
-      // 对着说不出话的人（只做动作描写的格里菲斯）：不用「问、说、话」的句子
+      // 对着说不出话的人（台词只有动作描写的人）：不用「问、说、话」的句子
       if (ctx.mute && /问|说|话/.test(s)) return false
       // 少数发现/反应的句子默认了现场细节：与死因、时刻、楼层对不上的不用
       if (/伤/.test(s) && ['poison', 'drown', 'alcohol', 'smother'].includes(ctx.cause)) return false
@@ -380,14 +384,14 @@
     E.lines.setAttribute('aria-hidden', 'true')
     E.table = el('div.trial-table', { html: tableSVG() })
     E.ring.append(E.table, E.lines)
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= NS; k++) {
       const s = buildSeat(k)
       S.seat[k] = s
       E.ring.appendChild(s.root)
     }
     // 桌心
     E.core = el('div.trial-core')
-    E.mood = el('p.trial-core-mood', { text: '十五把椅子，一个愿望' })
+    E.mood = el('p.trial-core-mood', { text: '十三把椅子，一个愿望' })
     E.count = el('div.trial-core-count')
     E.ui = el('div.trial-core-ui')
     E.stamp = el('div.trial-stamp')
@@ -510,7 +514,7 @@
     const root = el('div.trial-seat.is-empty', { 'data-seat': k })
     const card = el('div.trial-seat-card', { html: chairSVG() })
     const pt = el('div.trial-seat-pt')
-    // 锁：并列者在紧接着的重投里不能投票（仍可被投）；白痴发动后出局
+    // 锁：并列者在紧接着的重投里不能投票（仍可被投）；愚者发动后出局
     card.append(pt, el('i.trial-seat-x'), el('i.trial-seat-lock', { html: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3"/><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M12 15v2.5"/></svg>' }))
     const no = el('div.trial-seat-no', { text: U.roman(k) })
     const name = el('div.trial-seat-name')
@@ -547,8 +551,8 @@
       t += `<line x1="${(500 + Math.cos(a) * r1).toFixed(1)}" y1="${(500 + Math.sin(a) * r1).toFixed(1)}" x2="${(500 + Math.cos(a) * r2).toFixed(1)}" y2="${(500 + Math.sin(a) * r2).toFixed(1)}" class="${i % 5 === 0 ? 'is-major' : ''}"/>`
     }
     let dots = ''
-    for (let i = 0; i < 15; i++) {
-      const a = -Math.PI / 2 + (i / 15) * Math.PI * 2
+    for (let i = 0; i < NS; i++) {
+      const a = -Math.PI / 2 + (i / NS) * Math.PI * 2
       dots += `<circle cx="${(500 + Math.cos(a) * 360).toFixed(1)}" cy="${(500 + Math.sin(a) * 360).toFixed(1)}" r="5"/>`
     }
     return `<svg viewBox="0 0 1000 1000" aria-hidden="true"><g class="trial-dial-ticks">${t}</g><g class="trial-dial-dots">${dots}</g><circle cx="500" cy="500" r="470" class="trial-dial-rim"/><line class="trial-dial-hand trial-dial-hand--h" x1="500" y1="500" x2="500" y2="300"/><line class="trial-dial-hand trial-dial-hand--m" x1="500" y1="500" x2="500" y2="150"/></svg>`
@@ -589,8 +593,8 @@
     }
     const L = cum[N]
     let j = 0
-    for (let k = 1; k <= 15; k++) {
-      const target = ((k - 1) / 15) * L
+    for (let k = 1; k <= NS; k++) {
+      const target = ((k - 1) / NS) * L
       while (j < N && cum[j + 1] < target) j++
       const f = cum[j + 1] > cum[j] ? (target - cum[j]) / (cum[j + 1] - cum[j]) : 0
       const a = -Math.PI / 2 + ((j + f) / N) * Math.PI * 2
@@ -632,7 +636,7 @@
      席位
      ========================================================== */
   function fillSeats(ids) {
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= NS; k++) {
       const s = S.seat[k]
       const id = ids[k - 1] || null
       if (s.id === id && s.pt.firstChild) { s.root.classList.toggle('is-empty', !id); continue }
@@ -645,9 +649,9 @@
     }
   }
   function resetSeatStates() {
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= NS; k++) {
       const s = S.seat[k]
-      s.root.classList.remove('is-dead', 'is-left', 'is-me', 'is-speaking', 'is-dim', 'is-voter', 'is-pending', 'is-banned', 'is-novote', 'is-out', 'is-target', 'is-picked', 'is-hope', 'is-lit', 'is-gone', 'is-shake', 'is-tie')
+      s.root.classList.remove('is-dead', 'is-left', 'is-me', 'is-speaking', 'is-dim', 'is-voter', 'is-pending', 'is-banned', 'is-novote', 'is-out', 'is-target', 'is-picked', 'is-lawyer', 'is-lit', 'is-gone', 'is-shake', 'is-tie')
       setCount(k, 0, true)
       s.pips.innerHTML = ''
       s.mark.innerHTML = ''
@@ -659,7 +663,7 @@
   }
   function syncSeats() {
     if (!S.G) return
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= NS; k++) {
       const s = S.seat[k]
       const id = s.id
       if (!id) continue
@@ -670,7 +674,7 @@
       s.root.classList.toggle('is-left', left)
       s.root.classList.toggle('is-me', isMe(id))
       s.root.classList.toggle('is-novote', !!(p && !dead && p.ident.noVote))
-      s.root.classList.toggle('is-out', !!(S.T && S.T.idiotOut.includes(id)))
+      s.root.classList.toggle('is-out', !!(S.T && S.T.foolOut.includes(id)))
       const prt = s.pt.querySelector('.portrait')
       if (prt) { prt.classList.toggle('is-dead', dead); prt.classList.toggle('is-mono', left) }
     }
@@ -684,8 +688,8 @@
     if (!silent && window.gsap) gsap.fromTo(s.cnt, { scale: 1.9 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' })
     // 当前领先者的票数牌放大、脉动（并列时一起）
     let max = 0
-    for (let i = 1; i <= 15; i++) if (S.seat[i] && S.seat[i].count > max) max = S.seat[i].count
-    for (let i = 1; i <= 15; i++) if (S.seat[i]) S.seat[i].cnt.classList.toggle('is-lead', max > 0 && S.seat[i].count === max)
+    for (let i = 1; i <= NS; i++) if (S.seat[i] && S.seat[i].count > max) max = S.seat[i].count
+    for (let i = 1; i <= NS; i++) if (S.seat[i]) S.seat[i].cnt.classList.toggle('is-lead', max > 0 && S.seat[i].count === max)
   }
   function bumpCount(id) {
     const k = seatOf(id)
@@ -693,10 +697,10 @@
     setCount(k, S.seat[k].count + 1)
   }
   function seatClass(cls, ids, on = true) {
-    for (let k = 1; k <= 15; k++) S.seat[k].root.classList.toggle(cls, on ? ids.includes(S.seat[k].id) : false)
+    for (let k = 1; k <= NS; k++) S.seat[k].root.classList.toggle(cls, on ? ids.includes(S.seat[k].id) : false)
   }
   function spotlight(id) {
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= NS; k++) {
       const s = S.seat[k]
       s.root.classList.toggle('is-speaking', !!id && s.id === id)
       s.root.classList.toggle('is-dim', !!id && s.id !== id)
@@ -718,8 +722,8 @@
   }
 
   /* ==========================================================
-     席位档案（悬停 / 长按）：看得见的特征——身高刻度、性别、体格、能否行走、随身物、「别人眼里」
-     只放卡面原文与数字；医护、现场观察、年代这类别人看不见的不放（运行规则 3.2）
+     席位档案（悬停 / 长按）：看得见的特征——身高刻度、性别、体格、能否行走、随身物
+     只放卡面原文与数字；医护、现场观察、年代这类别人看不见的不放（运行规则 1.1）。v7.11 的人物卡没有「别人眼里」了：有这一项的旧数据才显示
      ========================================================== */
   // 能不能行走：卡上的 canWalk；本局在铜牌或默念里修复过残疾的，按能走算（App.econ.canWalk）
   const cantWalk = id => {
@@ -761,7 +765,7 @@
     ])
     const items = (c.carried || []).slice(0, 3)
     const bag = el('div.trial-prof-items', null, [el('i', { html: dimIcon('items') }), el('ul', null, items.length ? items.map(t => el('li', { text: t })) : [el('li', { text: '—' })])])
-    const see = el('p.trial-prof-see', null, [el('span', { text: '别人眼里' }), document.createTextNode(c.othersSee || '')])
+    const see = c.othersSee ? el('p.trial-prof-see', null, [el('span', { text: '别人眼里' }), document.createTextNode(c.othersSee)]) : null
     box.append(head, el('div.trial-prof-body', null, [el('div.trial-prof-left', { html: rulerSVG(c.heightCm) }), el('div.trial-prof-right', null, [traits, bag, see])]))
     // 位置：贴着席位，朝桌心一侧；不出舞台、不压顶栏与证物栏
     const g = S.geo, p = g.pos[k]
@@ -900,7 +904,7 @@
     S.E.me.classList.toggle('is-open', on)
     App.audio.sfx(on ? 'flip' : 'card', { volume: 0.6 })
   }
-  // 卡面原文（圣女三百余字）在矮窗口里会顶进顶栏：先加宽，仍放不下就在框内滚动
+  // 卡面原文（国王、愚者的卡面两三百字）在矮窗口里会顶进顶栏：先加宽，仍放不下就在框内滚动
   function fitMeText() {
     const E = S.E
     const box = E.me && E.me.querySelector('.trial-me-text')
@@ -969,10 +973,11 @@
     if (S.phase === 'debate') {
       // 已经提出、等流程结算的请求不再重复提供
       const queued = t => (T.queue || []).some(q => q.actor === S.me && q.type === t)
-      for (const t of ['knight', 'executor', 'silencer', 'puffer']) if (TE.canUse(S.G, T, S.me, t) && !queued(t)) return t
+      for (const t of ['knight', 'executor', 'silencer', 'puffer', 'civilian']) if (TE.canUse(S.G, T, S.me, t) && !queued(t)) return t
     }
-    if (S.phase === 'vote' && S.V && !S.V.settled) {
-      for (const t of ['judge', 'hanged']) if (TE.canUse(S.G, T, S.me, t, S.V)) return t
+    // 投票期间：正位国王的号令（法官是受命者的逆位，玩家不会有）
+    if ((S.phase === 'vote' || S.phase === 'special') && S.V && !S.V.settled) {
+      if (TE.canUse(S.G, T, S.me, 'king', S.V)) return 'king'
     }
     return null
   }
@@ -1112,6 +1117,8 @@
     lover: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>',
     accomplice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="9" width="9" height="6" rx="3"/><rect x="12" y="9" width="9" height="6" rx="3"/></svg>',
     swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg>',
+    // 梦游神借用了你的逆位一次（主持人游戏 5.3）：一只闭着的眼
+    sleepwalk: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 12c2.5 3 5.5 4.5 9 4.5s6.5-1.5 9-4.5"/><path d="M7 15.5l-1.5 2M12 16.5V19M17 15.5l1.5 2"/></svg>',
   }
   function note(type, text, sub, extra) {
     const n = el('div.trial-note.is-' + type, null, [
@@ -1140,6 +1147,7 @@
       else if (n.type === 'lover') note('lover', nameOf(n.with), n.name, mini(n.with))
       else if (n.type === 'accomplice') note('accomplice', '帮凶', nameOf(n.with), mini(n.with))
       else if (n.type === 'swap') { note('swap', n.name, hhmm(n.at)); await flipMe() }
+      else if (n.type === 'sleepwalk') note('sleepwalk', n.name, hhmm(n.at))
       await wait(500)
     }
   }
@@ -1494,7 +1502,7 @@
     refreshTargets()
   }
   function refreshTargets() {
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= NS; k++) {
       const s = S.seat[k]
       let ok = false, label = ''
       if (S.armed) {
@@ -1579,18 +1587,21 @@
         const ids = await roster(1, id => id !== S.me, VERB[a])
         if (!ids) return
         if (a === 'fortune') {
+          // 占卜家（5.3）：仅一次，名称和详细能力说明（卡面原文）
           const r = TE.fortune(G, S.me, ids[0])
-          if (r) await Inv.reveal(ids[0], r.name)
+          if (r) await Inv.reveal(ids[0], r.name, r.text)
         } else {
           const r = TE.shapeshift(G, S.me, ids[0])
-          if (r) await flipMe()
+          if (r && r.void) await voidMark(ids[0])
+          else if (r) await flipMe()
         }
       } else if (a === 'magician' || a === 'cupid') {
         const ids = await roster(2, () => true, VERB[a])
         if (!ids) return
         if (a === 'magician') {
           const r = TE.magic(G, S.me, ids[0], ids[1])
-          if (r) { App.audio.sfx('whoosh'); if (ids.includes(S.me)) await flipMe() }
+          if (r && r.void) await voidMark(ids.find(x => TE.frontName(G, x) === '平民') || ids[0])
+          else if (r) { App.audio.sfx('whoosh'); if (ids.includes(S.me)) await flipMe() }
         } else {
           const r = TE.cupid(G, S.me, ids[0], ids[1])
           if (r) { App.audio.sfx('chime'); await flushNotices() }
@@ -1612,25 +1623,19 @@
         TE.request(T, { type: 'puffer', actor: S.me, seat })
         if (S.debateResolve) S.debateResolve({ kind: 'ability' })
         skipAll()
-      } else if (a === 'judge') {
-        const V = S.V
-        const id = await pickSeat(x => V.targets.includes(x), VERB[a], { ability: true, cancelable: true })
+      } else if (a === 'civilian') {
+        // 平民公开身份：排进辩论，下一个检查点当众说出
+        TE.request(T, { type: 'civilian', actor: S.me })
+        if (S.debateResolve) S.debateResolve({ kind: 'ability' })
+        skipAll()
+      } else if (a === 'king') {
+        // 国王的号令：指定左边或右边——点那一边最近的存活者
+        const V = S.V, k = seatOf(S.me)
+        const L = TE.nearestOf(G, k, 'left'), R = TE.nearestOf(G, k, 'right')
+        const id = await pickSeat(x => x === L || x === R, VERB[a], { ability: true, cancelable: true })
         if (!id) return
-        const j = TE.judge(G, T, V, S.me, id)
-        if (j) seatMark(id, '+1', 'is-judge')
-      } else if (a === 'hanged') {
-        const V = S.V
-        const from = V.ballots.filter(b => b.target === S.me && b.voter !== S.me).map(b => b.voter)
-        if (!from.length) { App.audio.sfx('wrong', { volume: 0.4 }); shakeSeat(S.me); return }
-        const id = await pickSeat(x => from.includes(x), VERB[a], { ability: true, cancelable: true })
-        if (!id) return
-        const r = TE.reflect(G, T, V, S.me, id)
-        if (r) {
-          drawLine(S.me, id, { cls: 'is-reflect', kind: 'vote', bend: -0.2 })
-          seatMark(S.me, '−1', 'is-judge')
-          seatMark(id, '+1', 'is-judge')
-          App.audio.sfx('glitch', { volume: 0.4 })
-        }
+        const o = TE.kingOrder(G, T, V, S.me, id === L ? 'left' : 'right')
+        if (o) { seatMark(o.to, '<b>令</b>', 'is-mod'); App.audio.sfx('stamp', { volume: 0.5 }) }
       }
     } catch (e) {
       if (e !== ABORT) console.error(e)
@@ -1699,7 +1704,7 @@
   function pickMe(id) {
     S.me = id
     App.audio.sfx('drop')
-    for (let k = 1; k <= 15; k++) S.seat[k].root.classList.toggle('is-me', S.seat[k].id === id)
+    for (let k = 1; k <= NS; k++) S.seat[k].root.classList.toggle('is-me', S.seat[k].id === id)
     const k = seatOf(id)
     if (window.gsap && k) gsap.fromTo(S.seat[k].card, { y: -14 }, { y: 0, duration: 0.6, ease: 'bounce.out' })
     renderIntro()
@@ -4381,9 +4386,9 @@
         S.phase = V.kind === 'special' ? 'special' : 'vote'
         S.stage.classList.add('is-vote')
         tension(1)
-        for (let k = 1; k <= 15; k++) setCount(k, 0, true)
+        for (let k = 1; k <= NS; k++) setCount(k, 0, true)
         clearLines('vote', false)
-        for (let k = 1; k <= 15; k++) S.seat[k].mark.querySelectorAll('.is-judge').forEach(m => m.remove())
+        for (let k = 1; k <= NS; k++) S.seat[k].mark.querySelectorAll('.is-judge').forEach(m => m.remove())
         seatClass('is-banned', V.banned || [])
         seatClass('is-hope', V.hopeBan ? [V.hopeBan] : [])
         syncSeats()
@@ -4485,7 +4490,7 @@
           App.audio.sfx('wrong', { volume: 0.5 })
           await stamp(r.count + ' / ' + r.total, { hold: 900, cls: 'is-fail' })
           S.seat[k].root.classList.remove('is-pending')
-          for (let i = 1; i <= 15; i++) setCount(i, 0, true)
+          for (let i = 1; i <= NS; i++) setCount(i, 0, true)
           clearLines(null)
           S.stage.classList.remove('is-vote')
           S.phase = 'debate'
@@ -4542,7 +4547,7 @@
           await broadcast(bcPart('白痴发动', 0, { 某某: callOf(ev.holder) }))
           S.seat[seatOf(ev.holder)].root.classList.remove('is-pending')
           syncSeats()
-          for (let i = 1; i <= 15; i++) setCount(i, 0, true)
+          for (let i = 1; i <= NS; i++) setCount(i, 0, true)
         } else if (ev.effect === 'fail') {
           await broadcast(bcPart('白痴发动', 1, { 某某: callOf(ev.holder) }), { sfx: 'wrong' })
           seatMark(ev.holder, '!', 'is-known')
@@ -4562,7 +4567,7 @@
         if (ev.effect === 'cancel') {
           S.seat[seatOf(ev.pending)].root.classList.remove('is-pending')
           seatClass('is-hope', [ev.pending])
-          for (let i = 1; i <= 15; i++) setCount(i, 0, true)
+          for (let i = 1; i <= NS; i++) setCount(i, 0, true)
         } else await say(ev.holder, '……', { hold: 700 })
         return
       }
@@ -4586,7 +4591,7 @@
         for (const id of vs) { quipSeat(id, line(id, ev.correct ? 'right' : 'wrong', { X: callOf(ev.pending) }, toX(ev.pending)), { tone: ev.correct ? 'right' : 'wrong', life: 2.6 }); await wait(520) }
         if (vs.length) await wait(900)
         S.seat.forEach(s => s && s.root.classList.remove('is-pending'))
-        for (let i = 1; i <= 15; i++) setCount(i, 0, true)
+        for (let i = 1; i <= NS; i++) setCount(i, 0, true)
         syncSeats()
         return
       }
@@ -5176,7 +5181,7 @@
   }
   function clearCoins() {
     S.E.ring.querySelectorAll('.trial-coin').forEach(c => c.remove())
-    for (let k = 1; k <= 15; k++) if (S.seat[k]) delete S.seat[k].coins.dataset.n
+    for (let k = 1; k <= NS; k++) if (S.seat[k]) delete S.seat[k].coins.dataset.n
   }
 
   /* ==========================================================
@@ -5214,11 +5219,11 @@
   // 一轮投票的小圆环：十五个席位点；选票是连线（投给凶手为血色、被带偏的为骨白虚线），决定性的一票加粗
   function voteRingSVG(V, rec) {
     const R = 46, C = 60
-    const pos = k => { const a = -Math.PI / 2 + ((k - 1) / 15) * Math.PI * 2; return [C + Math.cos(a) * R, C + Math.sin(a) * R] }
+    const pos = k => { const a = -Math.PI / 2 + ((k - 1) / NS) * Math.PI * 2; return [C + Math.cos(a) * R, C + Math.sin(a) * R] }
     const seat = id => seatOf(id)
     let lines = '', dots = ''
     const inRound = new Set(V.voters.concat(V.ballots.map(b => b.target)).filter(Boolean))
-    for (let k = 1; k <= 15; k++) {
+    for (let k = 1; k <= NS; k++) {
       const id = S.G && S.G.seats[k - 1]
       const [x, y] = pos(k)
       const cls = !id ? 'is-empty' : id === rec.murderer ? 'is-m' : inRound.has(id) ? 'is-on' : 'is-off'
@@ -5659,8 +5664,8 @@
      ========================================================== */
   function mount(sec) {
     build(sec)
-    S.seats = (App.state.seats || []).slice(0, 15)
-    while (S.seats.length < 15) S.seats.push(null)
+    S.seats = (App.state.seats || []).slice(0, NS)
+    while (S.seats.length < NS) S.seats.push(null)
     setScene('intro')
     renderIntro()
     requestAnimationFrame(layout)
@@ -5682,8 +5687,8 @@
       Promise.resolve().then(() => { S.reTime = false; if (S.active && !S.paused && S.G && S.shownTime != null) emitTime(S.shownTime) })
     })
     App.bus.on('cast:change', () => {
-      const next = (App.state.seats || []).slice(0, 15)
-      while (next.length < 15) next.push(null)
+      const next = (App.state.seats || []).slice(0, NS)
+      while (next.length < NS) next.push(null)
       S.seats = next
       if (S.running || S.G) hardReset()
       else { renderIntro(); layout() }
