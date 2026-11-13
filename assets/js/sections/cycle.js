@@ -1652,7 +1652,7 @@
        粉点网放在光晕下面（同色半透明两层，上下次序互换颜色不变），不必再被逼成合成层；
      · 人像、大字的居中与缩放直接写 transform / opacity；分界线是一条转动、平移的细条。 */
   // 处刑以后留在原地的：塌落的衣服、鞋，和散落的金币（运行规则 6.6：尸体消失，衣服、金币和身上的东西留在原地）
-  const REMAINS_SVG = '<svg class="cycle-v-remains" viewBox="0 0 300 400" aria-hidden="true">' +
+  const REMAINS_SVG = '<svg class="cycle-v-remains" viewBox="0 336 300 66" aria-hidden="true">' +
     '<g class="r-cloth"><path d="M40 394C46 372 66 360 92 362C104 346 140 340 162 350C184 338 222 344 240 364C258 368 268 382 266 394Z"/>' +
     '<path d="M228 382C246 374 270 376 288 390L284 396C268 388 250 388 236 394Z"/></g>' +
     '<g class="r-fold"><path d="M82 380Q114 366 146 382"/><path d="M128 360Q154 364 176 386"/><path d="M184 356Q206 366 214 388"/><path d="M100 392Q130 384 158 394"/></g>' +

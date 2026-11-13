@@ -671,7 +671,8 @@
    没处刑时 visibility: hidden（等淡出结束再藏），不留透明的合成层 */
 .cycle-v-dead { opacity: 0; visibility: hidden; transition: opacity .5s, visibility 0s .5s; pointer-events: none; }
 .cycle-v-side.is-gone .cycle-v-dead { opacity: 1; visibility: visible; transition: opacity .25s, visibility 0s; }
-.cycle-v-remains { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+/* 落在人原先站的地方，贴着下面的遮幅（6.2vh ≈ 盒高的 7%），不压到广播 */
+.cycle-v-remains { position: absolute; left: 25%; bottom: 7.6%; width: 50%; height: auto; overflow: visible; }
 .cycle-v-remains g { transform-box: fill-box; transform-origin: 50% 100%; }
 .cycle-v-remains .r-cloth { fill: #070506; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
 .cycle-v-remains .r-fold { fill: none; stroke: currentColor; stroke-width: 1.1; stroke-linecap: round; opacity: .55; }

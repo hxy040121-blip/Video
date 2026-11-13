@@ -238,6 +238,7 @@
     for (const p of box.querySelectorAll('.portrait')) if (p._cancel) p._cancel()
     box.innerHTML = ''
   }
+  const sigilHTML = name => App.sigil(name || '').outerHTML
   function sigil(name, cls) {
     const s = App.sigil(name || '', { className: cls || '' })
     return s
@@ -312,7 +313,7 @@
   function icon(key) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[key] || ICON.body) + '</svg>'
   }
-  // 线索指向的维度（证物卡角上、席位档案、结案对账）：尺子=身高、性别、拳头=体格、十字=医护、眼睛=现场观察、齿轮=年代与器械、包=随身物
+  // 线索指向的维度（证物卡角上、席位档案、结案回放）：尺子=身高、性别、拳头=体格、十字=医护、眼睛=现场观察、齿轮=年代与器械、包=随身物
   const DIM_ICON = {
     height: '<rect x="8" y="2.5" width="8" height="19" rx="1"/><path d="M8 6.5h4M8 10h2.5M8 13.5h4M8 17h2.5"/>',
     gender: '<circle cx="10" cy="13.5" r="4.6"/><path d="M13.4 10.1L19 4.5M15.2 4.5H19v3.8M10 18.1V22M8 20h4"/>',
@@ -523,9 +524,12 @@
     const tag = el('div.trial-seat-tag', { text: '你' })
     const mark = el('div.trial-seat-mark')
     const coins = el('div.trial-seat-coins')
+    // 被处刑者留在席位上的金币（运行规则 6.6）：庭审结束后点一下拾起
+    const stash = el('button.trial-seat-stash', { type: 'button', 'aria-label': U.roman(k) }, [el('i.trial-mm-coin'), el('b')])
     const hit = el('button.trial-seat-hit', { type: 'button', 'aria-label': U.roman(k) })
-    root.append(coins, card, cnt, no, name, pips, tag, mark, hit)
-    const rec = { k, root, card, pt, name, cnt, pips, tag, mark, coins, hit, id: null, count: 0, longAt: 0 }
+    root.append(coins, card, cnt, no, name, pips, tag, mark, hit, stash)
+    const rec = { k, root, card, pt, name, cnt, pips, tag, mark, coins, stash, hit, id: null, count: 0, longAt: 0 }
+    stash.addEventListener('click', e => { e.stopPropagation(); takeStash(k) })
     hit.addEventListener('click', e => { e.stopPropagation(); onSeatClick(k) })
     hit.addEventListener('pointerenter', () => onSeatHover(k, true))
     hit.addEventListener('pointerleave', () => onSeatHover(k, false))
@@ -659,6 +663,7 @@
       s.hit.removeAttribute('data-cursor')
     }
     S.touchPick = 0
+    renderStash()
     refreshCursor()
   }
   function syncSeats() {
@@ -678,6 +683,34 @@
       const prt = s.pt.querySelector('.portrait')
       if (prt) { prt.classList.toggle('is-dead', dead); prt.classList.toggle('is-mono', left) }
     }
+    renderStash()
+  }
+  // 席位上留下的金币：有几枚显示几枚；拾得起（庭审已结束、你活着在馆、不在旁观）时可点
+  function renderStash() {
+    const sc = (S.G && S.G.seatCoins) || []
+    const can = !!(S.G && meAlive() && !S.spectate && !S.T && (S.scene === 'after' || S.scene === 'court'))
+    for (let k = 1; k <= NS; k++) {
+      const s = S.seat[k]
+      if (!s) continue
+      const n = sc[k - 1] || 0
+      s.stash.classList.toggle('is-on', n > 0)
+      s.stash.classList.toggle('is-take', n > 0 && can)
+      s.stash.querySelector('b').textContent = n ? String(n) : ''
+      if (n > 0 && can) s.stash.setAttribute('data-cursor', '拾起'); else s.stash.removeAttribute('data-cursor')
+    }
+  }
+  function takeStash(k) {
+    if (!S.G || !meAlive() || S.spectate || S.T || S.paused) return
+    const r = TE.takeSeatCoins(S.G, k, S.me)
+    if (!r) return
+    if (App.econ) App.econ.gain(r.n, 'pickup')
+    syncPurse()
+    const e = econ()
+    setCoins(e ? e.coins : S.coins + r.n, true)
+    App.audio.sfx('coins')
+    const s = S.seat[k]
+    if (window.gsap) gsap.fromTo(s.stash, { scale: 1.5 }, { scale: 1, duration: 0.35, ease: 'back.out(3)' })
+    renderStash()
   }
   function setCount(k, n, silent) {
     const s = S.seat[k]
@@ -1919,7 +1952,7 @@
         if (pay === 'restart') return
         await aftermath(c, pay)
         const w = TE.winner(S.G)
-        // 结案对账（可跳过）：它的按钮就是「下一案」/「终局」
+        // 结案回放（可跳过）：它的按钮就是「下一案」/「终局」
         await replay(c, w ? '终局' : '下一案')
         if (w) { await finale(w === 'none' ? null : w); break }
         clearCoins()
@@ -2444,7 +2477,7 @@
       if (g.rot) ctx.setTransform(0, d * g.s, d * g.s, 0, d * g.ox, d * g.oy)
       else ctx.setTransform(d * g.s, 0, 0, -d * g.s, d * g.ox, d * (g.oy + this.h * g.s))
     },
-    // 把平面图放进一个框里（结案对账用）：{x, y, w, h} → geo
+    // 把平面图放进一个框里（结案回放用）：{x, y, w, h} → geo
     fitGeo(box) {
       const w = this.w, h = this.h
       const sA = Math.min(box.w / w, box.h / h), sB = Math.min(box.w / h, box.h / w)
@@ -2500,16 +2533,16 @@
       this.paintPlan(ctx, this.geo, this.dpr, { bodyGone: this.bodyGone, labels: true, scale: true })
       this.drawTraces()
     },
-    // 平面图本身：地面、陈设、墙与门、尸体粉笔线、离开现场的脚印、文字。geo/d 可换（结案对账在别的画布上重画）
+    // 平面图本身：地面、陈设、墙与门、尸体粉笔线、离开现场的脚印、文字。geo/d 可换（结案回放在别的画布上重画）
     paintPlan(ctx, g, d, opts = {}) {
       const w = this.w, h = this.h
       const px = n => n / g.s // 像素 → 米
       const bone = a => `rgba(226,232,238,${a})`
       const brass = a => `rgba(194,154,91,${a})`
       this.setLocal(ctx, g, d)
-      // 地面：灯亮着，冷灰的石面或木面
+      // 地面：灯亮着，冷灰的石面或木面（物理层 4.2 的五类；橡胶垫不是木地板）
       const surf = this.c.roomInfo.floorSurface || ''
-      const wood = /木|柚|枫|橡|黄花梨|楠/.test(surf.split('·')[0])
+      const wood = /木/.test(surf.split('·')[0])
       const gr = ctx.createLinearGradient(0, 0, w, h)
       gr.addColorStop(0, wood ? '#272320' : '#20252b')
       gr.addColorStop(1, wood ? '#1b1816' : '#171b20')
@@ -2534,7 +2567,7 @@
           }
         }
         ctx.stroke()
-      } else if (/玉|石|翡翠|岩|晶/.test(surf)) {
+      } else if (/石/.test(surf.split('·')[0])) {
         const step = Math.max(0.8, Math.min(w, h) / 10)
         for (let x = step; x < w; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, h) }
         for (let y = step; y < h; y += step) { ctx.moveTo(0, y); ctx.lineTo(w, y) }
@@ -3478,8 +3511,8 @@
       box.classList.remove('is-on')
       if (window.gsap) gsap.set(box, { clearProps: 'transform,opacity' })
     },
-    // 占卜家：查验结果。被查验者不收到任何通知（主持人游戏 5.7），所以这里只有卡面，没有他的反应
-    async reveal(id, name) {
+    // 占卜家：查验结果——当前正位的名称和卡面原文（主持人游戏 5.3）。被查验者不收到任何通知，所以这里只有卡面，没有他的反应
+    async reveal(id, name, text) {
       const box = S.E.inv.querySelector('.trial-inv-pop')
       const ib = box.querySelector('.trial-inv-pop-ico')
       clearFaces(ib)
@@ -3492,31 +3525,33 @@
       box.querySelector('b').textContent = nameOf(id) + ' · ' + name
       box.querySelector('.trial-inv-pop-sub').textContent = ''
       const bw = Math.min(380, this.W - 32)
-      Object.assign(box.style, { left: (this.W - bw) / 2 + 'px', top: (this.H / 2 - 120) + 'px', width: bw + 'px' })
+      Object.assign(box.style, { left: (this.W - bw) / 2 + 'px', top: Math.max(70, this.H / 2 - (text ? 190 : 120)) + 'px', width: bw + 'px' })
       box.classList.add('is-on')
       App.audio.sfx('flip')
       if (window.gsap) gsap.fromTo(box, { opacity: 0, rotateY: 90 }, { opacity: 1, rotateY: 0, duration: 0.5, ease: 'back.out(1.6)' })
       box.classList.remove('is-act', 'is-tell')
-      box.querySelector('.trial-inv-pop-text').textContent = ''
-      await wait(2400)
-      box.classList.remove('is-on')
+      box.querySelector('.trial-inv-pop-text').textContent = text || ''
+      box.classList.toggle('is-card', !!text)
+      await wait(text ? Math.min(9000, 2400 + text.length * 30) : 2400)
+      box.classList.remove('is-on', 'is-card')
     },
   }
 
   /* ==========================================================
      默念：兑换（价目表「兑换方式」、8.2、第 9 节）
      说出或默念 → 只对你报价 → 同意 → 付款 → 东西出现在手边。一次兑换的总价要正好整百，不找零；身上的不够就不成立。
-     调查期列工具（鲁米诺要先用毛毯罩出暗处；指纹粉不在铜牌上，问了才知道价）；余波列吃的、一夜安眠。
-     打听「谁是凶手」之类一律不成立，不收钱。退出券五百枚：买得起的话，持券可以要求离馆。
+     调查期列工具（鲁米诺要先用毛毯罩出暗处；指纹粉不在铜牌上，问了才知道价）；审判发放之后列吃的、一夜安眠。
+     打听「谁是凶手」「谁是受命者」之类一律不成立，不收钱。退出券五百枚：买得起的话，持券可以要求离馆。
      ========================================================== */
   const IT = {
     luminol: '鲁米诺试剂一瓶', blanket: '毛毯、枕头、睡袋', juice: '一瓶果汁、汽水或牛奶', powder: '指纹粉、刷子与胶纸一套',
-    recorder: '录音笔一支', camera: '拍立得相机一台，含相纸二十张', meal: '一餐，一人份，菜式任点', feast: '十五人份的同一餐',
+    recorder: '录音笔一支', camera: '拍立得相机一台，含相纸二十张', meal: '一餐，一人份，菜式任点', feast: '十三人份的同一餐', snack: '零食一包（薯片、饼干、糖）',
     sleep: '热水浴、按摩、一夜安眠的服务', coffee: '一壶热咖啡或茶，含杯具', choc: '巧克力一板', ticket: '退出券一张', repair: '修复身体残疾',
   }
   const MM_LIST = {
     inv: [['luminol', 'luminol'], ['blanket', 'blanket'], ['juice', 'drink'], ['powder', 'powder'], ['recorder', 'recorder'], ['camera', 'photo'], ['meal', 'meal'], ['ticket', 'ticket']],
-    after: [['meal', 'meal'], ['feast', 'meal'], ['sleep', 'sleep'], ['coffee', 'drink'], ['choc', 'meal'], ['juice', 'drink'], ['repair', 'walk'], ['ticket', 'ticket']],
+    // 十三人份的同一餐 870 不是整百：添一包零食（30）凑成九枚（价目表「兑换方式」）
+    after: [['meal', 'meal'], ['feast', 'meal'], ['snack', 'meal'], ['sleep', 'sleep'], ['coffee', 'drink'], ['choc', 'meal'], ['juice', 'drink'], ['repair', 'walk'], ['ticket', 'ticket']],
   }
   const econ = () => (App.econ && App.econ.get()) || null
   // 手边有几件（买到的，减去这一局用掉的鲁米诺）
@@ -3657,7 +3692,7 @@
       return () => { picks.delete(kill); box.classList.remove('is-on') }
     })
   }
-  // 交付：买到的东西落在手边（调查期落进工具栏；余波落在你席位前的桌面上），并生效
+  // 交付：买到的东西落在手边（调查期落进工具栏；发放之后落在你席位前的桌面上），并生效
   function delivered(items, where) {
     const G = S.G
     for (const it of items) {
@@ -3936,6 +3971,21 @@
 
   async function investigate(c) {
     const E = S.E
+    // 敲钟人：调查时间被取消，发现即开庭（主持人游戏 3.1、5.5）——不进调查；你只带着自己这个时段在哪的证言卡上庭
+    if (!c.investMinutes) {
+      Inv.ended = true
+      S.tellMarks = new Set()
+      S.frame = null
+      S.autopsy = null
+      S.refKnown = false
+      syncPurse()
+      TE.aiInvestigation(S.G, c)
+      await flushNotices()
+      const mine = !S.spectate && meAlive() && c.where && c.where[S.me]
+      if (mine) talkCard(S.me, { segs: TE.claimSegs(S.G, c, S.me) })
+      S.G.minutes = Math.max(S.G.minutes, c.tCourt)
+      return
+    }
     await slash(() => {
       setScene('inv')
       mood('inv')
@@ -4381,6 +4431,7 @@
         return
       case 'secret': {
         if (ev.actor !== S.me) return
+        if (ev.ability === 'silencer' && ev.civil) { await voidMark(ev.target); return } // 平民不能被沉默：无效，这一场的机会还在
         if (ev.ability === 'silencer') seatMark(ev.target, '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>', 'is-lock')
         if (ev.ability === 'puffer') {
           const id = G.seats[ev.seat - 1]
@@ -4389,6 +4440,54 @@
           void r
         }
         await wait(500)
+        return
+      }
+      case 'reveal': {
+        // 平民公开身份（5.13）：本人的公开言行，不另广播
+        focusActor(ev.actor)
+        await banner(ev.name || '平民', ev.actor)
+        seatMark(ev.actor, sigilHTML(ev.name || '平民'), 'is-civil')
+        return
+      }
+      case 'king': {
+        // 国王公开身份、发号令（5.9）：指定的那一边最近的存活者，原来的票取消，跟票或弃票自投
+        focusActor(ev.actor)
+        await banner('国王', ev.actor)
+        if (ev.void) { await say(ev.actor, '……', { hold: 700 }); return }
+        drawLine(ev.actor, ev.to, { cls: 'is-thread is-order', kind: 'vote', bend: 0.05 })
+        if (!S.seat[seatOf(ev.to)].mark.querySelector('.is-mod')) seatMark(ev.to, '<b>令</b>', 'is-mod')
+        shakeSeat(ev.to)
+        App.audio.sfx('stamp', { volume: 0.6 })
+        await wait(S.spectate ? 500 : 700)
+        return
+      }
+      case 'ask-obey': {
+        // 你受了国王的号令：跟国王票选同一对象，或弃票自投
+        spotlight(S.me)
+        S.E.me.classList.add('is-choice')
+        drawLine(S.me, ev.target, { cls: 'is-thread', kind: 'thread', bend: 0.05 })
+        const v = await choose([{ label: '跟票', value: true, tone: 'blood' }, { label: '弃票', value: false }])
+        clearLines('thread')
+        S.E.me.classList.remove('is-choice')
+        return v
+      }
+      case 'obey': {
+        // 受号令者重选：旧的那一票撤掉，新的一票连上去（特殊表决只数投给指定对象的票）
+        const V = ev.vote
+        const k = seatOf(ev.speaker)
+        for (let i = lineData.length - 1; i >= 0; i--) {
+          const r = lineData[i]
+          if (r.kind === 'vote' && r.a === k && !/is-order/.test(r.p.getAttribute('class') || '')) { lineData.splice(i, 1); [r.p, r.dot].filter(Boolean).forEach(n => n.remove()) }
+        }
+        const counted = t => t && (V.kind !== 'special' || t === V.target)
+        if (counted(ev.from) && seatOf(ev.from)) setCount(seatOf(ev.from), S.seat[seatOf(ev.from)].count - 1)
+        if (ev.target) {
+          drawLine(ev.speaker, ev.target, { cls: (counted(ev.target) ? '' : 'is-void') + ' is-thread', kind: 'vote', dur: 0.3 })
+          if (counted(ev.target)) bumpCount(ev.target)
+        }
+        App.audio.sfx('vote')
+        if (!isMe(ev.speaker)) quipSeat(ev.speaker, ev.follow ? line(ev.speaker, 'vote', { X: callOf(ev.target) }, toX(ev.target)) : line(ev.speaker, 'silent'), { tone: 'vote', life: 1.9 })
+        await wait(S.spectate ? 400 : 600)
         return
       }
       case 'debate-end':
@@ -4402,7 +4501,7 @@
         updateMe()
         tension(1)
         S.stage.classList.add('is-vote')
-        await broadcast(bcText('主持人只以【】喊停辩论') || '辩论结束，开始投票。')
+        await broadcast(bcText('辩论结束，主持人没有亲自开口'))
         return
       case 'vote-begin': {
         const V = ev.vote
@@ -4412,9 +4511,9 @@
         tension(1)
         for (let k = 1; k <= NS; k++) setCount(k, 0, true)
         clearLines('vote', false)
-        for (let k = 1; k <= NS; k++) S.seat[k].mark.querySelectorAll('.is-judge').forEach(m => m.remove())
+        for (let k = 1; k <= NS; k++) S.seat[k].mark.querySelectorAll('.is-mod').forEach(m => m.remove())
         seatClass('is-banned', V.banned || [])
-        seatClass('is-hope', V.hopeBan ? [V.hopeBan] : [])
+        seatClass('is-lawyer', V.lawyerBan ? [V.lawyerBan] : [])
         syncSeats()
         hideSay()
         updateMe()
@@ -4556,7 +4655,7 @@
         await wait(400)
         return
       }
-      case 'ask-idiot': {
+      case 'ask-fool': {
         await say(S.me, '……', { hold: 200 })
         // 身份卡亮起：这个选择来自你手里的牌
         S.E.me.classList.add('is-choice')
@@ -4564,33 +4663,33 @@
         S.E.me.classList.remove('is-choice')
         return v
       }
-      case 'idiot': {
+      case 'fool': {
         focusActor(ev.holder)
-        await banner('白痴', ev.holder)
+        await banner('愚者', ev.holder)
         if (ev.effect === 'cancel') {
-          await broadcast(bcPart('白痴发动', 0, { 某某: callOf(ev.holder) }))
+          await broadcast(bcPart('愚者发动', 0, { 某某: callOf(ev.holder) }))
           S.seat[seatOf(ev.holder)].root.classList.remove('is-pending')
           syncSeats()
           for (let i = 1; i <= NS; i++) setCount(i, 0, true)
         } else if (ev.effect === 'fail') {
-          await broadcast(bcPart('白痴发动', 1, { 某某: callOf(ev.holder) }), { sfx: 'wrong' })
+          await broadcast(bcPart('愚者发动', 1, { 某某: callOf(ev.holder) }), { sfx: 'wrong' })
           seatMark(ev.holder, '!', 'is-known')
         } else await say(ev.holder, '……', { hold: 700 })
         return
       }
-      case 'ask-hope': {
+      case 'ask-lawyer': {
         await stampFace(ev.pending)
         S.E.me.classList.add('is-choice')
         const v = await choose([{ label: '撤销', value: true, tone: 'blood' }, { label: '放弃', value: false }])
         S.E.me.classList.remove('is-choice')
         return v
       }
-      case 'hope': {
+      case 'lawyer': {
         focusActor(ev.holder)
-        await banner('身怀希望之人', ev.holder)
+        await banner('律师', ev.holder)
         if (ev.effect === 'cancel') {
           S.seat[seatOf(ev.pending)].root.classList.remove('is-pending')
-          seatClass('is-hope', [ev.pending])
+          seatClass('is-lawyer', [ev.pending])
           for (let i = 1; i <= NS; i++) setCount(i, 0, true)
         } else await say(ev.holder, '……', { hold: 700 })
         return
@@ -5117,7 +5216,7 @@
   }
 
   /* ==========================================================
-     余波：金币落桌
+     发放：金币落桌（主持人游戏 8「审判的发放」；运行规则已没有余波阶段，这一屏是网站自设的段落）
      ========================================================== */
   async function aftermath(c, pay) {
     const E = S.E
@@ -5145,7 +5244,7 @@
     }
     // 你这一轮的几枚进钱袋（一局一个钱袋，铜牌与庭审共用）
     const gain = meAlive() && pay.table[S.me] ? pay.table[S.me] : 0
-    if (gain && App.econ) { App.econ.gain(gain, 'aftermath'); syncPurse() }
+    if (gain && App.econ) { App.econ.gain(gain, 'payout'); syncPurse() }
     // 未查明：凶手的十枚出现在他套房的书桌上（不广播）——只有一个极暗的光点
     if (!pay.solved && Object.keys(pay.desk).length) {
       E.desk.classList.add('is-on')
@@ -5209,7 +5308,7 @@
   }
 
   /* ==========================================================
-     结案对账：真相回放（运行规则 7.5）——余波之后一屏，可跳过
+     结案回放：真相回放（网站自设，不是条文；依据运行规则 7.3 记下的「真相」与「留下的东西」）——发放之后一屏，可跳过
      真凶翻牌（手法、房间、时刻）；平面图上的进出路线与尸体位置；每条线索被谁找到（没人找到的为灰）、
      连到凶手对应的特征；各轮投票的流向与决定性的一票。未能查明的案件也翻牌，封上「只有你看得见」。
      只用名字、时刻、编号、证物名与卡面原文。数据来自引擎的 c.record（closeTrial 写入）。
@@ -5222,7 +5321,6 @@
     poison: '<path d="M9.5 3h5M10.5 3v4.5L6 15a4 4 0 0 0 3.5 6h5A4 4 0 0 0 18 15l-4.5-7.5V3"/><path d="M8 15.5h8" opacity=".6"/>',
     drown: '<path d="M3 13c2-1.5 3-1.5 4.5 0s2.5 1.5 4.5 0 3-1.5 4.5 0 2.5 1.5 4.5 0M3 18c2-1.5 3-1.5 4.5 0s2.5 1.5 4.5 0 3-1.5 4.5 0 2.5 1.5 4.5 0"/><circle cx="12" cy="6.5" r="2.5"/>',
     fall: '<path d="M12 3v14M7 12l5 5 5-5M5 21h14"/>',
-    door: '<path d="M5 21V3h14v18M3 21h18"/><path d="M9 12h1.5" stroke-width="2.2"/>',
     alcohol: '<path d="M10 3h4v4l2 3v11H8V10l2-3z"/><path d="M8 14h8" opacity=".6"/>',
   }
   const causeIcon = id => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (CAUSE_ICON[id] || CAUSE_ICON.stab) + '</svg>'
@@ -5240,7 +5338,7 @@
       default: return '—'
     }
   }
-  // 一轮投票的小圆环：十五个席位点；选票是连线（投给凶手为血色、被带偏的为骨白虚线），决定性的一票加粗
+  // 一轮投票的小圆环：十三个席位点；选票是连线（投给凶手为血色、被带偏的为骨白虚线），决定性的一票加粗
   function voteRingSVG(V, rec) {
     const R = 46, C = 60
     const pos = k => { const a = -Math.PI / 2 + ((k - 1) / NS) * Math.PI * 2; return [C + Math.cos(a) * R, C + Math.sin(a) * R] }
@@ -5293,8 +5391,16 @@
     const vic = el('div.trial-rp-victim', null, [el('div.trial-rp-vface'), el('b', { text: nameOf(rec.victim) })])
     vic.firstChild.appendChild(face(rec.victim, { dead: true, eyeRange: 2 }))
     const extra = el('div.trial-rp-extra')
-    if (rec.bottle) extra.appendChild(el('span', null, [el('i', { html: causeIcon('poison') }), el('span', { text: rec.bottle.room + ' · 书桌 · ' + hhmm(rec.bottle.at) })]))
-    if (rec.doorLock) extra.appendChild(el('span', null, [el('i', { html: causeIcon('door') }), el('span', { text: hhmm(rec.doorLock.at) + '—' + hhmm(rec.doorLock.until) })]))
+    // 兑换来的毒：几枚、什么时候买的（价目表 10.6）
+    if (rec.buy) extra.appendChild(el('span.is-coins', null, [el('i.trial-mm-coin'), el('span', { text: rec.buy.coins + ' · ' + (rec.buy.kind || rec.buy.item) + ' · ' + hhmm(rec.buy.at) })]))
+    // 受命者手里的逆位（身份名）：敲钟人取消了调查、兆示让他说谎没人拆得穿、平民加倍、国王翻面
+    const backTags = []
+    if (rec.bell) backTags.push('敲钟人')
+    if (rec.omen) backTags.push('兆示')
+    if (rec.backs && rec.backs.king) backTags.push('国王')
+    else if (rec.backs && rec.backs.back === '法官') backTags.push('法官')
+    for (const nm of backTags) extra.appendChild(el('span.is-back', null, [el('i', { html: sigilHTML(nm) }), el('span', { text: nm })]))
+    if (rec.double) extra.appendChild(el('span.is-back', null, [el('i', { html: sigilHTML('平民') }), el('span', { text: '×2' })]))
     if (rec.where && rec.where.lie) extra.appendChild(el('span.is-lie', null, [el('i', { html: LIE_MARK }), el('span', { text: rec.where.claim })]))
     // 让死亡时间窗偏移：看上去的时刻 → 真正的时刻（识破了没有）
     if (rec.death && rec.death.shift) extra.appendChild(el('span.is-shift' + (rec.death.refKnown ? '.is-seen' : ''), null, [el('i', { html: dimIcon('time') }), el('s', { text: hhmm(rec.death.apparent) }), el('span', { text: '→ ' + hhmm(rec.death.t) })]))
@@ -5699,7 +5805,7 @@
       if (S.scene === 'inv') { if (v) Inv.start(); else Inv.stop() }
     })
     App.tick(onTick)
-    // 钱袋变了（余波发放、拾取、兑换，或在铜牌上动了它）：顶栏跟着变，引擎里你身上的枚数也跟着
+    // 钱袋变了（审判发放、D01 20:00、拾取、兑换，或在铜牌上动了它）：顶栏跟着变，引擎里你身上的枚数也跟着
     App.bus.on('econ:change', e => {
       if (!S.G || !e || e.game !== S.econGame) return
       if (e.coins !== S.coins) setCoins(e.coins, true)

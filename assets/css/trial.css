@@ -113,7 +113,7 @@
 .trial-line.is-accuse { stroke-width: 3.2; }
 .trial-line.is-void { stroke: var(--ash); stroke-dasharray: 4 6; filter: none; opacity: .8; }
 .trial-line.is-thread { stroke: #ff8db8; stroke-width: 1.2; stroke-dasharray: 1 5; filter: none; }
-.trial-line.is-reflect { stroke: var(--brass); stroke-dasharray: 6 4; filter: drop-shadow(0 0 5px rgba(194, 154, 91, .6)); }
+.trial-line.is-order { stroke: var(--brass); stroke-width: 1.6; stroke-dasharray: 6 4; filter: none; }
 /* 反咬：反向的一条断续红线；附议：细线连向被指认者；质疑：骨白虚线连向指认者 */
 .trial-line.is-counter { stroke-dasharray: 14 6; }
 .trial-line.is-agree { stroke-width: 1.3; opacity: .8; filter: none; }
@@ -122,7 +122,7 @@
 .trial-line-dot { fill: var(--blood); }
 .trial-line-dot.is-void { fill: var(--ash); }
 .trial-line-dot.is-thread { fill: #ff8db8; }
-.trial-line-dot.is-reflect { fill: var(--brass); }
+.trial-line-dot.is-order { fill: var(--brass); }
 
 /* ---------- 席位 ---------- */
 .trial-seat {
@@ -229,7 +229,10 @@
   box-shadow: 0 0 0 1px var(--ink);
 }
 .trial-mark svg { width: 12px; height: 12px; }
-.trial-mark.is-judge { background: var(--brass); font-family: var(--f-latin); font-weight: 700; }
+.trial-mark.is-mod { background: var(--brass); font-family: var(--f-latin); font-weight: 700; }
+.trial-mark.is-mod b { font-family: var(--f-display); font-weight: 900; }
+.trial-mark.is-civil { padding: 0; width: 22px; background: var(--ink); color: var(--brass); box-shadow: 0 0 0 1px var(--brass-dim); }
+.trial-mark.is-civil .sigil, .trial-mark.is-civil svg { display: block; width: 18px; height: 18px; }
 .trial-mark.is-lock { background: var(--ink); color: var(--bone); box-shadow: 0 0 0 1px var(--bone-dim); }
 .trial-mark.is-puffer { background: var(--ink-2); color: var(--bone); box-shadow: 0 0 0 1px var(--ash); padding: 0 6px; }
 .trial-mark.is-puffer.is-yes { background: var(--blood); color: var(--ink); box-shadow: 0 0 10px var(--blood); }
@@ -317,8 +320,18 @@
 @keyframes trial-tie { 50% { filter: brightness(1.6) drop-shadow(0 0 18px rgba(255, 46, 126, .95)); } }
 .trial-seat.is-out .trial-seat-card { opacity: .45; filter: grayscale(.8); }
 .trial-seat.is-novote .trial-seat-no { color: var(--rust); text-decoration: line-through; }
-.trial-seat.is-hope .trial-chair-back { stroke: var(--bone-dim); stroke-dasharray: 3 3; }
-.trial-seat.is-hope .trial-seat-pt { opacity: .6; }
+.trial-seat.is-lawyer .trial-chair-back { stroke: var(--bone-dim); stroke-dasharray: 3 3; }
+.trial-seat.is-lawyer .trial-seat-pt { opacity: .6; }
+/* 被处刑者留在席位上的金币（运行规则 6.6）：庭审结束后可以拾起 */
+.trial-seat-stash {
+  position: absolute; left: 50%; top: 46%; z-index: 9; transform: translate(-50%, -50%);
+  display: none; align-items: center; gap: 3px; padding: 1px 6px 1px 2px; border-radius: 10px;
+  font-family: var(--f-latin); font-size: 11px; line-height: 1.4; color: var(--brass); background: rgba(10, 8, 9, .85);
+  box-shadow: 0 0 0 1px var(--brass-dim); pointer-events: none;
+}
+.trial-seat-stash.is-on { display: inline-flex; }
+.trial-seat-stash.is-take { pointer-events: auto; cursor: pointer; box-shadow: 0 0 0 1px var(--brass), 0 0 10px rgba(194, 154, 91, .45); }
+.trial-seat-stash .trial-mm-coin { width: 12px; height: 12px; }
 
 .trial-seat.is-target .trial-seat-hit { cursor: pointer; }
 /* 可选的席位：四角准星（入座时为黄铜色，其余为血粉）；悬停时收紧锁定 */
@@ -474,7 +487,7 @@
 }
 .trial-say-tag:empty { display: none; }
 .trial-say.is-right .trial-say-tag { left: auto; right: 30px; }
-/* 动作描写（格里菲斯不能说话）：不加引号，斜体淡色 */
+/* 动作描写（台词只有动作的人）：不加引号，斜体淡色 */
 .trial-say.is-act .trial-say-line { font-family: var(--f-serif); font-weight: 400; font-style: italic; letter-spacing: .02em; color: var(--bone-dim); }
 .trial-cine-who p.is-act, .trial-end-line.is-act { font-style: italic; color: var(--bone-dim) !important; }
 .trial-say.is-exec .trial-say-body::before { border-top-color: var(--rust); background: linear-gradient(100deg, rgba(40, 6, 10, .96), rgba(18, 14, 16, .93)); }
@@ -738,6 +751,8 @@
 .trial-inv-pop-lead:empty, .trial-inv-pop-more:empty { display: none; }
 .trial-inv-pop-body .trial-inv-pop-more { color: var(--bone-dim); border-top: 1px dashed rgba(235, 227, 214, .18); padding-top: 6px; }
 .trial-inv-pop.is-act .trial-inv-pop-text { font-style: italic; color: var(--bone-dim); }
+/* 占卜家查到的卡面原文（主持人游戏 5.3）：段落照原文分开，长了在框内滚动 */
+.trial-inv-pop.is-card .trial-inv-pop-text { white-space: pre-line; max-height: 42vh; overflow-y: auto; font-family: var(--f-serif); }
 .trial-inv-pop-tag {
   position: absolute; right: -8px; top: -14px; padding: 3px 10px 3px calc(10px + .2em);
   font-family: var(--f-display); font-weight: 900; font-style: normal; font-size: 14px; line-height: 1.3; letter-spacing: .2em;
@@ -1147,6 +1162,9 @@
 .trial-note.is-accomplice { border-color: var(--rust); }
 .trial-note.is-accomplice .trial-note-ico { color: var(--rust); }
 .trial-note.is-swap { border-color: var(--brass); }
+.trial-note.is-void { border-color: var(--ash); }
+.trial-note.is-void .trial-note-ico { color: var(--ash); }
+.trial-note.is-sleepwalk { border-color: var(--bone-dim); }
 .trial-note.is-folded { max-width: 40px; padding: 7px 10px; opacity: .6; }
 .trial-note.is-folded .trial-note-body, .trial-note.is-folded .trial-note-face { opacity: 0; }
 
@@ -1346,8 +1364,6 @@
 .trial-prof-items { display: flex; gap: 6px; align-items: flex-start; }
 .trial-prof-items ul { list-style: none; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .trial-prof-items li { font-size: 11px; line-height: 1.4; color: var(--bone-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 186px; }
-.trial-prof-see { font-family: var(--f-serif); font-size: 12px; line-height: 1.55; color: var(--bone); }
-.trial-prof-see span { display: block; margin-bottom: 1px; font-family: var(--f-sans); font-size: 9px; letter-spacing: .35em; color: var(--brass-dim); }
 
 /* ==========================================================
    结案对账：真相回放
@@ -1527,6 +1543,8 @@
 .trial-rp-extra span.is-shift s { color: var(--ash); text-decoration-color: var(--blood); margin-right: 4px; }
 .trial-rp-extra span.is-shift.is-seen > span { color: var(--blood); }
 .trial-rp-extra span.is-coins .trial-mm-coin { width: 11px; height: 11px; margin-right: 4px; vertical-align: -1px; }
+.trial-rp-extra span.is-back { color: var(--brass); }
+.trial-rp-extra span.is-back > i .sigil, .trial-rp-extra span.is-back > i svg { display: inline-block; width: 14px; height: 14px; vertical-align: -3px; }
 .trial-card-rec { position: absolute; left: 5px; bottom: 4px; width: 13px; height: 13px; color: var(--blood); pointer-events: none; }
 .trial-card-rec svg { display: block; width: 100%; height: 100%; }
 /* 出示按钮上的三颗小点 */
