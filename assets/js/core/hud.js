@@ -79,8 +79,9 @@
   }
 
   /* ---------- 目录 ---------- */
+  // 卡池的张数照数据数（App.chars）：卡池增删以后这一行跟着变
   const TAG = {
-    prologue: '十五把椅子', screening: '宣传片', mansion: '窗后没有太阳', cast: '五十三张脸', table: '谁坐在哪里',
+    prologue: '十三把椅子', screening: '宣传片', mansion: '窗后没有太阳', cast: U.cnNum((App.chars || []).length) + '张脸', table: '谁坐在哪里',
     identities: '撕不开的牌', cycle: '二十四小时', trial: '亲手审一次', plaque: '一切都有价', wish: '只剩一个人',
   }
   let menuOpen = false
