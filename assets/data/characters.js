@@ -1,14 +1,17 @@
 /* ==========================================================
-   CHARACTERS：人物卡的提炼数据（来源：v7.11 人物卡/<名>.md，卡背已并回卡面，一人一个文件）。
-   本文件是最早的 38 人；v4.71 新增的 15 人在 characters-new.js，push 进同一个数组，字段相同。
+   CHARACTERS：卡池的 30 人，人物卡的提炼数据。数组的顺序就是卡池长廊的顺序（同一部作品的人挨着）。
+   来源：v7.11 的 人物卡/<卡名>.md（一人一个文件；v4.71 的卡背 人物卡/背景/ 已并回卡面，目录不再有）。
+   新卡池里另有 103 张卡，网站没有收；原先网站上的 53 人里，按肖像画风统一留下这 30 人
+   （去掉的 23 人和他们的肖像不再随网站）。
    字段：
    id            英文短名（肖像文件名 assets/art/portraits/<id>.webp）
    name          卡名（档案、卡池用）    epithet  称号（网站用的极短头衔，卡上没有）   work  原作
-   callName      在馆里自我介绍时报的名字（卡面「名字」一条；没写就是卡名去掉括号）；不报名为 null（宇智波带土、吉尔伽美什）。
+   callName      在馆里自我介绍时报的名字（卡面「名字」一条；没写就是卡名去掉括号）；不报名为 null（吉尔伽美什）。
                  广播与台词的 {X}/{V} 代入它；重名（同局两人报同一个名字）或 null 时，界面改说「N 号」
-   gender/age/heightCm/heightNote/era   age 取外貌首句、era 取「年代」一条；卡上没写年龄的留空
+   gender/age/heightCm/heightNote/era   age 取外貌首句、era 取「年代」一条；卡上没写年龄的留空；
+                 卡上没写身高数字的按外貌估计，见 heightNote
    knowsModernDevices  卡上「馆里多半没见过的」为「—」即 true；unknownDevices 为原文
-   canWalk       false：卡上写明保留的残疾使他不能行走（格里菲斯、乔尼）
+   canWalk       false：卡上写明保留的残疾使他不能行走（这 30 人里没有）
    stats         判定七项：physique 体能与格斗(普通/受训) physiqueNote 括号说明、disguise 伪装(高/中/低)、
                  readsPeople 善于读人(是/一般)、medical 医护、observation 现场观察(一般/擅长)、
                  killThreshold 杀人门槛(无/低/中/高)、suspicion 疑心(重/中/轻)
@@ -221,6 +224,138 @@ window.CHARACTERS = [
   "canWalk": true
  },
  {
+  "id": "kirigiri",
+  "name": "雾切响子",
+  "callName": "雾切响子",
+  "epithet": "超高校级的侦探",
+  "work": "《弹丸论破 希望的学园与绝望的高中生》",
+  "gender": "女",
+  "age": "按十八岁计",
+  "heightCm": 167,
+  "heightNote": "",
+  "era": "二〇一〇年代的日本",
+  "knowsModernDevices": true,
+  "unknownDevices": "—",
+  "stats": {
+   "physique": "普通",
+   "physiqueNote": "没练过格斗",
+   "disguise": "高",
+   "readsPeople": "是",
+   "medical": "基本常识",
+   "observation": "擅长",
+   "killThreshold": "高",
+   "suspicion": "中"
+  },
+  "carried": [
+   "黑色皮手套一双（戴在手上，人前不摘）"
+  ],
+  "quote": {
+   "zh": "我也是人……喜怒哀乐，我和别人一样有……只是不让它露在脸上而已。"
+  },
+  "dream": "找到父亲，问清楚，然后和他一刀两断",
+  "lines": {
+   "wake": "陌生的房间。先确认门和出口。",
+   "discover": "别碰。尸体能告诉我们的，比任何人都多。",
+   "statement": "结论不急。矛盾在哪里，我们一样一样来。",
+   "accuse": "{X}，这个矛盾，你能解释吗？",
+   "defend": "怀疑我是对的。但请拿证据来，不是印象。",
+   "vote": "{X}。这是我能得出的结论。",
+   "executed": "……我还有一件事没问清楚。剩下的，替我查下去。",
+   "wish": "找到我的父亲。问清楚……然后，结束这一切。"
+  },
+  "art": {
+   "silhouetteKeys": [
+    "long, straight lavender-grey hair with blunt bangs",
+    "a thin braid at the left temple tied with a black ribbon",
+    "black leather gloves with metal studs on the backs of the hands",
+    "a dark short jacket over a white shirt and tie",
+    "a slender, very upright posture"
+   ],
+   "hair": "Long, straight, pale lavender-grey hair with blunt bangs; a thin braid at the left temple tied with a black ribbon.",
+   "hairColor": "#C9BFD6",
+   "eyes": "Cool violet eyes, level and calm.",
+   "eyeColor": "#7E5FA6",
+   "skin": "#F3E1D6",
+   "face": "A composed, delicate face with almost no expression; mouth in a neutral line.",
+   "outfit": "A dark short jacket, white shirt and tie, black short skirt and black long boots (below frame); black leather gloves studded with metal on the backs of the hands.",
+   "outfitColors": [
+    "#3A2E46",
+    "#F2F0EA",
+    "#7E5FA6",
+    "#111111"
+   ],
+   "accessories": "Studded black leather gloves, never taken off in front of others (they hide burn scars). No master key.",
+   "expression": "Cool, appraising, unreadable; one gloved hand near the chin as if weighing a contradiction.",
+   "accent": "#8A7E96"
+  },
+  "canWalk": true
+ },
+ {
+  "id": "naegi",
+  "name": "苗木诚",
+  "callName": "苗木诚",
+  "epithet": "超高校级的幸运",
+  "work": "《弹丸论破 希望的学园与绝望的高中生》",
+  "gender": "男",
+  "age": "按十八岁计",
+  "heightCm": 160,
+  "heightNote": "卡上写的是“一米六上下”",
+  "era": "二〇一〇年代的日本",
+  "knowsModernDevices": true,
+  "unknownDevices": "—",
+  "stats": {
+   "physique": "普通",
+   "physiqueNote": "运动平平，没学过格斗",
+   "disguise": "低",
+   "readsPeople": "一般",
+   "medical": "无",
+   "observation": "一般",
+   "killThreshold": "高",
+   "suspicion": "轻"
+  },
+  "carried": [],
+  "quote": {
+   "zh": "那是不对的！"
+  },
+  "dream": "和活下来的人一起走出这所学园，回家",
+  "lines": {
+   "wake": "这里是……又被关起来了吗？",
+   "discover": "怎么会……又有人……！",
+   "statement": "大家冷静一点。把证据一件一件对过，真相会出来的。",
+   "accuse": "对不起，{X}……可证据都指向你。",
+   "defend": "等一下！那是不对的……请再听我说一次！",
+   "vote": "……我投{X}。我不会逃避这个结果。",
+   "executed": "我不后悔……大家，一定要往前走……",
+   "wish": "让大家一起出去，回家……家里的人都好好的。"
+  },
+  "art": {
+   "silhouetteKeys": [
+    "a single tuft of hair sticking straight up from the top of light-brown hair",
+    "a small, slight build",
+    "an open black jacket with gold buttons over a dark-green hoodie",
+    "the hood bunched at the back of the neck",
+    "a round, boyish face"
+   ],
+   "hair": "Light-brown hair, soft and a little spiky, with one prominent tuft (ahoge) sticking up on top.",
+   "hairColor": "#9C7450",
+   "eyes": "Large, earnest eyes that show every feeling.",
+   "eyeColor": "#6E7A4A",
+   "skin": "#F2DCC6",
+   "face": "A baby-faced, ordinary high-school boy who looks younger than he is; open, honest features.",
+   "outfit": "An open black jacket with gold buttons over a dark-green hoodie; dark trousers and red sneakers (below frame).",
+   "outfitColors": [
+    "#1C1C1C",
+    "#4E6B3A",
+    "#C9A227",
+    "#C0392B"
+   ],
+   "accessories": "None: no electronic student handbook.",
+   "expression": "Frightened but determined: brows knitted, mouth open mid-shout, as if catching a contradiction: \"That's wrong!\"",
+   "accent": "#4E7D3A"
+  },
+  "canWalk": true
+ },
+ {
   "id": "kurisu",
   "name": "牧濑红莉栖",
   "callName": "牧濑红莉栖",
@@ -345,74 +480,6 @@ window.CHARACTERS = [
    "accessories": "None: no glasses, no bow tie, no watch, no gadgets; bare hands",
    "expression": "A cool, knowing smirk with narrowed eyes and a pointing finger, half the face in shadow, as if he already knows which one of you did it",
    "accent": "#2F6FD6"
-  },
-  "canWalk": true
- },
- {
-  "id": "sherlock",
-  "name": "夏洛克·福尔摩斯",
-  "callName": "夏洛克·福尔摩斯",
-  "epithet": "咨询侦探",
-  "work": "《福尔摩斯探案集》",
-  "gender": "男",
-  "age": "三十四岁上下",
-  "heightCm": 183,
-  "heightNote": "卡面写'六英尺出头'，按六英尺≈183厘米折算，是下限；瘦得出奇，显得更高",
-  "era": "一八八八年，伦敦",
-  "knowsModernDevices": false,
-  "unknownDevices": "电灯见得少；淋浴和冷热水龙头，放映机与影片，播放器与扬声器，冰箱冷柜，洗衣机，烘干机，洗碗机，塑料，泳池的水下灯，跑步机，电磁灶，保龄球馆的自动设备与计分屏，数字投影机。煤气灯、电报、火车、马车是他的日常。",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "拳击行家，单棍、剑术也是行家；力气比看上去大，身手轻巧",
-   "disguise": "高",
-   "readsPeople": "是",
-   "medical": "基本常识",
-   "observation": "擅长",
-   "killThreshold": "低",
-   "suspicion": "中"
-  },
-  "carried": [
-   "放大镜",
-   "卷尺",
-   "陶土烟斗（空的）"
-  ],
-  "quote": {
-   "zh": "你在看，却没有观察。"
-  },
-  "dream": "把侦探术做成科学，一生有谜可解",
-  "lines": {
-   "wake": "……这灯不用煤气。有意思。",
-   "discover": "请诸位退后三步。地板会说话。",
-   "statement": "诸位都盯着尸体。我更在意那把椅子底下的压痕。",
-   "accuse": "{X}，请原谅，您鞋上的泥只来自一个地方。",
-   "defend": "怀疑我？请便。不过您漏了三处，容我指出。",
-   "vote": "{X}。依据我稍后奉告。",
-   "executed": "也好。至少，这是一道配得上我的谜题。",
-   "wish": "给我下一个谜。比这一个更难的。"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "very tall, narrow, sharp-shouldered frame",
-    "a thin, high, hooked aquiline nose that stands out in profile",
-    "high stiff white collar and long frock-coat lapels",
-    "short straight clay pipe jutting from the lips",
-    "magnifying glass raised to one eye"
-   ],
-   "hair": "Dark hair combed sleekly back from a high forehead, short and orderly",
-   "hairColor": "#1F1C1A",
-   "eyes": "Deep-set, piercing eyes under heavy lids; a sharp, hawk-like gaze",
-   "eyeColor": "#8E979E",
-   "skin": "#EBD9C7",
-   "face": "Long, gaunt face, thin high hawk nose, square prominent jutting chin, thin lips, hollow cheeks; long thin fingers stained with ink and spotted with small chemical burns",
-   "outfit": "Immaculate Victorian London gentleman's dress: dark wool frock coat over a waistcoat, high stiff white collar, dark cravat, matching trousers",
-   "outfitColors": [
-    "#2B2C31",
-    "#F2EEE3",
-    "#4A3B2E"
-   ],
-   "accessories": "Brass-rimmed magnifying glass; black clay pipe (empty), clenched in the teeth or held; a tape measure",
-   "expression": "Cold, hawk-like scrutiny, one eye hugely magnified through the lens, a thin private smile, as if he has just read your whole past from your sleeve",
-   "accent": "#2F6B5A"
   },
   "canWalk": true
  },
@@ -814,71 +881,6 @@ window.CHARACTERS = [
   "canWalk": true
  },
  {
-  "id": "akagi",
-  "name": "赤木茂",
-  "callName": "赤木茂",
-  "epithet": "神域之男",
-  "work": "《斗牌传说》",
-  "gender": "男",
-  "age": "十九岁上下",
-  "heightCm": 174,
-  "heightNote": "卡上未写身高，按外貌估计",
-  "era": "一九六四年前后的东京",
-  "knowsModernDevices": false,
-  "unknownDevices": "一次性塑料打火机、跑步机、烘干机、洗碗机这类后来才普及的东西",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "街头打出来的，打架疯子，力气狠劲超常，不怕疼",
-   "disguise": "高",
-   "readsPeople": "一般",
-   "medical": "无",
-   "observation": "一般",
-   "killThreshold": "低",
-   "suspicion": "轻"
-  },
-  "carried": [
-   "麻将牌三张：白、发、中各一（骨面竹背，藏在左袖口暗袋）"
-  ],
-  "quote": {
-   "zh": "去死不就得救了……"
-  },
-  "dream": "作为赤木茂活，作为赤木茂死",
-  "lines": {
-   "wake": "……呵。有人坐庄了。",
-   "discover": "死了啊。……押的是什么？",
-   "statement": "怕死的人，才会被命拖死。凶手现在怕了。",
-   "accuse": "{X}。你在留退路。下注的人不会这样。",
-   "defend": "要杀，我会让他自己坐到桌前来。",
-   "vote": "{X}。……我押这个。",
-   "executed": "呵……这局是我输了。不坏。",
-   "wish": "不用了。……把那个老人，带到桌前来。"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "stiff white hair swept back and outward in sharp jagged points",
-    "extremely pointed chin and long straight nose (angular Fukumoto-style face)",
-    "thin neck and narrow sloping shoulders in a loose open-collar shirt",
-    "three mahjong tiles pinched between two fingers"
-   ],
-   "hair": "Short-to-medium white hair, white since boyhood, stiff and spiky, swept back from the forehead with sharp, jagged points sticking out at the sides and back",
-   "hairColor": "#F0EFEA",
-   "eyes": "Long, narrow, slit-like eyes with small dark irises; a bottomless, unreadable stare like looking into a dark hole",
-   "eyeColor": "#22232A",
-   "skin": "#EAD7C3",
-   "face": "Lean, angular face with hollow cheeks, a very sharp pointed chin, long straight nose and thin lips; exaggerated angular manga style",
-   "outfit": "Plain, careless clothes: dark shirt with the collar open and loose sleeves, plain trousers",
-   "outfitColors": [
-    "#262830",
-    "#4B4F59",
-    "#EEE9DA"
-   ],
-   "accessories": "Three bone-faced, bamboo-backed mahjong tiles with corners worn shiny: White Dragon (blank), Green Dragon 發 (green character), Red Dragon 中 (red character), slipping from his left cuff into his palm. No cigarette.",
-   "expression": "Utterly calm, flat stare with the faintest one-sided smirk: the quiet 'heh' of a man who has just pushed everything he owns into the middle of the table",
-   "accent": "#E8E2D0"
-  },
-  "canWalk": true
- },
- {
   "id": "kaiji",
   "name": "伊藤开司",
   "callName": "伊藤开司",
@@ -1141,76 +1143,6 @@ window.CHARACTERS = [
   "canWalk": true
  },
  {
-  "id": "sukuna",
-  "name": "两面宿傩",
-  "callName": "两面宿傩",
-  "epithet": "诅咒之王",
-  "work": "《咒术回战》",
-  "gender": "男",
-  "age": "看上去十八九岁",
-  "heightCm": 175,
-  "heightNote": "卡上写的是“一米七五上下”；这是伏黑惠的身体",
-  "era": "二〇一八年十二月的东京（生于平安时代）",
-  "knowsModernDevices": true,
-  "unknownDevices": "—（这一年虎杖悠仁吞下他的手指以后，他寄在虎杖身上几个月，虎杖身边的事他看得见、听得见；涉谷那一夜和这些天，他自己走在东京的街上。电灯、汽车、电车、高楼、手机，他都认得，只是多半看着别人用，自己上手要先摆弄几下）",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "顶尖，近身拳脚",
-   "disguise": "中",
-   "readsPeople": "是",
-   "medical": "无",
-   "observation": "一般",
-   "killThreshold": "无",
-   "suspicion": "轻"
-  },
-  "carried": [
-   "白色和服，内衬黑衣",
-   "黑色腰带",
-   "白色裤子",
-   "黑色草鞋",
-   "黑色羽织"
-  ],
-  "quote": {
-   "zh": "骄傲吧。你很强。"
-  },
-  "dream": "一副只属于自己、不受管的身体",
-  "lines": {
-   "wake": "哼……这里，有什么可吃的么。",
-   "discover": "死了么。死相倒还不算难看。",
-   "statement": "你们这些弱者抱成一团，就以为能定谁的生死？可笑。",
-   "accuse": "{X}，手抖得太厉害了。是你吧，蠢货。",
-   "defend": "我要杀谁，还用得着藏？……不愉快。",
-   "vote": "{X}。无聊，就你吧。",
-   "executed": "被一群弱者举手定了生死……哼，无聊。",
-   "wish": "谁也管不了我了。那么——先吃哪个？"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "short, very spiky black hair bristling up and outward like a ragged crown (Megumi Fushiguro's hairstyle)",
-    "crossed kimono collar: white kimono over a black inner collar",
-    "black haori hanging loosely off the shoulders",
-    "head tipped back, chin up, looking down the nose at the viewer",
-    "lean, wiry young neck and shoulders"
-   ],
-   "hair": "Short, stiff, wildly spiky black hair sticking out in every direction, spikes flaring upward and to the sides, a few spikes falling over the forehead",
-   "hairColor": "#1b1d26",
-   "eyes": "Sharp, narrow, upturned eyes, heavy-lidded and amused; crimson-red irises. Only two eyes in this body — no extra eyes",
-   "eyeColor": "#c0141c",
-   "skin": "#efd8c4",
-   "face": "Lean, handsome young face of 18-19 (the borrowed body of Megumi Fushiguro) covered in black tattoo-like stripes: a horizontal band across the forehead, a short stripe across the bridge of the nose, and two parallel horizontal stripes on each cheek just below the eyes; similar black stripes continue down the neck and chest where skin shows",
-   "outfit": "Formal Japanese dress laid out for him by his servant: white kimono layered over a black under-robe (black edge visible at the crossed collar), black obi sash, white hakama-style trousers, and a black haori worn open over everything",
-   "outfitColors": [
-    "#f5f3ee",
-    "#121214",
-    "#2b2b30"
-   ],
-   "accessories": "None — no weapons, no jewelry; the black stripes are on the skin, not ornaments",
-   "expression": "A lazy, lopsided sneer: one corner of the mouth pulled up, head tilted back, half-closed crimson eyes looking down at the viewer as at an insect — utterly unbothered, faintly amused, idly wondering what you would taste like",
-   "accent": "#B3121F"
-  },
-  "canWalk": true
- },
- {
   "id": "higuruma",
   "name": "日车宽见",
   "callName": "日车宽见",
@@ -1278,72 +1210,6 @@ window.CHARACTERS = [
   "canWalk": true
  },
  {
-  "id": "madara",
-  "name": "宇智波斑",
-  "callName": "宇智波斑",
-  "epithet": "战国修罗",
-  "work": "《火影忍者》",
-  "gender": "男",
-  "age": "壮年模样",
-  "heightCm": 179,
-  "heightNote": "",
-  "era": "忍界·第四次忍界大战",
-  "knowsModernDevices": false,
-  "unknownDevices": "电梯，有声的影片和放映机，放音乐的机器，洗衣、烘干、洗碗的机器，泳池的水下灯，保龄球馆和它的机器，跑步机，电磁灶，充电电钻，电子秤和电子屏，投影机。",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "顶尖；几十年战场练出的体术、忍具与兵器，近身搏杀的好手",
-   "disguise": "中",
-   "readsPeople": "一般",
-   "medical": "战场急救",
-   "observation": "擅长",
-   "killThreshold": "无",
-   "suspicion": "中"
-  },
-  "carried": [
-   "手套"
-  ],
-  "quote": {
-   "zh": "看来你已经跳不动了，大野木。"
-  },
-  "dream": "真正的和平：再没有人失去亲人",
-  "lines": {
-   "wake": "哼。又是哪个小鬼把我唤醒的？",
-   "discover": "让我看看伤口。是哪一路的手法。",
-   "statement": "小鬼们，把手伸出来。茧不会说谎。",
-   "accuse": "{X}，这支舞跳得不坏，可惜脚步露了底。",
-   "defend": "我斑若要动手，你们连尸体都找不到。",
-   "vote": "我投{X}。这支舞，你跳完了。",
-   "executed": "死在小鬼们的举手里……柱间，你会笑我吧。",
-   "wish": "那就让所有人睡去，梦里不再有败者。"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "Enormous wild mane of black hair flaring out and down to the waist, ends stiff and jagged like a spiked fan",
-    "Long uneven bangs sweeping down over the right eye",
-    "A dark high-collared long robe, no armour",
-    "High stiff collar rising to the jaw",
-    "Arms folded across the chest, chin raised"
-   ],
-   "hair": "Very thick, voluminous straight-to-spiky black hair falling to the waist, the whole mass bristling outward with hard jagged tips; long ragged bangs hang down and fully cover the right eye; a few strands frame the left cheek",
-   "hairColor": "#121214",
-   "eyes": "Sharp, narrow almond eyes with heavy upper lids, gaze tilted down at the viewer; only the left eye visible; ordinary black iris (no sharingan in-game); faint creases beneath the eye",
-   "eyeColor": "#1A1717",
-   "skin": "#EAD7C3",
-   "face": "Pale, lean, sharp-jawed face with high cheekbones; no scars; mouth thin and set; the right half of the face shadowed by hair",
-   "outfit": "Dark navy high-collared long robe, collar standing up to the jaw; no armour; dark gloves",
-   "outfitColors": [
-    "#1B1E2B",
-    "#2A2626",
-    "#7A1F1F"
-   ],
-   "accessories": "Dark gloves; no war-fan (gunbai), no weapon",
-   "expression": "A slow, contemptuous half-smile, one visible eye looking down at the viewer like an elder appraising a child who wants to fight; utterly at ease, faintly bored, as if waiting for you to make it interesting",
-   "accent": "#9B1C1C"
-  },
-  "canWalk": true
- },
- {
   "id": "itachi",
   "name": "宇智波鼬",
   "callName": "宇智波鼬",
@@ -1407,6 +1273,72 @@ window.CHARACTERS = [
    "accessories": "Ring on the right ring finger engraved with the kanji 朱; slashed Konoha forehead protector",
    "expression": "Quiet, exhausted calm; half-lidded eyes that look through you; no smile; an unreadable, sad gentleness that feels like it could be a lie",
    "accent": "#D21F3C"
+  },
+  "canWalk": true
+ },
+ {
+  "id": "madara",
+  "name": "宇智波斑",
+  "callName": "宇智波斑",
+  "epithet": "战国修罗",
+  "work": "《火影忍者》",
+  "gender": "男",
+  "age": "壮年模样",
+  "heightCm": 179,
+  "heightNote": "",
+  "era": "忍界·第四次忍界大战",
+  "knowsModernDevices": false,
+  "unknownDevices": "电梯，有声的影片和放映机，放音乐的机器，洗衣、烘干、洗碗的机器，泳池的水下灯，保龄球馆和它的机器，跑步机，电磁灶，充电电钻，电子秤和电子屏，投影机。",
+  "stats": {
+   "physique": "受训",
+   "physiqueNote": "顶尖；几十年战场练出的体术、忍具与兵器，近身搏杀的好手",
+   "disguise": "中",
+   "readsPeople": "一般",
+   "medical": "战场急救",
+   "observation": "擅长",
+   "killThreshold": "无",
+   "suspicion": "中"
+  },
+  "carried": [
+   "手套"
+  ],
+  "quote": {
+   "zh": "看来你已经跳不动了，大野木。"
+  },
+  "dream": "真正的和平：再没有人失去亲人",
+  "lines": {
+   "wake": "哼。又是哪个小鬼把我唤醒的？",
+   "discover": "让我看看伤口。是哪一路的手法。",
+   "statement": "小鬼们，把手伸出来。茧不会说谎。",
+   "accuse": "{X}，这支舞跳得不坏，可惜脚步露了底。",
+   "defend": "我斑若要动手，你们连尸体都找不到。",
+   "vote": "我投{X}。这支舞，你跳完了。",
+   "executed": "死在小鬼们的举手里……柱间，你会笑我吧。",
+   "wish": "那就让所有人睡去，梦里不再有败者。"
+  },
+  "art": {
+   "silhouetteKeys": [
+    "Enormous wild mane of black hair flaring out and down to the waist, ends stiff and jagged like a spiked fan",
+    "Long uneven bangs sweeping down over the right eye",
+    "A dark high-collared long robe, no armour",
+    "High stiff collar rising to the jaw",
+    "Arms folded across the chest, chin raised"
+   ],
+   "hair": "Very thick, voluminous straight-to-spiky black hair falling to the waist, the whole mass bristling outward with hard jagged tips; long ragged bangs hang down and fully cover the right eye; a few strands frame the left cheek",
+   "hairColor": "#121214",
+   "eyes": "Sharp, narrow almond eyes with heavy upper lids, gaze tilted down at the viewer; only the left eye visible; ordinary black iris (no sharingan in-game); faint creases beneath the eye",
+   "eyeColor": "#1A1717",
+   "skin": "#EAD7C3",
+   "face": "Pale, lean, sharp-jawed face with high cheekbones; no scars; mouth thin and set; the right half of the face shadowed by hair",
+   "outfit": "Dark navy high-collared long robe, collar standing up to the jaw; no armour; dark gloves",
+   "outfitColors": [
+    "#1B1E2B",
+    "#2A2626",
+    "#7A1F1F"
+   ],
+   "accessories": "Dark gloves; no war-fan (gunbai), no weapon",
+   "expression": "A slow, contemptuous half-smile, one visible eye looking down at the viewer like an elder appraising a child who wants to fight; utterly at ease, faintly bored, as if waiting for you to make it interesting",
+   "accent": "#9B1C1C"
   },
   "canWalk": true
  },
@@ -1479,74 +1411,6 @@ window.CHARACTERS = [
   "canWalk": true
  },
  {
-  "id": "obito",
-  "name": "宇智波带土",
-  "callName": null,
-  "epithet": "谁也不是",
-  "work": "《火影忍者》",
-  "gender": "男",
-  "age": "三十出头",
-  "heightCm": 182,
-  "heightNote": "",
-  "era": "忍界·第四次忍界大战",
-  "knowsModernDevices": false,
-  "unknownDevices": "电梯，有声的影片和放映机，放音乐的机器，洗衣、烘干、洗碗的机器，泳池的水下灯，保龄球馆和它的机器，跑步机，电磁灶，充电电钻，电子秤和电子屏，投影机。",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "体术与兵器，多年实战；体术能和卡卡西打个平手",
-   "disguise": "高",
-   "readsPeople": "是",
-   "medical": "战场急救",
-   "observation": "一般",
-   "killThreshold": "无",
-   "suspicion": "重"
-  },
-  "carried": [
-   "水门班四人的合影（他不知道它怎么会在身上）",
-   "黑手套"
-  ],
-  "quote": {
-   "zh": "不珍惜同伴的人，连废物都不如。"
-  },
-  "dream": "一个人可以做真正的自己的世界；在那里，琳活着",
-  "lines": {
-   "wake": "……神树的花呢？月亮，还没照下来。",
-   "discover": "又死一个。这世界，哪里都是地狱。",
-   "statement": "凶手心里有伤。找到他失去了什么，就找到了他。",
-   "accuse": "{X}，你在硬撑。愧疚写在你脸上了。",
-   "defend": "急着指认我的人，心里藏着什么？",
-   "vote": "{X}。死在这边，也无妨。",
-   "executed": "……琳，这一回，我又来迟了吗。",
-   "wish": "让琳活过来。这一次，我一定赶得上。"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "Short stiff spiky hair with tufts sticking out in every direction",
-    "Right half of the face textured with ridged scar tissue",
-    "Tall stiff purple collar rising to the chin",
-    "Broad shoulders on a tall frame",
-    "Wide pale sash at the waist (if the bust extends that far)"
-   ],
-   "hair": "Short, hard, spiky black hair, tips jutting out and up in uneven tufts, a little messier at the back",
-   "hairColor": "#121212",
-   "eyes": "Narrow, flat, unblinking eyes under heavy brows; both ordinary black irises (no sharingan or rinnegan in-game); dark shadows around them",
-   "eyeColor": "#171515",
-   "skin": "#E2C4A6",
-   "face": "The entire right half of the face, from forehead to jaw and down the neck, covered by a large patch of wrinkled, ridged old scar tissue in rippling lines like tree bark or melted wax, noticeably paler (#F2E3D3) than the unmarked left half; strong jaw",
-   "outfit": "White fitted undershirt; over it a deep purple long coat with a tall stiff stand-up collar reaching the chin, splitting into two flaps below the waist, with the Uchiha red-and-white fan crest on the back; a wide pale lavender sash plus a leather belt at the waist; black gloves",
-   "outfitColors": [
-    "#3C2A55",
-    "#B9A3D3",
-    "#F2F0EC",
-    "#151515"
-   ],
-   "accessories": "Black gloves; no mask (it was smashed), no fan, no staff",
-   "expression": "Dead-calm, hollow stare with the faintest bitter smirk; the scarred side catching the light; he looks at you as though you are already a pawn on his board",
-   "accent": "#6A3FA0"
-  },
-  "canWalk": true
- },
- {
   "id": "aizen",
   "name": "蓝染惣右介",
   "callName": "蓝染惣右介",
@@ -1608,70 +1472,6 @@ window.CHARACTERS = [
    "accessories": "None: no sword, and no longer the black-framed glasses of his old 'gentle captain' persona",
    "expression": "A gentle, faint smile, eyes slightly narrowed and looking down at the viewer; perfectly calm and courteous yet utterly cold, as if whatever you are about to do was his idea all along",
    "accent": "#C9A86A"
-  },
-  "canWalk": true
- },
- {
-  "id": "shanks",
-  "name": "香克斯",
-  "callName": "香克斯",
-  "epithet": "红发",
-  "work": "《ONE PIECE》（海贼王）",
-  "gender": "男",
-  "age": "三十七岁",
-  "heightCm": 199,
-  "heightNote": "",
-  "era": "大海贼时代，罗杰死后二十多年",
-  "knowsModernDevices": false,
-  "unknownDevices": "播放器与扬声器、保龄球馆的自动设备与计分屏、跑步机、洗碗机、烘干机、电磁灶、塑料。他那里走海路靠帆船，通话、传画面靠电话虫，一种活的蜗牛。",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "顶尖的剑客；只有右臂，身材高大，力气足",
-   "disguise": "中",
-   "readsPeople": "是",
-   "medical": "战场急救",
-   "observation": "一般",
-   "killThreshold": "中",
-   "suspicion": "轻"
-  },
-  "carried": [],
-  "quote": {
-   "zh": "一条胳膊而已，便宜得很……你没事就好。"
-  },
-  "dream": "看遍这片海，把新时代交给对的人",
-  "lines": {
-   "wake": "……白胡子和艾斯的尸身呢？还没下葬。",
-   "discover": "笑不出来了。……是谁动的手？",
-   "statement": "别急着举手。先看清楚，谁的刀冲着谁。",
-   "accuse": "{X}，你一直闷声等时机吧。这种人我见过。",
-   "defend": "哒哈哈，冲我来的我都让。可这件事，不是我。",
-   "vote": "我投{X}。对不住了。",
-   "executed": "……路飞，帽子没法还给我了啊。哒哈哈。",
-   "wish": "不用替我实现。新时代，得那小鬼自己去拿。"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "Broad, very tall frame with a black cape-like cloak draped over both shoulders",
-    "Empty left side: the cloak hangs flat where the left arm should be",
-    "Shaggy, messy medium-short hair",
-    "Open shirt collar showing the chest",
-    "High cloak collar standing up behind the neck"
-   ],
-   "hair": "Shaggy medium-short dark red hair, loosely swept back and messy, ends brushing the ears and nape",
-   "hairColor": "#9E1F1A",
-   "eyes": "Relaxed, slightly hooded dark eyes with a lazy, amused look; the left eye undamaged despite the scars across it",
-   "eyeColor": "#2B1B14",
-   "skin": "#B7825A",
-   "face": "Three parallel diagonal scars cutting across the left eye, from above the eyebrow down onto the cheek; short stubble on the chin and jaw; tanned, weathered skin; strong jaw, wide mouth",
-   "outfit": "Black sleeveless long cloak with a high collar, worn draped over the shoulders like a cape; a white button-up shirt only half-buttoned and open at the chest, tucked into a cloth sash at the waist; knee-length trousers gathered at mid-calf; brown sandals",
-   "outfitColors": [
-    "#141414",
-    "#F4F1E6",
-    "#6B5640"
-   ],
-   "accessories": "None: no sword (Gryphon is gone), no straw hat",
-   "expression": "A broad, easy grin that doesn't quite reach the eyes; the scarred left eye steady and unblinking; warm on the surface, with something heavy and dangerous held just behind it",
-   "accent": "#D9482B"
   },
   "canWalk": true
  },
@@ -1809,271 +1609,6 @@ window.CHARACTERS = [
   "canWalk": true
  },
  {
-  "id": "armin",
-  "name": "阿尔敏·阿诺德",
-  "callName": "阿尔敏·阿诺德",
-  "epithet": "超大型巨人",
-  "work": "《进击的巨人》",
-  "gender": "男",
-  "age": "",
-  "heightCm": 163,
-  "heightNote": "",
-  "era": "帕拉迪岛的墙内·850年（虚构世界）",
-  "knowsModernDevices": false,
-  "unknownDevices": "电和一切用电的东西（电灯、冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯）；冷热水龙头、抽水马桶和淋浴也多半没见过；塑料。",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "体格偏弱",
-   "disguise": "中",
-   "readsPeople": "是",
-   "medical": "战场急救",
-   "observation": "一般",
-   "killThreshold": "中",
-   "suspicion": "中"
-  },
-  "carried": [],
-  "quote": {
-   "zh": "如果有谁能改变什么，那个人一定是能够舍弃重要之物的人。"
-  },
-  "dream": "到墙外去，亲眼看看这个世界",
-  "lines": {
-   "wake": "这、这里是……墙里？不，没有墙……",
-   "discover": "等一下……谁都别碰。先记下来。",
-   "statement": "我们先整理一下。有一处，从一开始就对不上。",
-   "accuse": "也就是说……{X}，只有你那时说了谎。",
-   "defend": "不、不是我！……请听我把证据说完。",
-   "vote": "……我投{X}。对不起。",
-   "executed": "活下来的……本来就不该是我。",
-   "wish": "让我看见海。……和大家一起。"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "rounded blond bob cut level at the ears/jaw with a straight blunt fringe",
-    "small, narrow, slight shoulders",
-    "short cropped military jacket with harness straps over the chest",
-    "very large round eyes dominating a small face"
-   ],
-   "hair": "golden blond, straight, ear-to-chin-length bob with straight-cut bangs falling over the brows, slightly tousled",
-   "hairColor": "#e6c66e",
-   "eyes": "very large, round and wide open, long lashes; clear and intelligent but a little frightened",
-   "eyeColor": "#3d7fc6",
-   "skin": "#f4ddc5",
-   "face": "small, soft, youthful, almost androgynous face; small nose; lower lip lightly caught between the teeth; looks younger than his age",
-   "outfit": "Survey Corps uniform: white shirt, short cropped brown jacket with the blue-and-white 'Wings of Freedom' emblem (on the chest and a pair of wings on the back), dark leather harness straps across the chest and over the shoulders, white trousers and boots below frame",
-   "outfitColors": [
-    "#8b6a47",
-    "#f2f0ea",
-    "#2c2420",
-    "#3a6fb0"
-   ],
-   "accessories": "nothing in his hands; no weapon, no ODM gear",
-   "expression": "head slightly bowed, eyes looking up through the bangs and too still; a gentle, apologetic half-smile while the eyes have already reached a terrible conclusion",
-   "accent": "#3D8FC4"
-  },
-  "canWalk": true
- },
- {
-  "id": "guts",
-  "name": "格斯",
-  "callName": "格斯",
-  "epithet": "黑剑士",
-  "work": "《剑风传奇》",
-  "gender": "男",
-  "age": "二十出头",
-  "heightCm": 204,
-  "heightNote": "卡上只写“身材极高大”，没有数字；204 取自原作常见的设定说法，属推断",
-  "era": "架空中世纪·米特兰一带（“蚀”后两年）",
-  "knowsModernDevices": false,
-  "unknownDevices": "电和一切用电的东西（电灯、冰箱、洗衣机、放映机、扬声器之类）；冷热水龙头、抽水马桶和淋浴；塑料。",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "顶尖；只剩右臂和左眼，单手用剑、刀、飞刀和弩都熟，徒手也狠",
-   "disguise": "低",
-   "readsPeople": "一般",
-   "medical": "战场急救",
-   "observation": "一般",
-   "killThreshold": "低",
-   "suspicion": "重"
-  },
-  "carried": [
-   "伯爵的贝黑莉特（生着眼鼻嘴的蛋形怪石）"
-  ],
-  "quote": {
-   "zh": "别想那么多。现在，只要觉得自己还活着就行。"
-  },
-  "dream": "报仇：杀了格里菲斯",
-  "lines": {
-   "wake": "……啧。剑呢。我的剑呢。",
-   "discover": "……死透了。下一个是谁。",
-   "statement": "求神的、靠别人的，都闭嘴。握着刀的那个，我闻得出来。",
-   "accuse": "你这家伙，{X}。装得挺像人的嘛。",
-   "defend": "我要杀人，用不着躲。……想试试？",
-   "vote": "{X}。没什么好说的。",
-   "executed": "格里菲斯……我还没砍到你。",
-   "wish": "把格里菲斯扔到我剑够得着的地方。"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "short, stiff, spiky black hair sticking out in every direction",
-    "enormous broad shoulders under a heavy black cloak",
-    "left arm ending in a stump just below the elbow (no prosthetic)",
-    "right eye shut with a scarred lid",
-    "thick neck and heavy square jaw"
-   ],
-   "hair": "black, short, coarse and spiky; uncombed tufts pointing outward, a few spikes falling over the forehead",
-   "hairColor": "#111113",
-   "eyes": "only the left eye is open: narrow, deep-set, glaring under a heavily furrowed brow; the right eye is permanently closed, its lid scarred",
-   "eyeColor": "#3a2e28",
-   "skin": "#c79f7c",
-   "face": "hard, angular, weathered face; square jaw; thick brows knotted together; a horizontal scar across the bridge of the nose; layered small old scars on cheeks and chin; on the right side of the neck toward the back, a branded mark shaped like a stretched 'Y' with a long hooked tail (now only a dark scar, not bleeding)",
-   "outfit": "Plain black clothes, no armour, all under a long tattered black cloak. No giant sword on his back and no iron prosthetic arm.",
-   "outfitColors": [
-    "#1a1a1c",
-    "#3a3b3f",
-    "#4a3a2c",
-    "#7a0f12"
-   ],
-   "accessories": "the Count's Behelit, a small egg-shaped stone with misplaced human eyes, nose and mouth on its surface, held in his right hand or tucked at the belt; no weapons",
-   "expression": "one-eyed glare, brows knotted, lips pulled back into a feral, mocking half-grin over clenched teeth",
-   "accent": "#7A0F12"
-  },
-  "canWalk": true
- },
- {
-  "id": "griffith",
-  "name": "格里菲斯",
-  "callName": "格里菲斯",
-  "epithet": "折翼白鹰",
-  "work": "《剑风传奇》",
-  "gender": "男",
-  "age": "年轻男人（面盔遮脸）",
-  "heightCm": 178,
-  "heightNote": "卡上未写身高，按外貌估计",
-  "era": "架空中世纪·米特兰王国（百年战争刚结束）",
-  "knowsModernDevices": false,
-  "unknownDevices": "电和一切用电的东西（电灯、冰箱、洗衣机、放映机、扬声器之类）；冷热水龙头、抽水马桶和淋浴；塑料。",
-  "stats": {
-   "physique": "普通",
-   "physiqueNote": "手脚的筋被切断，站不起，握不住，极度消瘦；从前顶尖的剑术用不上",
-   "disguise": "高",
-   "readsPeople": "是",
-   "medical": "战场急救",
-   "observation": "一般",
-   "killThreshold": "低",
-   "suspicion": "中"
-  },
-  "carried": [
-   "鹰头铁面盔（罩在头上，自己摘不下）",
-   "身上的绷带"
-  ],
-  "quote": {
-   "zh": "我中意你。我想要你，格斯。"
-  },
-  "dream": "一座自己的城，一个自己的国",
-  "lines": {
-   "wake": "（面盔里，一双眼睛慢慢转过每一个人）",
-   "discover": "（目光停在尸体上，一动不动）",
-   "statement": "（他抬起下巴，指向一处谁都没留意的地方）",
-   "accuse": "（缠着绷带的手抬起来，直直指向{X}）",
-   "defend": "（喉咙里一声嘶哑的笑。他连杯子都握不住）",
-   "vote": "（眼睛转向{X}，点头）",
-   "executed": "（嘴唇动了动。没有人看清他说了什么）",
-   "wish": "（他抬手指向远方。那里，该有一座城）"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "iron helmet forged in the shape of a hawk's head, a hooked beak jutting forward over the face",
-    "long pale wavy hair spilling out from under the back of the helmet",
-    "skeletal narrow shoulders and jutting collarbones wrapped in bandages",
-    "slumped, propped-up posture with the head tilted slightly"
-   ],
-   "hair": "long, wavy silver-white hair, now dull, matted and uneven, hanging from beneath the helmet to past the shoulders",
-   "hairColor": "#d9d6cf",
-   "eyes": "only the eyes show, through two narrow eye-holes in the iron mask: large, glittering, wide awake, tracking whoever is speaking",
-   "eyeColor": "#8ea9c8",
-   "skin": "#e5d4c6",
-   "face": "face entirely hidden by the hawk-head iron mask (the skin beneath was flayed); the visible neck and shoulders are gaunt, skin stretched over bone, crossed by whip lines, burn marks and patches of scar tissue",
-   "outfit": "no proper clothing: torso, arms and neck wound in grimy linen bandages, a coarse dun blanket draped loosely over the shoulders",
-   "outfitColors": [
-    "#e2d9c6",
-    "#5d5a55",
-    "#7a4a32",
-    "#6b2e25"
-   ],
-   "accessories": "the iron hawk-head helmet, locked on at the back; bandages. Do NOT draw his crimson egg-shaped Behelit pendant; it is lost.",
-   "expression": "the iron mask itself is expressionless, but the eyes behind the slits are fixed on the viewer, perfectly lucid and calculating, as if the ruined body belonged to someone else",
-   "accent": "#D8D0BD"
-  },
-  "canWalk": false
- },
- {
-  "id": "thragg",
-  "name": "崔格",
-  "callName": "崔格",
-  "epithet": "大摄政王",
-  "work": "《无敌少侠》",
-  "gender": "男",
-  "age": "看似壮年，实则活了很久",
-  "heightCm": 210,
-  "heightNote": "卡上只写“身形极其高大”，没有数字；按原作里他明显高过诺兰等维特鲁姆人估算，属推断",
-  "era": "维特鲁姆帝国·星际时代（与地球二〇〇〇年代同时）",
-  "knowsModernDevices": false,
-  "unknownDevices": "地球人家里的日用器具（冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、钢琴、台球、扑克、麻将之类）；电和机器本身他不陌生，摆弄几下多半就明白用法。",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "顶尖",
-   "disguise": "中",
-   "readsPeople": "一般",
-   "medical": "无",
-   "observation": "一般",
-   "killThreshold": "无",
-   "suspicion": "中"
-  },
-  "carried": [
-   "无（身上只有那身制服）"
-  ],
-  "quote": {
-   "zh": "维特鲁姆不是坟墓！它就是我们。"
-  },
-  "dream": "维特鲁姆回来",
-  "lines": {
-   "wake": "……力气不在了。先弄清谁强。",
-   "discover": "弱者先死。这是秩序。",
-   "statement": "我不说谎，也不必说谎。凶手是个弱者。弱者藏不久。",
-   "accuse": "{X}。你在发抖。孩子，是你。",
-   "defend": "若是我，你们已经全死了。",
-   "vote": "我投{X}。这已经定了。",
-   "executed": "阿加尔……我辜负了您。",
-   "wish": "把维特鲁姆还给我。整颗星，一个不少。"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "massive trapezius muscles sloping straight from the ears to the shoulders, almost no visible neck",
-    "very short, flat-cropped black hair",
-    "thick black mustache over the upper lip",
-    "skin-tight bodysuit with a round emblem split by three vertical bars at the centre of the chest",
-    "enormously wide chest and upper arms"
-   ],
-   "hair": "black, cut very short and close to the skull with a squared hairline",
-   "hairColor": "#141312",
-   "eyes": "small, deep-set and hard under a heavy straight brow ridge; steady, appraising, looking down",
-   "eyeColor": "#2e2622",
-   "skin": "#d6ad87",
-   "face": "broad, blocky, square-jawed face of a man in his prime; heavy brow; a thick black mustache across the upper lip; firm closed mouth; no smile",
-   "outfit": "Viltrumite skin-tight uniform, mainly red: a crimson bodysuit with darker trim, a pale round emblem divided by three vertical lines in the centre of the chest, a short skirt-like flap at the waist and tall boots (below frame). No cape: his fur-collared red cape is not worn.",
-   "outfitColors": [
-    "#b3121b",
-    "#5a0a0e",
-    "#e8e2d6",
-    "#1a1a1a"
-   ],
-   "accessories": "none (not even Argall's skull)",
-   "expression": "utterly calm, looking slightly down at the viewer as if the viewer should already be kneeling; cold, patient contempt",
-   "accent": "#D1202A"
-  },
-  "canWalk": true
- },
- {
   "id": "saber",
   "name": "Saber",
   "callName": "Saber",
@@ -2198,70 +1733,6 @@ window.CHARACTERS = [
    "accessories": "No weapons, no armor, no jewels: his treasury is sealed. Optionally an empty dark void behind his shoulders where golden ripples would normally open.",
    "expression": "Languid, bored contempt: half-lidded red eyes looking down at the viewer as if at an insect, a thin smirk at one corner of the mouth. Amused, and already passing judgment.",
    "accent": "#D4AF37"
-  },
-  "canWalk": true
- },
- {
-  "id": "kiritsugu",
-  "name": "卫宫切嗣",
-  "callName": "卫宫切嗣",
-  "epithet": "魔术师杀手",
-  "work": "《Fate/Zero》",
-  "gender": "男",
-  "age": "二十九岁上下，看上去更老",
-  "heightCm": 175,
-  "heightNote": "",
-  "era": "一九九四年的冬木",
-  "knowsModernDevices": true,
-  "unknownDevices": "—",
-  "stats": {
-   "physique": "受训",
-   "physiqueNote": "佣兵出身：射击、爆破、潜入、追踪、近身搏杀",
-   "disguise": "高",
-   "readsPeople": "一般",
-   "medical": "战场急救",
-   "observation": "擅长",
-   "killThreshold": "低",
-   "suspicion": "重"
-  },
-  "carried": [],
-  "quote": {
-   "zh": "你是我真正的家人。"
-  },
-  "dream": "再也没有人流血的世界",
-  "lines": {
-   "wake": "门三扇，没有窗，顶上一只天眼。……烟呢。",
-   "discover": "死了不到两小时。别碰门把手。",
-   "statement": "凶手还会再动手。投错一个，多死一个。就这样。",
-   "accuse": "{X}的说法里，少了二十分钟。",
-   "defend": "怀疑我是合理的。我不辩解。",
-   "vote": "{X}。留着，还会死人。",
-   "executed": "……伊莉雅，爸爸回不去了。",
-   "wish": "让这里流的血，成为最后一滴。"
-  },
-  "art": {
-   "silhouetteKeys": [
-    "shaggy, uncombed black hair hanging over the forehead and ears",
-    "long black trench coat with wide lapels and a turned-up collar",
-    "slightly slumped, tired shoulders",
-    "stubble shading the jaw",
-    "open shirt collar, no tie"
-   ],
-   "hair": "Black, medium-short, messy and uncombed; strands fall unevenly over the forehead and into the eyes.",
-   "hairColor": "#16161A",
-   "eyes": "Narrow, heavy-lidded eyes with dark bags beneath; flat black irises with no highlight. Dead, tired eyes.",
-   "eyeColor": "#1D1C20",
-   "skin": "#E2CDB4",
-   "face": "Lean, slightly gaunt face with hollow cheeks and uneven, unshaven stubble on chin and jaw; looks older than his roughly 29 years.",
-   "outfit": "A long black overcoat (knee-length trench style) over a plain black suit; a dark shirt with the collar open, no necktie. Rumpled, smelling of smoke.",
-   "outfitColors": [
-    "#0F0F11",
-    "#1E1F23",
-    "#3D4046"
-   ],
-   "accessories": "None: no gun and no cigarettes (he reaches for them and finds nothing). A faint smoke-grey haze in the background is fine as mood.",
-   "expression": "A flat, exhausted, emotionless stare that looks through the viewer; mouth a straight line, as if silently counting how many lives you are worth.",
-   "accent": "#5E6B78"
   },
   "canWalk": true
  },
@@ -2401,134 +1872,130 @@ window.CHARACTERS = [
   "canWalk": true
  },
  {
-  "id": "johnny",
-  "name": "乔尼·乔斯达",
-  "callName": "乔尼·乔斯达",
-  "epithet": "漆黑的意志",
-  "work": "《JoJo的奇妙冒险 飙马野郎》",
+  "id": "gintoki",
+  "name": "坂田银时",
+  "callName": "坂田银时",
+  "epithet": "白夜叉",
+  "work": "《银魂》",
   "gender": "男",
-  "age": "十九岁",
-  "heightCm": 180,
-  "heightNote": "卡上未写身高，按外貌估计",
-  "era": "一八九〇年十二月二十八日的美国费城",
-  "knowsModernDevices": false,
-  "unknownDevices": "电灯见得少；冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、放映机与影片、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料（另见\"时代\"一条）。",
+  "age": "二十多岁，快三十",
+  "heightCm": 177,
+  "heightNote": "",
+  "era": "天人来航二十年后的江户",
+  "knowsModernDevices": true,
+  "unknownDevices": "—",
   "stats": {
-   "physique": "普通",
-   "physiqueNote": "上身有力，腰以下瘫痪；够得着的只有一臂的距离",
-   "disguise": "低",
-   "readsPeople": "一般",
-   "medical": "无",
+   "physique": "受训",
+   "physiqueNote": "顶尖：剑术；攘夷战争里人称“白夜叉”；徒手也强",
+   "disguise": "中",
+   "readsPeople": "是",
+   "medical": "战场急救",
    "observation": "一般",
-   "killThreshold": "无",
-   "suspicion": "重"
+   "killThreshold": "高",
+   "suspicion": "轻"
   },
   "carried": [],
   "quote": {
-   "zh": "我还是'负数'啊！我想往'零'那边走！"
+   "zh": "有空把最后装点得漂漂亮亮，不如漂漂亮亮地活到最后。"
   },
-  "dream": "回到“零”，用自己的腿走路",
+  "dream": "护住身边这几个人，让日子平平淡淡地过下去",
   "lines": {
-   "wake": "腿……还是动不了。这是哪儿？",
-   "discover": "下手的人，一点都没犹豫。",
-   "statement": "谁对谁错我不管。挡我回去的，就是敌人。",
-   "accuse": "{X}！你的眼神，是杀过人的眼神！",
-   "defend": "我？一个下了地只能爬的人？",
-   "vote": "{X}。我已经不再犹豫了。",
-   "executed": "又被夺走了……我还是负数啊。",
-   "wish": "我站起来了……杰洛，你看见了吗？"
+   "wake": "哈啊……这是哪儿？有草莓牛奶吗？",
+   "discover": "喂……这可不是闹着玩的。去叫人，快！",
+   "statement": "银桑我懒得动脑子。不过谁在撒谎，我闻得出来。",
+   "accuse": "{X}，你那张脸上写着“是我干的”啊，喂。",
+   "defend": "哈？银桑我连房租都懒得挣，会费这劲杀人？",
+   "vote": "抱歉啦，{X}。这一票银桑投了。",
+   "executed": "真是的……到最后，连一口甜的都没吃上。",
+   "wish": "什么都不用。让那几个家伙平平安安的……再来份芭菲。"
   },
   "art": {
    "silhouetteKeys": [
-    "a fur-trimmed hood thrown back over a thick winter coverall",
-    "shoulder-length hair flipping up and outward at the ends, wind-tousled",
-    "broad, muscular shoulders and thick arms on a lean torso",
-    "small star patterns on his clothes",
-    "seated or propped on his arms, never standing"
+    "messy, fluffy silver-white natural curls",
+    "half-lidded \"dead fish\" eyes",
+    "a white kimono worn with only one arm in its sleeve, the other side hanging loose",
+    "a blue flowing-water pattern on the hem and cuffs of the kimono",
+    "a black high-collared outfit under the kimono"
    ],
-   "hair": "Pale blond, shoulder length and wavy, the ends flipping upward, curled by months of wind on the trail. No hat.",
-   "hairColor": "#E8DCAE",
-   "eyes": "Large, light-colored eyes with long lashes; when he stops hesitating, the pupils shrink to dark pinpoints.",
-   "eyeColor": "#8DB8D8",
-   "skin": "#F1DAC5",
-   "face": "Young, soft, almost pretty 19-year-old face with full lips and a defined jaw.",
-   "outfit": "Late-December clothes: a thick winter coverall with a fur-trimmed hood, a snug hooded top underneath, both with his favourite small star patterns; boots below the frame. He is paralyzed from the waist down, so show him seated or leaning on his strong arms, never standing.",
+   "hair": "Silver-white naturally curly hair, messy and fluffy; it never lies flat.",
+   "hairColor": "#E4E6EA",
+   "eyes": "Listless, half-closed \"dead fish\" eyes that can suddenly sharpen.",
+   "eyeColor": "#8C2F39",
+   "skin": "#F1DCC8",
+   "face": "A man nearly thirty with a bored, lazy face, mouth a little open as if about to yawn.",
+   "outfit": "Black high-collared top and trousers; over them a loose white kimono with blue flowing-water patterns at the hem and cuffs, one arm out of its sleeve; long boots (below frame).",
    "outfitColors": [
-    "#B7A6D9",
-    "#2F3D63",
-    "#F1EDE4",
-    "#9AA3AA"
+    "#F4F4F0",
+    "#3F6FB0",
+    "#1A1A1A"
    ],
-   "accessories": "None. Nothing in his hands; no hat, no horseshoe, no spurs.",
-   "expression": "Suddenly still and silent: eyes gone dark and fixed, pupils small, jaw tight. The 'pitch-black resolve' of someone who has just stopped hesitating.",
-   "accent": "#8E7CC3"
+   "accessories": "None: no wooden sword \"Lake Toya\".",
+   "expression": "A bored, half-lidded, faintly scornful slouch, with a hidden glint that could switch on in an instant.",
+   "accent": "#F4A6C0"
   },
-  "canWalk": false
+  "canWalk": true
  },
  {
-  "id": "valentine",
-  "name": "法尼·瓦伦泰",
-  "callName": "法尼·瓦伦泰",
-  "epithet": "爱国者",
-  "work": "《JoJo的奇妙冒险 飙马野郎》",
+  "id": "johan",
+  "name": "约翰·李贝尔特",
+  "callName": "约翰·李贝尔特",
+  "epithet": "怪物",
+  "work": "《MONSTER》",
   "gender": "男",
-  "age": "四十三岁",
-  "heightCm": 188,
-  "heightNote": "卡上未写身高，按外貌估计",
-  "era": "一八九〇至九一年之交的美国费城",
-  "knowsModernDevices": false,
-  "unknownDevices": "电灯见得少；冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、放映机与影片、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料（另见\"时代\"一条）。",
+  "age": "二十出头",
+  "heightCm": 178,
+  "heightNote": "卡上只写“个子中等偏高”，没有数字；按外貌估计",
+  "era": "一九九〇年代后期的德国",
+  "knowsModernDevices": true,
+  "unknownDevices": "—",
   "stats": {
-   "physique": "受训",
-   "physiqueNote": "当过兵，被俘受过刑",
+   "physique": "普通",
+   "physiqueNote": "清瘦，不惯动手；会用枪",
    "disguise": "高",
    "readsPeople": "是",
    "medical": "无",
    "observation": "一般",
    "killThreshold": "无",
-   "suspicion": "中"
+   "suspicion": "轻"
   },
-  "carried": [
-   "父亲的手帕一方（写着一八四七年九月二十日）",
-   "网纹手套一副（戴在手上）"
-  ],
+  "carried": [],
   "quote": {
-   "zh": "做那个能第一个拿起餐巾的人。那张'圆桌'上，坐下的将是我'法尼·瓦伦泰'。"
+   "zh": "我以为自己已经走到了世上最黑暗的地方……可是……在我前面……还有一片更黑的黑暗。"
   },
-  "dream": "让美国第一个拿起餐巾",
+  "dream": "抹掉自己：让知道他的人都死去，只留下天马和妹妹，最后他自己也消失",
   "lines": {
-   "wake": "诸位，冷静。先弄清这是什么地方。",
-   "discover": "这不是谋杀，诸君，这是“作战”。",
-   "statement": "桌上两块餐巾。谁先拿起一块，规矩就由谁来定。",
-   "accuse": "{X}君，你的话里有破绽。我一直在等。",
-   "defend": "以我父亲的名誉起誓，我手上是干净的。",
-   "vote": "我投{X}君。为了大家。",
-   "executed": "我所做的一切……都是为了国家。",
-   "wish": "噔噔——第一块餐巾，在我手里了。"
+   "wake": "很安静的房子。这里的每个人，都很孤独吧。",
+   "discover": "可怜的人……最后看到的，是谁的脸呢。",
+   "statement": "大家都很害怕吧。说出来就好，我在听。",
+   "accuse": "{X}，你已经累了吧。说出来，会轻松一点。",
+   "defend": "我？……如果你愿意这样相信，也没关系。",
+   "vote": "{X}。……晚安。",
+   "executed": "这样就好……没有名字，就不会有人记得。",
+   "wish": "让我消失吧。连名字也不留下。"
   },
   "art": {
    "silhouetteKeys": [
-    "long pale hair ending in thick, neat, tube-like rolled curls stacked at each side of the head, like a colonial wig",
-    "a square, strong jaw and an upright, chest-out statesman's posture",
-    "a frothy ruffled jabot at the throat",
-    "a fitted waist-length coat with strong shoulders",
-    "a gloved hand raised in a measured, speech-giving gesture"
+    "soft, neatly kept blond hair",
+    "a slim, slightly tall build",
+    "clean, well-fitted clothes",
+    "head tilted gently to one side",
+    "a faint, kind smile"
    ],
-   "hair": "Long, very light cream-blond hair combed neatly back from the forehead; the lengths are set in several fat, orderly ringlet curls that frame both sides of the face and fall to the shoulders.",
-   "hairColor": "#EFE3C2",
-   "eyes": "Calm, level eyes under straight brows, with long lashes; a composed, diplomatic gaze.",
-   "eyeColor": "#5A86C2",
-   "skin": "#F0DAC4",
-   "face": "Handsome, square-jawed, clean-shaven 43-year-old face with a prominent chin and full lips set in a polite line. Hidden under his clothes: a flag-like field of old bullet and blade scars across his back.",
-   "outfit": "A close-fitting tailored coat ending at the waist, over a sleeveless, body-hugging shirt with a ruffled front; net-patterned gloves. Immaculate and presidential, in colors drawn from the American flag.",
+   "hair": "Blond hair, neat, falling softly over the forehead; it hides an old bullet scar on the head.",
+   "hairColor": "#E6D08A",
+   "eyes": "Beautiful blue eyes that do not move when he smiles.",
+   "eyeColor": "#5C8FC4",
+   "skin": "#F3E1D3",
+   "face": "A young man in his early twenties, beautiful almost to the point of unreality, with refined features and a gentle expression.",
+   "outfit": "Clean, tidy, well-cut clothes, like a well-brought-up young man.",
    "outfitColors": [
-    "#28345E",
-    "#F4F1E8",
-    "#B22234"
+    "#2E3440",
+    "#F2F0EA",
+    "#8A8F98"
    ],
-   "accessories": "Mesh-patterned gloves; his father's white handkerchief, with the date 1847.9.20 written on it, held in hand or tucked at the breast.",
-   "expression": "A polite statesman's smile that never reaches the eyes; a perfectly level gaze. The calm of a man who has already picked up the first napkin and decided the rules.",
-   "accent": "#B22234"
+   "accessories": "None.",
+   "expression": "A soft, kind smile and calm blue eyes with nothing in them at all.",
+   "accent": "#E6D79A"
   },
   "canWalk": true
  }
