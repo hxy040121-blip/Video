@@ -267,7 +267,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     wake: [
       '……DIO的宅邸？不对。这是哪儿。',
       '真是够了。烟也不在身上。',
-      '十五个人。……先看清楚有几道门。',
+      '十三个人。……先看清楚有几道门。',
     ],
     discover: [
       '……死了。谁都别过来。',
@@ -396,7 +396,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
   jotaro6: {
     wake: [
       '……会面室呢。徐伦在哪。',
-      '圆桌，十五个人，三道门。先记下来。',
+      '圆桌，十三个人，三道门。先记下来。',
       '真是的……又被卷进了谁的局里。',
     ],
     discover: [
@@ -527,7 +527,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     wake: [
       '卡纳维拉尔角……新月的时刻呢？时间还剩多少？',
       '愿主看顾我们。……请各位先安静坐好。',
-      '十五个人围坐一桌。这也是引力吧。',
+      '十三个人围坐一桌。这也是引力吧。',
     ],
     discover: [
       '主啊……请各位过来。这里有一位，已经蒙主召唤了。',
@@ -786,7 +786,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
   gintoki: {
     wake: [
       '……这哪家医院啊？病房也太阔了吧。新八？神乐？',
-      '十五个人围着桌子坐……这是相亲会还是邪教集会啊。',
+      '十三个人围着桌子坐……这是相亲会还是邪教集会啊。',
       '喂喂，银桑的木刀呢？……还有，这里管饭吗？',
     ],
     discover: [

@@ -1,21 +1,26 @@
 /* ==========================================================
    醒来 · prologue —— 网站的第一屏
-   眼睑睁开后：从穹顶正上方俯视圆桌，十五把乌木扶手椅，光源就是光标。
-   十五个人在 17:05 之前陆续醒来，先后每次随机（《洋馆物理层》§9：谁先谁后由演出者安排）；
-   滚动时镜头倾斜、圆桌后退，整个议事厅沉入黑暗，一把黄铜钥匙从钥匙龛落下。号牌开局是空白的：
-   钥匙落地、人人手里都有了钥匙的那一拍，十五枚同时无声地现出号码（§6.2；《主持人游戏》§1），
-   随后连同眼睛一起没入黑暗，钥匙带进洋馆。
+   眼睑睁开：镜头在穹顶的天眼外俯视下去，穿过天眼落进厅里——圆桌、十三把高背扶手椅，光源就是光标。
+   十三个人在 17:05 之前陆续醒来，先后每次随机（《洋馆物理层》§9：谁先谁后，开局时抽一次）；醒来时各坐自己编号
+   的那一席，与房号无关（§9；卡司总则 §5）。
+   往下滚：主持人的七条播报一句句浮现（《开局流程》§2 的原句；声音听不出从哪里来，画面上不给它出处），镜头斜下来——
+     第一条说完，十三把钥匙一把把离开收纳台的钥匙龛；最后一把到手的那一刻，桌沿十三枚号牌同时无声地现出号码
+     （1 号正北，顺时针；《主持人游戏》§1、各室/1F_穹顶议事厅.md），众人按自己所选的编号重新入座；
+     第二条第一句说出的同时，每人面前的桌上出现十枚一摞的金币（没有理币盘）；随后从一号起依次自我介绍；
+     第四条说完的那一刻，各人席位前的桌沿内侧出现规则卡；第五条，身份卡（两面空白）；
+     第六条开口的同时，议事厅的三扇门自己打开（物理层 §9）；第七条说完，整个议事厅沉入黑暗，只剩眼睛与号码，
+     一把钥匙落下，带进洋馆。
+   天眼照窗光的时段明暗（物理层 3.1）：17:00—19:00 由亮渐无——天光的强弱跟着馆内时刻（App.state.minutes）。
 
    本文件同时提供 App.domeHall：穹顶议事厅的 Canvas 渲染器（终章 wish 复用同一张圆桌）。
-   几何依据《洋馆物理层》§1.1 §6.2 §9（单位米；原点在桌心，x 向东，y 向北，z 向上）：
-     厅 17.2×14，最高净高 7.8，穹顶起拱 4.6；墨玉圆盘直径 8.4；青白玉圆桌直径 4.8、高 0.76，
-     老紫檀鼓形木座；桌沿十五枚银号牌；十五把乌木扶手椅等距环绕，椅宽 0.62，座背包暗蓝真丝，
-     1 号正北、顺时针；墙上十五幅窄长丝绸织纹屏与座椅节奏相应；北墙两座水晶罩柜与石英挂钟；
-     中央悬一盏直径 2.4 m 的无色水晶灯；西侧沉香侧案；
-     东侧收纳台 x 7.45–8.10、y −4.0–−1.6，台面 1.05，钥匙龛离地 1.12–1.76（上排 1–8，下排 9–15），
-     台面前部中央一只白玉理币盘（长 0.9、宽 0.16，长轴南北向，前沿距台面西缘 0.1），
-     十五摞金币沿长轴排成一列（每摞直径 26.5 mm，相邻两摞边缘相距 2.8 cm，整列居中）；
-     其南侧墙面嵌价目铜牌。
+   几何取自 WORLD.hall（build-data 由《洋馆物理层》§1.1 §2.1 §2.5 §3.1 §3.3 §9 与 各室/1F_穹顶议事厅.md 生成；
+   单位米，原点在圆心，x 向东，y 向北，z 向上）：
+     圆厅内径 13.2，墙高 6.6 处起穹顶，顶高 13.2，正中天眼直径 2.4；墙下部 2.6 m 熏橡木护壁，上部象牙白灰泥；
+     穹顶白灰泥，三道金色细环，天眼下悬一环十三盏乳白球灯（黄铜灯环）；石材地面，圆桌下一面直径 8.4 的墨玉圆盘；
+     圆桌直径 4.8、高 0.76，石面；桌沿嵌十三枚号牌，开局空白；十三把同式高背扶手椅（家具都是熏橡木）等距环绕，椅宽 0.62；
+     墙上十三幅窄长丝绸织纹屏，与座椅的节奏相应；南、西、东三门居中，各宽 2.4、高 3.6；
+     北墙两座玻璃罩柜（西：神圣罗马帝国皇冠；东：良渚玉琮王），两柜中间上方是挂钟；
+     西门北侧侧案，上方弧墙嵌四层青铜平面图；东门北侧收纳台（钥匙龛十三钩：上排 1—7、下排 8—13），东门南侧价目铜牌。
    ========================================================== */
 (function () {
   'use strict'
@@ -23,16 +28,38 @@
   if (!App || !window.gsap) return
   const U = App.util
   const TAU = Math.PI * 2
+  const DEG = Math.PI / 180
 
   /* =====================================================================
-     几何常量
+     几何常量（WORLD.hall；缺了就用同样的数）
      ===================================================================== */
+  const WH = (window.WORLD && window.WORLD.hall) || {}
+  const nv = (v, d) => (typeof v === 'number' && isFinite(v) && v > 0 ? v : d)
+  const OX = nv(WH.cx, 34.8), OY = nv(WH.cy, 20.4)
   const G = {
-    hx: 8.6, hy: 7.0, spring: 4.6, apex: 7.8,
-    disc: 4.2, tableR: 2.4, tableH: 0.76, drumR: 1.05,
-    seatR: 2.98, n: 15,
+    R: nv(WH.r, 6.6), rOuter: nv(WH.rOuter, 7.8),
+    wallH: nv(WH.springAt, 6.6), apex: nv(WH.apex, 13.2), ocR: nv(WH.oculus, 2.4) / 2,
+    wains: 2.6, doorH: nv(WH.doorHeight, 3.6), roofZ: 15,
+    disc: nv(WH.disc, 8.4) / 2,
+    tableR: nv(WH.table && WH.table.d, 4.8) / 2, tableH: nv(WH.table && WH.table.h, 0.76), drumR: 1.05,
+    seatR: 2.98, n: nv(WH.seats, 13) | 0, chairW: nv(WH.chairW, 0.62),
+    lampR: 0.95, lampZ: 5.8, lamps: nv(WH.lamps, 13) | 0,
   }
-  const COUNTER = { x0: 7.45, x1: 8.1, y0: -4.0, y1: -1.6, top: 1.05, h: 1.8, nicheZ0: 1.12, nicheZ1: 1.76 }
+  G.domeH = G.apex - G.wallH
+  G.ocZ = G.wallH + G.domeH * Math.sqrt(Math.max(0, 1 - (G.ocR / G.R) ** 2)) // 天眼口的高度
+  G.plateV = G.seatR - (G.tableR - 0.12) // 号牌中心：从席位往桌心走多远
+  // 方位角：北为 0、顺时针（弧度）
+  const azOf = (x, y) => Math.atan2(x - OX, y - OY)
+  const CNT = WH.counter || {}
+  const AZ_COUNTER = CNT.cx != null ? azOf(CNT.cx, CNT.cy) : 60 * DEG   // 东门北侧
+  const AZ_PLAQUE = WH.plaque && WH.plaque.cx != null ? azOf(WH.plaque.cx, WH.plaque.cy) : 114.6 * DEG // 东门南侧
+  const AZ_SIDE = TAU - AZ_COUNTER  // 西门北侧的侧案：与收纳台左右对称
+  const AZ_CAB = 18 * DEG           // 北墙两座罩柜（只说在北墙、挂钟在两柜中间上方）
+  // 三道门：南、西、东，居中，宽 2.4（物理层 1.3）
+  const DIR_AZ = { 北: 0, 东: 90, 南: 180, 西: 270 }
+  const hallRoom = window.WORLD && Array.isArray(window.WORLD.rooms) ? window.WORLD.rooms.find(r => r.name === (WH.name || '穹顶议事厅')) : null
+  const DOORS = ((hallRoom && hallRoom.doors) || []).filter(d => d && d.dir in DIR_AZ).map(d => ({ az: DIR_AZ[d.dir] * DEG, w: nv(d.width, 2.4) }))
+  if (!DOORS.length) for (const a of [180, 270, 90]) DOORS.push({ az: a * DEG, w: 2.4 })
 
   /* =====================================================================
      小工具
@@ -46,6 +73,14 @@
   const easeIO = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
   // 写样式：值没变就不写（免得每帧让元素重算样式）
   const css = (el, k, v) => { const c = el._css || (el._css = {}); if (c[k] !== v) { c[k] = v; el.style[k] = v } }
+  // 天眼的天光（物理层 3.1：05:00—07:00 由无渐亮，07:00—17:00 恒定最亮，17:00—19:00 由亮渐无，其余无）
+  const dayK = minutes => {
+    const m = (((minutes || 0) % 1440) + 1440) % 1440
+    if (m < 300 || m >= 1140) return 0
+    if (m < 420) return (m - 300) / 120
+    if (m < 1020) return 1
+    return 1 - (m - 1020) / 120
+  }
 
   // 二维凸包（单调链），点为 [x, y]
   function hull(pts) {
@@ -179,12 +214,12 @@
   }
 
   /* =====================================================================
-     低分辨率辅助画布：低频的东西（光池、影子、光束、眼眶、肋拱景深）画在小画布上，
+     低分辨率辅助画布：低频的东西（光池、影子、光束、眼眶、墙与穹顶的明暗）画在小画布上，
      再按全分辨率的轮廓（clip）贴回主画布——像素量只有原来的几分之一，看起来一样（这些本来就是柔和的渐变）
      ===================================================================== */
   const LQ = 0.2 // 光池（地面、墨玉、桌面、墙）：相对 CSS 像素
-  const SQF = 1 / 6, SQT = 1 / 5 // 影子遮罩（地面的半影宽一些，桌面上的窄一些，与原来的模糊半径相当）
-  const BQ = 0.25 // 穹顶落下的光束
+  const SQF = 1 / 6, SQT = 1 / 5 // 影子遮罩（地面的半影宽一些，桌面上的窄一些）
+  const BQ = 0.25 // 落下的光束、天眼的天光
   const EQ = 0.25 // 眼眶
   const mkBuf = () => { const c = document.createElement('canvas'); c.width = c.height = 2; return { c, x: c.getContext('2d') } }
   // 正态分布的累积函数（眼眶边缘的高斯淡出）
@@ -194,18 +229,18 @@
     return x >= 0 ? 0.5 * (1 + y) : 0.5 * (1 - y)
   }
 
-  // 可复现的伪随机（每个席位、每条肋固定的细节）
-  const rnd = U.seeded(15017)
-  const JADE_VEINS = []
+  // 可复现的伪随机（石纹等固定的细节）
+  const rnd = U.seeded(13017)
+  const VEINS = []
   for (let i = 0; i < 9; i++) {
     const a0 = rnd() * TAU, r0 = 0.3 + rnd() * 1.8, pts = []
     let a = a0, r = r0
     for (let j = 0; j < 7; j++) {
       pts.push([Math.cos(a) * r, Math.sin(a) * r])
       a += (rnd() - 0.5) * 0.5
-      r = U.clamp(r + (rnd() - 0.5) * 0.5, 0.2, 2.25)
+      r = U.clamp(r + (rnd() - 0.5) * 0.5, 0.2, 2.1)
     }
-    JADE_VEINS.push({ pts, w: 0.006 + rnd() * 0.012, a: 0.05 + rnd() * 0.07 })
+    VEINS.push({ pts, w: 0.006 + rnd() * 0.012, a: 0.05 + rnd() * 0.07 })
   }
 
   // 长方体：角点 i = x位 + 2·y位 + 4·z位；六个面 [角点序, 法线]
@@ -219,48 +254,63 @@
   ]
   const RING = Array.from({ length: 10 }, (_, i) => [Math.cos(i / 10 * TAU), Math.sin(i / 10 * TAU)])
 
-  // 材质（反照率）
-  const EBONY = [0.07, 0.052, 0.046]
-  const SILK = [0.055, 0.064, 0.14] // 暗蓝真丝：强光下也只是深蓝的缎光，不会亮成一块蓝板
-  const SEAT_FACE = [SILK, null, null, null, null, null]
-  const BACK_FACE = [null, null, null, SILK, null, null]
+  // 材质（反照率）：家具一律熏橡木（物理层开头）
+  const OAK = [0.1, 0.072, 0.05]
+  const OAK_IN = [0.082, 0.058, 0.043] // 座面、椅背朝里的一面：磨得更暗
+  const SEAT_FACE = [OAK_IN, null, null, null, null, null]
+  const BACK_FACE = [null, null, null, OAK_IN, null, null]
+  const WALL_LO = [0.12, 0.085, 0.06]  // 熏橡木护壁
+  const WALL_HI = [0.3, 0.29, 0.265]   // 象牙白灰泥（压暗：厅的明暗以光标与灯环为主）
+  const DOME = [0.34, 0.33, 0.31]
+
+  // 贴着弧墙的一件（宽 w）：背面是一条弦，弦的中点离圆心 rb；f 朝圆心，r 是面朝圆心时的右手
+  function wallFrame(az, w, proud) {
+    const sa = Math.sin(az), ca = Math.cos(az)
+    const rb = Math.sqrt(Math.max(0, G.R * G.R - (w / 2) ** 2)) - (proud || 0)
+    return { x: sa * rb, y: ca * rb, fx: -sa, fy: -ca, rx: -ca, ry: sa, az, w, rb }
+  }
 
   /* =====================================================================
      App.domeHall.create(opts)：议事厅渲染器
      opts.canvas（必需）；opts.vignette：在最底下画一层暗角（醒来的舞台）
-     返回场景对象 S：S.seats[0..14]、S.light、S.view、S.update(dt)、S.render()、S.resize()、
+     返回场景对象 S：S.seats[0..12]、S.light、S.view、S.update(dt)、S.render()、S.resize()、
      S.needs(now)（这一帧要不要重画）、S.release()（远离视口时交还画布内存）、
-     S.setPeople(ids)、S.pick(x, y)、S.seatScreen(k)
+     S.setPeople(ids)、S.pick(x, y)、S.seatScreen(k)、S.plateScreen(k)
+     状态（0–1，可补间）：S.sky 天眼的天光、S.doorOpen 三扇门、S.keyT[k] 第 k+1 把钥匙离钩的进度（0 在钩上，1 已到手）；
+     每席 s.coinA / s.coinN 面前那一摞金币、s.ruleA 规则卡、s.idA 身份卡
      ===================================================================== */
   function createHall(opts) {
     const o = Object.assign({
       lightCol: [255, 204, 154],   // 光（光标）的颜色：烛光
-      amb: 0.07,                   // 穹顶散下的环境光
+      amb: 0.07,                   // 环境光
       ambCol: [140, 134, 150],
-      floorAlb: [0.72, 0.68, 0.61],// 月白翡翠
+      floorAlb: [0.62, 0.6, 0.56], // 石材地面
       discAlb: [0.2, 0.19, 0.18],  // 墨玉（抛光）
-      jadeAlb: [0.3, 0.4, 0.37],   // 青白玉
-      num: [214, 172, 102],        // 编号：黄铜
+      tableAlb: [0.34, 0.335, 0.31], // 石面圆桌
+      num: [214, 172, 102],        // 号码：黄铜
       numDim: [111, 85, 50],
       numOut: [150, 28, 28],       // 熄灭：锈红
       lampCol: [226, 180, 112],    // 席位小光池
-      beamCol: [235, 227, 214],    // 穹顶顶端落下的一束光
-      ribTone: [5, 6, 11],
+      beamCol: [235, 227, 214],    // 天眼落下的一束光
+      skyCol: [196, 208, 228],     // 阴天的天光
+      skyPow: 0.95,
+      ringCol: [255, 232, 204],    // 灯环：乳白玻璃球灯
+      ringPow: 0.5,
+      doorCol: [186, 176, 160],    // 门外（门厅、两院）的光
       glint: [190, 205, 255],
       rim: [222, 176, 108],        // 黑影的黄铜轮廓光
       silhouette: [9, 8, 8],
       motes: 70,
       blankNums: false,            // true：号牌未现出（lit = 0）时牌面空白（醒来）；false：未点亮的编号暗着可见（终章）
-      tray: 15,                    // 理币盘里还剩几摞（终章 0：开局各取一摞，盘早空了）
     }, opts)
 
     const S = {
       o, cam: new Camera(),
       W: 1, H: 1, dpr: 1,
       canvas: o.canvas, ctx: o.canvas.getContext('2d'),
-      // 辅助画布：wal/flr/dsc/tbl 光池，mF/mT 地面与桌面的影子，rib 肋拱、水晶灯与眼眶，bm 光束，vig 暗角，lens 眼眶
-      B: { wal: mkBuf(), flr: mkBuf(), dsc: mkBuf(), tbl: mkBuf(), mF: mkBuf(), mT: mkBuf(), rib: mkBuf(), bm: mkBuf(), vig: mkBuf(), lens: mkBuf() },
-      ribQ: 0.5,        // 肋拱缓冲的比例（0 = 直接画在主画布上）
+      // 辅助画布：wal/flr/dsc/tbl 光池，mF/mT 地面与桌面的影子，rib 灯环、天眼与眼眶（景深），bm 光束，sky 天光，vig 暗角，lens 眼眶
+      B: { wal: mkBuf(), flr: mkBuf(), dsc: mkBuf(), tbl: mkBuf(), mF: mkBuf(), mT: mkBuf(), rib: mkBuf(), bm: mkBuf(), sky: mkBuf(), vig: mkBuf(), lens: mkBuf() },
+      ribQ: 0.5,        // 近景缓冲的比例（0 = 直接画在主画布上）
       dirty: true, released: false,
       seats: [],
       light: { x: 0, y: 0, z: 5.6, power: 1.1, range: 3, flick: 1 },
@@ -269,34 +319,35 @@
       ptr: { x: 0, y: 0, on: false },
       view: { elev: Math.PI / 2, yaw: 0, dist: 10.6, tx: 0, ty: 0, tz: 0.45, fk: 1, ox: 0, oy: 0 },
       dark: 0,          // 全局沉入黑暗 0–1
-      ribA: 1,          // 肋拱
-      numA: 1,          // 编号
-      numDarkA: 0,      // 沉入黑暗后仍看得见的编号（画在黑幕之上；醒来时号码在黑暗里现出）
-      tray: o.tray,     // 理币盘里的摞数
+      ribA: 1,          // 穹顶（竖屏时压淡）
+      numA: 1,          // 号码
+      numDarkA: 0,      // 沉入黑暗后仍看得见的号码（画在黑幕之上）
       eyeA: 1,          // 眼睛
       wallA: 1,         // 墙与陈设
       poolA: 1,         // 光标光池
       glowA: 1,         // 光源自身的光晕
       floorA: 1,
-      chandA: 1,        // 水晶灯
+      chandA: 1,        // 灯环
+      sky: 1,           // 天眼的天光（0–1，跟着馆内时刻）
+      skyA: 1,          // 天光那一柱的显隐
+      doorOpen: 0,      // 三扇门 0 合拢 → 1 开足
+      keyT: new Float64Array(G.n), keyTo: new Int8Array(G.n).fill(-1),
       lensA: 0, lensOpen: 1, lensW: 0.62, lensH: 0.6, // 杏仁形眼眶
       beam: { k: -1, amt: 0 },
       time: 0,
       motes: [],
       fit: 0.36,        // 正俯视时椅环半径占短边的比例
       numScale: 1,
-      hoverK: -1, keyGone: -1, clock: 17 * 60,
+      hoverK: -1, clock: 17 * 60,
       eyeQ: [], tilt: 0, ls: null, eyeScale: 1, gust: 0, eyePulse: 1, ripples: [],
     }
     // 常用颜色串（每帧不再拼字符串、解析颜色）
-    const RIB_STROKE = rgb(o.ribTone[0], o.ribTone[1], o.ribTone[2])
-    const RIB_GLINT = rgb(o.glint[0] * 0.55, o.glint[1] * 0.58, o.glint[2] * 0.66)
-    const CHAIN = rgb(o.ribTone[0] * 1.6, o.ribTone[1] * 1.6, o.ribTone[2] * 1.6)
     const DISC_LINE = rgb(o.lightCol[0], o.lightCol[1] * 0.92, o.lightCol[2] * 0.85)
     const RIM = rgb(o.rim[0], o.rim[1], o.rim[2])
-    let lensKey = '', bmKey = ''
+    const GOLD = 'rgb(196,158,88)', BRASS_DIM = 'rgb(111,85,50)'
+    let lensKey = '', bmKey = '', skyKey = ''
 
-    // 局部（椅子坐标 u 右、v 前、z 上）→ 世界
+    // 局部（u 右、v 前、z 上）→ 世界：s 是席位或贴墙的一件
     const L2W = (s, u, v, z) => [s.x + u * s.rx + v * s.fx, s.y + u * s.ry + v * s.fy, z]
     function mkBox(s, u0, u1, v0, v1, z0, z1) {
       const P = []
@@ -318,39 +369,65 @@
         rx: -ca, ry: sa,            // 右手方向
         id: null, acc: [194, 154, 91], hair: 0, long: false,
         awake: 0, eyes: 0, flash: 0, lit: 0, lamp: 0, out: 0, fall: 0, gone: 0, hover: 0,
+        coinA: 0, coinN: 10, ruleA: 0, idA: 0, cflash: 0,
         yaw: 0, blink: 1, blinkT: 0, nextBlink: 2 + srnd() * 5,
         droop: (srnd() - 0.5) * 0.9, sway: srnd() * TAU, lag: 0.02 + srnd() * 0.05,
         tuft: [0, 1, 2, 3, 4, 5, 6].map(() => srnd() * srnd() * 0.32),
         K: null,
       }
-      // 乌木扶手椅（静止，预先算好世界坐标）
-      s.legs = [[-0.29, -0.24, -0.33, -0.28], [0.24, 0.29, -0.33, -0.28], [-0.29, -0.24, 0.22, 0.27], [0.24, 0.29, 0.22, 0.27]]
+      // 熏橡木高背扶手椅（静止，预先算好世界坐标）
+      const hw = G.chairW / 2, BT = 1.26
+      s.legs = [[-hw + 0.02, -hw + 0.07, -0.33, -0.28], [hw - 0.07, hw - 0.02, -0.33, -0.28], [-hw + 0.02, -hw + 0.07, 0.22, 0.27], [hw - 0.07, hw - 0.02, 0.22, 0.27]]
         .map(b => mkBox(s, b[0], b[1], b[2], b[3], 0, 0.41))
-      s.seatB = mkBox(s, -0.29, 0.29, -0.28, 0.28, 0.4, 0.47)
-      s.backB = mkBox(s, -0.31, 0.31, -0.35, -0.27, 0.44, 1.13)
+      s.seatB = mkBox(s, -hw + 0.02, hw - 0.02, -0.28, 0.28, 0.4, 0.47)
+      s.backB = mkBox(s, -hw, hw, -0.35, -0.27, 0.44, BT)
       s.arms = [
-        mkBox(s, -0.325, -0.285, 0.21, 0.25, 0.47, 0.66), mkBox(s, 0.285, 0.325, 0.21, 0.25, 0.47, 0.66),
-        mkBox(s, -0.335, -0.275, -0.27, 0.27, 0.66, 0.71), mkBox(s, 0.275, 0.335, -0.27, 0.27, 0.66, 0.71),
+        mkBox(s, -hw - 0.015, -hw + 0.025, 0.21, 0.25, 0.47, 0.66), mkBox(s, hw - 0.025, hw + 0.015, 0.21, 0.25, 0.47, 0.66),
+        mkBox(s, -hw - 0.025, -hw + 0.035, -0.27, 0.27, 0.66, 0.71), mkBox(s, hw - 0.035, hw + 0.025, -0.27, 0.27, 0.66, 0.71),
       ]
       // 投影用的轮廓点：椅背顶、扶手前端、座面、椅脚落地处
       s.shPts = [
-        L2W(s, -0.31, -0.35, 1.13), L2W(s, 0.31, -0.35, 1.13), L2W(s, -0.31, -0.27, 1.13), L2W(s, 0.31, -0.27, 1.13),
-        L2W(s, -0.335, 0.27, 0.71), L2W(s, 0.335, 0.27, 0.71), L2W(s, -0.29, 0.28, 0.45), L2W(s, 0.29, 0.28, 0.45),
-        L2W(s, -0.29, -0.33, 0), L2W(s, 0.29, -0.33, 0), L2W(s, -0.29, 0.27, 0), L2W(s, 0.29, 0.27, 0),
+        L2W(s, -hw, -0.35, BT), L2W(s, hw, -0.35, BT), L2W(s, -hw, -0.27, BT), L2W(s, hw, -0.27, BT),
+        L2W(s, -hw - 0.025, 0.27, 0.71), L2W(s, hw + 0.025, 0.27, 0.71), L2W(s, -hw + 0.02, 0.28, 0.45), L2W(s, hw - 0.02, 0.28, 0.45),
+        L2W(s, -hw + 0.02, -0.33, 0), L2W(s, hw - 0.02, -0.33, 0), L2W(s, -hw + 0.02, 0.27, 0), L2W(s, hw - 0.02, 0.27, 0),
       ]
-      s.shTop = s.shPts.slice(0, 4).concat([L2W(s, -0.31, -0.31, 0.8), L2W(s, 0.31, -0.31, 0.8)])
+      s.shTop = s.shPts.slice(0, 4).concat([L2W(s, -hw, -0.31, 0.8), L2W(s, hw, -0.31, 0.8)])
       S.seats.push(s)
     }
 
-    // 陈设（世界坐标长方体）
+    /* ---------- 陈设（贴着弧墙，各按自己的方位摆正） ---------- */
+    const cntL = nv(CNT.l, 2.4) / 2, cntD = nv(CNT.d, 0.65), cntTop = nv(CNT.top, 1.05), cntH = nv(CNT.h, 1.8)
+    const NI = CNT.niche || {}
+    const niW = nv(NI.w, 1.6) / 2, niH = nv(NI.h, 0.64), niD = nv(NI.d, 0.12), niZ = nv(NI.z, 1.12)
+    const panelD = niD + 0.06
+    const ST = wallFrame(AZ_COUNTER, cntL * 2)
+    const SBD = WH.sideboard || {}
+    const SB = wallFrame(AZ_SIDE, nv(SBD.w, 2.4))
+    const CBD = WH.cabinets || {}
+    const cbW = nv(CBD.w, 2.2), cbD = nv(CBD.d, 0.55), cbH = nv(CBD.h, 1.25)
+    const CW = wallFrame(-AZ_CAB, cbW), CE = wallFrame(AZ_CAB, cbW)
     const FURN = [
-      { B: mkBox(null, COUNTER.x0, COUNTER.x1, COUNTER.y0, COUNTER.y1, 0, COUNTER.top), alb: [0.08, 0.06, 0.05], spec: 0.6 },   // 东：钥匙与金币收纳台
-      { B: mkBox(null, -8.15, -7.6, -1.2, 1.2, 0, 0.95), alb: [0.16, 0.1, 0.06], spec: 0.35 },                                 // 西：沉香侧案
-      { B: mkBox(null, -4.6, -2.4, 6.35, 6.9, 0, 0.8), alb: [0.09, 0.07, 0.06], spec: 0.4, glass: mkBox(null, -4.6, -2.4, 6.35, 6.9, 0.8, 1.25), item: [232, 190, 96] }, // 西柜：皇冠
-      { B: mkBox(null, 2.4, 4.6, 6.35, 6.9, 0, 0.8), alb: [0.09, 0.07, 0.06], spec: 0.4, glass: mkBox(null, 2.4, 4.6, 6.35, 6.9, 0.8, 1.25), item: [150, 200, 160] },   // 东柜：玉琮
+      { B: mkBox(ST, -cntL, cntL, 0, cntD, 0, cntTop), alb: OAK, spec: 0.5 },          // 东门北侧：收纳台
+      { B: mkBox(ST, -cntL, cntL, 0, panelD, cntTop, cntH), alb: OAK, spec: 0.4, panel: true }, // 台后立板（钥匙龛）
+      { B: mkBox(SB, -nv(SBD.w, 2.4) / 2, nv(SBD.w, 2.4) / 2, 0, nv(SBD.d, 0.55), 0, nv(SBD.h, 0.95)), alb: OAK, spec: 0.35 }, // 西门北侧：侧案
+      { B: mkBox(CW, -cbW / 2, cbW / 2, 0, cbD, 0, 0.8), alb: OAK, spec: 0.4, glass: mkBox(CW, -cbW / 2, cbW / 2, 0, cbD, 0.8, cbH), item: [232, 190, 96] }, // 西柜：皇冠
+      { B: mkBox(CE, -cbW / 2, cbW / 2, 0, cbD, 0, 0.8), alb: OAK, spec: 0.4, glass: mkBox(CE, -cbW / 2, cbW / 2, 0, cbD, 0.8, cbH), item: [150, 200, 160] },  // 东柜：玉琮
     ]
+    // 钥匙龛的十三个挂钩：上排 1—7、下排 8—13，各排居中；从台前看，号码从左到右
+    const KEYS = []
+    const rows = Array.isArray(CNT.rows) && CNT.rows.length ? CNT.rows : [[1, 7], [8, 13]]
+    const kGap = niW * 2 / 7.4
+    rows.forEach((rw, ri) => {
+      const n = rw[1] - rw[0] + 1
+      for (let i = 0; i < n; i++) {
+        const u = -(i - (n - 1) / 2) * kGap
+        const z = niZ + niH * (ri === 0 ? 0.86 : 0.44)
+        if (rw[0] + i - 1 < G.n) KEYS[rw[0] + i - 1] = { u, z, top: L2W(ST, u, panelD - niD + 0.03, z), bot: L2W(ST, u, panelD - niD + 0.03, z - 0.09) }
+      }
+    })
+    for (let i = 0; i < G.n; i++) if (!KEYS[i]) KEYS[i] = KEYS[0]
 
-    // 落座：ids 长度 15，元素为角色 id 或 null
+    // 落座：ids 长度 13，元素为角色 id 或 null
     S.setPerson = (k, id) => {
       const s = S.seats[k - 1]
       if (!s) return
@@ -393,15 +470,15 @@
       const c = S.canvas
       c.width = Math.round(W * dpr); c.height = Math.round(H * dpr)
       c.style.width = W + 'px'; c.style.height = H + 'px'
-      // 肋拱：桌面版画在半分辨率缓冲里，放大贴回时的柔化就是原来 CSS 模糊的景深；手机原本就不模糊，直接画
+      // 近景（灯环、天眼口）：桌面版画在半分辨率缓冲里，放大贴回时的柔化就是景深；手机直接画
       S.ribQ = mob ? 0 : 0.5
       const B = S.B
       for (const k of ['wal', 'flr', 'dsc', 'tbl']) bufCtx(B[k], LQ)
       bufCtx(B.mF, SQF); bufCtx(B.mT, SQT)
-      bufCtx(B.bm, BQ)
+      bufCtx(B.bm, BQ); bufCtx(B.sky, BQ)
       if (S.ribQ) bufCtx(B.rib, S.ribQ); else B.rib.c.width = B.rib.c.height = 1
       if (o.vignette) paintVignette(); else B.vig.c.width = B.vig.c.height = 1
-      lensKey = ''; bmKey = ''
+      lensKey = ''; bmKey = ''; skyKey = ''
       S.cam.W = W; S.cam.H = H
       S.released = false
       S.dirty = true
@@ -412,7 +489,7 @@
       S.released = true
       S.canvas.width = S.canvas.height = 1
       for (const k in S.B) S.B[k].c.width = S.B[k].c.height = 1
-      lensKey = ''; bmKey = ''
+      lensKey = ''; bmKey = ''; skyKey = ''
     }
     // 舞台底下的暗角（原来是 .prologue-sticky 的 CSS 背景，单独占一个整屏合成层）：画一次，每帧贴在最底下
     function paintVignette() {
@@ -428,7 +505,7 @@
       x.setTransform(1, 0, 0, 1, 0, 0)
     }
 
-    // 某点、某法线处的照度 → [r, g, b] 乘子（0–~2）
+    // 某点、某法线处的照度 → [r, g, b] 乘子（0–~2）：环境光 + 光标的光 + 天眼下那一环灯
     function lum(px, py, pz, nx, ny, nz, extra) {
       const L = S.light, lc = o.lightCol
       const dx = L.x - px, dy = L.y - py, dz = L.z - pz
@@ -437,9 +514,13 @@
       const e = L.power * L.flick * lam / (1 + d2 / (L.range * L.range)) * S.poolA
       const up = nz > 0 ? nz : 0
       const a = o.amb * (0.45 + 0.55 * up)
-      let r = (o.ambCol[0] / 255) * a + (lc[0] / 255) * e
-      let g = (o.ambCol[1] / 255) * a + (lc[1] / 255) * e
-      let b = (o.ambCol[2] / 255) * a + (lc[2] / 255) * e
+      // 灯环（看作圆心上方 lampZ 处的一盏）
+      const gz = G.lampZ - pz, g2 = px * px + py * py + gz * gz, gd = Math.sqrt(g2) || 1
+      const ge = o.ringPow * S.chandA * Math.max(0, (-px * nx - py * ny + gz * nz) / gd) / (1 + g2 / 20)
+      const rc = o.ringCol
+      let r = (o.ambCol[0] / 255) * a + (lc[0] / 255) * e + (rc[0] / 255) * ge
+      let g = (o.ambCol[1] / 255) * a + (lc[1] / 255) * e + (rc[1] / 255) * ge
+      let b = (o.ambCol[2] / 255) * a + (lc[2] / 255) * e + (rc[2] / 255) * ge
       if (extra) {
         const t = extra.amt * (0.35 + 0.65 * up)
         r += extra.col[0] / 255 * t; g += extra.col[1] / 255 * t; b += extra.col[2] / 255 * t
@@ -468,7 +549,7 @@
       const d2 = (L.x - px) ** 2 + (L.y - py) ** 2 + (L.z - pz) ** 2
       return L.power * L.flick * S.poolA / (1 + d2 / (L.range * L.range))
     }
-    // 席位附加的顶光（小光池 / 穹顶一束光）
+    // 席位附加的顶光（小光池 / 天眼落下的一束光）
     function seatExtra(s) {
       let amt = s.lamp * 0.8, col = o.lampCol
       if (S.beam.k === s.k - 1 && S.beam.amt > 0) { amt += S.beam.amt * 1.1; col = o.beamCol }
@@ -492,11 +573,13 @@
       return pts
     }
     const TOP = circle(0, 0, G.tableH, G.tableR, 120)
-    const TOP_LO = circle(0, 0, G.tableH - 0.05, G.tableR - 0.01, 60)
-    const DRUM_T = circle(0, 0, G.tableH - 0.05, G.drumR, 36), DRUM_B = circle(0, 0, 0, G.drumR * 1.05, 36)
-    const RINGS = [2.2, 1.02, 0.3].map(r => circle(0, 0, G.tableH + 0.001, r, 90))
+    const TOP_LO = circle(0, 0, G.tableH - 0.06, G.tableR - 0.01, 60)
+    const DRUM_T = circle(0, 0, G.tableH - 0.06, G.drumR, 36), DRUM_B = circle(0, 0, 0, G.drumR * 1.08, 36)
+    const RINGS = [1.75, 0.98, 0.3].map(r => circle(0, 0, G.tableH + 0.001, r, 90))
     const DISC = circle(0, 0, 0.002, G.disc, 112)
-    const FLOOR = [[-G.hx, -G.hy, 0], [G.hx, -G.hy, 0], [G.hx, G.hy, 0], [-G.hx, G.hy, 0]]
+    const FLOOR = circle(0, 0, 0, G.R, 120)
+    const LAMP_RING = circle(0, 0, G.lampZ + 0.07, G.lampR, 64)
+    const OC_LO = circle(0, 0, G.ocZ, G.ocR, 72), OC_HI = circle(0, 0, G.roofZ, G.ocR, 72)
 
     function hullScreen(pts3) {
       const q = []
@@ -505,9 +588,9 @@
     }
 
     /* ---------- 光池：平面上一点附近的照度渐变（加色） ----------
-       org 平面上光源垂足；ax、ay 平面内两轴（单位向量）；dp 光源到平面的距离 */
+       org 平面上光源垂足；ax、ay 平面内两轴（单位向量；放长即把光池拉成椭圆）；dp 光源到平面的距离 */
     function pool(ctx, org, ax, ay, dp, power, range, col, alb, maxR, alpha, k) {
-      if (alpha <= 0.002 || dp <= 0.01) return
+      if (alpha <= 0.002 || dp <= 0.01 || power <= 0.002) return
       const c = S.cam
       const p0 = c.p(org[0], org[1], org[2])
       const p1 = c.p(org[0] + ax[0], org[1] + ax[1], org[2] + ax[2])
@@ -527,41 +610,79 @@
       ctx.beginPath(); ctx.arc(0, 0, maxR, 0, TAU); ctx.fill()
       ctx.setTransform(k, 0, 0, k, 0, 0)
     }
+    // 某一平面上的天光、灯环（每层光池共用）
+    function ambientPools(x, h, alb, maxSky) {
+      if (S.sky > 0.01) pool(x, [0, 0, h], [1, 0, 0], [0, 1, 0], G.ocZ - h, o.skyPow * S.sky * S.skyA, 9, o.skyCol, alb, maxSky, 1, LQ)
+      pool(x, [0, 0, h], [1, 0, 0], [0, 1, 0], G.lampZ - h, o.ringPow * S.chandA, 4.6, o.ringCol, alb, 8, 1, LQ)
+    }
 
-    /* ---------- 墙、壁柱、织纹屏、门、挂钟 ---------- */
-    const WALLS = [
-      { n: [0, -1], a: [-G.hx, G.hy], b: [G.hx, G.hy] },   // 北
-      { n: [-1, 0], a: [G.hx, G.hy], b: [G.hx, -G.hy] },   // 东
-      { n: [0, 1], a: [G.hx, -G.hy], b: [-G.hx, -G.hy] },  // 南
-      { n: [1, 0], a: [-G.hx, -G.hy], b: [-G.hx, G.hy] },  // 西
-    ]
-    // 从桌心沿方位角 a（北为 0，顺时针）与墙的交点
-    const wallHit = a => {
-      const sx = Math.sin(a), cy = Math.cos(a)
-      const t = Math.min(Math.abs(sx) > 1e-6 ? G.hx / Math.abs(sx) : 1e9, Math.abs(cy) > 1e-6 ? G.hy / Math.abs(cy) : 1e9)
-      return [sx * t, cy * t]
+    // 平面上的局部坐标系：原点 P0，x 轴 ax、y 轴 ay（世界单位向量），一个单位 = m 米（仿射近似，给小物件用）
+    function plane(ctx, P0, ax, ay, m) {
+      const c = S.cam
+      const p0 = c.p(P0[0], P0[1], P0[2])
+      const p1 = c.p(P0[0] + ax[0] * m, P0[1] + ax[1] * m, P0[2] + ax[2] * m)
+      const p2 = c.p(P0[0] + ay[0] * m, P0[1] + ay[1] * m, P0[2] + ay[2] * m)
+      if (!p0 || !p1 || !p2) return null
+      const k = S.dpr
+      ctx.setTransform((p1[0] - p0[0]) * k, (p1[1] - p0[1]) * k, (p2[0] - p0[0]) * k, (p2[1] - p0[1]) * k, p0[0] * k, p0[1] * k)
+      return p0
     }
-    const RIBS = []
-    for (let i = 0; i < 30; i++) {
-      const a = (i / 30) * TAU, w = wallHit(a)
-      const g = []
-      for (let j = 0; j < 4; j++) g.push(0.18 + rnd() * 0.75)
-      RIBS.push({ a, sx: w[0], sy: w[1], major: i % 2 === 0, glints: g, ph: rnd() * TAU, side: 1 })
-    }
-    const SCREENS = []
-    for (let k = 0; k < 15; k++) {
-      const a = (k / 15) * TAU, w = wallHit(a)
-      const onX = Math.abs(Math.abs(w[0]) - G.hx) < 1e-3 // 东西墙
-      SCREENS.push({ x: w[0], y: w[1], ax: onX ? [0, 1] : [1, 0], n: onX ? [-Math.sign(w[0]), 0] : [0, -Math.sign(w[1])] })
-    }
-    // 水晶灯：三圈垂饰
-    const CHAND = []
-    for (const [r, z, n] of [[1.2, 5.25, 44], [0.86, 5.5, 32], [0.5, 5.75, 20]]) {
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * TAU + r
-        CHAND.push({ x: Math.cos(a) * r, y: Math.sin(a) * r, z: z - 0.08 - (i % 3) * 0.05, ph: rnd() * TAU, r })
+    const unplane = ctx => ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0)
+
+    /* ---------- 圆墙、穹顶的可见范围 ----------
+       镜头在厅里（正俯视附近）时整圈都画；退到厅外时只留远处那一半（剖面），近处的半圈连同穹顶切掉，免得挡住圆桌 */
+    let ARC = null, ARC_SPAN = TAU
+    const AZL = []
+    function computeArc() {
+      const C = S.cam.pos
+      const h = Math.hypot(C[0], C[1])
+      const T = G.R * (1 - sstep(1, 4.5, h))
+      AZL.length = 0
+      if (h < 1e-6 || T >= h) {
+        ARC = null; ARC_SPAN = TAU
+        for (let i = 0; i <= 72; i++) AZL.push(i / 72 * TAU)
+        return
       }
+      const phc = Math.acos(Math.max(-1, Math.min(1, T / h)))
+      const caz = Math.atan2(C[0], C[1])
+      ARC = [caz + phc, caz + TAU - phc]
+      ARC_SPAN = ARC[1] - ARC[0]
+      const n = Math.max(2, Math.ceil(ARC_SPAN / (5 * DEG)))
+      for (let i = 0; i <= n; i++) AZL.push(ARC[0] + ARC_SPAN * i / n)
     }
+    // 方位 a 在可见范围内（m > 0 放宽、m < 0 收紧，弧度）
+    const azVis = (a, m) => {
+      if (!ARC) return true
+      m = m || 0
+      const d = (((a - ARC[0]) % TAU) + TAU) % TAU
+      return m >= 0 ? d <= ARC_SPAN + m || d >= TAU - m : d >= -m && d <= ARC_SPAN + m
+    }
+    // 四边形路径（四个角都在近平面前面时直接连，不新建数组；否则走近平面裁切）
+    const QA = [0, 0, 0, 0], QB = [0, 0, 0, 0], QC = [0, 0, 0, 0], QD = [0, 0, 0, 0]
+    function quad(x, ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz) {
+      const c = S.cam
+      const a = c.pt(ax, ay, az, QA), b = c.pt(bx, by, bz, QB), e = c.pt(cx, cy, cz, QC), f = c.pt(dx, dy, dz, QD)
+      if (a && b && e && f) {
+        x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.lineTo(e[0], e[1]); x.lineTo(f[0], f[1]); x.closePath()
+        return true
+      }
+      const q = c.poly([[ax, ay, az], [bx, by, bz], [cx, cy, cz], [dx, dy, dz]])
+      if (!q) return false
+      pathPts(x, q)
+      return true
+    }
+    const wallPt = (a, r, z) => [Math.sin(a) * r, Math.cos(a) * r, z]
+    // 穹顶上的点：纬度 th（0 是起拱处）
+    const domePt = (a, th) => { const r = G.R * Math.cos(th); return [Math.sin(a) * r, Math.cos(a) * r, G.wallH + G.domeH * Math.sin(th)] }
+    const TH_OC = Math.acos(Math.min(1, G.ocR / G.R))
+    const DOME_TH = [0, 0.32, 0.64, 0.96, 1.22, TH_OC]
+    const GOLD_TH = [0.42, 0.86, 1.2].filter(t => t < TH_OC - 0.03) // 三道金色细环
+    const SCREENS = Array.from({ length: G.n }, (_, i) => (i * TAU) / G.n) // 与座椅同一节奏
+    // 门：弦上的局部坐标（u 沿门宽，v 朝圆心）
+    for (const d of DOORS) d.F = wallFrame(d.az, d.w)
+    const PL = wallFrame(AZ_PLAQUE, nv(WH.plaque && WH.plaque.w, 0.9), 0.05)
+    const FP = wallFrame(AZ_SIDE, nv(WH.floorPlan && WH.floorPlan.w, 2.4), 0.01)
+    const CLK = wallFrame(0, 0.4, 0.02)
 
     // 本帧的地面、墨玉圆盘、桌面轮廓（屏幕坐标；render 开头算一次）
     let FL = null, DP = null, TP = null
@@ -579,97 +700,124 @@
       for (const h of holes) if (h) addPts(ctx, h)
       ctx.clip('evenodd')
     }
+    // 一圈（世界坐标的点由 fn(a) 给出）沿可见的方位折线描出来
+    function arcLine(ctx, fn) {
+      const c = S.cam
+      let open = false
+      ctx.beginPath()
+      for (const a of AZL) {
+        const P = fn(a)
+        const q = c.pt(P[0], P[1], P[2], TMP)
+        if (!q) { open = false; continue }
+        if (open) ctx.lineTo(q[0], q[1]); else { ctx.moveTo(q[0], q[1]); open = true }
+      }
+      ctx.stroke()
+    }
 
+    /* ---------- 圆墙、穹顶、织纹屏、门、挂钟、平面图、价目铜牌 ---------- */
     function drawWalls(ctx) {
-      // 墙面本身始终是一层墨色（挡住身后的烟雾，免得四壁淡出时露出一道地平线）；墙上的光与细节随 wallA 淡出
+      // 墙面本身始终是一层墨色（挡住身后的烟雾）；墙上的光与细节随 wallA 淡出
       const c = S.cam, Lt = S.light, Af = 1 - S.dark * 0.9, A = S.wallA * Af
       if (Af <= 0.01) return
-      const C = c.pos
+      const C = c.pos, R = G.R
       ctx.save()
-      // 地面以外的整片（暗角 + 墙面底色 + 墙上的光池，都是低频）画进 1/4 分辨率缓冲，
-      // 按「整屏减去地面」贴回一次：地面那块随后由 drawFloor 贴上，整屏只走一遍
-      const wq = []
-      for (const w of WALLS) {
-        // 面向镜头才画（镜头在墙外时剔除）
-        if ((C[0] - w.a[0]) * w.n[0] + (C[1] - w.a[1]) * w.n[1] <= 0) continue
-        const q = c.poly([[w.a[0], w.a[1], 0], [w.b[0], w.b[1], 0], [w.b[0], w.b[1], G.spring], [w.a[0], w.a[1], G.spring]])
-        if (q) wq.push(w, q)
-      }
-      const x = bufCtx(S.B.wal, LQ, !o.vignette)
+      // 地面以外的整片（暗角 + 墙面 + 穹顶的明暗，都是低频）画进 1/5 分辨率缓冲，按「整屏减去地面」贴回一次
+      const x = bufCtx(S.B.wal, LQ, true)
       if (o.vignette) {
         x.setTransform(1, 0, 0, 1, 0, 0)
         x.drawImage(S.B.vig.c, 0, 0)
         x.setTransform(LQ, 0, 0, LQ, 0, 0)
       }
-      if (wq.length) {
-        x.globalAlpha = Af
-        x.fillStyle = 'rgb(9,7,7)'
-        x.beginPath()
-        for (let i = 1; i < wq.length; i += 2) addPts(x, wq[i])
-        x.fill()
-        x.globalCompositeOperation = 'lighter'
-        for (let i = 0; i < wq.length; i += 2) {
-          const w = wq[i]
-          x.save()
-          x.beginPath(); addPts(x, wq[i + 1]); x.clip()
-          // 墙上的光：光源在墙面上的垂足
-          const dirx = (w.b[0] - w.a[0]), diry = (w.b[1] - w.a[1]), len = Math.hypot(dirx, diry)
-          const ux = dirx / len, uy = diry / len
-          const dp = (Lt.x - w.a[0]) * w.n[0] + (Lt.y - w.a[1]) * w.n[1]
-          const along = (Lt.x - w.a[0]) * ux + (Lt.y - w.a[1]) * uy
-          const fx = w.a[0] + ux * along, fy = w.a[1] + uy * along
-          pool(x, [fx, fy, Math.min(Lt.z, G.spring)], [ux, uy, 0], [0, 0, 1], Math.max(0.3, dp), Lt.power * Lt.flick, Lt.range, o.lightCol, [0.2, 0.15, 0.11], 9, A * S.poolA, LQ)
-          x.restore()
+      const ov = 0.6 * DEG // 相邻两段叠一点，免得低分辨率下露出接缝
+      // 穹顶（只在斜视时看得见远处那一半的内面）：白灰泥，按纬带、经段平涂
+      const domeOn = S.tilt > 0.05 && S.ribA > 0.01
+      if (domeOn) {
+        x.globalAlpha = Af * S.ribA
+        for (let i = 0; i + 1 < AZL.length; i += 2) {
+          const a0 = AZL[i], a1 = AZL[Math.min(AZL.length - 1, i + 2)] + ov, am = (a0 + a1) / 2
+          const s0 = Math.sin(a0), c0 = Math.cos(a0), s1 = Math.sin(a1), c1 = Math.cos(a1), smm = Math.sin(am), cmm = Math.cos(am)
+          for (let j = 0; j + 1 < DOME_TH.length; j++) {
+            const t0 = DOME_TH[j], t1 = DOME_TH[j + 1], tm = (t0 + t1) / 2
+            const r0 = G.R * Math.cos(t0), r1 = G.R * Math.cos(t1), z0 = G.wallH + G.domeH * Math.sin(t0), z1 = G.wallH + G.domeH * Math.sin(t1)
+            const rm = G.R * Math.cos(tm), Px = smm * rm, Py = cmm * rm, Pz = G.wallH + G.domeH * Math.sin(tm)
+            const n = norm3(-Px, -Py, G.wallH - Pz)
+            if ((C[0] - Px) * n[0] + (C[1] - Py) * n[1] + (C[2] - Pz) * n[2] <= 0) continue
+            if (!quad(x, s0 * r0, c0 * r0, z0, s1 * r0, c1 * r0, z0, s1 * r1, c1 * r1, z1, s0 * r1, c0 * r1, z1)) continue
+            x.fillStyle = shade(DOME, Px, Py, Pz, n[0], n[1], n[2], null, 0)
+            x.fill()
+          }
         }
-        x.globalCompositeOperation = 'source-over'
-        x.globalAlpha = 1
       }
-      if (wq.length || o.vignette) {
-        ctx.save()
-        if (o.vignette) clipOut(ctx, null, [FL])
-        else { ctx.beginPath(); for (let i = 1; i < wq.length; i += 2) addPts(ctx, wq[i]); ctx.clip() }
-        ctx.globalAlpha = 1
-        blit(ctx, S.B.wal, LQ)
-        ctx.restore()
+      // 墙：下部熏橡木护壁、上部象牙白灰泥
+      x.globalAlpha = Af
+      for (let i = 0; i + 1 < AZL.length; i++) {
+        const a0 = AZL[i], a1 = AZL[i + 1] + (i + 2 < AZL.length || !ARC ? ov : 0), am = (AZL[i] + AZL[i + 1]) / 2
+        const sm = Math.sin(am), cm = Math.cos(am)
+        const ax = Math.sin(a0) * R, ay = Math.cos(a0) * R, bx = Math.sin(a1) * R, by = Math.cos(a1) * R
+        for (let b = 0; b < 2; b++) {
+          const z0 = b ? G.wains : 0, z1 = b ? G.wallH : G.wains
+          if (!quad(x, ax, ay, z0, bx, by, z0, bx, by, z1, ax, ay, z1)) continue
+          x.fillStyle = shade(b ? WALL_HI : WALL_LO, sm * R, cm * R, (z0 + z1) / 2, -sm, -cm, 0, null, 0)
+          x.fill()
+        }
       }
-      // 线：护壁上沿、起拱线、壁柱
+      // 剖面：厚 1.2 m 的鼓座墙在切口处的断面
+      if (ARC) {
+        x.fillStyle = 'rgb(13,10,10)'
+        for (const a of ARC) {
+          const q = c.poly([wallPt(a, R, 0), wallPt(a, G.rOuter, 0), wallPt(a, G.rOuter, G.wallH), wallPt(a, R, G.wallH)])
+          if (q) { pathPts(x, q); x.fill() }
+        }
+      }
+      x.globalAlpha = 1
+      ctx.save()
+      clipOut(ctx, null, [FL])
+      blit(ctx, S.B.wal, LQ)
+      ctx.restore()
+
+      const near = (px, py, pz) => { const d2 = (px - Lt.x) ** 2 + (py - Lt.y) ** 2 + (pz - Lt.z) ** 2; return Lt.power * Lt.flick * S.poolA / (1 + d2 / (Lt.range * Lt.range * 1.6)) }
       ctx.lineCap = 'round'
-      const near = (x, y, z) => { const d2 = (x - Lt.x) ** 2 + (y - Lt.y) ** 2 + (z - Lt.z) ** 2; return Lt.power * Lt.flick * S.poolA / (1 + d2 / (Lt.range * Lt.range * 1.6)) }
-      for (const w of WALLS) {
-        if ((C[0] - w.a[0]) * w.n[0] + (C[1] - w.a[1]) * w.n[1] <= 0) continue
-        for (const z of [0.92, G.spring]) {
-          const a = c.p(w.a[0], w.a[1], z), b = c.p(w.b[0], w.b[1], z)
-          if (!a || !b) continue
-          const m = near((w.a[0] + w.b[0]) / 2, (w.a[1] + w.b[1]) / 2, z)
-          ctx.globalAlpha = A * (0.16 + Math.min(0.5, m * 0.5))
-          ctx.strokeStyle = rgb(111, 85, 50)
-          ctx.lineWidth = z > 1 ? 1.4 : 1
-          ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke()
+      ctx.lineJoin = 'round'
+      // 线：护壁上沿、起拱线
+      ctx.strokeStyle = BRASS_DIM
+      ctx.lineWidth = 1
+      ctx.globalAlpha = A * 0.32
+      arcLine(ctx, a => wallPt(a, R - 0.01, G.wains))
+      ctx.lineWidth = 1.3
+      ctx.globalAlpha = A * 0.26
+      arcLine(ctx, a => wallPt(a, R - 0.01, G.wallH))
+      // 穹顶的三道金色细环与天眼口
+      if (domeOn) {
+        ctx.strokeStyle = GOLD
+        ctx.lineWidth = 1
+        ctx.globalAlpha = A * S.ribA * 0.45
+        for (const th of GOLD_TH) arcLine(ctx, a => domePt(a, th))
+        ctx.globalAlpha = A * S.ribA * 0.35
+        const q = c.poly(OC_LO)
+        if (q) { pathPts(ctx, q); ctx.stroke() }
+      }
+      // 剖面的边
+      if (ARC) {
+        ctx.strokeStyle = BRASS_DIM
+        ctx.globalAlpha = A * 0.4
+        ctx.lineWidth = 1
+        for (const a of ARC) {
+          const q = c.poly([wallPt(a, R, 0), wallPt(a, G.rOuter, 0), wallPt(a, G.rOuter, G.wallH), wallPt(a, R, G.wallH)])
+          if (q) { pathPts(ctx, q); ctx.stroke() }
         }
       }
-      for (const r of RIBS) {
-        const visible = WALLS.some(w => Math.abs((r.sx - w.a[0]) * w.n[0] + (r.sy - w.a[1]) * w.n[1]) < 1e-3 && (C[0] - w.a[0]) * w.n[0] + (C[1] - w.a[1]) * w.n[1] > 0)
-        if (!visible) continue
-        const a = c.p(r.sx, r.sy, 0), b = c.p(r.sx, r.sy, G.spring)
-        if (!a || !b) continue
-        const m = near(r.sx, r.sy, 1.6)
-        ctx.globalAlpha = A * (r.major ? 0.3 : 0.16) * (0.5 + Math.min(1, m))
-        ctx.strokeStyle = rgb(70, 78, 104)
-        ctx.lineWidth = Math.max(1, Math.min(10, 0.05 * (a[3] + b[3])))
-        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke()
-      }
-      // 十五幅窄长丝绸织纹屏
-      for (const s of SCREENS) {
-        if ((C[0] - s.x) * s.n[0] + (C[1] - s.y) * s.n[1] <= 0) continue
-        const hw = 0.26
-        const x0 = s.x - s.ax[0] * hw, y0 = s.y - s.ax[1] * hw, x1 = s.x + s.ax[0] * hw, y1 = s.y + s.ax[1] * hw
-        const q = c.poly([[x0, y0, 0.55], [x1, y1, 0.55], [x1, y1, 3.9], [x0, y0, 3.9]])
+      // 十三幅窄长丝绸织纹屏（墙上部的灰泥上，与座椅同一节奏，避开门与陈设）
+      for (const a of SCREENS) {
+        if (!azVis(a, -1.5 * DEG)) continue
+        const sa = Math.sin(a), ca = Math.cos(a), hw = 0.25, r = Math.sqrt(R * R - hw * hw) - 0.01
+        const sx = sa * r, sy = ca * r, tx = ca, ty = -sa
+        const z0 = 3.95, z1 = 6.2
+        const q = c.poly([[sx - tx * hw, sy - ty * hw, z0], [sx + tx * hw, sy + ty * hw, z0], [sx + tx * hw, sy + ty * hw, z1], [sx - tx * hw, sy - ty * hw, z1]])
         if (!q) continue
-        const m = Math.min(1, near(s.x, s.y, 1.8) * 0.55)
+        const m = Math.min(1, near(sx, sy, 4.8) * 0.9 + 0.12)
         ctx.globalAlpha = A
         pathPts(ctx, q)
-        // 暗色真丝：上暗下亮的一层光泽，偏暖，不是蓝色色块
-        const top = c.p(s.x, s.y, 3.9), bot = c.p(s.x, s.y, 0.55)
+        const top = c.p(sx, sy, z1), bot = c.p(sx, sy, z0)
         if (top && bot) {
           const g = ctx.createLinearGradient(top[0], top[1], bot[0], bot[1])
           g.addColorStop(0, rgb(10, 9, 13))
@@ -682,90 +830,133 @@
         ctx.strokeStyle = rgb(150, 118, 70)
         ctx.lineWidth = 1
         ctx.stroke()
-        // 织纹：两道极细的竖线
         if (top && bot && Math.abs(top[1] - bot[1]) > 30) {
           ctx.globalAlpha = A * (0.06 + 0.22 * m)
           ctx.beginPath()
           for (const f of [-0.33, 0.33]) {
-            const a = c.p(s.x + s.ax[0] * hw * f, s.y + s.ax[1] * hw * f, 3.75), b = c.p(s.x + s.ax[0] * hw * f, s.y + s.ax[1] * hw * f, 0.7)
-            if (a && b) { ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]) }
+            const pa = c.p(sx + tx * hw * f, sy + ty * hw * f, z1 - 0.15), pb = c.p(sx + tx * hw * f, sy + ty * hw * f, z0 + 0.15)
+            if (pa && pb) { ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]) }
           }
           ctx.stroke()
         }
       }
-      // 门（合拢）：南门 x=±1.2，东西门 y=0.1–1.5
-      const doors = [[[-1.2, -G.hy], [1.2, -G.hy], 2.7, [0, 1]], [[G.hx, 0.1], [G.hx, 1.5], 2.4, [-1, 0]], [[-G.hx, 1.5], [-G.hx, 0.1], 2.4, [1, 0]]]
-      for (const d of doors) {
-        if ((C[0] - d[0][0]) * d[3][0] + (C[1] - d[0][1]) * d[3][1] <= 0) continue
-        const q = c.poly([[d[0][0], d[0][1], 0], [d[1][0], d[1][1], 0], [d[1][0], d[1][1], d[2]], [d[0][0], d[0][1], d[2]]])
-        if (!q) continue
-        ctx.globalAlpha = A
-        pathPts(ctx, q)
-        ctx.fillStyle = rgb(5, 4, 4)
-        ctx.fill()
-        ctx.globalAlpha = A * 0.4
-        ctx.strokeStyle = rgb(111, 85, 50)
-        ctx.stroke()
-      }
-      // 北墙石英挂钟（钟心离地 2.5 m），指针随 S.clock（馆内分钟）
-      if ((C[1] - G.hy) * -1 > 0) {
-        const cc = c.p(0, G.hy - 0.03, 2.5)
-        if (cc) {
-          const r = 0.2 * cc[3]
-          if (r > 2) {
-            const m = near(0, G.hy, 2.5)
-            ctx.globalAlpha = A * (0.35 + Math.min(0.6, m))
-            ctx.fillStyle = rgb(30, 26, 24)
-            ctx.strokeStyle = rgb(170, 160, 150)
-            ctx.lineWidth = Math.max(1, r * 0.08)
-            ctx.beginPath(); ctx.ellipse(cc[0], cc[1], r, r * Math.max(0.25, 1 - S.tilt * 0.1), 0, 0, TAU); ctx.fill(); ctx.stroke()
-            const mins = S.clock || 17 * 60
-            const ha = ((mins / 60) % 12) / 12 * TAU, ma = (mins % 60) / 60 * TAU
-            ctx.beginPath()
-            ctx.moveTo(cc[0], cc[1]); ctx.lineTo(cc[0] + Math.sin(ha) * r * 0.5, cc[1] - Math.cos(ha) * r * 0.5)
-            ctx.moveTo(cc[0], cc[1]); ctx.lineTo(cc[0] + Math.sin(ma) * r * 0.78, cc[1] - Math.cos(ma) * r * 0.78)
-            ctx.stroke()
-          }
-        }
-      }
-      // 东墙：钥匙龛（十五把编号钥匙）与价目铜牌
-      if (C[0] < G.hx - 0.05) {
-        const wx = G.hx - 0.02
-        const pl = c.poly([[wx, -6.0, 1.05], [wx, -4.7, 1.05], [wx, -4.7, 2.55], [wx, -6.0, 2.55]])
-        if (pl) {
+      // 三道门（南、西、东）：合拢时两扇熏橡木门扇；第六条播报开口的同时自己向厅里打开，门外的光照进来
+      const op = easeIO(clamp01(S.doorOpen))
+      for (const d of DOORS) {
+        if (!azVis(d.az, 4 * DEG)) continue
+        const F = d.F, hw = d.w / 2, H = G.doorH
+        const q = c.poly([L2W(F, -hw, 0, 0), L2W(F, hw, 0, 0), L2W(F, hw, 0, H), L2W(F, -hw, 0, H)])
+        if (q) {
           ctx.globalAlpha = A
-          pathPts(ctx, pl)
-          ctx.fillStyle = shade([0.22, 0.16, 0.08], wx, -5.35, 1.8, -1, 0, 0, null, 1.6)
+          pathPts(ctx, q)
+          ctx.fillStyle = 'rgb(5,4,4)'
           ctx.fill()
-          ctx.strokeStyle = rgb(150, 116, 64)
-          ctx.globalAlpha = A * (0.35 + Math.min(0.5, irr(wx, -5.35, 1.8)))
+          if (op > 0.01) {
+            const k = 0.45 + 0.55 * S.sky
+            ctx.globalAlpha = A * op
+            ctx.fillStyle = rgb(o.doorCol[0] * 0.5 * k, o.doorCol[1] * 0.5 * k, o.doorCol[2] * 0.5 * k)
+            ctx.fill()
+          }
+          ctx.globalAlpha = A * 0.45
+          ctx.strokeStyle = BRASS_DIM
           ctx.lineWidth = 1
           ctx.stroke()
-          ctx.globalAlpha = A * (0.18 + Math.min(0.4, irr(wx, -5.35, 1.8) * 0.6))
-          for (let i = 1; i < 10; i++) {
-            const z = 2.45 - i * 0.13
-            const a = c.p(wx, -5.9, z), b = c.p(wx, -4.85 - ((i * 7) % 4) * 0.12, z)
-            if (a && b) { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke() }
-          }
         }
-        for (let i = 0; i < 15; i++) {
-          if (i === S.keyGone) continue
-          const row = i < 8 ? 0 : 1, col = row ? i - 8 : i
-          const y = -3.62 + col * 0.24 + row * 0.12, z = row ? 1.3 : 1.66
-          const a = c.p(wx - 0.02, y, z), b = c.p(wx - 0.02, y, z - 0.13)
-          if (!a || !b) continue
-          const m = irr(wx, y, z)
-          ctx.globalAlpha = A * (0.35 + Math.min(0.65, m))
-          ctx.strokeStyle = rgb(150 + 90 * m, 112 + 70 * m, 60 + 40 * m)
-          ctx.lineWidth = Math.max(0.8, 0.018 * a[3])
-          ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke()
-          ctx.beginPath(); ctx.arc(a[0], a[1], Math.max(1, 0.025 * a[3]), 0, TAU); ctx.stroke()
+        const th = op * 1.42
+        for (const sd of [-1, 1]) {
+          const hu = sd * hw, eu = hu - sd * hw * Math.cos(th), ev = hw * Math.sin(th)
+          const lq = c.poly([L2W(F, hu, 0.03, 0), L2W(F, eu, ev + 0.03, 0), L2W(F, eu, ev + 0.03, H), L2W(F, hu, 0.03, H)])
+          if (!lq) continue
+          // 门扇的法线（朝圆心那一面）
+          const du = eu - hu, dv = ev, dl = Math.hypot(du, dv) || 1
+          let nu = -dv / dl, nvv = du / dl
+          if (nvv < 0) { nu = -nu; nvv = -nvv }
+          const nx = nu * F.rx + nvv * F.fx, ny = nu * F.ry + nvv * F.fy
+          const M = L2W(F, (hu + eu) / 2, ev / 2, H / 2)
+          const facing = (C[0] - M[0]) * nx + (C[1] - M[1]) * ny
+          ctx.globalAlpha = A
+          pathPts(ctx, lq)
+          ctx.fillStyle = shade(OAK, M[0], M[1], M[2], facing >= 0 ? nx : -nx, facing >= 0 ? ny : -ny, 0, null, 0.35)
+          ctx.fill()
+          ctx.globalAlpha = A * 0.3
+          ctx.strokeStyle = BRASS_DIM
+          ctx.stroke()
+        }
+      }
+      // 北墙挂钟（钟心离地 2.5 m，两座罩柜中间上方），指针随 S.clock（馆内分钟）
+      if (azVis(0, -2 * DEG)) {
+        const P0 = L2W(CLK, 0, 0, 2.5)
+        if ((C[0] - P0[0]) * CLK.fx + (C[1] - P0[1]) * CLK.fy > 0 && plane(ctx, P0, [-CLK.rx, -CLK.ry, 0], [0, 0, -1], 0.01)) {
+          const m = near(P0[0], P0[1], 2.5)
+          ctx.globalAlpha = A * (0.35 + Math.min(0.6, m))
+          ctx.fillStyle = 'rgb(30,26,24)'
+          ctx.strokeStyle = 'rgb(170,160,150)'
+          ctx.lineWidth = 1.6
+          ctx.beginPath(); ctx.arc(0, 0, 20, 0, TAU); ctx.fill(); ctx.stroke()
+          const mins = S.clock || 17 * 60
+          const ha = ((mins / 60) % 12) / 12 * TAU, ma = (mins % 60) / 60 * TAU
+          ctx.beginPath()
+          ctx.moveTo(0, 0); ctx.lineTo(Math.sin(ha) * 10, -Math.cos(ha) * 10)
+          ctx.moveTo(0, 0); ctx.lineTo(Math.sin(ma) * 15.6, -Math.cos(ma) * 15.6)
+          ctx.stroke()
+          unplane(ctx)
+        }
+      }
+      // 西门北侧侧案上方：青铜四层平面图（B1、1F、2F、3F 从左到右；只画轮廓）
+      if (azVis(AZ_SIDE, -6 * DEG)) {
+        const fpH = nv(WH.floorPlan && WH.floorPlan.h, 1), fpZ = nv(WH.floorPlan && WH.floorPlan.z, 1.1)
+        const P0 = L2W(FP, 0, 0, fpZ + fpH / 2), fw = FP.w * 50, fh = fpH * 50
+        if ((C[0] - P0[0]) * FP.fx + (C[1] - P0[1]) * FP.fy > 0 && plane(ctx, P0, [-FP.rx, -FP.ry, 0], [0, 0, -1], 0.01)) {
+          const m = near(P0[0], P0[1], P0[2])
+          ctx.globalAlpha = A
+          ctx.fillStyle = shade([0.24, 0.17, 0.09], P0[0], P0[1], P0[2], FP.fx, FP.fy, 0, null, 1.4)
+          ctx.fillRect(-fw, -fh, fw * 2, fh * 2)
+          ctx.strokeStyle = rgb(150, 116, 64)
+          ctx.globalAlpha = A * (0.3 + Math.min(0.5, m))
+          ctx.lineWidth = 2
+          ctx.strokeRect(-fw, -fh, fw * 2, fh * 2)
+          ctx.lineWidth = 1.4
+          const cw = (fw * 2 - 30) / 4
+          for (let i = 0; i < 4; i++) {
+            const x0 = -fw + 6 + i * (cw + 6), y0 = -fh + 22
+            ctx.strokeRect(x0, y0, cw, fh * 2 - 40)
+            ctx.beginPath(); ctx.arc(x0 + cw / 2, 0, Math.min(cw, fh) * 0.22, 0, TAU); ctx.stroke()
+          }
+          unplane(ctx)
+        }
+      }
+      // 东门南侧：价目铜牌（青铜牌面，凹刻文字分三栏，框面突出墙面 5 cm）
+      if (azVis(AZ_PLAQUE, -2 * DEG)) {
+        const plW = nv(WH.plaque && WH.plaque.w, 0.9), plH = nv(WH.plaque && WH.plaque.h, 1.6), plZ = nv(WH.plaque && WH.plaque.z, 1.6)
+        const P0 = L2W(PL, 0, 0, plZ), pw = plW * 50, ph = plH * 50
+        if ((C[0] - P0[0]) * PL.fx + (C[1] - P0[1]) * PL.fy > 0 && plane(ctx, P0, [-PL.rx, -PL.ry, 0], [0, 0, -1], 0.01)) {
+          const m = irr(P0[0], P0[1], P0[2])
+          ctx.globalAlpha = A
+          ctx.fillStyle = shade([0.22, 0.16, 0.08], P0[0], P0[1], P0[2], PL.fx, PL.fy, 0, null, 1.6)
+          ctx.fillRect(-pw, -ph, pw * 2, ph * 2)
+          ctx.strokeStyle = rgb(150, 116, 64)
+          ctx.globalAlpha = A * (0.35 + Math.min(0.5, m))
+          ctx.lineWidth = 2.4
+          ctx.strokeRect(-pw, -ph, pw * 2, ph * 2)
+          ctx.globalAlpha = A * (0.16 + Math.min(0.4, m * 0.6))
+          ctx.lineWidth = 1.6
+          ctx.beginPath()
+          const colW = (pw * 2 - 20) / 3
+          for (let col = 0; col < 3; col++) {
+            const x0 = -pw + 8 + col * (colW + 2)
+            for (let i = 0; i < 14; i++) {
+              const y = -ph + 16 + i * 10.4
+              ctx.moveTo(x0, y); ctx.lineTo(x0 + colW * (0.5 + ((i * 7 + col * 3) % 5) * 0.1), y)
+            }
+          }
+          ctx.stroke()
+          unplane(ctx)
         }
       }
       ctx.restore()
     }
 
-    /* ---------- 地面：月白翡翠 + 墨玉圆盘 ---------- */
+    /* ---------- 地面：石材 + 墨玉圆盘 ---------- */
     // 墨玉里的放射纹：端点固定，预先算好；每帧按亮度分桶，同一亮度的一次描完
     const DISC_RAYS = []
     for (let i = 0; i < 180; i++) {
@@ -781,17 +972,26 @@
       const fa = S.floorA
       const amb = o.amb
       const dp = DP
-      // 地面的光（低频）：1/4 分辨率缓冲 → 按全分辨率的轮廓贴回（挖掉随后整块盖上的墨玉圆盘）
+      // 地面的光（低频）：1/5 分辨率缓冲 → 按全分辨率的轮廓贴回（挖掉随后整块盖上的墨玉圆盘）
       let x = bufCtx(S.B.flr, LQ)
       x.save()
       clipBox(x, bbox([fl], 8))
       x.fillStyle = rgb(o.floorAlb[0] * o.ambCol[0] * amb * 0.5, o.floorAlb[1] * o.ambCol[1] * amb * 0.5, o.floorAlb[2] * o.ambCol[2] * amb * 0.5)
       x.fillRect(0, 0, S.W + 8, S.H + 8)
       x.globalCompositeOperation = 'lighter'
-      // 穹顶散下的一层极淡的光，中央略亮
+      // 一层极淡的环境光，中央略亮
       pool(x, [0, 0, 0], [1, 0, 0], [0, 1, 0], 7.2, 1, 7.5, o.ambCol, o.floorAlb, 11, amb * 0.9, LQ)
+      ambientPools(x, 0, o.floorAlb, 4.4)
       // 光标
       pool(x, [Lt.x, Lt.y, 0], [1, 0, 0], [0, 1, 0], Lt.z, Lt.power * Lt.flick, Lt.range, o.lightCol, o.floorAlb, 12, S.poolA, LQ)
+      // 门开着：门外的光从门洞铺进来
+      if (S.doorOpen > 0.01) {
+        const op = easeIO(clamp01(S.doorOpen)) * (0.5 + 0.5 * S.sky)
+        for (const d of DOORS) {
+          const sa = Math.sin(d.az), ca = Math.cos(d.az)
+          pool(x, [sa * (G.R - 0.9), ca * (G.R - 0.9), 0], [-sa * 1.9, -ca * 1.9, 0], [ca * 0.9, -sa * 0.9, 0], 1.4, 1.1 * op, 2.2, o.doorCol, o.floorAlb, 1.7, 1, LQ)
+        }
+      }
       x.restore()
       ctx.save()
       clipOut(ctx, fl, [dp])
@@ -807,8 +1007,9 @@
       x.fillStyle = rgb(o.discAlb[0] * o.ambCol[0] * amb * 0.6, o.discAlb[1] * o.ambCol[1] * amb * 0.6, o.discAlb[2] * o.ambCol[2] * amb * 0.6)
       x.fillRect(0, 0, S.W + 8, S.H + 8)
       x.globalCompositeOperation = 'lighter'
+      ambientPools(x, 0.002, o.discAlb, 4.4)
       pool(x, [Lt.x, Lt.y, 0], [1, 0, 0], [0, 1, 0], Lt.z, Lt.power * Lt.flick, Lt.range, o.lightCol, o.discAlb, 12, S.poolA, LQ)
-      // 席位小光池 / 一束光（落在墨玉上）。原来它们画在放射纹之后、沿用了最后一道纹的透明度（极淡），照旧
+      // 席位小光池 / 一束光（落在墨玉上）
       const R9 = DISC_RAYS[DISC_RAYS.length - 1]
       x.globalAlpha = Math.min(1, fa * (0.02 + o.amb * 0.12 + Lt.power * Lt.flick * S.poolA / (1 + ((R9.mx - Lt.x) ** 2 + (R9.my - Lt.y) ** 2 + Lt.z * Lt.z) / (Lt.range * Lt.range)) * 0.1))
       for (const s of S.seats) {
@@ -851,7 +1052,7 @@
       ctx.save()
       pathPts(ctx, dp)
       ctx.globalAlpha = fa * 0.5
-      ctx.strokeStyle = rgb(111, 85, 50)
+      ctx.strokeStyle = BRASS_DIM
       ctx.lineWidth = 1
       ctx.stroke()
       ctx.restore()
@@ -892,8 +1093,7 @@
       if (K.neck[2] > h) sphereProj(K.neck, 0.05, h, head)
       if (head.length > 2) polys.push(hull(head))
     }
-    // 影子：低分辨率的遮罩（不加滤镜），放大贴回时的双线性插值本身就是柔和的半影
-    // （原来是半分辨率 + 每帧 ctx.filter 高斯模糊，σ≈3.4px；1/6 分辨率放大的过渡宽度相当）；只贴影子覆盖的那一块
+    // 影子：低分辨率的遮罩（不加滤镜），放大贴回时的双线性插值本身就是柔和的半影；只贴影子覆盖的那一块
     function shadowPass(ctx, h, polys, alpha, q, m) {
       if (alpha <= 0.01 || !polys.length) return
       const sc = bufCtx(m, q, true)
@@ -979,38 +1179,37 @@
       const hn = norm3(C[0], C[1], 0)
       ctx.globalAlpha = S.floorA
       if (S.tilt > 0.02) {
-        // 老紫檀鼓形木座
+        // 石座
         const d = hullScreen(DRUM_T.concat(DRUM_B))
         if (d) {
           pathPts(ctx, d)
-          ctx.fillStyle = shade([0.17, 0.075, 0.05], hn[0] * G.drumR, hn[1] * G.drumR, 0.4, hn[0], hn[1], 0, null, 0.6)
+          ctx.fillStyle = shade([0.16, 0.155, 0.145], hn[0] * G.drumR, hn[1] * G.drumR, 0.4, hn[0], hn[1], 0, null, 0.5)
           ctx.fill()
         }
-        // 桌沿（4 cm 厚的玉）
+        // 桌沿（石面的厚度）
         const e = hullScreen(TOP.concat(TOP_LO))
         if (e) {
           pathPts(ctx, e)
-          ctx.fillStyle = shade([0.4, 0.46, 0.42], hn[0] * G.tableR, hn[1] * G.tableR, G.tableH - 0.02, hn[0], hn[1], 0.2, null, 1.2)
+          ctx.fillStyle = shade([0.3, 0.295, 0.275], hn[0] * G.tableR, hn[1] * G.tableR, G.tableH - 0.03, hn[0], hn[1], 0.2, null, 1)
           ctx.fill()
         }
       }
       const top = TP
       if (!top) return
-      const a = o.amb
-      // 桌面的光（低频）：1/4 分辨率缓冲 → 按全分辨率的桌面轮廓贴回
+      const a = o.amb, alb = o.tableAlb
+      // 桌面的光（低频）：1/5 分辨率缓冲 → 按全分辨率的桌面轮廓贴回
       const x = bufCtx(S.B.tbl, LQ)
-      x.fillStyle = rgb(o.jadeAlb[0] * o.ambCol[0] * a * 0.9, o.jadeAlb[1] * o.ambCol[1] * a * 0.9, o.jadeAlb[2] * o.ambCol[2] * a * 0.9)
+      x.fillStyle = rgb(alb[0] * o.ambCol[0] * a * 0.9, alb[1] * o.ambCol[1] * a * 0.9, alb[2] * o.ambCol[2] * a * 0.9)
       x.fillRect(0, 0, S.W + 8, S.H + 8)
       x.globalCompositeOperation = 'lighter'
+      ambientPools(x, G.tableH, alb, 3)
       const dp = Math.max(0.08, Lt.z - G.tableH)
-      pool(x, [Lt.x, Lt.y, G.tableH], [1, 0, 0], [0, 1, 0], dp, Lt.power * Lt.flick, Lt.range, o.lightCol, o.jadeAlb, 7, S.poolA, LQ)
-      // 玉的通透：更宽更淡的一层
-      pool(x, [Lt.x * 0.85, Lt.y * 0.85, G.tableH], [1, 0, 0], [0, 1, 0], dp + 1.4, Lt.power * Lt.flick * 0.45, Lt.range * 1.5, o.lightCol, [0.08, 0.16, 0.13], 6, S.poolA, LQ)
+      pool(x, [Lt.x, Lt.y, G.tableH], [1, 0, 0], [0, 1, 0], dp, Lt.power * Lt.flick, Lt.range, o.lightCol, alb, 7, S.poolA, LQ)
       // 席位小光池照到桌沿
       for (const s of S.seats) {
         const ex = seatExtra(s)
         if (!ex) continue
-        pool(x, [s.x * 0.8, s.y * 0.8, G.tableH], [1, 0, 0], [0, 1, 0], 0.9, ex.amt * 0.6, 0.9, ex.col, o.jadeAlb, 1.3, 1, LQ)
+        pool(x, [s.x * 0.8, s.y * 0.8, G.tableH], [1, 0, 0], [0, 1, 0], 0.9, ex.amt * 0.6, 0.9, ex.col, alb, 1.3, 1, LQ)
       }
       x.globalCompositeOperation = 'source-over'
       ctx.save()
@@ -1018,12 +1217,12 @@
       ctx.clip()
       blit(ctx, S.B.tbl, LQ)
       ctx.globalCompositeOperation = 'lighter'
-      // 玉纹
+      // 石纹
       ctx.lineCap = 'round'
-      for (const v of JADE_VEINS) {
+      ctx.strokeStyle = 'rgb(214,210,200)'
+      for (const v of VEINS) {
         const m = irr(v.pts[3][0], v.pts[3][1], G.tableH)
-        ctx.globalAlpha = S.floorA * v.a * 0.7 * (0.25 + Math.min(1.6, m * 1.3))
-        ctx.strokeStyle = rgb(190, 222, 205)
+        ctx.globalAlpha = S.floorA * v.a * 0.55 * (0.25 + Math.min(1.6, m * 1.3))
         const q = []
         for (const pt of v.pts) { const p = c.p(pt[0], pt[1], G.tableH + 0.001); if (p) q.push(p) }
         if (q.length < 3) continue
@@ -1035,35 +1234,31 @@
         ctx.stroke()
       }
       // 内圈的细铜线（像虹膜的环）
+      ctx.strokeStyle = 'rgb(194,154,91)'
       for (let i = 0; i < RINGS.length; i++) {
         const q = c.poly(RINGS[i])
         if (!q) continue
-        ctx.globalAlpha = S.floorA * (0.12 + 0.18 * Math.min(1, irr(0, 0, G.tableH)))
-        ctx.strokeStyle = rgb(194, 154, 91)
-        ctx.lineWidth = i === 0 ? 1.2 : 0.8
+        ctx.globalAlpha = S.floorA * (0.1 + 0.16 * Math.min(1, irr(0, 0, G.tableH)))
+        ctx.lineWidth = i === 0 ? 1.1 : 0.8
         pathPts(ctx, q); ctx.stroke()
       }
-      // 十五道放射的铜嵌线（桌面像一只十五刻度的钟面）
-      ctx.strokeStyle = rgb(194, 154, 91)
+      // 十三道放射的铜嵌线（桌面像一只十三刻度的钟面）
       for (const s of S.seats) {
         const sa = Math.sin(s.a), ca = Math.cos(s.a)
-        const a = c.p(sa * 1.06, ca * 1.06, G.tableH + 0.001), b = c.p(sa * 2.16, ca * 2.16, G.tableH + 0.001)
-        if (!a || !b) continue
-        ctx.globalAlpha = S.floorA * (0.08 + 0.3 * Math.min(1, irr(sa * 1.6, ca * 1.6, G.tableH)) + s.hover * 0.4 + s.lit * 0.12)
+        const pa = c.p(sa * 1.02, ca * 1.02, G.tableH + 0.001), pb = c.p(sa * 1.71, ca * 1.71, G.tableH + 0.001)
+        if (!pa || !pb) continue
+        ctx.globalAlpha = S.floorA * (0.07 + 0.26 * Math.min(1, irr(sa * 1.4, ca * 1.4, G.tableH)) + s.hover * 0.4 + s.lit * 0.1)
         ctx.lineWidth = 0.8
-        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke()
-        const sb = Math.sin(s.a + Math.PI / 15), cb = Math.cos(s.a + Math.PI / 15)
-        const d = c.p(sb * 2.12, cb * 2.12, G.tableH + 0.001), e = c.p(sb * 2.2, cb * 2.2, G.tableH + 0.001)
-        if (d && e) { ctx.globalAlpha *= 0.7; ctx.beginPath(); ctx.moveTo(d[0], d[1]); ctx.lineTo(e[0], e[1]); ctx.stroke() }
+        ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke()
       }
-      // 镜面高光（光源在抛光的玉面上的倒影）
+      // 镜面高光（光源在抛光石面上的倒影）
       const m = mirror(G.tableH)
       if (m && m[0] * m[0] + m[1] * m[1] < G.tableR * G.tableR) {
         const pm = c.p(m[0], m[1], G.tableH)
         if (pm) {
           const k = Lt.power * Lt.flick * S.poolA * S.glowA
-          drawGlow(ctx, glowSprite(o.lightCol[0], o.lightCol[1], o.lightCol[2]), pm[0], pm[1], 0.9 * pm[3], 0.35 * k)
-          drawGlow(ctx, glowSprite(255, 244, 228, true), pm[0], pm[1], 0.14 * pm[3], 0.7 * k)
+          drawGlow(ctx, glowSprite(o.lightCol[0], o.lightCol[1], o.lightCol[2]), pm[0], pm[1], 0.9 * pm[3], 0.3 * k)
+          drawGlow(ctx, glowSprite(255, 244, 228, true), pm[0], pm[1], 0.14 * pm[3], 0.6 * k)
         }
       }
       ctx.globalCompositeOperation = 'source-over'
@@ -1080,26 +1275,98 @@
       ctx.restore()
       // 桌沿：一圈细线
       ctx.globalAlpha = S.floorA * (0.25 + 0.4 * Math.min(1, irr(Lt.x, Lt.y, G.tableH)))
-      ctx.strokeStyle = rgb(170, 190, 178)
+      ctx.strokeStyle = 'rgb(186,182,170)'
       ctx.lineWidth = 1
       pathPts(ctx, top); ctx.stroke()
-      // 十五枚银号牌
+      // 桌沿嵌着的十三枚号牌（开局空白；钥匙分配完成的那一刻同时现出号码）、号码
+      const zt = G.tableH + 0.002
+      const ps = plateSize()
       for (const s of S.seats) {
-        const r0 = G.tableR - 0.09, sa = Math.sin(s.a), ca = Math.cos(s.a)
-        const cx = sa * r0, cy = ca * r0, tx = ca * 0.075, ty = -sa * 0.075, nx = sa * 0.028, ny = ca * 0.028
-        const q = c.poly([[cx - tx - nx, cy - ty - ny, G.tableH + 0.002], [cx + tx - nx, cy + ty - ny, G.tableH + 0.002], [cx + tx + nx, cy + ty + ny, G.tableH + 0.002], [cx - tx + nx, cy - ty + ny, G.tableH + 0.002]])
+        const v = G.plateV
+        const q = c.poly([L2W(s, -ps.hw, v - ps.hd, zt), L2W(s, ps.hw, v - ps.hd, zt), L2W(s, ps.hw, v + ps.hd, zt), L2W(s, -ps.hw, v + ps.hd, zt)])
         if (!q) continue
+        const P = L2W(s, 0, v, zt)
         ctx.globalAlpha = S.floorA
         pathPts(ctx, q)
-        ctx.fillStyle = shade([0.5, 0.52, 0.56], cx, cy, G.tableH, 0, 0, 1, seatExtra(s), 1)
+        ctx.fillStyle = shade([0.2, 0.15, 0.085], P[0], P[1], zt, 0, 0, 1, seatExtra(s), 1.4)
         ctx.fill()
+        ctx.globalAlpha = S.floorA * (0.25 + 0.35 * s.lit)
+        ctx.strokeStyle = BRASS_DIM
+        ctx.stroke()
+      }
+      for (const s of S.seats) drawNumber(ctx, s, seatExtra(s))
+      // 各人面前：规则卡、身份卡（桌沿内侧，平放，正向对着椅位）、十枚一摞的金币
+      for (const s of S.seats) {
+        if (s.ruleA > 0.005) drawCard(ctx, s, -0.1, s.ruleA, true)
+        if (s.idA > 0.005) drawCard(ctx, s, 0.1, s.idA, false)
+        if (s.coinA > 0.005 && s.coinN > 0) drawCoins(ctx, s)
       }
       ctx.globalAlpha = 1
     }
+    // 号牌的尺寸随屏幕放大（实物尺寸条文没写；画小了号码认不出）
+    const PS = { hw: 0, hd: 0, sc: 1 }
+    function plateSize() {
+      const sc = S.numScale * (1 + 0.3 * S.tilt)
+      PS.sc = sc; PS.hw = 0.12 + 0.11 * sc; PS.hd = 0.06 + 0.025 * sc
+      return PS
+    }
+    // 卡（63×88 mm，画大约 1.5 倍）：u 是从椅位看过去的左右
+    function drawCard(ctx, s, u, a, rule) {
+      const c = S.cam, zt = G.tableH + 0.004
+      const k = (1.45 + 0.35 * (S.numScale - 1)) * mix(1.4, 1, easeIO(clamp01(a)))
+      const hw = 0.0315 * k, hd = 0.044 * k, v = G.plateV + 0.27
+      const q = c.poly([L2W(s, u - hw, v - hd, zt), L2W(s, u + hw, v - hd, zt), L2W(s, u + hw, v + hd, zt), L2W(s, u - hw, v + hd, zt)])
+      if (!q) return
+      const P = L2W(s, u, v, zt)
+      ctx.globalAlpha = S.floorA * clamp01(a)
+      pathPts(ctx, q)
+      ctx.fillStyle = shade(rule ? [0.72, 0.69, 0.62] : [0.78, 0.76, 0.7], P[0], P[1], zt, 0, 0, 1, seatExtra(s), 0.8)
+      ctx.fill()
+      // 规则卡一出现就有字（字在卡面上流动）；身份卡两面空白，主人碰到才现字
+      if (rule && plane(ctx, P, [s.rx, s.ry, 0], [-s.fx, -s.fy, 0], 0.001)) {
+        ctx.globalAlpha = S.floorA * clamp01(a) * 0.5
+        ctx.strokeStyle = 'rgb(40,34,30)'
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        for (let i = 0; i < 6; i++) {
+          const y = -hd * 1000 + 14 + i * (hd * 2000 - 26) / 5
+          ctx.moveTo(-hw * 1000 + 9, y); ctx.lineTo(hw * 1000 - 9 - ((i * 5) % 4) * 6, y)
+        }
+        ctx.stroke()
+        unplane(ctx)
+      }
+      if (s.cflash > 0.01) {
+        const p = c.p(P[0], P[1], P[2])
+        if (p) { ctx.globalCompositeOperation = 'lighter'; drawGlow(ctx, glowSprite(255, 240, 214, true), p[0], p[1], Math.max(10, 0.22 * p[3]), s.cflash * 0.8 * clamp01(a)); ctx.globalCompositeOperation = 'source-over' }
+      }
+    }
+    // 一摞金币（直径 26.5 mm、十枚高 18 mm；画大约两倍，免得缩成一个点）
+    function drawCoins(ctx, s) {
+      const c = S.cam, k = 2 * (1 + 0.3 * (S.numScale - 1))
+      const a = clamp01(s.coinA)
+      const u = 0.31, v = G.plateV + 0.22
+      const h = 0.0018 * Math.min(40, s.coinN) * k * (0.6 + 0.4 * easeIO(a))
+      const B0 = L2W(s, u, v, G.tableH), T0 = L2W(s, u, v, G.tableH + h)
+      const pb = c.p(B0[0], B0[1], B0[2]), pt = c.p(T0[0], T0[1], T0[2])
+      if (!pb || !pt) return
+      const r = Math.max(1.4, 0.01325 * k * pt[3])
+      ctx.globalAlpha = S.floorA * a
+      ctx.lineCap = 'butt'
+      ctx.strokeStyle = shade([0.42, 0.3, 0.12], B0[0], B0[1], G.tableH + h / 2, s.fx, s.fy, 0.3, seatExtra(s), 2)
+      ctx.lineWidth = r * 2
+      ctx.beginPath(); ctx.moveTo(pb[0], pb[1]); ctx.lineTo(pt[0], pt[1] + 0.01); ctx.stroke()
+      ctx.fillStyle = shade([0.75, 0.56, 0.24], T0[0], T0[1], T0[2], 0, 0, 1, seatExtra(s), 3)
+      ctx.beginPath(); ctx.ellipse(pt[0], pt[1], r, r * mix(1, 0.6, S.tilt), 0, 0, TAU); ctx.fill()
+      ctx.lineCap = 'round'
+      if (s.cflash > 0.01) {
+        ctx.globalCompositeOperation = 'lighter'
+        drawGlow(ctx, glowSprite(255, 214, 140, true), pt[0], pt[1], Math.max(9, r * 7), s.cflash * a)
+        ctx.globalCompositeOperation = 'source-over'
+      }
+    }
 
     /* ---------- 长方体 ---------- */
-    // 八个角一次投影；每个可见面向外扩 0.3px 填一次（等于原来「同色填充 + 0.6px 同色描边」的外缘：
-    // 相邻面的接缝不漏底），一面一笔，不再另描一笔
+    // 八个角一次投影；每个可见面向外扩 0.3px 填一次（相邻面的接缝不漏底），一面一笔
     const BQX = new Float64Array(8), BQY = new Float64Array(8), ENX = new Float64Array(4), ENY = new Float64Array(4), TMP = [0, 0, 0, 0]
     function drawBox(ctx, P, N, alb, spec, extra, faceAlb) {
       const c = S.cam, C = c.pos
@@ -1129,7 +1396,7 @@
         let A2 = 0
         for (let j = 0; j < 4; j++) { const i = id[j], k = id[(j + 1) & 3]; A2 += BQX[i] * BQY[k] - BQX[k] * BQY[i] }
         if (Math.abs(A2) < 0.02) {
-          // 侧对镜头、几乎成一条线：原来只剩那一笔描边
+          // 侧对镜头、几乎成一条线：只剩那一笔描边
           ctx.beginPath(); ctx.moveTo(BQX[id[0]], BQY[id[0]])
           for (let j = 1; j < 4; j++) ctx.lineTo(BQX[id[j]], BQY[id[j]])
           ctx.closePath()
@@ -1242,7 +1509,6 @@
       const rr = r * p[3]
       for (const d of RING) out.push([p[0] + d[0] * rr, p[1] + d[1] * rr])
     }
-    function capsule(out, A, ra, B, rb) { sweep(out, A, ra); sweep(out, B, rb) }
     function drawPerson(ctx, s, ex) {
       const K = s.K
       if (!K) return
@@ -1326,24 +1592,22 @@
       S.eyeQ.push({ x: b[0], y: b[1], r: rr, rot, open, a: al, flash: s.flash, acc: s.acc, hov: s.hover, sep })
     }
 
-    /* ---------- 椅背上的黄铜编号 ----------
-       mul：额外的透明度（黑幕之上那一遍用）；blankNums 时未现出的号牌是空白的 */
+    /* ---------- 号牌上的号码 ----------
+       平放在桌沿的号牌上，字头朝桌心（坐在这一席的人读得正）；mul：额外的透明度（黑幕之上那一遍用）；
+       blankNums 时未现出的号牌是空白的 */
     function drawNumber(ctx, s, ex, mul) {
       const A = S.numA * S.floorA * (mul == null ? 1 : mul) * (o.blankNums ? s.lit : 1)
       if (A <= 0.01) return
-      const tau = sstep(0.3, 0.85, S.tilt)
-      const sc = S.numScale
-      const ov = mix(-0.35 - 0.11 * sc, -0.356, tau), oz = mix(1.135, 0.8, tau)
-      const P0 = L2W(s, 0, ov, oz)
-      const a2 = norm3(s.fx * (1 - tau), s.fy * (1 - tau), tau)
+      const sc = PS.sc || 1
+      const P0 = L2W(s, 0, G.plateV, G.tableH + 0.004)
       const c = S.cam
       const p0 = c.p(P0[0], P0[1], P0[2])
       const p1 = c.p(P0[0] + s.rx * 0.01, P0[1] + s.ry * 0.01, P0[2])
-      const p2 = c.p(P0[0] + a2[0] * 0.01, P0[1] + a2[1] * 0.01, P0[2] + a2[2] * 0.01)
+      const p2 = c.p(P0[0] + s.fx * 0.01, P0[1] + s.fy * 0.01, P0[2])
       if (!p0 || !p1 || !p2) return
       const A1x = p1[0] - p0[0], A1y = p1[1] - p0[1], A2x = p2[0] - p0[0], A2y = p2[1] - p0[1]
       const det = -A1x * A2y + A2x * A1y
-      if (det <= 0.0004) return // 背对镜头
+      if (det <= 0.0004) return // 从桌面底下看
       const e = irr(P0[0], P0[1], P0[2]) + (ex ? ex.amt : 0)
       const lit = s.lit, out = s.out, hov = s.hover
       const dim = o.numDim, nb = o.num, no = o.numOut
@@ -1353,9 +1617,10 @@
       r = mix(r, 245, hov * 0.8); g = mix(g, 236, hov * 0.8); b = mix(b, 220, hov * 0.8)
       const k = S.dpr
       ctx.save()
+      // 字的 x 轴沿椅位的右手，y 轴（向下）背离桌心
       ctx.setTransform(A1x * k, A1y * k, -A2x * k, -A2y * k, p0[0] * k, p0[1] * k)
       ctx.globalAlpha = A
-      const font = '700 ' + (15 * sc).toFixed(1) + 'px Cinzel, serif'
+      const font = '700 ' + (11 * sc).toFixed(1) + 'px Cinzel, serif'
       ctx.font = font
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
@@ -1430,31 +1695,30 @@
       ctx.globalAlpha = S.floorA
       if (s.hover > 0.01) hoverRing(ctx, s)
       ctx.globalAlpha = S.floorA
-      if (S.tilt > 0.05) for (const b of s.legs) drawBox(ctx, b.P, b.N, EBONY, 0.4, ex)
-      drawBox(ctx, s.seatB.P, s.seatB.N, EBONY, 0.5, ex, SEAT_FACE)
-      for (const b of s.arms) drawBox(ctx, b.P, b.N, EBONY, 0.45, ex)
+      if (S.tilt > 0.05) for (const b of s.legs) drawBox(ctx, b.P, b.N, OAK, 0.4, ex)
+      drawBox(ctx, s.seatB.P, s.seatB.N, OAK, 0.5, ex, SEAT_FACE)
+      for (const b of s.arms) drawBox(ctx, b.P, b.N, OAK, 0.45, ex)
       if (front) { drawBack(ctx, s, ex); drawPerson(ctx, s, ex) } else { drawPerson(ctx, s, ex); drawBack(ctx, s, ex) }
       ctx.globalAlpha = 1
     }
     function drawBack(ctx, s, ex) {
-      drawBox(ctx, s.backB.P, s.backB.N, EBONY, 0.45, ex, BACK_FACE)
+      drawBox(ctx, s.backB.P, s.backB.N, OAK, 0.45, ex, BACK_FACE)
       const h = hullScreen(s.backB.P)
       if (h) rimHull(ctx, h, irr(s.x, s.y, 1) * 0.45 + (ex ? ex.amt * 0.3 : 0), 0.8)
-      drawNumber(ctx, s, ex)
     }
 
-    /* ---------- 陈设 ---------- */
+    /* ---------- 陈设：收纳台（钥匙龛与十三把钥匙）、侧案、两座玻璃罩柜 ---------- */
     function drawFurniture(ctx) {
-      const c = S.cam
+      const c = S.cam, C = c.pos
       ctx.globalAlpha = S.floorA * S.wallA
       for (const f of FURN) {
         drawBox(ctx, f.B.P, f.B.N, f.alb, f.spec, null)
         if (f.glass) {
-          // 水晶罩：只画棱
+          // 玻璃罩：只画棱
           const P = f.glass.P
           const m = irr((P[0][0] + P[7][0]) / 2, (P[0][1] + P[7][1]) / 2, 1)
           const E = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]]
-          ctx.strokeStyle = rgb(170, 190, 220)
+          ctx.strokeStyle = 'rgb(170,190,220)'
           ctx.lineWidth = 0.8
           ctx.globalAlpha = S.floorA * S.wallA * (0.12 + Math.min(0.5, m * 0.6))
           ctx.beginPath()
@@ -1471,182 +1735,183 @@
           }
           ctx.globalAlpha = S.floorA * S.wallA
         }
-      }
-      // 白玉理币盘（长 0.9、宽 0.16，长轴南北向，前沿距台面西缘 0.1）：十五摞金币沿长轴排成一列，整列居中。
-      // 每摞直径 26.5 mm、相邻两摞边缘相距 2.8 cm（摞距 5.45 cm）；画得比实物略大一点，免得缩成一个点
-      const tx0 = COUNTER.x0 + 0.1, tx1 = tx0 + 0.16, tyc = (COUNTER.y0 + COUNTER.y1) / 2, tz = COUNTER.top + 0.024
-      const tq = [c.p(tx0, tyc - 0.45, tz), c.p(tx1, tyc - 0.45, tz), c.p(tx1, tyc + 0.45, tz), c.p(tx0, tyc + 0.45, tz)]
-      if (tq[0] && tq[1] && tq[2] && tq[3]) {
-        ctx.fillStyle = shade([0.82, 0.8, 0.74], (tx0 + tx1) / 2, tyc, tz, 0, 0, 1, null, 2)
-        ctx.beginPath(); ctx.moveTo(tq[0][0], tq[0][1])
-        for (let i = 1; i < 4; i++) ctx.lineTo(tq[i][0], tq[i][1])
-        ctx.closePath(); ctx.fill()
-      }
-      const cx = (tx0 + tx1) / 2
-      for (let i = 0; i < S.tray; i++) {
-        const y = tyc + (i - 7) * 0.0545
-        const q = c.p(cx, y, tz + 0.018)
-        if (!q) continue
-        ctx.fillStyle = shade([0.7, 0.52, 0.22], cx, y, tz + 0.018, 0, 0, 1, null, 3)
-        ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(0.8, 0.021 * q[3]), 0, TAU); ctx.fill()
+        if (f.panel) drawNiche(ctx)
       }
       ctx.globalAlpha = 1
     }
-
-    /* ---------- 穹顶肋拱（三十条，十五条主肋对着十五把椅子） ---------- */
-    // 每条肋的暗色肋身连成一块：沿肋变宽的两侧外扩多边形（两端圆头），透明度相同的连续几段合成一块；
-    // 冷光细线按透明度与线宽分桶，所有肋的同一桶一笔描完。原来是每条肋 14 段、每段两笔（一共八百多笔描边）
-    const RX = new Float64Array(15), RY = new Float64Array(15), RWv = new Float64Array(15), SA = new Float64Array(15)
-    const NX = new Float64Array(15), NY = new Float64Array(15)
-    const glintBk = new Map(), RQ = [0, 0, 0, 0]
-    // 点 i..k（含两端）连成一块肋身
-    function ribPiece(ctx, i, k, alpha) {
-      for (let j = i; j <= k; j++) {
-        const a = Math.max(i, j - 1), b = Math.min(k, j + 1)
-        const tx = RX[b] - RX[a], ty = RY[b] - RY[a], l = Math.sqrt(tx * tx + ty * ty) || 1
-        NX[j] = -ty / l; NY[j] = tx / l
-      }
-      ctx.beginPath()
-      ctx.moveTo(RX[i] + NX[i] * RWv[i] / 2, RY[i] + NY[i] * RWv[i] / 2)
-      for (let j = i + 1; j <= k; j++) ctx.lineTo(RX[j] + NX[j] * RWv[j] / 2, RY[j] + NY[j] * RWv[j] / 2)
-      let an = Math.atan2(NY[k], NX[k])
-      ctx.arc(RX[k], RY[k], RWv[k] / 2, an, an - Math.PI, true)
-      for (let j = k - 1; j >= i; j--) ctx.lineTo(RX[j] - NX[j] * RWv[j] / 2, RY[j] - NY[j] * RWv[j] / 2)
-      an = Math.atan2(-NY[i], -NX[i])
-      ctx.arc(RX[i], RY[i], RWv[i] / 2, an, an - Math.PI, true)
-      ctx.closePath()
-      ctx.globalAlpha = Math.min(1, alpha * 0.78)
+    // 立板正面的敞口钥匙龛：十三枚挂钩分两排（上排 1—7、下排 8—13），钥匙按号悬挂；分配时一把把离钩
+    function drawNiche(ctx) {
+      const c = S.cam, C = c.pos
+      const F = ST, v = panelD + 0.001
+      const M = L2W(F, 0, v, niZ + niH / 2)
+      if ((C[0] - M[0]) * F.fx + (C[1] - M[1]) * F.fy <= 0) return
+      const A = S.floorA * S.wallA
+      const q = c.poly([L2W(F, -niW, v, niZ), L2W(F, niW, v, niZ), L2W(F, niW, v, niZ + niH), L2W(F, -niW, v, niZ + niH)])
+      if (!q) return
+      ctx.globalAlpha = A
+      pathPts(ctx, q)
+      ctx.fillStyle = 'rgb(7,6,5)'
       ctx.fill()
-    }
-    function drawRibs(ctx) {
-      const c = S.cam, Lt = S.light
-      const A = S.ribA * (1 - S.dark)
-      if (A <= 0.01) return
-      const center = c.p(0, 0, G.apex)
-      const ringPx = Math.min(S.W, S.H) * S.fit
-      const fwx = c.F[0], fwy = c.F[1], fl = Math.hypot(fwx, fwy) || 1
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-      ctx.fillStyle = RIB_STROKE
-      const N = 14, lp = Lt.power * Lt.flick * S.poolA, lr = Lt.range * Lt.range * 2.2
-      const fadeK = center && S.tilt < 1
-      for (const r of RIBS) {
-        // 冷光落在朝向光源的那一侧棱上
-        r.side = (Math.cos(r.a) * Lt.x - Math.sin(r.a) * Lt.y) > 0 ? 1 : -1
-        // 斜视时只留远侧的肋（近侧的在镜头背后）
-        const side = (Math.sin(r.a) * fwx + Math.cos(r.a) * fwy) / fl
-        const vis = mix(1, sstep(-0.05, 0.45, side), S.tilt)
-        if (vis <= 0.01) continue
-        const a0 = A * vis * (r.major ? 1 : 0.6), kw = r.major ? 0.11 : 0.065
-        let ok = true, pi = -1, pa = 0
-        for (let j = 0; j <= N; j++) {
-          const t = j / N, ang = t * Math.PI / 2
-          const k = Math.cos(ang), z = G.spring + (G.apex - G.spring) * Math.sin(ang)
-          const q = c.pt(r.sx * k, r.sy * k, z, RQ)
-          const okj = !!q
-          if (okj) { RX[j] = q[0]; RY[j] = q[1]; RWv[j] = q[3] }
-          // 第 j-1 → j 段：透明度取段中点（与原来逐段画时一样）
-          let a = 0
-          if (okj && ok && j > 0) {
-            a = a0
-            if (fadeK) { const mx = (RX[j] + RX[j - 1]) / 2 - center[0], my = (RY[j] + RY[j - 1]) / 2 - center[1]; a *= mix(sstep(ringPx * 1.02, ringPx * 1.55, Math.sqrt(mx * mx + my * my)), 1, S.tilt) }
-            if (a <= 0.005) a = 0
-          }
-          SA[j] = a
-          if (a > 0) {
-            const w = Math.max(1, Math.min(40, kw * (RWv[j] + RWv[j - 1]) * 0.5))
-            // 冷光细线（分桶）
-            const m = lp / (1 + ((r.sx * k - Lt.x) ** 2 + (r.sy * k - Lt.y) ** 2 + (z - Lt.z) ** 2) / lr)
-            const ga = a * (0.03 + Math.min(0.45, m * 0.55)), gw = Math.max(0.6, w * 0.05)
-            const key = Math.round(ga * 50) * 64 + Math.min(63, Math.round(gw * 4))
-            const ox = RY[j] - RY[j - 1], oy = -(RX[j] - RX[j - 1]), ol = Math.sqrt(ox * ox + oy * oy) || 1, sh = w * 0.32 * r.side
-            let L = glintBk.get(key)
-            if (!L) glintBk.set(key, (L = []))
-            L.push(RX[j - 1] + ox / ol * sh, RY[j - 1] + oy / ol * sh, RX[j] + ox / ol * sh, RY[j] + oy / ol * sh)
-          }
-          ok = okj
-        }
-        // 肋身：点宽 = 相邻两段的宽度；透明度接近的连续几段合成一块
-        for (let j = 0; j <= N; j++) RWv[j] = Math.max(1, Math.min(40, kw * RWv[j]))
-        for (let j = 1; j <= N + 1; j++) {
-          const a = j <= N ? SA[j] : 0
-          if (pi >= 0 && (a <= 0 || Math.abs(a - pa) > 0.015)) { ribPiece(ctx, pi, j - 1, pa); pi = -1 }
-          if (a > 0 && pi < 0) { pi = j - 1; pa = a }
-        }
-        // 闪点
-        ctx.globalCompositeOperation = 'lighter'
-        for (let gi = 0; gi < r.glints.length; gi++) {
-          const t = r.glints[gi], ang = t * Math.PI / 2
-          const k = Math.cos(ang), z = G.spring + (G.apex - G.spring) * Math.sin(ang)
-          const q = c.p(r.sx * k, r.sy * k, z)
-          if (!q) continue
-          let a = A * vis
-          if (fadeK) a *= mix(sstep(ringPx * 1.05, ringPx * 1.7, Math.hypot(q[0] - center[0], q[1] - center[1])), 1, S.tilt)
-          const tw = Math.pow(Math.max(0, Math.sin(r.ph + gi * 2.1 + Lt.x * 0.9 - Lt.y * 0.7 + S.time * 0.6)), 14)
-          if (tw * a < 0.02) continue
-          drawGlow(ctx, glowSprite(o.glint[0], o.glint[1], o.glint[2], true), q[0], q[1], Math.min(26, 0.07 * q[3]), tw * a)
-        }
-        ctx.globalCompositeOperation = 'source-over'
-        ctx.fillStyle = RIB_STROKE
-      }
-      // 钻石肋线的冷光：同一透明度、同一线宽的一笔描完
-      ctx.strokeStyle = RIB_GLINT
-      for (const [key, L] of glintBk) {
-        if (!L.length) continue
-        ctx.globalAlpha = Math.min(1, Math.floor(key / 64) / 50)
-        ctx.lineWidth = (key % 64) / 4
-        ctx.beginPath()
-        for (let i = 0; i < L.length; i += 4) { ctx.moveTo(L[i], L[i + 1]); ctx.lineTo(L[i + 2], L[i + 3]) }
-        ctx.stroke()
-        L.length = 0
-      }
-      ctx.globalAlpha = 1
-    }
-
-    /* ---------- 水晶灯（离镜头最近，模糊成散景） ---------- */
-    function drawChandelier(ctx) {
-      const A = S.chandA * (1 - S.dark) * mix(0.3, 1, S.tilt)
-      if (A <= 0.01) return
-      const c = S.cam, Lt = S.light
-      // 吊链
-      const a = c.p(0, 0, G.apex - 0.05), b = c.p(0, 0, 5.85)
-      if (a && b) {
-        ctx.globalAlpha = A * 0.5
-        ctx.strokeStyle = CHAIN
-        ctx.lineWidth = Math.max(1, 0.03 * b[3])
+      ctx.globalAlpha = A * 0.5
+      ctx.strokeStyle = BRASS_DIM
+      ctx.lineWidth = 1
+      ctx.stroke()
+      for (let k = 0; k < G.n; k++) {
+        if (S.keyT[k] > 0.001) continue
+        const K = KEYS[k], a = c.p(K.top[0], K.top[1], K.top[2]), b = c.p(K.bot[0], K.bot[1], K.bot[2])
+        if (!a || !b) continue
+        const m = irr(K.top[0], K.top[1], K.top[2]) + o.ringPow * S.chandA * 0.25
+        ctx.globalAlpha = A * (0.45 + Math.min(0.55, m))
+        ctx.strokeStyle = rgb(150 + 90 * m, 112 + 70 * m, 60 + 40 * m)
+        ctx.lineWidth = Math.max(0.8, 0.012 * a[3])
         ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke()
+        ctx.beginPath(); ctx.arc(b[0], b[1] + Math.max(0.8, 0.012 * a[3]), Math.max(1, 0.016 * a[3]), 0, TAU); ctx.stroke()
       }
-      // 三圈细框
-      for (const [r, z] of [[1.2, 5.25], [0.86, 5.5], [0.5, 5.75]]) {
-        const q = c.poly(circle(0, 0, z, r, 64))
-        if (!q) continue
-        ctx.globalAlpha = A * 0.32
-        ctx.strokeStyle = 'rgb(60,66,84)'
-        ctx.lineWidth = Math.max(1, 0.012 * c.f / Math.max(0.5, c.depth(r, 0, z)))
-        pathPts(ctx, q); ctx.stroke()
-      }
-      // 垂饰：随光源位置闪烁
+    }
+    // 正在离钩、被人拿到手里的钥匙：一点黄铜的光，沿弧线落到那人手里
+    function drawSparks(ctx) {
+      const c = S.cam
+      let any = false
+      for (let k = 0; k < G.n; k++) if (S.keyT[k] > 0.001 && S.keyT[k] < 0.999 && S.keyTo[k] >= 0) { any = true; break }
+      if (!any) return
+      const spr = glowSprite(240, 196, 120), hard = glowSprite(255, 236, 196, true)
       ctx.globalCompositeOperation = 'lighter'
-      const spr = glowSprite(o.glint[0], o.glint[1], o.glint[2], true)
-      const warm = glowSprite(o.lightCol[0], o.lightCol[1], o.lightCol[2], true)
-      for (const d of CHAND) {
-        const q = c.p(d.x, d.y, d.z)
-        if (!q) continue
-        const m = irr(d.x, d.y, d.z)
-        const tw = Math.pow(Math.max(0, Math.sin(d.ph + Lt.x * 1.7 + Lt.y * 1.3 + S.time * 0.8)), 10)
-        if (tw < 0.25) continue
-        const al = A * tw * tw * Math.min(0.7, 0.08 + m * 0.7)
-        drawGlow(ctx, tw > 0.75 ? spr : warm, q[0], q[1], Math.min(26, 0.045 * q[3] * (1 + tw)), al)
+      for (let k = 0; k < G.n; k++) {
+        const t = S.keyT[k]
+        if (!(t > 0.001 && t < 0.999) || S.keyTo[k] < 0) continue
+        const K = KEYS[k], s = S.seats[S.keyTo[k]]
+        const to = L2W(s, 0, 0.3, 0.78)
+        for (let j = 0; j < 4; j++) {
+          const tt = clamp01(t - j * 0.05)
+          const e = easeIO(tt)
+          const x = mix(K.top[0], to[0], e), y = mix(K.top[1], to[1], e), z = mix(K.top[2], to[2], e) + Math.sin(Math.PI * e) * 1.1
+          const p = c.p(x, y, z)
+          if (!p) continue
+          const a = Math.sin(Math.PI * clamp01(t)) * (1 - j * 0.24) * (1 - S.dark)
+          drawGlow(ctx, spr, p[0], p[1], Math.max(8, 0.32 * p[3]) * (1 - j * 0.15), 0.4 * a)
+          if (!j) drawGlow(ctx, hard, p[0], p[1], Math.max(3, 0.07 * p[3]), 0.9 * a)
+        }
       }
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
     }
 
-    /* ---------- 穹顶落下的一束光 ---------- */
+    /* ---------- 天眼下悬着的一环十三盏乳白球灯（离镜头近，画进景深缓冲） ---------- */
+    function drawLamps(ctx) {
+      const A = S.chandA * (1 - S.dark) * mix(0.75, 1, S.tilt)
+      if (A <= 0.01) return
+      const c = S.cam, C = c.pos
+      ctx.lineCap = 'round'
+      // 吊链：从灯环往上，挂到天眼口外沿（离镜头太近的那一截不画）
+      const top = Math.min(G.ocZ - 0.08, C[2] - 1.4)
+      if (top > G.lampZ + 0.4) {
+        ctx.strokeStyle = 'rgb(120,98,62)'
+        ctx.globalAlpha = A * 0.32
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        for (let i = 0; i < G.lamps; i++) {
+          const a = i * TAU / G.lamps, sa = Math.sin(a), ca = Math.cos(a)
+          const rT = mix(G.lampR, G.ocR + 0.15, (top - G.lampZ) / (G.ocZ - G.lampZ))
+          const pa = c.p(sa * G.lampR, ca * G.lampR, G.lampZ + 0.08), pb = c.p(sa * rT, ca * rT, top)
+          if (pa && pb) { ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]) }
+        }
+        ctx.stroke()
+      }
+      // 黄铜灯环
+      const q = c.poly(LAMP_RING)
+      if (q) {
+        ctx.globalAlpha = A * 0.55
+        ctx.strokeStyle = 'rgb(176,138,76)'
+        ctx.lineWidth = Math.max(1, 0.025 * c.f / Math.max(0.5, c.depth(0, 0, G.lampZ)))
+        pathPts(ctx, q); ctx.stroke()
+      }
+      // 球灯：乳白玻璃，从里面亮着
+      ctx.globalCompositeOperation = 'lighter'
+      const halo = glowSprite(o.ringCol[0], o.ringCol[1], o.ringCol[2]), core = glowSprite(255, 246, 232, true)
+      for (let i = 0; i < G.lamps; i++) {
+        const a = i * TAU / G.lamps
+        const p = c.p(Math.sin(a) * G.lampR, Math.cos(a) * G.lampR, G.lampZ)
+        if (!p) continue
+        const r = 0.11 * p[3]
+        drawGlow(ctx, halo, p[0], p[1], Math.min(140, r * 5.5), 0.13 * A)
+        drawGlow(ctx, core, p[0], p[1], Math.min(60, r * 2.1), 0.62 * A)
+      }
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.globalAlpha = 1
+    }
+
+    /* ---------- 天眼口：镜头还在屋面上方时，从天眼往下看（天眼外是屋面的黑） ---------- */
+    function drawRoof(ctx) {
+      const cz = S.cam.pos[2]
+      const A = sstep(G.ocZ + 0.3, G.ocZ + 1.4, cz)
+      if (A <= 0.01) return
+      const lo = S.cam.poly(OC_LO)
+      if (!lo) return
+      ctx.save()
+      ctx.globalAlpha = A
+      const hi = cz > G.roofZ + 0.25 ? S.cam.poly(OC_HI) : null
+      // 天眼的井壁（屋面到穹顶之间那一截）
+      const cp = S.cam.p(0, 0, G.ocZ)
+      ctx.beginPath()
+      ctx.rect(-8, -8, S.W + 16, S.H + 16)
+      addPts(ctx, lo)
+      if (cp) {
+        let rl = 0
+        for (const p of lo) rl += Math.hypot(p[0] - cp[0], p[1] - cp[1])
+        rl /= lo.length
+        const g = ctx.createRadialGradient(cp[0], cp[1], rl, cp[0], cp[1], rl * 1.6)
+        g.addColorStop(0, 'rgb(34,28,24)')
+        g.addColorStop(1, 'rgb(8,7,7)')
+        ctx.fillStyle = g
+      } else ctx.fillStyle = 'rgb(10,8,8)'
+      ctx.fill('evenodd')
+      // 屋面
+      if (hi) {
+        ctx.beginPath()
+        ctx.rect(-8, -8, S.W + 16, S.H + 16)
+        addPts(ctx, hi)
+        ctx.fillStyle = '#050404'
+        ctx.fill('evenodd')
+      }
+      // 天眼口的金边
+      ctx.globalAlpha = A * 0.7
+      ctx.strokeStyle = GOLD
+      ctx.lineWidth = 1.5
+      pathPts(ctx, lo); ctx.stroke()
+      ctx.restore()
+    }
+
+    /* ---------- 天眼落下的一束光（终章：照在最后那一席） ---------- */
     // 光束只随镜头变：按单位强度画进 1/4 分辨率缓冲（镜头不动就沿用上一张），再按强度加色贴回
     function camKey() {
       const c = S.cam
       return c.pos[0].toFixed(4) + ',' + c.pos[1].toFixed(4) + ',' + c.pos[2].toFixed(4) + ',' + c.F[0].toFixed(5) + ',' + c.F[1].toFixed(5) + ',' + c.F[2].toFixed(5) + ',' + c.f.toFixed(2) + ',' + c.ox.toFixed(1) + ',' + c.oy.toFixed(1) + ',' + S.W + 'x' + S.H
+    }
+    // 一柱光：从 (x0,y0,z0) 半径 r0 到 (x1,y1,z1) 半径 r1，画进缓冲 b
+    function column(b, x0, y0, z0, r0, x1, y1, z1, r1, col, a0, a1, hardA) {
+      const x = bufCtx(b, BQ, true)
+      const c = S.cam
+      const spr = glowSprite(col[0], col[1], col[2])
+      const hard = glowSprite(255, 250, 240, true)
+      x.globalCompositeOperation = 'lighter'
+      const n = 30
+      let prev = null
+      for (let i = 0; i <= n; i++) {
+        const t = i / n
+        const p = c.p(mix(x0, x1, t), mix(y0, y1, t), mix(z0, z1, t))
+        if (!p) { prev = null; continue }
+        const r = mix(r0, r1, t)
+        const rad = Math.min(r * p[3] * 1.6, 420)
+        // 采样点在屏幕上挤在一起时（正俯视、或镜头贴近光柱底部）按密度减弱，免得叠成一团白
+        const gap = prev ? Math.hypot(p[0] - prev[0], p[1] - prev[1]) : rad
+        const k = Math.min(1, 0.22 + 2.2 * gap / Math.max(1, rad))
+        prev = p
+        drawGlow(x, spr, p[0], p[1], rad, mix(a0, a1, t) * k)
+        if (hardA) drawGlow(x, hard, p[0], p[1], Math.min(r * p[3] * 0.5, 140), hardA * (1 - 0.8 * t) * k)
+      }
+      x.globalCompositeOperation = 'source-over'
+      x.globalAlpha = 1
+      return x
     }
     function drawBeam(ctx) {
       const bm = S.beam
@@ -1655,37 +1920,36 @@
       const key = camKey() + '|' + bm.k
       if (key !== bmKey) {
         bmKey = key
-        const x = bufCtx(S.B.bm, BQ, true)
         const s = S.seats[bm.k]
+        const x = column(S.B.bm, 0, 0, G.ocZ - 0.3, 0.16, s.x, s.y, 0.2, 0.62, o.beamCol, 0.07, 0.14, 0.05)
         const c = S.cam, col = o.beamCol
-        const spr = glowSprite(col[0], col[1], col[2])
-        x.globalCompositeOperation = 'lighter'
-        const n = 30
-        const hard = glowSprite(255, 250, 240, true)
-        let prev = null
-        for (let i = 0; i <= n; i++) {
-          const t = i / n
-          const px = mix(0, s.x, t), py = mix(0, s.y, t), pz = mix(G.apex - 0.3, 0.2, t)
-          const p = c.p(px, py, pz)
-          if (!p) { prev = null; continue }
-          const r = mix(0.16, 0.62, t)
-          const rad = Math.min(r * p[3] * 1.6, 420)
-          // 采样点在屏幕上挤在一起时（正俯视、或镜头贴近光柱底部）按密度减弱，免得叠成一团白
-          const gap = prev ? Math.hypot(p[0] - prev[0], p[1] - prev[1]) : rad
-          const k = Math.min(1, 0.22 + 2.2 * gap / Math.max(1, rad))
-          prev = p
-          drawGlow(x, spr, p[0], p[1], rad, (0.07 + 0.07 * t) * k)
-          // 硬芯只在光柱上段；落到椅子上时散开（否则近景里会把椅背烧成一块白板）
-          drawGlow(x, hard, p[0], p[1], Math.min(r * p[3] * 0.5, 140), 0.05 * (1 - 0.8 * t) * k)
-        }
         const p = c.p(s.x, s.y, 1.1)
-        if (p) { drawGlow(x, spr, p[0], p[1], Math.min(1.3 * p[3], 520), 0.16); drawGlow(x, hard, p[0], p[1], Math.min(0.3 * p[3], 90), 0.06) }
-        x.globalCompositeOperation = 'source-over'
-        x.globalAlpha = 1
+        if (p) {
+          x.globalCompositeOperation = 'lighter'
+          drawGlow(x, glowSprite(col[0], col[1], col[2]), p[0], p[1], Math.min(1.3 * p[3], 520), 0.16)
+          drawGlow(x, glowSprite(255, 250, 240, true), p[0], p[1], Math.min(0.3 * p[3], 90), 0.06)
+          x.globalCompositeOperation = 'source-over'
+          x.globalAlpha = 1
+        }
       }
       ctx.globalCompositeOperation = 'lighter'
       ctx.globalAlpha = Math.min(1, A)
       blit(ctx, S.B.bm, BQ)
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.globalAlpha = 1
+    }
+    // 天眼的天光：阴天的散光，从天眼口垂到桌面，一柱很淡的光（尘在里面）
+    function drawSky(ctx) {
+      const A = S.sky * S.skyA * (1 - S.dark)
+      if (A <= 0.01) return
+      const key = camKey()
+      if (key !== skyKey) {
+        skyKey = key
+        column(S.B.sky, 0, 0, G.ocZ - 0.1, G.ocR * 0.9, 0, 0, G.tableH + 0.05, G.ocR * 1.25, o.skyCol, 0.03, 0.055, 0)
+      }
+      ctx.globalCompositeOperation = 'lighter'
+      ctx.globalAlpha = Math.min(1, A)
+      blit(ctx, S.B.sky, BQ)
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
     }
@@ -1696,7 +1960,7 @@
       if (!ls || S.glowA <= 0.01) return
       const L = S.light, lc = o.lightCol
       const k = Math.min(1.2, L.power * L.flick) * S.glowA * S.poolA
-      // 光升到穹顶时是一片散光，不是一团火：火芯随高度淡去；尺寸封顶，镜头再近也只是一点烛火
+      // 光升到灯环的高度时是一片散光，不是一团火：火芯随高度淡去；尺寸封顶，镜头再近也只是一点烛火
       const core = 1 - sstep(3.2, 5.2, L.z)
       ctx.globalCompositeOperation = 'lighter'
       drawGlow(ctx, glowSprite(lc[0], lc[1], lc[2]), ls[0], ls[1], Math.min(1.5 * ls[3], 260), 0.16 * k)
@@ -1705,22 +1969,26 @@
       ctx.globalAlpha = 1
     }
     for (let i = 0; i < o.motes; i++) {
-      S.motes.push({ x: (Math.random() * 2 - 1) * 5, y: (Math.random() * 2 - 1) * 4.6, z: 0.4 + Math.random() * 4.2, ph: Math.random() * TAU, sp: 0.5 + Math.random() })
+      const a = Math.random() * TAU, r = Math.sqrt(Math.random()) * 5
+      S.motes.push({ x: Math.cos(a) * r, y: Math.sin(a) * r, z: 0.4 + Math.random() * 4.4, ph: Math.random() * TAU, sp: 0.5 + Math.random() })
     }
     function drawMotes(ctx) {
       if (!S.motes.length) return
       const c = S.cam, L = S.light
       const spr = glowSprite(255, 230, 200, true)
       const bm = S.beam, bs = bm.k >= 0 ? S.seats[bm.k] : null
+      const sk = S.sky * S.skyA * 0.7
       ctx.globalCompositeOperation = 'lighter'
       for (const m of S.motes) {
         const q = c.p(m.x, m.y, m.z)
         if (!q) continue
         const d2 = (m.x - L.x) ** 2 + (m.y - L.y) ** 2 + (m.z - L.z) ** 2
         let e = L.power * L.flick * S.poolA / (1 + d2 / 0.9)
+        // 天眼那一柱天光里的尘
+        if (sk > 0.01) e += sk * (1 - sstep(G.ocR * 0.7, G.ocR * 1.3, Math.hypot(m.x, m.y)))
         if (bs && bm.amt > 0) {
           // 在光束里的尘
-          const t = clamp01((G.apex - 0.3 - m.z) / (G.apex - 0.5))
+          const t = clamp01((G.ocZ - 0.3 - m.z) / (G.ocZ - 0.5))
           const bx = bs.x * t, by = bs.y * t, br = mix(0.16, 0.62, t)
           const dd = Math.hypot(m.x - bx, m.y - by)
           e += bm.amt * 1.2 * (1 - sstep(br * 0.6, br * 1.3, dd))
@@ -1822,7 +2090,10 @@
       if (S.ptr.on) {
         const w = S.cam.unproject(S.ptr.x, S.ptr.y, S.lampZ)
         if (w) {
-          tx = U.clamp(w[0], -G.hx + 0.5, G.hx - 0.5); ty = U.clamp(w[1], -G.hy + 0.5, G.hy - 0.5); tz = S.lampZ; tp = S.lampPow
+          // 光标的光留在圆厅里
+          const r = Math.hypot(w[0], w[1]), lim = G.R - 0.6
+          const k = r > lim ? lim / r : 1
+          tx = w[0] * k; ty = w[1] * k; tz = S.lampZ; tp = S.lampPow
         }
       }
       const f1 = 1 - Math.pow(0.8, dt * 60), f2 = 1 - Math.pow(0.94, dt * 60)
@@ -1845,6 +2116,7 @@
         if (s.nextBlink <= 0) { s.blinkT = 0.17; s.nextBlink = 2.2 + Math.random() * 6.5 }
         if (s.blinkT > 0) { s.blinkT = Math.max(0, s.blinkT - dt); s.blink = Math.min(1, Math.abs(s.blinkT - 0.085) / 0.085) } else s.blink = 1
         if (s.flash > 0) s.flash = Math.max(0, s.flash - dt * 1.3)
+        if (s.cflash > 0) s.cflash = Math.max(0, s.cflash - dt * 0.9)
         s.hover += ((S.hoverK === s.k ? 1 : 0) - s.hover) * fh
       }
       for (let i = S.ripples.length - 1; i >= 0; i--) {
@@ -1857,7 +2129,7 @@
         m.y += Math.cos(t * 0.17 * m.sp + m.ph * 1.3) * 0.0025
         m.z += Math.sin(t * 0.33 * m.sp + m.ph * 0.7) * 0.0016 + 0.0004
         if (m.x > 5) m.x = -5
-        if (m.z > 4.6) m.z = 0.4
+        if (m.z > 4.8) m.z = 0.4
       }
     }
 
@@ -1876,7 +2148,9 @@
       const L = S.light
       S.ls = S.cam.p(L.x, L.y, L.z)
       for (const s of S.seats) s.K = personKeys(s)
+      plateSize()
       if (S.dark < 0.999) {
+        computeArc()
         FL = S.cam.poly(FLOOR); DP = S.cam.poly(DISC); TP = S.cam.poly(TOP)
         drawWalls(ctx)
         drawFloor(ctx)
@@ -1891,7 +2165,9 @@
         for (const s of list) if (behind(s)) drawSeat(ctx, s)
         drawTable(ctx)
         for (const s of list) if (!behind(s)) drawSeat(ctx, s)
+        drawSparks(ctx)
         drawBeam(ctx)
+        drawSky(ctx)
         drawLightOrb(ctx)
         drawMotes(ctx)
       } else {
@@ -1907,20 +2183,21 @@
         if (S.numDarkA > 0.01) for (const s of S.seats) if (s.lit > 0.01) drawNumber(ctx, s, null, S.numDarkA * S.dark)
       }
       drawEyes(ctx)
-      // 穹顶肋拱、水晶灯（离镜头最近）与眼眶在最上面：桌面版一起画进半分辨率缓冲、整屏只贴一次，
-      // 放大贴回的柔化就是原来肋拱那层 CSS 模糊的景深
+      // 离镜头最近的东西（灯环、天眼口）与眼眶在最上面：桌面版一起画进半分辨率缓冲、整屏只贴一次，
+      // 放大贴回的柔化就是景深
       const q = S.ribQ
+      const near = S.chandA * (1 - S.dark) > 0.01 || S.cam.pos[2] > G.ocZ + 0.3
       if (q) {
-        if (S.ribA * (1 - S.dark) > 0.01 || S.chandA * (1 - S.dark) * mix(0.3, 1, S.tilt) > 0.01) {
+        if (near) {
           const x = bufCtx(S.B.rib, q, true)
-          drawRibs(x)
-          drawChandelier(x)
+          drawLamps(x)
+          drawRoof(x)
           drawLens(x)
           blit(ctx, S.B.rib, q)
         } else drawLens(ctx) // 沉入黑暗后只剩眼眶
       } else {
-        drawRibs(ctx)
-        drawChandelier(ctx)
+        drawLamps(ctx)
+        drawRoof(ctx)
         drawLens(ctx)
       }
       markRendered()
@@ -1929,15 +2206,17 @@
     /* ---------- 这一帧要不要重画 ----------
        镜头或光源在屏幕上挪动超过约 1px、席位/全局状态在变（醒来、熄灭、悬停、涟漪…）：每帧都画；
        只剩烛火摇曳、浮尘、眨眼这类环境动画：约 30 帧；全黑且眼睛也闭上了：不画 */
-    const REF = [[0, 0, 0], [G.hx, G.hy, 0], [-G.hx, -G.hy, G.spring], [0, 0, G.apex]]
+    const REF = [[0, 0, 0], [G.R, 0, 0], [-G.R * 0.7, -G.R * 0.7, G.wallH], [0, G.R, G.lampZ]]
     const lastRef = new Float64Array(10)
     let lastSig = NaN, lastAt = -1e9
     function stateSig() {
       const L = S.light
       let v = S.lensOpen * 3.1 + S.poolA * 5.3 + S.dark * 7.7 + S.eyeA * 11.3 + S.beam.amt * 13.1 + S.wallA * 17.9 + S.chandA * 19.7 +
-        S.ribA * 23.3 + S.numA * 29.1 + S.numDarkA * 30.7 + S.tray * 7.3 + S.lensA * 31.7 + S.keyGone * 37 + (S.beam.k + 1) * 43 + o.amb * 470 + S.glowA * 53 + S.floorA * 59 +
-        L.power * 61 + L.range * 67 + S.clock * 0.07 + S.hoverK * 71
-      for (const s of S.seats) v += s.awake * 1.3 + s.eyes * 2.9 + s.lit * 4.1 + s.out * 6.7 + s.fall * 8.3 + s.gone * 9.7 + s.lamp * 12.1 + s.flash * 14.3 + s.hover * 16.9
+        S.ribA * 23.3 + S.numA * 29.1 + S.numDarkA * 30.7 + S.sky * 7.3 + S.skyA * 8.9 + S.doorOpen * 34.1 + S.lensA * 31.7 + (S.beam.k + 1) * 43 + o.amb * 470 + o.ringPow * 230 + S.glowA * 53 + S.floorA * 59 +
+        L.power * 61 + L.range * 67 + S.clock * 0.07 + S.hoverK * 71 + S.numScale * 3.7
+      for (let i = 0; i < G.n; i++) v += S.keyT[i] * (2.3 + i * 0.37)
+      for (const s of S.seats) v += s.awake * 1.3 + s.eyes * 2.9 + s.lit * 4.1 + s.out * 6.7 + s.fall * 8.3 + s.gone * 9.7 + s.lamp * 12.1 + s.flash * 14.3 + s.hover * 16.9 +
+        s.coinA * 3.3 + s.ruleA * 5.9 + s.idA * 7.1 + s.cflash * 2.1 + s.coinN * 0.013 + (s.id ? s.id.length * 0.11 + s.id.charCodeAt(0) * 0.007 : 0)
       return v
     }
     function refPts(out) {
@@ -1987,6 +2266,13 @@
       const dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1
       return { x: p[0], y: p[1], s: p[3], ox: dx / l, oy: dy / l }
     }
+    // 第 k 席号牌在屏幕上的位置
+    S.plateScreen = k => {
+      const s = S.seats[k - 1]
+      const P = L2W(s, 0, G.plateV, G.tableH)
+      const p = S.cam.p(P[0], P[1], P[2])
+      return p ? { x: p[0], y: p[1], s: p[3] } : null
+    }
     S.project = (x, y, z) => S.cam.p(x, y, z)
     S.headScreen = k => {
       const s = S.seats[k - 1]
@@ -2006,11 +2292,12 @@
   let filler = null
   const domeHall = (App.domeHall = {
     create: createHall,
-    G, COUNTER,
-    // 十五席上坐的人：App.state.seats 里有人就用他们，空位从卡池里随机补齐（整页共用一份）
+    G, dayK,
+    // 十三席上坐的人（席位 = 号牌 = 房号）：App.state.seats 里有人就用他们，空位从卡池里随机补齐（整页共用一份）
     people() {
-      const seats = (App.state.seats || []).slice(0, 15)
-      while (seats.length < 15) seats.push(null)
+      const n = G.n
+      const seats = (Array.isArray(App.state.seats) ? App.state.seats : []).slice(0, n)
+      while (seats.length < n) seats.push(null)
       const used = new Set(seats.filter(id => id && App.char(id)))
       if (!filler) filler = U.shuffle(App.chars.map(c => c.id))
       let i = 0
@@ -2040,11 +2327,60 @@
   <path d="M30 12a20 20 0 0 1 17 9" fill="none" stroke="#fff3d6" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
 </svg>`
 
+  /* ---------- 主持人的播报（《开局流程》§2 原句，取自 WORLD.opening；缺了就用同样的原句） ---------- */
+  const OPEN = (window.WORLD && Array.isArray(window.WORLD.opening)) ? window.WORLD.opening : []
+  const sentences = no => {
+    const b = OPEN.find(x => x && x.no === no)
+    const out = []
+    for (const para of (b && b.lines) || []) for (const s of String(para).split(/(?<=[。？！])/)) if (s.trim()) out.push(s.trim())
+    return out
+  }
+  // 第 no 条播报里含 key 的那一句（整句）
+  const said = (no, key, fb) => sentences(no).find(s => s.includes(key)) || fb
+  const RULES = (() => {
+    const rc = window.WORLD && Array.isArray(window.WORLD.ruleCard) ? window.WORLD.ruleCard : []
+    if (rc.length) return rc.map(r => ({ no: r.no, text: r.text }))
+    return sentences(4).map(s => s.match(/^([一二三四五六七八九十]+)：(.+)$/)).filter(Boolean).map(m => ({ no: m[1], text: m[2] }))
+  })()
+
+  // 滚动节点（钉住段的进度 0–1）
+  const B = {
+    tilt0: 0.04, tilt1: 0.42,
+    keys0: 0.25, keys1: 0.296, bind: 0.299,      // 钥匙一把把离钩；最后一把到手 → 号牌同时现出号码
+    seat0: 0.303, seat1: 0.345,                  // 按自己所选的编号重新入座
+    coins: 0.352,                                // 第二条第一句：每人十枚
+    intro0: 0.478, intro1: 0.536,                // 从一号起依次自我介绍
+    rules0: 0.618, rules1: 0.692, ruleCard: 0.697, // 第四条：十九条规则，说完的那一刻出现规则卡
+    ident: 0.712,                                // 第五条：身份卡
+    doors: 0.758,                                // 第六条开口：三扇门自己打开
+    dark0: 0.885, dark1: 0.94,
+    key0: 0.895, keySpan: 0.078,
+  }
+  const VOICE = [
+    { a: 0.05, b: 0.09, t: said(1, '欢迎来到这座馆', '大家好，都醒了吧，欢迎来到这座馆，各位可以称呼我为主持人。'), first: true },
+    { a: 0.09, b: 0.135, t: said(1, '获胜者的一个愿望', '我将大家请来这里，是为了参加一场游戏，而我会实现获胜者的一个愿望。') + said(1, '不管内容是什么', '一个不管内容是什么都可以实现的愿望。') },
+    { a: 0.135, b: 0.175, t: said(1, '十三把钥匙', '在说明游戏的具体规则之前，请各位先分配收纳台上的十三把钥匙，一人一把，号码自选。') },
+    { a: 0.175, b: 0.21, t: said(1, '编号会影响各位的命运', '我现在可以透露的是：编号会影响各位的命运。') + said(1, '请慎重选择', '请慎重选择。') },
+    { a: 0.21, b: 0.245, t: said(1, '重新入座', '钥匙分配完毕后，请按自己所选的编号重新入座。') },
+    { a: 0.35, b: 0.395, t: said(2, '一枚金币代表一百分', '现在为大家发放的是每个人的初始积分，一枚金币代表一百分。'), first: true },
+    { a: 0.395, b: 0.44, t: said(2, '抢夺他人的金币', '金币可以自由交易、赠与；抢夺他人的金币在本馆内视为许可的行为。') },
+    { a: 0.44, b: 0.476, t: said(2, '按顺序进行自我介绍', '接下来，请各位从一号开始，按顺序进行自我介绍。') },
+    { a: 0.476, b: 0.536, t: said(2, '严格的格式要求', '自我介绍有着严格的格式要求，分别说出自己的名称，愿望，以及如果一定要有一个人先死，希望是在座的几号？') },
+    { a: 0.546, b: 0.592, t: said(3, '第二次表决', '接下来，进行第二次表决，同意立即处死刚才获票最多者的，请举手，我会根据举手人数考虑是否执行。'), first: true },
+    { a: 0.6, b: 0.618, t: said(4, '现在说明规则', '现在说明规则。'), first: true },
+    { a: 0.704, b: 0.75, t: said(5, '身份卡', '现在，为所有人发放身份卡，那是决定各位命运的另一项道具，身份无法转让、拒绝。'), first: true },
+    { a: 0.758, b: 0.815, t: said(6, '任务', '现在，发布仅限今天二十四点之前完成的任务，只要去过馆内除套房外的每个房间，并在房间内待满至少五分钟，便可获得500积分的奖励，每人只能完成一次。'), first: true },
+    { a: 0.815, b: 0.85, t: said(7, '小游戏，胜利', '我会不定期和大家进行一些小游戏，胜利会有奖励，失败则会有惩罚。'), first: true },
+    { a: 0.85, b: 0.885, t: said(7, '第一次小游戏', '现在进行第一次小游戏。') },
+  ]
+
   const P = {
     el: null, H: null, E: null, vis: false, started: false,
-    p: 0, ps: 0, mob: false,
-    ptrIn: false, touchUntil: 0, hoverK: -1, tagK: -1, tagUntil: 0, lineK: -1,
-    zoom: 1.4, lv: 0, keyNo: 1, keyLanded: false, keyShown: false, lastKeyP: 0, whooshed: false, cueOn: false, wakeDone: false, gateOpen: false,
+    p: 0, ps: 0, lastPs: 0, mob: false,
+    ptrIn: false, touchUntil: 0, hoverK: -1, tagK: -1, tagUntil: 0, lineK: -1, autoK: -1,
+    zoom: 1, lv: 0, keyNo: 1, keyLanded: false, keyShown: false, lastKeyP: 0, whooshed: false, cueOn: false, wakeDone: false, gateOpen: false,
+    vi: -2, ri: -1, rulesOn: false, ruleOff: [], ruleY: '', crossed: {}, fast: false,
+    fin: [], wake: [], shown: [], keyOrder: [], seatOrder: [],
   }
 
   function build(el) {
@@ -2056,7 +2392,7 @@
     E.stage.append(E.cv)
     E.title = U.el('h1.prologue-title', { text: '夙与愿' })
     E.seal = U.el('i.prologue-seal', { 'aria-hidden': 'true' })
-    E.latin = U.el('div.prologue-latin', { text: 'XV Sedes · Vnvm Votvm', 'aria-hidden': 'true' })
+    E.latin = U.el('div.prologue-latin', { text: U.roman(G.n) + ' Sedes · Vnvm Votvm', 'aria-hidden': 'true' })
     E.head = U.el('div.prologue-head', null, [E.title, E.seal, E.latin])
     E.time = U.el('span.prologue-time', { text: '17:00' })
     E.clock = U.el('div.prologue-clock', { 'aria-hidden': 'true' }, [U.el('span.prologue-day', { text: '第一日' }), E.time, E.tick = U.el('i.prologue-clock-tick')])
@@ -2068,7 +2404,13 @@
     E.keyTag = U.el('span.prologue-key-no', { text: 'I' })
     E.key = U.el('div.prologue-key', { 'aria-hidden': 'true', html: KEY_SVG })
     E.key.appendChild(E.keyTag)
-    sticky.append(E.stage, E.head, E.clock, E.tag, E.cue, E.key)
+    // 播报：一次一句，听不出从哪里来
+    E.voiceLine = U.el('p.prologue-voice-line')
+    E.voice = U.el('div.prologue-voice', null, [E.voiceLine])
+    // 第四条播报的十九条：像规则卡上的字一样，读到哪里流到哪里
+    E.rulesList = U.el('ol.prologue-rules-list', null, RULES.map(r => U.el('li', null, [U.el('b', { text: r.no + '：' }), r.text])))
+    E.rules = U.el('div.prologue-rules', null, [E.rulesList])
+    sticky.append(E.stage, E.head, E.clock, E.voice, E.rules, E.tag, E.cue, E.key)
     el.appendChild(sticky)
   }
 
@@ -2085,6 +2427,11 @@
     H.ribA = portrait ? 0.55 : 1
     P.oy0 = portrait ? Hh * 0.04 : 0
     H.view.oy = P.oy0
+    // 十九条的位置量好缓存（帧循环里不再读布局）
+    const lis = P.E.rulesList.children
+    P.ruleOff = Array.from(lis, li => li.offsetTop + li.offsetHeight / 2)
+    P.ruleBox = P.E.rules.offsetHeight || 1
+    P.ruleY = ''
   }
 
   function setClock(m, instant) {
@@ -2095,22 +2442,61 @@
     if (P.vis && P.el && P.el.getBoundingClientRect().top > -40) { App.state.minutes = 17 * 60 + m; App.bus.emit('time', 17 * 60 + m) }
     const E = P.E
     // 醒来的几秒里就跳走了：板块看不见时只换数字，不再播动画
-    if (instant || App.reduced || !P.vis) { E.time.textContent = t; return }
+    if (instant || App.reduced || !P.vis || P.fast) { E.time.textContent = t; return }
     App.text.scramble(E.time, t, { duration: 0.5, chars: '0123456789', revealDelay: 0.1 })
     gsap.fromTo(E.tick, { scaleX: 1, opacity: 0.9 }, { scaleX: 0, opacity: 0, duration: 1.2, ease: 'expo.out' })
     gsap.fromTo(E.clock, { x: -3 }, { x: 0, duration: 0.4, ease: 'expo.out' })
+  }
+
+  /* ---------- 谁坐哪一席 ----------
+     终局的坐法（席位 = 号牌 = 房号）来自 domeHall.people()；醒来时各人坐在自己编号的那一席（物理层 §9），
+     与房号无关——同一批人换一种坐法（固定的错位排列）。第 k 把钥匙的主人醒来时坐在 wake.indexOf(fin[k]) */
+  function arrange() {
+    const H = P.H
+    const fin = domeHall.people()
+    const rnd = U.seeded(4211)
+    let wake = fin.slice()
+    for (let tries = 0; tries < 30; tries++) {
+      wake = fin.slice()
+      for (let i = wake.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = wake[i]; wake[i] = wake[j]; wake[j] = t }
+      if (wake.every((id, i) => id !== fin[i])) break
+    }
+    P.fin = fin; P.wake = wake
+    for (let k = 0; k < G.n; k++) H.keyTo[k] = Math.max(0, wake.indexOf(fin[k]))
+    // 拿钥匙的先后、重新入座的先后（固定：来回滚动看到的是同一场）
+    const r2 = U.seeded(7703)
+    const ord = Array.from({ length: G.n }, (_, i) => i)
+    for (let i = ord.length - 1; i > 0; i--) { const j = Math.floor(r2() * (i + 1)); const t = ord[i]; ord[i] = ord[j]; ord[j] = t }
+    P.keyOrder = ord.slice()
+    for (let i = ord.length - 1; i > 0; i--) { const j = Math.floor(r2() * (i + 1)); const t = ord[i]; ord[i] = ord[j]; ord[j] = t }
+    P.seatOrder = ord
+    P.shown = []
+    seatPeople(P.ps)
+  }
+  // 重新入座：第 j 席在自己的时刻化开，换成按号入座的人
+  const SW = 0.012
+  function seatT(j) { return B.seat0 + SW / 2 + (B.seat1 - B.seat0 - SW) * P.seatOrder.indexOf(j) / Math.max(1, G.n - 1) }
+  function seatPeople(p) {
+    const H = P.H
+    for (let j = 0; j < G.n; j++) {
+      const t = seatT(j)
+      const id = p < t ? P.wake[j] : P.fin[j]
+      if (P.shown[j] !== id) { P.shown[j] = id; H.setPerson(j + 1, id) }
+      const g = P.wake[j] === P.fin[j] ? 0 : clamp01(1 - Math.abs(p - t) / (SW / 2))
+      H.seats[j].gone = g
+    }
   }
 
   function wakeSeat(s, v) {
     s.flash = 1
     P.H.ripple(s.k, s.acc)
     gsap.to(s, { eyes: 1, duration: 0.32, ease: 'power4.out', overwrite: 'auto' })
-    gsap.to(s, { awake: 1, duration: App.reduced ? 0.4 : 2.2, ease: 'power3.inOut', delay: App.reduced ? 0 : 0.5 })
-    App.audio.sfx('tick', { volume: v, pan: U.clamp(s.x / 3.2, -1, 1) * 0.8, pitch: 0.7 + s.k * 0.035 })
+    gsap.to(s, { awake: 1, duration: App.reduced || P.fast ? 0.4 : 2.2, ease: 'power3.inOut', delay: App.reduced || P.fast ? 0 : 0.5 })
+    if (!P.fast) App.audio.sfx('tick', { volume: v, pan: U.clamp(s.x / 3.2, -1, 1) * 0.8, pitch: 0.7 + s.k * 0.04 })
   }
   function tickMinute(m) {
     setClock(m)
-    App.audio.sfx('drop', { volume: 0.32, pitch: 0.7 + m * 0.06 })
+    if (!P.fast) App.audio.sfx('drop', { volume: 0.32, pitch: 0.7 + m * 0.06 })
   }
 
   function revealTitle() {
@@ -2130,11 +2516,12 @@
     for (const s of H.seats) { gsap.killTweensOf(s); s.awake = 0; s.eyes = 0; s.flash = 0; s.yaw = 0 }
     setClock(0, true)
     gsap.fromTo(H, { lensOpen: 0.42 }, { lensOpen: 1, duration: 3.4, ease: 'power2.inOut' })
-    gsap.fromTo(P, { zoom: 1.4 }, { zoom: 0, duration: App.reduced ? 0.5 : 9.5, ease: 'power2.inOut' })
+    // 镜头从天眼外穿过天眼，落进厅里
+    gsap.fromTo(P, { zoom: 1 }, { zoom: 0, duration: App.reduced ? 0.5 : 9.5, ease: 'power2.inOut' })
     gsap.fromTo(H, { poolA: 0.2 }, { poolA: 1, duration: 2.4, ease: 'power2.out' })
     const tl = (P.tl = gsap.timeline())
     tl.add(revealTitle, 0.2)
-    // 时钟每 gap 秒走一分钟：17:01 … 17:05。十五个人按随机的先后，在 17:05 之前陆续醒来
+    // 时钟每 gap 秒走一分钟：17:01 … 17:05。十三个人按随机的先后，在 17:05 之前陆续醒来
     const gap = App.reduced ? 0.35 : 1.45
     const t5 = 1.5 + 4 * gap
     for (let m = 1; m <= 5; m++) tl.add(() => tickMinute(m), 1.5 + (m - 1) * gap)
@@ -2146,6 +2533,13 @@
     })
     tl.add(() => { P.wakeDone = true; showCue(true) }, t5 + 0.8)
   }
+  // 第一条播报在「所有人都醒了以后」：还没醒完就滚下来了，剩下的人当场醒（不再一个个响）
+  function finishWake() {
+    if (!P.tl || P.wakeDone) return
+    P.fast = true
+    P.tl.progress(1)
+    P.fast = false
+  }
 
   function showCue(on) {
     if (P.cueOn === on) return
@@ -2154,6 +2548,32 @@
     // 收起后连同里面循环的小点一起停掉（不再占合成层）
     if (on) cue.classList.remove('is-off')
     gsap.to(cue, { opacity: on ? 1 : 0, duration: on ? 1.2 : 0.4, ease: 'power2.out', overwrite: true, onComplete: on ? null : () => { if (!P.cueOn) cue.classList.add('is-off') } })
+  }
+
+  /* ---------- 播报：一次一句 ---------- */
+  function setVoice(i, down) {
+    if (i === P.vi) return
+    P.vi = i
+    const E = P.E, el = E.voiceLine
+    if (el._chars) gsap.killTweensOf(el._chars)
+    if (i < 0) {
+      gsap.to(E.voice, { opacity: 0, duration: 0.35, ease: 'power2.out', overwrite: true, onComplete: () => { if (P.vi < 0) E.voice.style.visibility = 'hidden' } })
+      return
+    }
+    const v = VOICE[i]
+    el.textContent = v.t
+    el._chars = App.text.split(el)
+    E.voice.style.visibility = 'visible'
+    gsap.to(E.voice, { opacity: 1, duration: 0.3, ease: 'power2.out', overwrite: true })
+    if (!App.reduced) gsap.fromTo(el._chars, { opacity: 0 }, { opacity: 1, duration: 0.45, stagger: Math.min(0.03, 1.3 / el._chars.length), ease: 'power1.out' })
+    if (v.first && down) App.audio.sfx('chime', { volume: 0.2, pitch: 0.72 })
+  }
+  function setRules(on) {
+    if (P.rulesOn === on) return
+    P.rulesOn = on
+    const E = P.E
+    if (on) E.rules.style.visibility = 'visible'
+    gsap.to(E.rules, { opacity: on ? 1 : 0, duration: on ? 0.5 : 0.35, ease: 'power2.out', overwrite: true, onComplete: on ? null : () => { if (!P.rulesOn) E.rules.style.visibility = 'hidden' } })
   }
 
   /* ---------- 席位：悬停与点击 ---------- */
@@ -2167,15 +2587,16 @@
       if (App.cursor && App.cursor.set) App.cursor.set('')
     } else {
       if (App.cursor && App.cursor.clear) App.cursor.clear()
-      if (P.lineK < 0) hideTag()
+      if (P.lineK < 0 && P.autoK < 0) hideTag()
     }
   }
   function showTag(k) {
     const s = P.H.seats[k - 1]
     const c = App.char(s.id)
     const E = P.E
-    if (P.tagK !== k) {
+    if (P.tagK !== k || P.tagId !== s.id) {
       P.tagK = k
+      P.tagId = s.id
       E.tagNo.textContent = U.roman(k)
       E.tagName.textContent = c ? c.name : '—'
       if (P.lineK !== k) { P.lineK = -1; E.tagLine.textContent = ''; E.tagLine.classList.remove('is-on') }
@@ -2187,6 +2608,7 @@
   function hideTag() {
     if (P.tagK < 0) return
     P.tagK = -1
+    P.tagId = null
     P.lineK = -1
     gsap.to(P.E.tag, { opacity: 0, duration: 0.4, ease: 'power2.in', overwrite: true })
   }
@@ -2209,7 +2631,7 @@
   }
 
   function onTap(e) {
-    if (!P.H || P.ps > 0.62) return
+    if (!P.H || P.ps > B.dark0) return
     const r = P.E.stage.getBoundingClientRect()
     const x = e.clientX - r.left, y = e.clientY - r.top
     const k = P.H.pick(x, y)
@@ -2217,53 +2639,122 @@
     else if (P.lineK > 0 && !App.finePointer) { P.lineK = -1; hideTag() }
   }
 
-  /* ---------- 滚动：倾斜镜头、沉入黑暗、钥匙落下、号码现出 ---------- */
-  function applyScroll(p) {
+  /* ---------- 滚动：镜头、播报、钥匙与号牌、入座、金币与卡、门、沉入黑暗 ---------- */
+  // 向目标值平滑靠拢（与帧率无关）
+  const ease = (obj, k, to, rdt, tau) => { const v = obj[k]; if (v === to) return; const n = v + (to - v) * (1 - Math.exp(-rdt / tau)); obj[k] = Math.abs(to - n) < 0.003 ? to : n }
+  // 往下滚越过某一拍时只响一次；往回滚过去再滚下来才再响
+  function crossed(key, on, down) {
+    const was = !!P.crossed[key]
+    P.crossed[key] = on
+    return on && !was && down
+  }
+  function applyScroll(p, rdt) {
     const H = P.H, v = H.view, E = P.E
-    const t = easeIO(sstep(0.04, 0.66, p))
+    const down = p > P.lastPs + 1e-5
+    const t = easeIO(sstep(B.tilt0, B.tilt1, p))
     const tm = H.time
+    if (p > B.tilt0 + 0.005) finishWake()
+    // 镜头：先从天眼外落进厅里（醒来的那几秒），再斜下来；穿过天眼时圆桌几乎不变大（推拉变焦）
+    const dive = P.zoom
     v.elev = mix(Math.PI / 2, P.mob ? 0.74 : 0.6, t)
-    v.dist = mix(10.6 + P.zoom, P.mob ? 12.6 : 16.2, t)
-    // 极慢的呼吸：整间厅像在缓缓转动
-    v.yaw = mix(Math.sin(tm * 0.05) * 0.05, -0.42, t)
+    v.dist = mix(10.6 + dive * 8.4, P.mob ? 12.6 : 16.2, t)
+    v.ref = mix(10.6 + dive * 7.4, 10.6, t)
+    // 极慢的呼吸：整间厅像在缓缓转动；斜下来以后再慢慢绕一点
+    v.yaw = mix(Math.sin(tm * 0.05) * 0.05, -0.5, t) - 0.14 * sstep(B.tilt1, B.dark1, p)
     v.tz = mix(0.45, 0.55, t)
     v.oy = mix(P.oy0, P.oy0 + H.H * 0.07, t)
     H.lensA = 1 - 0.55 * sstep(0.04, 0.4, p)
+    // 天眼的天光跟着馆内时刻（17:00—19:00 由亮渐无）
+    H.sky = dayK(App.state.minutes)
     // 沉入黑暗，只剩眼睛；钥匙落地后眼睛也闭上，号码随后没入黑暗
-    H.dark = sstep(0.64, 0.86, p)
-    H.eyeA = 1 - sstep(0.9, 0.97, p)
-    H.numDarkA = 1 - sstep(0.95, 1, p)
+    H.dark = sstep(B.dark0, B.dark1, p)
+    H.eyeA = 1 - sstep(0.958, 0.985, p)
+    H.numDarkA = 1 - sstep(0.975, 1, p)
     // 文字退场（值没变就不写；完全淡出后不再占合成层）
     const fade = 1 - sstep(0.03, 0.2, p)
     css(E.head, 'opacity', fade.toFixed(3))
     css(E.head, 'transform', 'translate3d(0,' + (-p * 120).toFixed(1) + 'px,0)')
     css(E.head, 'visibility', fade > 0 ? 'visible' : 'hidden')
     // 时钟的淡入由 revealTitle 的补间负责，这里每帧照写（保持原来的先后关系）
-    E.clock.style.opacity = (1 - sstep(0.02, 0.14, p)).toFixed(3)
+    E.clock.style.opacity = (1 - sstep(0.02, 0.06, p)).toFixed(3)
     if (p > 0.03) showCue(false)
     else if (P.wakeDone) showCue(true)
+
+    // 播报（醒完之前不说话）
+    let vi = -1
+    if (P.started && (P.wakeDone || p > B.tilt0)) for (let i = 0; i < VOICE.length; i++) if (p >= VOICE[i].a && p < VOICE[i].b) { vi = i; break }
+    setVoice(vi, down)
+    // 十九条：读到哪里，字流到哪里
+    const rOn = p >= B.rules0 && p < B.rules1 && RULES.length > 0
+    setRules(rOn)
+    if (rOn && P.ruleOff.length) {
+      const f = clamp01((p - B.rules0) / (B.rules1 - B.rules0)) * (RULES.length - 1)
+      const i = Math.min(RULES.length - 1, Math.floor(f + 0.5)), i0 = Math.floor(f), i1 = Math.min(RULES.length - 1, i0 + 1)
+      const y = mix(P.ruleOff[i0], P.ruleOff[i1], sstep(0.15, 0.85, f - i0))
+      const ty = 'translate3d(0,' + (P.ruleBox / 2 - y).toFixed(1) + 'px,0)'
+      if (ty !== P.ruleY) { P.ruleY = ty; E.rulesList.style.transform = ty }
+      if (i !== P.ri) {
+        if (P.ri >= 0 && E.rulesList.children[P.ri]) E.rulesList.children[P.ri].classList.remove('is-on')
+        P.ri = i
+        E.rulesList.children[i].classList.add('is-on')
+      }
+    }
+
+    // 钥匙一把把离钩，落到拿它的人手里
+    const kw = 0.012
+    for (let o = 0; o < G.n; o++) {
+      const k = P.keyOrder[o]
+      if (k == null) continue
+      const t0 = B.keys0 + (B.keys1 - B.keys0 - kw) * o / Math.max(1, G.n - 1)
+      const kt = clamp01((p - t0) / kw)
+      if (kt > 0 && H.keyT[k] <= 0 && down) App.audio.sfx('tick', { volume: 0.32, pitch: 1.1 + k * 0.03, pan: 0.5 })
+      H.keyT[k] = kt
+    }
+    // 钥匙分配完成、各人与房号绑定的那一刻：十三枚号牌同时无声地现出号码（1 号正北，顺时针）
+    const want = P.started && p >= B.bind ? 1 : 0
+    for (const s of H.seats) ease(s, 'lit', want, rdt, 0.12)
+    // 按自己所选的编号重新入座
+    seatPeople(p)
+    // 第二条第一句说出的同时，每人十枚金币出现在各人面前的桌上，码成一摞
+    const coinOn = p >= B.coins
+    if (crossed('coins', coinOn, down)) { App.audio.sfx('coins', { volume: 0.55 }); for (const s of H.seats) s.cflash = 1 }
+    // 第四条说完：规则卡；第五条：身份卡（两面空白）
+    const ruleOn = p >= B.ruleCard, idOn = p >= B.ident
+    if (crossed('rule', ruleOn, down)) { App.audio.sfx('card', { volume: 0.6 }); for (const s of H.seats) s.cflash = 1 }
+    if (crossed('ident', idOn, down)) { App.audio.sfx('card', { volume: 0.6, pitch: 0.8 }); for (const s of H.seats) s.cflash = 1 }
+    // 自我介绍：从一号起，依次
+    const introK = p >= B.intro0 && p < B.intro1 ? 1 + Math.min(G.n - 1, Math.floor((p - B.intro0) / (B.intro1 - B.intro0) * G.n)) : -1
+    if (introK !== P.introK) { P.introK = introK; if (introK > 0 && down) App.audio.sfx('hover', { volume: 0.5, pitch: 0.7 + introK * 0.03 }) }
+    for (const s of H.seats) {
+      ease(s, 'coinA', coinOn ? 1 : 0, rdt, 0.1)
+      ease(s, 'ruleA', ruleOn ? 1 : 0, rdt, 0.1)
+      ease(s, 'idA', idOn ? 1 : 0, rdt, 0.1)
+      ease(s, 'lamp', s.k === introK ? 1 : 0, rdt, 0.18)
+    }
+    P.autoK = introK
+    // 第六条开口的同时，议事厅的三扇门自己打开
+    const doorOn = p >= B.doors
+    if (crossed('doors', doorOn, down)) { App.audio.sfx('wind', { volume: 0.45 }); App.audio.sfx('whoosh', { volume: 0.3, pitch: 0.5 }) }
+    ease(H, 'doorOpen', doorOn ? 1 : 0, rdt, doorOn ? 0.9 : 0.4)
+
     keyFall(p)
-    // 号牌开局空白；钥匙落地（人人手里都有了一把钥匙）的那一拍，十五枚同时无声地现出号码（1 号正北，顺时针）
-    const want = P.started && P.keyLanded ? 1 : 0
-    for (const s of H.seats) if (s.lit !== want) s.lit = Math.abs(want - s.lit) < 0.004 ? want : s.lit + (want - s.lit) * 0.16
+    P.lastPs = p
   }
 
   function keyFall(p) {
     const H = P.H, E = P.E
-    const t = clamp01((p - 0.7) / 0.2)
+    const t = clamp01((p - B.key0) / B.keySpan)
     if (t <= 0) {
-      if (P.keyShown) { P.keyShown = false; E.key.style.opacity = '0'; E.key.style.visibility = 'hidden'; H.keyGone = -1 }
+      if (P.keyShown) { P.keyShown = false; E.key.style.opacity = '0'; E.key.style.visibility = 'hidden' }
       P.keyLanded = false
       return
     }
     if (!P.keyShown) E.key.style.visibility = 'visible'
     P.keyShown = true
-    H.keyGone = P.keyNo - 1
-    // 起点：钥匙龛在屏幕上的位置
-    let sx = H.W * 0.82, sy = H.H * 0.28
-    const row = P.keyNo <= 8 ? 0 : 1, col = row ? P.keyNo - 9 : P.keyNo - 1
-    const q = H.project(G.hx - 0.04, -3.62 + col * 0.24 + row * 0.12, row ? 1.3 : 1.66)
-    if (q && q[0] > 0 && q[0] < H.W && q[1] > 0 && q[1] < H.H) { sx = q[0]; sy = q[1] }
+    // 起点：这把钥匙那一席的号牌（钥匙早已在那个人手里）
+    let sx = H.W * 0.5, sy = H.H * 0.36
+    const q = H.plateScreen(P.keyNo)
+    if (q && q.x > 0 && q.x < H.W && q.y > 0 && q.y < H.H) { sx = q.x; sy = q.y }
     const ex = H.W * 0.5, ey = H.H * (P.mob ? 0.8 : 0.82)
     const fallT = clamp01(t / 0.86)
     const g = fallT * fallT
@@ -2310,7 +2801,7 @@
     P.lastNow = now
     P.ps += (P.p - P.ps) * (1 - Math.exp(-rdt / 0.12))
     if (Math.abs(P.p - P.ps) < 0.0004) P.ps = P.p
-    applyScroll(P.ps)
+    applyScroll(P.ps, Math.max(1 / 240, rdt))
     // 光标 → 光源
     const m = App.mouse
     const inside = m.x >= r.left && m.x <= r.right && m.y >= r.top && m.y <= r.bottom
@@ -2318,7 +2809,7 @@
     H.ptr.x = m.x - r.left; H.ptr.y = m.y - r.top
     H.ptr.on = P.ptrIn && inside && touchOk && P.started && H.dark < 0.95
     if (App.finePointer || !P.started) {
-      // 光标离开画面：光回到穹顶中央，轻轻摇晃
+      // 光标离开画面：光回到天眼下那一环灯，轻轻摇晃
       H.home.x = Math.sin(H.time * 0.23) * 0.5
       H.home.y = Math.cos(H.time * 0.17) * 0.35
       H.home.z = 5.6; H.homePow = 1.5; H.homeRange = 4.2
@@ -2336,12 +2827,15 @@
     H.eyePulse = 0.88 + 0.3 * Math.min(1, P.lv * 1.6)
     // 悬停
     if (App.finePointer) {
-      const k = H.ptr.on && P.ps < 0.6 && !(App.overlay && App.overlay.isOpen) ? H.pick(H.ptr.x, H.ptr.y) : -1
+      const k = H.ptr.on && P.ps < B.dark0 - 0.02 && !(App.overlay && App.overlay.isOpen) ? H.pick(H.ptr.x, H.ptr.y) : -1
       setHover(k)
     }
+    // 自我介绍那一段：轮到谁，名牌就跟着谁（光标悬停、点开的台词优先）
+    if (P.autoK > 0 && P.hoverK < 0 && P.lineK < 0) showTag(P.autoK)
+    else if (P.autoK < 0 && P.hoverK < 0 && P.lineK < 0 && P.tagK > 0 && App.finePointer) hideTag()
     if (P.lineK > 0 && now > P.tagUntil && P.hoverK !== P.lineK) hideTag()
-    if (!App.finePointer && P.tagK > 0 && P.lineK < 0 && now > P.tagUntil) hideTag()
-    if (P.ps > 0.62 && P.tagK > 0) { P.lineK = -1; hideTag() }
+    if (!App.finePointer && P.tagK > 0 && P.lineK < 0 && P.autoK < 0 && now > P.tagUntil) hideTag()
+    if (P.ps > B.dark0 && P.tagK > 0) { P.lineK = -1; hideTag() }
     // 镜头/光在动、状态在变时每帧画；只剩环境动画时约 30 帧；全黑时不画
     if (H.needs(now)) H.render()
     // 名牌跟着席位
@@ -2379,18 +2873,20 @@
       el.classList.add('prologue')
       build(el)
       P.H = createHall({ canvas: P.E.cv, vignette: true, motes: App.reduced ? 20 : 70, blankNums: true })
-      P.H.setPeople(domeHall.people())
       P.H.lensA = 1
       P.H.lensOpen = 0.42
       P.H.poolA = 0.2
+      arrange()
       layout()
       // 遮幕前：未醒的人、空白的号牌
       P.E.title._chars = App.text.split(P.E.title)
       gsap.set(P.E.title._chars, { opacity: 0 })
-      gsap.set([P.E.seal, P.E.latin, P.E.clock, P.E.cue, P.E.key], { opacity: 0 })
+      gsap.set([P.E.seal, P.E.latin, P.E.clock, P.E.cue, P.E.key, P.E.voice, P.E.rules], { opacity: 0 })
+      P.E.voice.style.visibility = 'hidden'
+      P.E.rules.style.visibility = 'hidden'
       P.vis = true
       App.bus.on('wake', runWake)
-      App.bus.on('cast:change', () => P.H.setPeople(domeHall.people()))
+      App.bus.on('cast:change', () => arrange())
       // 光标进出
       const onMove = e => {
         P.ptrIn = true
@@ -2408,6 +2904,8 @@
       P.E.stage.addEventListener('click', onTap)
       window.addEventListener('resize', U.debounce(() => { layout() }, 160))
       App.bus.on('quality', () => layout())
+      // 字体到了以后十九条的行高会变：重量一次
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layout())
       // 远离视口时交还画布内存，回来之前重新铺好
       App.bus.on('section:far', id => { if (id === el.id && P.H) P.H.release() })
       App.bus.on('section:near', id => { if (id === el.id && P.H) layout() })

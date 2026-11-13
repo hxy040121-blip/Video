@@ -8,7 +8,7 @@
    悬停：烛光落在这一幅上（暖光随烛火移动、背后垫一道金色轮廓光）、其余沉暗，玻璃上掠过一道反光，
    画框被风吹得晃一下，名牌上的称号解码出来。
    点击：弹丸论破「通信簿」式档案（App.overlay）：斜切的签名色块、巨大肖像、竖排巨名、
-   判定七项七边形雷达、随身物、别人眼里、台词（打字机）、梦想；←/→ 切换。
+   判定七项七边形雷达、随身物、台词（打字机）、梦想；←/→ 切换。
    长廊尽头多挂一只空框：你走近时它是空的，你走远时，里面有一双眼睛。
    数据：CHARACTERS（人物卡/*.md 提炼）；判定七项的档位见 人物卡/00_卡司总则.md §3。
    ========================================================== */
@@ -39,7 +39,7 @@
   const Q = () => (App.quality ? App.quality.level : 2) // 2 全效果 / 1 / 0 最省
 
   /* 位图肖像的虹膜位置（画面比例 0–1；从 assets/art/portraits/*.webp 的血粉虹膜量出）。
-     只露一只眼的（格斯、宇智波斑、漩涡长门）只有一个点。十五席的圆形徽章也用它来对准脸。
+     只露一只眼的（格斯、宇智波斑、漩涡长门）只有一个点。十三席的圆形徽章也用它来对准脸。
      量法：取 alpha 不透明、R 与 B 都明显高于 G 的像素（暗金单色里只有虹膜是这种粉），在画面中部按连通块求加权质心，
      取最大的一块，再找同高（±0.07）、相距 0.07–0.26 的另一块配成一双；旧 38 人用同一方法复量，与下表相差不超过 0.002。 */
   const EYES = {
@@ -231,7 +231,7 @@
     fore.style.height = fb - ft + 'px'
     intro.style.top = -ft + 'px'
     for (const it of S.items.concat([voidIt])) placeEyes(it)
-    // 红线：从空框垂到画外（带入十五席）。SVG 只框住线本身（带发光的余量），发光滤镜只落在这一小块上
+    // 红线：从空框垂到画外（带入十三席）。SVG 只框住线本身（带发光的余量），发光滤镜只落在这一小块上
     const th = wall.querySelector('.cast-thread')
     if (th) {
       const x0 = voidIt.x + voidIt.w / 2, y0 = voidIt.y - nail
@@ -1204,12 +1204,11 @@
     const epi = el('div.dos-epi', { text: c.epithet })
     const work = el('div.dos-work', { text: c.work })
     const metaEl = el('div.dos-meta', { text: meta })
+    // 台词只取卡上「声线」的中文一句（v7.11 起卡上没有原文和「别人眼里」，这两行不再显示）
     const zh = el('p.dos-zh')
-    const orig = el('p.dos-orig', { text: c.quote && c.quote.orig && c.quote.orig !== '—' ? typo(c.quote.orig) : '' })
-    const quote = el('blockquote.dos-quote', null, [zh, orig])
-    const see = el('div.dos-line.dos-see', null, [el('span.dos-k', { text: '别人眼里' }), el('p.dos-v', { text: c.othersSee || '' })])
-    const dream = el('div.dos-line.dos-line--dream', null, [el('span.dos-k', { text: '梦想' }), el('p.dos-v', { text: c.dream || '' })])
-    const info = el('div.dos-info', null, [el('div.dos-head', null, [epi, work, metaEl]), quote, see, dream])
+    const quote = el('blockquote.dos-quote', null, [zh])
+    const dream = c.dream ? el('div.dos-line.dos-line--dream', null, [el('span.dos-k', { text: '梦想' }), el('p.dos-v', { text: c.dream })]) : null
+    const info = el('div.dos-info', null, [el('div.dos-head', null, [epi, work, metaEl]), quote, dream])
 
     const read = el('div.dos-read', { 'aria-live': 'polite' }, [el('span.dos-read-k'), el('span.dos-read-v'), el('p.dos-read-n')])
     let pinned = -1
@@ -1235,7 +1234,7 @@
     const stats = el('div.dos-stats', null, [el('div.dos-sk', { text: '判定 · 七项' }), rd.svg, read, (c.carried || []).length ? el('div.dos-sk', { text: '随身物' }) : null, tags])
 
     page.append(stripe, block, big, fig, nameGhost, name, info, stats)
-    return { page, c, por, block, stripe, big, fig, name, nameGhost, nameChars, part, epi, work, metaEl, zh, orig, quote, see, dream, rd, tags, stats, info }
+    return { page, c, por, block, stripe, big, fig, name, nameGhost, nameChars, part, epi, work, metaEl, zh, quote, dream, rd, tags, stats, info }
   }
 
   function playPage(P, delay) {
@@ -1250,9 +1249,8 @@
       .fromTo(P.nameGhost, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 1.2, ease: 'expo.out' }, 0.35)
       .fromTo(P.big, { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 1.4, ease: 'expo.out' }, 0.15)
       .fromTo([P.epi, P.work, P.metaEl], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.07, ease: 'expo.out' }, 0.3)
-      .fromTo([P.see, P.dream], { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.8, stagger: 0.1, ease: 'expo.out' }, 0.75)
       .fromTo(P.stats.querySelectorAll('.cast-dos-sk'), { opacity: 0 }, { opacity: 1, duration: 0.6, stagger: 0.2 }, 0.3)
-      .fromTo(P.orig, { opacity: 0 }, { opacity: 0, duration: 0.01 }, 0)
+    if (P.dream) tl.fromTo(P.dream, { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.8, ease: 'expo.out' }, 0.75)
     if (P.part) tl.fromTo(P.part, { opacity: 0, yPercent: -40 }, { opacity: 1, yPercent: 0, duration: 0.6, ease: 'expo.out' }, 0.25 + P.nameChars.length * 0.05)
     if (P.tags.children.length) tl.fromTo(Array.from(P.tags.children), { opacity: 0, y: 8, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.06, ease: 'back.out(2)' }, 1.1)
     P.rd.play(d + 0.35)
@@ -1260,10 +1258,7 @@
     const q = (P.c.quote && P.c.quote.zh) || ''
     gsap.delayedCall(d + 0.6, () => {
       if (tk !== D.token) return
-      App.text.type(P.zh, typo(q), { speed: 46, cancel: () => tk !== D.token }).then(() => {
-        if (tk !== D.token) return
-        gsap.to(P.orig, { opacity: 1, duration: 0.9, ease: 'power2.out' })
-      })
+      App.text.type(P.zh, typo(q), { speed: 46, cancel: () => tk !== D.token })
     })
     return tl
   }
@@ -1310,7 +1305,7 @@
     if (si >= 0) { App.bus.emit('cast:unseat', { id: c.id }); App.audio.sfx('whoosh', { volume: 0.7 }) }
     else {
       const seats = App.state.seats || []
-      if (seats.filter(Boolean).length >= 15) { App.audio.sfx('wrong'); App.glitch(D.nav._seat, 0.35); return }
+      if (seats.filter(Boolean).length >= ((App.econ && App.econ.NST) || 13)) { App.audio.sfx('wrong'); App.glitch(D.nav._seat, 0.35); return }
       App.bus.emit('cast:seat', { id: c.id })
       App.audio.sfx('drop')
       App.flash(App.color.brass, { opacity: 0.12, duration: 0.5 })
@@ -1402,7 +1397,7 @@
   }, { passive: true })
 
   /* =====================================================================
-     入座标记（与十五席联动）
+     入座标记（与十三席联动）
      ===================================================================== */
   function syncSeats() {
     const seats = App.state.seats || []

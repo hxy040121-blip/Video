@@ -233,7 +233,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     ],
     executed: [
       '阿加尔……我辜负了您。',
-      '维特鲁姆……还剩三十几个人。谁来领他们。',
+      '维特鲁姆……碎片里还剩几个人？谁来领他们。',
       '你们以为这是秩序。不。这只是人多。',
     ],
     watch: [
@@ -395,7 +395,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
   gilgamesh: {
     wake: [
       '谁准许杂种把本王搬到这种地方？',
-      '哼，椅子倒是乌木的。勉强配得上本王。',
+      '哼，柜里那顶皇冠，勉强够格进本王的宝库。',
       '一桌杂种。这里的主人在哪？滚出来见本王。',
     ],
     discover: [
@@ -524,7 +524,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
 
   kiritsugu: {
     wake: [
-      '门三扇，没有窗。……烟呢。',
+      '门三扇，没有窗，顶上一只天眼。……烟呢。',
       '没有武器，没有烟。先数人数。',
       '十几个人。……先记下每一张脸。',
     ],
@@ -926,7 +926,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
     react: [
       '又死人了。……这地方，跟那条赛道一样。',
       '{V}？什么时候的事？',
-      '别看我。那层楼我连上都上不去。',
+      '别看我。上那层楼，我不是爬就是坐电梯，瞒得过谁？',
       '哼。死了就是死了。问题是谁干的。',
     ],
     search: [
@@ -982,7 +982,7 @@ window.TRIAL_LINES = Object.assign(window.TRIAL_LINES || {}, {
       '推{X}出去的人，自己倒挺干净的嘛。',
     ],
     defend: [
-      '我？一个连楼梯都爬不上去的人？',
+      '我？一个下了地只能爬的人？',
       '你看看我的腿！我怎么去？',
       '我想赢，没错。可不是这么赢。',
       '怀疑我？好啊，拿证据来！',

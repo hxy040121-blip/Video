@@ -1,6 +1,6 @@
 /* ==========================================================
    CHARACTERS（续）：v4.71 新增 15 人（字段同 characters.js，见那里的文件头注释）
-   来源：人物卡/<卡名>.md（卡面）与 人物卡/背景/<卡名>.md（卡背）。
+   来源：v7.11 人物卡/<卡名>.md（卡背已并回卡面）。
    两位乔瑟夫、两位承太郎在馆里报同一个名字（callName 相同）；同局时界面改说「N 号」。
    carried：卡上「随身物」都是「身上穿戴的之外，没有别的」；只把会影响线索判断的手套
             （手套污印，见 lore.js 的 gloves）照外貌记下。乔瑟夫（第二部）的是露指手套，不算。
@@ -12,7 +12,7 @@ window.CHARACTERS.push(
   "name": "乔瑟夫·乔斯达（第二部）",
   "callName": "乔瑟夫·乔斯达",
   "epithet": "波纹战士",
-  "work": "《JOJO的奇妙冒险 战斗潮流》",
+  "work": "《JoJo的奇妙冒险 战斗潮流》",
   "gender": "男",
   "age": "十八岁",
   "heightCm": 195,
@@ -31,10 +31,8 @@ window.CHARACTERS.push(
    "suspicion": "中"
   },
   "carried": [],
-  "othersSee": "人高马大、嘴快爱耍宝、一吃惊就嚷“OH! NO!”的毛头小子",
   "quote": {
-   "zh": "你的下一句台词是：'你怎么知道我戴着指虎，混蛋！'",
-   "orig": "おまえの次のセリフは『なんでメリケンのことわかったんだこの野郎！』という！"
+   "zh": "你的下一句台词是：'你怎么知道我戴着指虎，混蛋！'"
   },
   "dream": "活下去，痛痛快快地活",
   "lines": {
@@ -79,7 +77,7 @@ window.CHARACTERS.push(
   "name": "乔瑟夫·乔斯达（第三部）",
   "callName": "乔瑟夫·乔斯达",
   "epithet": "不动产大亨",
-  "work": "《JOJO的奇妙冒险 星尘斗士》",
+  "work": "《JoJo的奇妙冒险 星尘斗士》",
   "gender": "男",
   "age": "年近七十",
   "heightCm": 195,
@@ -100,10 +98,8 @@ window.CHARACTERS.push(
   "carried": [
    "白手套一双（戴在手上）"
   ],
-  "othersSee": "戴帽子和白手套、嗓门大爱咋呼的有钱美国老头",
   "quote": {
-   "zh": "'对手得意洋洋的时候，他就已经输了。'这就是乔瑟夫·乔斯达的做法。",
-   "orig": "『相手が勝ち誇ったとき そいつは すでに敗北している』 これがジョセフ・ジョースターのやり方"
+   "zh": "'对手得意洋洋的时候，他就已经输了。'这就是乔瑟夫·乔斯达的做法。"
   },
   "dream": "救荷莉，了结 DIO",
   "lines": {
@@ -148,7 +144,7 @@ window.CHARACTERS.push(
   "name": "空条承太郎（第三部）",
   "callName": "空条承太郎",
   "epithet": "不良少年",
-  "work": "《JOJO的奇妙冒险 星尘斗士》",
+  "work": "《JoJo的奇妙冒险 星尘斗士》",
   "gender": "男",
   "age": "十七岁（身体按十八岁计）",
   "heightCm": 195,
@@ -167,10 +163,8 @@ window.CHARACTERS.push(
    "suspicion": "中"
   },
   "carried": [],
-  "othersSee": "穿长长的学生服、脸冷话少、张口就是“吵死了”的不良少年",
   "quote": {
-   "zh": "真是够了。",
-   "orig": "やれやれだぜ"
+   "zh": "真是够了。"
   },
   "dream": "母亲活下来",
   "lines": {
@@ -214,7 +208,7 @@ window.CHARACTERS.push(
   "name": "空条承太郎（第六部）",
   "callName": "空条承太郎",
   "epithet": "海洋学者",
-  "work": "《JOJO的奇妙冒险 石之海》",
+  "work": "《JoJo的奇妙冒险 石之海》",
   "gender": "男",
   "age": "四十岁上下",
   "heightCm": 195,
@@ -233,10 +227,8 @@ window.CHARACTERS.push(
    "suspicion": "中"
   },
   "carried": [],
-  "othersSee": "一身扎眼的大衣、话少得像在省着用的高大中年人",
   "quote": {
-   "zh": "叫你观察……不是随便看看，是仔细地看……不是随便听听，是用心地听……",
-   "orig": "観察しろというのは…見るんじゃあなくて観ることだ…聞くんじゃあなく聴くことだ…"
+   "zh": "叫你观察……不是随便看看，是仔细地看……不是随便听听，是用心地听……"
   },
   "dream": "女儿平平安安地从监狱里出去，过她自己的日子",
   "lines": {
@@ -280,7 +272,7 @@ window.CHARACTERS.push(
   "name": "恩里克·普奇",
   "callName": "恩里克·普奇",
   "epithet": "神父",
-  "work": "《JOJO的奇妙冒险 石之海》",
+  "work": "《JoJo的奇妙冒险 石之海》",
   "gender": "男",
   "age": "三十九岁",
   "heightCm": 180,
@@ -299,10 +291,8 @@ window.CHARACTERS.push(
    "suspicion": "重"
   },
   "carried": [],
-  "othersSee": "安静端正、说话温和、愿意听人把话说完的神父，白发剃着花纹",
   "quote": {
-   "zh": "数'素数'让自己冷静下来……'素数'是只能被1和它自己整除的、孤独的数字……",
-   "orig": "『素数』を数えて落ちつくんだ…『素数』は1と自分の数でしか割ることのできない孤独な数字…"
+   "zh": "数'素数'让自己冷静下来……'素数'是只能被1和它自己整除的、孤独的数字……"
   },
   "dream": "到达“天国”：让所有的人事先知道自己的命运",
   "lines": {
@@ -346,7 +336,7 @@ window.CHARACTERS.push(
   "name": "迪亚哥·布兰度",
   "callName": "迪亚哥·布兰度",
   "epithet": "天才骑手",
-  "work": "《JOJO的奇妙冒险 飙马野郎》",
+  "work": "《JoJo的奇妙冒险 飙马野郎》",
   "gender": "男",
   "age": "二十岁",
   "heightCm": 180,
@@ -367,10 +357,8 @@ window.CHARACTERS.push(
   "carried": [
    "骑手手套一双（戴到小臂）"
   ],
-  "othersSee": "英俊讲究的英国骑手，带着上流腔调，笑里瞧不起人",
   "quote": {
-   "zh": "把曼哈顿岛给我！！",
-   "orig": "オレにマンハッタン島をくれッ！！"
+   "zh": "把曼哈顿岛给我！！"
   },
   "dream": "站到社会的顶上，让人群照他的意思走",
   "lines": {
@@ -424,7 +412,7 @@ window.CHARACTERS.push(
   "unknownDevices": "—",
   "stats": {
    "physique": "普通",
-   "physiqueNote": "成绩和运动都平平，没学过格斗",
+   "physiqueNote": "运动平平，没学过格斗",
    "disguise": "低",
    "readsPeople": "一般",
    "medical": "无",
@@ -433,10 +421,8 @@ window.CHARACTERS.push(
    "suspicion": "轻"
   },
   "carried": [],
-  "othersSee": "个子小、客气腼腆、心里想什么全写在脸上的高中男生",
   "quote": {
-   "zh": "那是不对的！",
-   "orig": "それは違うよ！"
+   "zh": "那是不对的！"
   },
   "dream": "和活下来的人一起走出这所学园，回家",
   "lines": {
@@ -502,10 +488,8 @@ window.CHARACTERS.push(
   "carried": [
    "黑色皮手套一双（戴在手上，人前不摘）"
   ],
-  "othersSee": "长发黑手套、话少冷淡，见了尸体蹲下就查的女生",
   "quote": {
-   "zh": "我也是人……喜怒哀乐，我和别人一样有……只是不让它露在脸上而已。",
-   "orig": "私だって人間よ…喜怒哀楽は人並みにあるわ…ただ、それを表に出さないようにしているだけ。"
+   "zh": "我也是人……喜怒哀乐，我和别人一样有……只是不让它露在脸上而已。"
   },
   "dream": "找到父亲，问清楚，然后和他一刀两断",
   "lines": {
@@ -569,10 +553,8 @@ window.CHARACTERS.push(
    "suspicion": "中"
   },
   "carried": [],
-  "othersSee": "端正克己、彬彬有礼的魁梧神父，眼睛像一口深井",
   "quote": {
-   "zh": "那就非问不可了。他为了追求什么而战，到头来……又得到了什么。",
-   "orig": "ならば問わねばなるまい。何を求めて戦い、その果てに…何を得たのかを"
+   "zh": "那就非问不可了。他为了追求什么而战，到头来……又得到了什么。"
   },
   "dream": "找到答案：他这样的人，为什么而生，什么能让他快乐",
   "lines": {
@@ -622,8 +604,8 @@ window.CHARACTERS.push(
   "heightCm": 180,
   "heightNote": "卡上只写“个子偏高”，没有数字；按外貌估计",
   "era": "忍界·第四次忍界大战之前",
-  "knowsModernDevices": true,
-  "unknownDevices": "—",
+  "knowsModernDevices": false,
+  "unknownDevices": "电梯，有声的影片和放映机，放音乐的机器，洗衣、烘干、洗碗的机器，泳池的水下灯，保龄球馆和它的机器，跑步机，电磁灶，充电电钻，电子秤和电子屏，投影机。",
   "stats": {
    "physique": "受训",
    "physiqueNote": "忍者出身；多年来靠六道作战，本人的体术平平",
@@ -635,10 +617,8 @@ window.CHARACTERS.push(
    "suspicion": "中"
   },
   "carried": [],
-  "othersSee": "眼里一圈圈波纹、红发遮着半边脸、说什么都像宣判的男人",
   "quote": {
-   "zh": "感受痛苦吧，思考痛苦吧，接受痛苦吧，了解痛苦吧。不知道痛的人，不懂真正的和平。",
-   "orig": "痛みを感じろ　痛みを考えろ　痛みを受け取れ　痛みを知れ　痛みを知らぬ者に　本当の平和は分からん"
+   "zh": "感受痛苦吧，思考痛苦吧，接受痛苦吧，了解痛苦吧。不知道痛的人，不懂真正的和平。"
   },
   "dream": "和平：一个不再有孩子在战争里失去一切的世界",
   "lines": {
@@ -701,10 +681,8 @@ window.CHARACTERS.push(
    "suspicion": "轻"
   },
   "carried": [],
-  "othersSee": "银色天然卷、死鱼眼、懒散邋遢、张嘴就损的男人",
   "quote": {
-   "zh": "有空把最后装点得漂漂亮亮，不如漂漂亮亮地活到最后。",
-   "orig": "美しく最後を飾りつける暇があるなら 最後まで美しく生きようじゃねーか"
+   "zh": "有空把最后装点得漂漂亮亮，不如漂漂亮亮地活到最后。"
   },
   "dream": "护住身边这几个人，让日子平平淡淡地过下去",
   "lines": {
@@ -750,10 +728,10 @@ window.CHARACTERS.push(
   "epithet": "钢铁侠",
   "work": "《复仇者联盟4：终局之战》",
   "gender": "男",
-  "age": "五十出头",
+  "age": "快五十",
   "heightCm": 172,
-  "heightNote": "卡上只写“个子不高”，没有数字；按外貌估计",
-  "era": "二〇二三年的美国",
+  "heightNote": "卡上只写“中等个子”，没有数字；按外貌估计",
+  "era": "二〇一八年的美国",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -763,16 +741,14 @@ window.CHARACTERS.push(
    "readsPeople": "一般",
    "medical": "基本常识",
    "observation": "擅长",
-   "killThreshold": "高",
-   "suspicion": "中"
+   "killThreshold": "中",
+   "suspicion": "重"
   },
   "carried": [],
-  "othersSee": "话多语速快、玩笑一个接一个、什么都想拿起来翻看的男人",
   "quote": {
-   "zh": "我就是钢铁侠。",
-   "orig": "I am Iron Man."
+   "zh": "我就是钢铁侠。"
   },
-  "dream": "把消失的人带回来，同时留住他已经有的",
+  "dream": "把消失的人带回来，又不失去现在有的",
   "lines": {
    "wake": "好吧。没有盔甲，没有星期五。这下有意思了。",
    "discover": "哦，不……谁来告诉我，这是怎么回事。",
@@ -780,31 +756,31 @@ window.CHARACTERS.push(
    "accuse": "{X}，你在虚张声势。谈判桌上我见多了。",
    "defend": "等等，我？我连这房子的电路都还没摸清呢。",
    "vote": "{X}。不是针对你……好吧，就是针对你。",
-   "executed": "莫甘……爸爸爱你，三千遍。",
-   "wish": "把消失的人带回来。然后回湖边，陪女儿长大。"
+   "executed": "小辣椒……哭两个礼拜就够了。然后，接着过日子。",
+   "wish": "把消失的人带回来。然后让我回家，睡一个安稳觉。"
   },
   "art": {
    "silhouetteKeys": [
-    "a distinctive, sharply sculpted goatee",
-    "dark-brown hair greying at the temples",
-    "a compact, well-proportioned build",
-    "casual at-home clothes",
+    "a once-sculpted goatee grown out ragged after three weeks adrift",
+    "dark-brown hair greying at the temples, unkempt",
+    "a compact frame gone noticeably thin",
+    "plain dark under-armour clothes from the battle on Titan",
     "a hand raised mid-gesture, as if about to take something apart"
    ],
-   "hair": "Dark-brown hair, neatly styled, greying at the temples.",
+   "hair": "Dark-brown hair greying at the temples, uncombed and grown a little shaggy.",
    "hairColor": "#3B2A20",
    "eyes": "Quick, restless dark-brown eyes that never stop scanning the room.",
    "eyeColor": "#4A3020",
    "skin": "#E6C7AC",
-   "face": "A man in his early fifties with a carefully trimmed, uniquely shaped goatee and tired lines around the eyes. An old scar on the chest where the arc reactor used to be (hidden).",
-   "outfit": "Casual clothes from the lake house, worn at home.",
+   "face": "A man in his late forties, gaunt after twenty-two days adrift in space: his signature goatee grown out and ragged, cracked dry lips, hollow cheeks, tired lines around the eyes. A fresh wound on the abdomen sealed with nanotech (hidden under the shirt).",
+   "outfit": "The plain dark casual clothes he wore under the armour on Titan, rumpled and grimy.",
    "outfitColors": [
-    "#2F3A44",
-    "#7A6A5A",
-    "#E8E2D0"
+    "#2A2F36",
+    "#4A4A4E",
+    "#7A6A5A"
    ],
-   "accessories": "None: no armor, no glasses, no AI.",
-   "expression": "A cocky half-smirk over tired eyes: already cracking a joke, already running the worst case.",
+   "accessories": "None: no armour, no glasses, no AI.",
+   "expression": "Exhausted, hollow eyes and a crooked half-smirk he can barely hold up: still cracking a joke, already past the worst case.",
    "accent": "#4FE0F0"
   },
   "canWalk": true
@@ -812,16 +788,16 @@ window.CHARACTERS.push(
  {
   "id": "hannibal",
   "name": "汉尼拔·莱克特",
-  "callName": "汉尼拔·莱克特",
+  "callName": "汉尼拔·莱克特医生",
   "epithet": "食人魔",
-  "work": "《沉默的羔羊》",
+  "work": "托马斯·哈里斯《沉默的羔羊》",
   "gender": "男",
-  "age": "五十多岁",
+  "age": "五十岁上下",
   "heightCm": 175,
   "heightNote": "卡上只写“中等个子”，没有数字；按外貌估计",
-  "era": "一九九〇年代初，巴哈马的北比米尼岛",
-  "knowsModernDevices": true,
-  "unknownDevices": "—",
+  "era": "一九八三年前后的巴尔的摩；一九七五年起关在牢里",
+  "knowsModernDevices": false,
+  "unknownDevices": "电磁灶、充电电钻、电子秤、保龄球馆的电子计分屏、数字投影机。一九七五年以后新出的东西，他没见过实物。",
   "stats": {
    "physique": "普通",
    "physiqueNote": "出手快、狠，下得去手；没学过格斗",
@@ -833,10 +809,8 @@ window.CHARACTERS.push(
    "suspicion": "中"
   },
   "carried": [],
-  "othersSee": "斯文讲究、说话轻、看人一眨不眨的绅士",
   "quote": {
-   "zh": "真希望我们能多聊一会儿，不过……我约了一位老朋友吃晚饭。",
-   "orig": "I do wish we could chat longer, but… I'm having an old friend for dinner."
+   "zh": "记忆，史达琳探员，是我用来代替窗子的东西。"
   },
   "dream": "自由地活：去他想去的地方，吃他想吃的东西",
   "lines": {
@@ -846,28 +820,28 @@ window.CHARACTERS.push(
    "accuse": "{X}，你身上有一丝不该有的气味。",
    "defend": "请别失礼。若真是我，诸位找不到这么多破绽。",
    "vote": "{X}。很遗憾，你太无礼了。",
-   "executed": "真可惜……比米尼岛的阳光那么好。",
+   "executed": "真可惜……那间有窗的屋子，终究没轮到我。",
    "wish": "一扇窗，一顿好饭，一个有意思的人。足够了。"
   },
   "art": {
    "silhouetteKeys": [
-    "dark hair slicked straight back from a high forehead",
-    "a sun hat",
-    "light-colored tropical clothes",
+    "dark hair slicked straight back to a widow's peak",
+    "a dark three-piece suit with a white shirt and tie",
     "a lean, very upright frame",
-    "pale, unblinking eyes fixed on the viewer"
+    "maroon eyes that catch tiny points of red light",
+    "six fingers on the left hand"
    ],
-   "hair": "Dark hair combed straight back from a high forehead.",
+   "hair": "Dark hair combed straight back from a widow's peak.",
    "hairColor": "#3A3530",
-   "eyes": "Pale eyes that barely blink and hold your gaze far too long.",
-   "eyeColor": "#8FA6B4",
+   "eyes": "Maroon eyes that reflect the light in tiny points of red; he barely blinks and holds your gaze far too long.",
+   "eyeColor": "#6E2A33",
    "skin": "#EAD5C2",
-   "face": "A man in his fifties with a high forehead and very pale skin, only lately touched by the sun; thin lips, composed features.",
-   "outfit": "Light-colored tropical clothes and a sun hat, like a gentleman on holiday.",
+   "face": "A man of about fifty with a widow's peak and the pallor of eight years without sunlight; small white teeth, thin lips, composed features. On the left hand, a sixth finger: the middle finger is doubled.",
+   "outfit": "A well-fitted dark three-piece suit, white shirt and tie, polished shoes: the clothes of the Baltimore psychiatrist he was before his arrest.",
    "outfitColors": [
-    "#EDE6D6",
-    "#C9B48A",
-    "#8A7A5E"
+    "#22232A",
+    "#F2F0EA",
+    "#6E2A33"
    ],
    "accessories": "None.",
    "expression": "Perfectly still and courteous, with a faint smile that makes the stomach tighten.",
@@ -882,10 +856,10 @@ window.CHARACTERS.push(
   "epithet": "七人队队长",
   "work": "《黑袍纠察队》",
   "gender": "男",
-  "age": "四十多岁",
+  "age": "四十来岁",
   "heightCm": 190,
   "heightNote": "卡上只写“个子很高”，没有数字；按外貌估计",
-  "era": "二〇二〇年代的美国华盛顿",
+  "era": "二〇二〇年代的美国纽约",
   "knowsModernDevices": true,
   "unknownDevices": "—",
   "stats": {
@@ -895,14 +869,12 @@ window.CHARACTERS.push(
    "readsPeople": "一般",
    "medical": "无",
    "observation": "一般",
-   "killThreshold": "无",
-   "suspicion": "重"
+   "killThreshold": "低",
+   "suspicion": "中"
   },
   "carried": [],
-  "othersSee": "高大英俊、笑容标准、说话像对着镜头的大明星",
   "quote": {
-   "zh": "我是祖国人。",
-   "orig": "I am the Homelander."
+   "zh": "没有神。天上唯一的人，是我。"
   },
   "dream": "被所有人爱，永远不死",
   "lines": {
@@ -920,16 +892,16 @@ window.CHARACTERS.push(
     "blond hair slicked back without a strand out of place",
     "a square jaw and a poster-perfect hero's smile",
     "very broad shoulders and a big, muscular frame",
-    "clothes rumpled and torn from a fight",
+    "a stars-and-stripes cape over a dark-blue suit with gold eagle emblems",
     "head held high, chest out, as if posing for a camera"
    ],
-   "hair": "Blond hair slicked back perfectly.",
+   "hair": "Blond hair slicked back perfectly; if you look closely, a first strand of white.",
    "hairColor": "#E4C77A",
    "eyes": "Blue eyes that do not join in the smile.",
    "eyeColor": "#4F86C6",
    "skin": "#F0D6C0",
    "face": "A square-jawed, all-American handsome man in his forties; the smile held a beat too long, a twitch at the corner of the mouth.",
-   "outfit": "Whatever he wore for the live broadcast from the Oval Office, rumpled and torn from a fight. (His famous look is a dark-blue suit with gold eagle emblems on the chest and shoulders and a stars-and-stripes cape.)",
+   "outfit": "His famous suit, freshly cleaned: a dark-blue bodysuit with gold eagle emblems on the chest and shoulders and a stars-and-stripes cape.",
    "outfitColors": [
     "#1B2A5A",
     "#C9A227",
@@ -966,12 +938,10 @@ window.CHARACTERS.push(
    "suspicion": "轻"
   },
   "carried": [],
-  "othersSee": "文雅亲切的金发青年，说话轻，记得别人说过的每一句话",
   "quote": {
-   "zh": "对谁都平等的……只有死。",
-   "orig": "誰にも平等なのは……死だけだ。"
+   "zh": "我以为自己已经走到了世上最黑暗的地方……可是……在我前面……还有一片更黑的黑暗。"
   },
-  "dream": "抹掉自己：让知道他的人都死去，最后他自己也消失",
+  "dream": "抹掉自己：让知道他的人都死去，只留下天马和妹妹，最后他自己也消失",
   "lines": {
    "wake": "很安静的房子。这里的每个人，都很孤独吧。",
    "discover": "可怜的人……最后看到的，是谁的脸呢。",

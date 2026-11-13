@@ -1,21 +1,22 @@
 /* ==========================================================
-   CHARACTERS：人物卡的提炼数据（来源：人物卡/<名>.md 与 人物卡/背景/<名>.md）。
+   CHARACTERS：人物卡的提炼数据（来源：v7.11 人物卡/<名>.md，卡背已并回卡面，一人一个文件）。
    本文件是最早的 38 人；v4.71 新增的 15 人在 characters-new.js，push 进同一个数组，字段相同。
    字段：
    id            英文短名（肖像文件名 assets/art/portraits/<id>.webp）
-   name          卡名（档案、卡池用）    epithet  称号（网站用的极短头衔）   work  原作
-   callName      在馆里自我介绍时报的名字（卡面「名字」一条；没写就是卡名去掉括号）；不报名为 null。
+   name          卡名（档案、卡池用）    epithet  称号（网站用的极短头衔，卡上没有）   work  原作
+   callName      在馆里自我介绍时报的名字（卡面「名字」一条；没写就是卡名去掉括号）；不报名为 null（宇智波带土、吉尔伽美什）。
                  广播与台词的 {X}/{V} 代入它；重名（同局两人报同一个名字）或 null 时，界面改说「N 号」
-   gender/age/heightCm/heightNote/era   age、era 照卡面；卡上没写年龄的留空
+   gender/age/heightCm/heightNote/era   age 取外貌首句、era 取「年代」一条；卡上没写年龄的留空
    knowsModernDevices  卡上「馆里多半没见过的」为「—」即 true；unknownDevices 为原文
    canWalk       false：卡上写明保留的残疾使他不能行走（格里菲斯、乔尼）
    stats         判定七项：physique 体能与格斗(普通/受训) physiqueNote 括号说明、disguise 伪装(高/中/低)、
                  readsPeople 善于读人(是/一般)、medical 医护、observation 现场观察(一般/擅长)、
                  killThreshold 杀人门槛(无/低/中/高)、suspicion 疑心(重/中/轻)
-   carried       随身物      othersSee  别人眼里（一句）
-   quote         {zh, orig} 卡上「声线」一节的原作台词
-   dream         梦想（一句）
-   lines         模拟庭审用的台词（新写，贴合各卡声线）：wake/discover/statement/accuse/defend/vote/executed/wish，{X} 代入对方的 callName
+   carried       随身物（衣着写在外貌里的不列；手套照外貌记下，庭审的手套污印用它）
+   quote         {zh} 卡上「声线」一节原作台词里的一句（v7.11 起卡上只有中文，原文与「别人眼里」一条都删了，网站也不再存）
+   dream         梦想（梦想一节的粗体首句，去掉「目的：」）
+   lines         人物卡上的八句台词（新写，贴合各卡声线）：wake/discover/statement/accuse/defend/vote/executed/wish，
+                 {X} 代入对方的 callName；wish 是终章用的那一句，其余是庭审台词池（lines/a–f.js，22 个场合）缺句时的回落
    art           立绘说明与签名色 accent
    ========================================================== */
 window.CHARACTERS = [
@@ -47,10 +48,8 @@ window.CHARACTERS = [
    "蓝色牛仔裤",
    "光着脚，没穿鞋"
   ],
-  "othersSee": "光脚蹲在椅上、眼圈乌黑、对谁都用敬语的怪人",
   "quote": {
-   "zh": "我是L。",
-   "orig": "私はLです"
+   "zh": "我是L。"
   },
   "dream": "抓住基拉，证明自己从头到尾是对的",
   "lines": {
@@ -115,10 +114,8 @@ window.CHARACTERS = [
    "黑色封面笔记本一册（DEATH NOTE，从火口手里缴获的那一本）",
    "左腕腕表一只（表底夹层藏笔记纸片与针）"
   ],
-  "othersSee": "英俊干净、有礼貌、让长辈放心的优等大学生",
   "quote": {
-   "zh": "我要成为新世界的神。",
-   "orig": "僕は新世界の神となる"
+   "zh": "我要成为新世界的神。"
   },
   "dream": "无罪恶的新世界，由他为神",
   "lines": {
@@ -184,10 +181,8 @@ window.CHARACTERS = [
    "黑白熊发饰一对（戴在头上）",
    "折叠小镜一面"
   ],
-  "othersSee": "嗓门大、表情多、跟谁都自来熟的辣妹模特",
   "quote": {
-   "zh": "这可真是，绝望地美妙啊！",
-   "orig": "これって、絶望的に素敵だわっ！"
+   "zh": "绝望地容易腻。"
   },
   "dream": "让所有人失去希望，最后轮到自己",
   "lines": {
@@ -240,7 +235,7 @@ window.CHARACTERS = [
   "unknownDevices": "—",
   "stats": {
    "physique": "普通",
-   "physiqueNote": "不爱运动，没受过任何格斗训练；力气小，常熬夜",
+   "physiqueNote": "不爱运动，没受过格斗训练",
    "disguise": "低",
    "readsPeople": "一般",
    "medical": "基本常识",
@@ -248,13 +243,9 @@ window.CHARACTERS = [
    "killThreshold": "高",
    "suspicion": "中"
   },
-  "carried": [
-   "白大褂一件（穿在身上）"
-  ],
-  "othersSee": "披着白大褂、说话简短犀利、难接近的天才少女",
+  "carried": [],
   "quote": {
-   "zh": "都说了别加'蒂娜'！",
-   "orig": "だから\"ティーナ\"って付けるな"
+   "zh": "都说了别加'蒂娜'！"
   },
   "dream": "弄清记忆是什么，被父亲承认",
   "lines": {
@@ -317,14 +308,9 @@ window.CHARACTERS = [
    "killThreshold": "高",
    "suspicion": "中"
   },
-  "carried": [
-   "帝丹高中男生制服（穿在身上）",
-   "鞋袜"
-  ],
-  "othersSee": "额前翘着一撮头发、说话快又得意的高中生",
+  "carried": [],
   "quote": {
-   "zh": "笨蛋……推理哪有什么输赢，哪有什么高下……真相永远……只有一个啊……",
-   "orig": "バーロ…推理に勝ったも負けたも、上も下もねーよ…真実はいつも…たった一つしかねーんだからな…"
+   "zh": "笨蛋……推理哪有什么输赢，哪有什么高下……真相永远……只有一个啊……"
   },
   "dream": "揪出组织，以新一的样子回到兰身边",
   "lines": {
@@ -369,15 +355,15 @@ window.CHARACTERS = [
   "epithet": "咨询侦探",
   "work": "《福尔摩斯探案集》",
   "gender": "男",
-  "age": "",
+  "age": "三十四岁上下",
   "heightCm": 183,
-  "heightNote": "卡面写'身高六英尺以上'，按六英尺≈183厘米折算，是下限；极瘦，显得更高",
-  "era": "一八九〇年，伦敦",
+  "heightNote": "卡面写'六英尺出头'，按六英尺≈183厘米折算，是下限；瘦得出奇，显得更高",
+  "era": "一八八八年，伦敦",
   "knowsModernDevices": false,
-  "unknownDevices": "电灯见得少；冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、放映机与影片、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料（另见\"时代\"一条）",
+  "unknownDevices": "电灯见得少；淋浴和冷热水龙头，放映机与影片，播放器与扬声器，冰箱冷柜，洗衣机，烘干机，洗碗机，塑料，泳池的水下灯，跑步机，电磁灶，保龄球馆的自动设备与计分屏，数字投影机。煤气灯、电报、火车、马车是他的日常。",
   "stats": {
    "physique": "受训",
-   "physiqueNote": "拳击、单棍、击剑都是行家，力气比看上去大得多",
+   "physiqueNote": "拳击行家，单棍、剑术也是行家；力气比看上去大，身手轻巧",
    "disguise": "高",
    "readsPeople": "是",
    "medical": "基本常识",
@@ -388,12 +374,10 @@ window.CHARACTERS = [
   "carried": [
    "放大镜",
    "卷尺",
-   "黑陶烟斗（空的，无烟叶无火）"
+   "陶土烟斗（空的）"
   ],
-  "othersSee": "极瘦极高、目光从脸扫到鞋的傲慢英国绅士",
   "quote": {
-   "zh": "排除了一切不可能的，剩下的无论多么难以置信，必定是真相。",
-   "orig": "When you have eliminated the impossible, whatever remains, however improbable, must be the truth."
+   "zh": "你在看，却没有观察。"
   },
   "dream": "把侦探术做成科学，一生有谜可解",
   "lines": {
@@ -447,7 +431,7 @@ window.CHARACTERS = [
   "unknownDevices": "—",
   "stats": {
    "physique": "普通",
-   "physiqueNote": "不擅长运动，不会打架；肩宽、体格结实",
+   "physiqueNote": "不擅长运动，不会打架",
    "disguise": "低",
    "readsPeople": "一般",
    "medical": "无",
@@ -459,10 +443,8 @@ window.CHARACTERS = [
    "律师徽章一枚（别在左领）",
    "勾玉一枚（只是一块玉石）"
   ],
-  "othersSee": "蓝西装、刺猬头、显老又有点丧的年轻律师",
   "quote": {
-   "zh": "异议！",
-   "orig": "異議あり！"
+   "zh": "异议！"
   },
   "dream": "让每个被指控的人都有人替他说话",
   "lines": {
@@ -515,7 +497,7 @@ window.CHARACTERS = [
   "unknownDevices": "—",
   "stats": {
    "physique": "普通",
-   "physiqueNote": "健康的年轻女性，没有练过什么",
+   "physiqueNote": "没有练过什么",
    "disguise": "高",
    "readsPeople": "是",
    "medical": "无",
@@ -524,14 +506,10 @@ window.CHARACTERS = [
    "suspicion": "中"
   },
   "carried": [
-   "金色长烟管一支（日式细杆烟管，烟锅是空的）",
-   "项圈（戴在颈上）",
-   "发间缀玫瑰的蝴蝶结"
+   "金色长烟管一支（日式细杆烟管，烟锅是空的）"
   ],
-  "othersSee": "穿蓬裙、戴项圈、拿金烟管，自称妾身，像站在戏台上",
   "quote": {
-   "zh": "妾身用红字说的，全是真实！",
-   "orig": "妾が赤で語ることは全て真実！"
+   "zh": "妾身用红字说的，全是真实！"
   },
   "dream": "让战人屈服，亲口承认魔女",
   "lines": {
@@ -595,10 +573,8 @@ window.CHARACTERS = [
    "suspicion": "轻"
   },
   "carried": [],
-  "othersSee": "红头发的高个子，嗓门大，咧嘴笑，像个没心没肺的高中生",
   "quote": {
-   "zh": "无论如何我都要否定你！！不管多不可思议，我全都用'人'来解释给你看！！！",
-   "orig": "何が何でも貴様を否定してやるぞ！！　どんな不可解だろうと全部、\"人間\"で説明してやるッ！！！"
+   "zh": "无论如何我都要否定你！！不管多不可思议，我全都用'人'来解释给你看！！！"
   },
   "dream": "否定魔女，找出六轩岛的真相",
   "lines": {
@@ -653,22 +629,19 @@ window.CHARACTERS = [
   "unknownDevices": "—",
   "stats": {
    "physique": "普通",
-   "physiqueNote": "骑车旅行的体力，没有格斗训练",
+   "physiqueNote": "不会打，遇事靠嘴，动手靠别人",
    "disguise": "高",
    "readsPeople": "是",
    "medical": "无",
    "observation": "一般",
-   "killThreshold": "高",
-   "suspicion": "中"
+   "killThreshold": "无",
+   "suspicion": "重"
   },
   "carried": [
-   "指针腕表一只（戴在手腕上）",
-   "狼神面具一只（只是一件面具）"
+   "指针腕表一只（戴在手腕上）"
   ],
-  "othersSee": "穿皮夹克的讨喜青年，开朗随和，像个无害的过路人",
   "quote": {
-   "zh": "我生来就没有对错的感觉，我能做的，顶多是照着别人的'正确'去模仿。",
-   "orig": "—"
+   "zh": "我生来就没有对错的感觉，我能做的，顶多是照着别人的'正确'去模仿。"
   },
   "dream": "真相——弄明白说不通的事",
   "lines": {
@@ -736,10 +709,8 @@ window.CHARACTERS = [
    "口红一支",
    "银戒指（左手拇指，父母的婚戒之一）"
   ],
-  "othersSee": "笑盈盈、说话文雅的漂亮女学生，亲切，有点不通世事",
   "quote": {
-   "zh": "来狂赌一场吧！",
-   "orig": "賭け狂いましょう！"
+   "zh": "来狂赌一场吧！"
   },
   "dream": "一场押上一切、谁也不知结果的赌",
   "lines": {
@@ -802,10 +773,8 @@ window.CHARACTERS = [
    "suspicion": "重"
   },
   "carried": [],
-  "othersSee": "瘦弱的银发青年，懒洋洋，说话像在逗人，跑两步就喘",
   "quote": {
-   "zh": "你是个骗子呢。",
-   "orig": "あんた、嘘つきだね"
+   "zh": "你是个骗子呢。"
   },
   "dream": "赢下屋形越え，坐上赌郎顶点",
   "lines": {
@@ -870,10 +839,8 @@ window.CHARACTERS = [
   "carried": [
    "麻将牌三张：白、发、中各一（骨面竹背，藏在左袖口暗袋）"
   ],
-  "othersSee": "白发的瘦削青年，话少得近乎失礼，眼神看不透",
   "quote": {
-   "zh": "去死不就得救了……",
-   "orig": "死ねば助かるのに……"
+   "zh": "去死不就得救了……"
   },
   "dream": "作为赤木茂活，作为赤木茂死",
   "lines": {
@@ -918,7 +885,7 @@ window.CHARACTERS = [
   "epithet": "绝境赌徒",
   "work": "《赌博默示录》",
   "gender": "男",
-  "age": "二十三四岁",
+  "age": "二十多岁",
   "heightCm": 178,
   "heightNote": "卡上写的是“一米七八上下”",
   "era": "二〇〇〇年前后的东京",
@@ -932,13 +899,11 @@ window.CHARACTERS = [
    "medical": "无",
    "observation": "一般",
    "killThreshold": "高",
-   "suspicion": "轻"
+   "suspicion": "中"
   },
   "carried": [],
-  "othersSee": "邋遢驼背的长发青年，脸、耳、手指都是疤，像个倒霉穷鬼",
   "quote": {
-   "zh": "命排第二……！第一是人生吧！",
-   "orig": "「命は、二番だ…！一番は、人生だろ！」"
+   "zh": "不为了赢活着，还活着干什么……！"
   },
   "dream": "还清债务，带同伴一起上岸",
   "lines": {
@@ -992,7 +957,7 @@ window.CHARACTERS = [
   "unknownDevices": "—",
   "stats": {
    "physique": "普通",
-   "physiqueNote": "身体没打过架；她的强从来不在身上",
+   "physiqueNote": "没练过拳脚；她的强从来不在身上",
    "disguise": "高",
    "readsPeople": "是",
    "medical": "无",
@@ -1003,10 +968,8 @@ window.CHARACTERS = [
   "carried": [
    "公安的证件一本"
   ],
-  "othersSee": "温和好看的年轻女上司，金眼里的同心纹让人不敢久视",
   "quote": {
-   "zh": "回答只准说'是'或者'汪'。会说'不'的狗，我不需要。",
-   "orig": "「返事は『はい』か『ワン』だけ。いいえなんて言う犬はいらない」"
+   "zh": "你有两个选择。作为恶魔被我杀掉，或者作为人被我养着。"
   },
   "dream": "更好的世界，和并肩的存在",
   "lines": {
@@ -1069,10 +1032,8 @@ window.CHARACTERS = [
    "suspicion": "重"
   },
   "carried": [],
-  "othersSee": "衣着考究的苍白绅士，客气含笑，眼睛是少见的红梅色",
   "quote": {
-   "zh": "不对，不对，不对，不对。我是无限接近完美的生物。",
-   "orig": "「違う　違う　違う　違う　私は限りなく完璧に近い生物だ」"
+   "zh": "不对，不对，不对，不对。我是无限接近完美的生物。"
   },
   "dream": "不死，以完美之姿永远不变",
   "lines": {
@@ -1138,10 +1099,8 @@ window.CHARACTERS = [
   "carried": [
    "蝶翅纹样的羽织（姐姐的遗物）"
   ],
-  "othersSee": "瘦小的姑娘披着蝶翅羽织，笑着轻声细语，满口敬语",
   "quote": {
-   "zh": "要是人和鬼大家都能好好相处就好了呢。",
-   "orig": "「人も鬼もみんな仲良くすればいいのに」"
+   "zh": "要是人和鬼大家都能好好相处就好了呢。"
   },
   "dream": "不再有人一夜之间失去家人",
   "lines": {
@@ -1211,10 +1170,8 @@ window.CHARACTERS = [
    "黑色草鞋",
    "黑色羽织"
   ],
-  "othersSee": "黑纹红眼的青年，白和服罩黑羽织，腔调老派，笑里带嘲弄",
   "quote": {
-   "zh": "骄傲吧。你很强。",
-   "orig": "「誇れ　お前は強い」"
+   "zh": "骄傲吧。你很强。"
   },
   "dream": "一副只属于自己、不受管的身体",
   "lines": {
@@ -1279,10 +1236,8 @@ window.CHARACTERS = [
   "carried": [
    "律师徽章一枚（金色向日葵，花心一架天平）"
   ],
-  "othersSee": "黑西装别着律师徽章的倦怠中年人，眼白多，像没睡够",
   "quote": {
-   "zh": "为了不把抓住我的手甩开，至少我自己，想睁着眼睛。",
-   "orig": "「縋りついてきた手を振り払わない様に、私だけは目を開けていたい」"
+   "zh": "为了不把抓住我的手甩开，至少我自己，想睁着眼睛。"
   },
   "dream": "一种不闭眼的正义",
   "lines": {
@@ -1333,8 +1288,8 @@ window.CHARACTERS = [
   "heightCm": 179,
   "heightNote": "",
   "era": "忍界·第四次忍界大战",
-  "knowsModernDevices": true,
-  "unknownDevices": "—",
+  "knowsModernDevices": false,
+  "unknownDevices": "电梯，有声的影片和放映机，放音乐的机器，洗衣、烘干、洗碗的机器，泳池的水下灯，保龄球馆和它的机器，跑步机，电磁灶，充电电钻，电子秤和电子屏，投影机。",
   "stats": {
    "physique": "受训",
    "physiqueNote": "顶尖；几十年战场练出的体术、忍具与兵器，近身搏杀的好手",
@@ -1346,13 +1301,10 @@ window.CHARACTERS = [
    "suspicion": "中"
   },
   "carried": [
-   "红色战国式铠甲（穿戴在身上）",
    "手套"
   ],
-  "othersSee": "黑长发披腰、穿红色旧铠甲的男人，口气像长辈看小辈",
   "quote": {
-   "zh": "看来你已经跳不动了，大野木。",
-   "orig": "もう踊れそうにないな…オオノキよ"
+   "zh": "看来你已经跳不动了，大野木。"
   },
   "dream": "真正的和平：再没有人失去亲人",
   "lines": {
@@ -1369,8 +1321,8 @@ window.CHARACTERS = [
    "silhouetteKeys": [
     "Enormous wild mane of black hair flaring out and down to the waist, ends stiff and jagged like a spiked fan",
     "Long uneven bangs sweeping down over the right eye",
-    "Large layered Sengoku-era shoulder guards jutting past the shoulder line",
-    "High stiff collar of the under-robe rising to the jaw",
+    "A dark high-collared long robe, no armour",
+    "High stiff collar rising to the jaw",
     "Arms folded across the chest, chin raised"
    ],
    "hair": "Very thick, voluminous straight-to-spiky black hair falling to the waist, the whole mass bristling outward with hard jagged tips; long ragged bangs hang down and fully cover the right eye; a few strands frame the left cheek",
@@ -1379,12 +1331,11 @@ window.CHARACTERS = [
    "eyeColor": "#1A1717",
    "skin": "#EAD7C3",
    "face": "Pale, lean, sharp-jawed face with high cheekbones; no scars; mouth thin and set; the right half of the face shadowed by hair",
-   "outfit": "Dark navy high-collared long robe, collar standing up to the jaw; over it crimson Sengoku-era Japanese armor: a chest plate of horizontal lacquered bands, big multi-plate shoulder guards (sode), a plated skirt below the waist; dark gloves",
+   "outfit": "Dark navy high-collared long robe, collar standing up to the jaw; no armour; dark gloves",
    "outfitColors": [
-    "#7A1F1F",
     "#1B1E2B",
     "#2A2626",
-    "#5A1414"
+    "#7A1F1F"
    ],
    "accessories": "Dark gloves; no war-fan (gunbai), no weapon",
    "expression": "A slow, contemptuous half-smile, one visible eye looking down at the viewer like an elder appraising a child who wants to fight; utterly at ease, faintly bored, as if waiting for you to make it interesting",
@@ -1403,8 +1354,8 @@ window.CHARACTERS = [
   "heightCm": 178,
   "heightNote": "",
   "era": "忍界·第四次忍界大战之前",
-  "knowsModernDevices": true,
-  "unknownDevices": "—",
+  "knowsModernDevices": false,
+  "unknownDevices": "电梯，有声的影片和放映机，放音乐的机器，洗衣、烘干、洗碗的机器，泳池的水下灯，保龄球馆和它的机器，跑步机，电磁灶，充电电钻，电子秤和电子屏，投影机。",
   "stats": {
    "physique": "受训",
    "physiqueNote": "顶尖，手里剑与体术；身形瘦，靠速度、准头和判断",
@@ -1416,14 +1367,10 @@ window.CHARACTERS = [
    "suspicion": "重"
   },
   "carried": [
-   "“晓”的红云黑袍（穿在身上）",
-   "刻着“朱”字的戒指（右手无名指）",
-   "划了一道的木叶护额（系在额上）"
+   "刻着“朱”字的“晓”戒指（右手无名指）"
   ],
-  "othersSee": "高瘦安静的年轻人，眼下两道长纹，客气、疏远、看不透",
   "quote": {
-   "zh": "愚蠢的弟弟啊，想杀我的话，就怨恨我吧！憎恨我吧！",
-   "orig": "愚かなる弟よ　このオレを殺したくば　恨め！　憎め！"
+   "zh": "愚蠢的弟弟啊，想杀我的话，就怨恨我吧！憎恨我吧！"
   },
   "dream": "不再打仗的世界；佐助活下去",
   "lines": {
@@ -1474,8 +1421,8 @@ window.CHARACTERS = [
   "heightCm": 168,
   "heightNote": "",
   "era": "忍界·第四次忍界大战结束后不久",
-  "knowsModernDevices": true,
-  "unknownDevices": "—",
+  "knowsModernDevices": false,
+  "unknownDevices": "电梯，有声的影片和放映机，放音乐的机器，洗衣、烘干、洗碗的机器，泳池的水下灯，保龄球馆和它的机器，跑步机，电磁灶，充电电钻，电子秤和电子屏，投影机。",
   "stats": {
    "physique": "受训",
    "physiqueNote": "顶尖，剑术、体术与手里剑；只剩右臂，抓、挡、攀爬都比从前难",
@@ -1491,10 +1438,8 @@ window.CHARACTERS = [
    "斗篷底下一身深色衣裤",
    "划了一道的旧木叶护额（收在斗篷底下）"
   ],
-  "othersSee": "清瘦俊秀、少一条胳膊的年轻人，问一句答一句，口气冷",
   "quote": {
-   "zh": "正因为有羁绊才痛苦！失去它是什么滋味，你这种人怎么会懂！",
-   "orig": "繋がりがあるからこそ苦しいんだ！　それを失うことがどんなもんかお前なんかに！"
+   "zh": "正因为有羁绊才痛苦！失去它是什么滋味，你这种人怎么会懂！"
   },
   "dream": "亲眼看清世界，赎罪，与鸣人一战",
   "lines": {
@@ -1544,8 +1489,8 @@ window.CHARACTERS = [
   "heightCm": 182,
   "heightNote": "",
   "era": "忍界·第四次忍界大战",
-  "knowsModernDevices": true,
-  "unknownDevices": "—",
+  "knowsModernDevices": false,
+  "unknownDevices": "电梯，有声的影片和放映机，放音乐的机器，洗衣、烘干、洗碗的机器，泳池的水下灯，保龄球馆和它的机器，跑步机，电磁灶，充电电钻，电子秤和电子屏，投影机。",
   "stats": {
    "physique": "受训",
    "physiqueNote": "体术与兵器，多年实战；体术能和卡卡西打个平手",
@@ -1557,18 +1502,13 @@ window.CHARACTERS = [
    "suspicion": "重"
   },
   "carried": [
-   "白色贴身衬衣",
-   "深紫色高领长衣（背后宇智波团扇家纹）",
-   "浅紫色宽腰带与皮带",
-   "黑长裤",
+   "水门班四人的合影（他不知道它怎么会在身上）",
    "黑手套"
   ],
-  "othersSee": "右半边脸满是皱疤的高个男人，话冷而慢，像心已经死了",
   "quote": {
-   "zh": "不珍惜同伴的人，连废物都不如。",
-   "orig": "仲間を大切にしない奴は　それ以上のクズだ"
+   "zh": "不珍惜同伴的人，连废物都不如。"
   },
-  "dream": "一个琳还活着的世界",
+  "dream": "一个人可以做真正的自己的世界；在那里，琳活着",
   "lines": {
    "wake": "……神树的花呢？月亮，还没照下来。",
    "discover": "又死一个。这世界，哪里都是地狱。",
@@ -1621,7 +1561,7 @@ window.CHARACTERS = [
   "unknownDevices": "—",
   "stats": {
    "physique": "受训",
-   "physiqueNote": "顶尖；剑术与体术受过上百年的训练",
+   "physiqueNote": "顶尖：剑术和体术；近身，出手少",
    "disguise": "高",
    "readsPeople": "是",
    "medical": "无",
@@ -1632,10 +1572,8 @@ window.CHARACTERS = [
   "carried": [
    "白色长衣与腰间束带（穿在身上），此外别无一物"
   ],
-  "othersSee": "白衣高个、嘴角带笑的男人，客气文雅，稳重得猜不透",
   "quote": {
-   "zh": "今后由我立于天上。",
-   "orig": "私が天に立つ"
+   "zh": "今后由我立于天上。"
   },
   "dream": "立于天上，推翻灵王",
   "lines": {
@@ -1696,17 +1634,9 @@ window.CHARACTERS = [
    "killThreshold": "中",
    "suspicion": "轻"
   },
-  "carried": [
-   "黑色无袖高领长披风（搭在肩上）",
-   "白衬衫",
-   "腰间饰带",
-   "过膝、小腿处收口的裤子",
-   "棕色凉鞋"
-  ],
-  "othersSee": "高大黝黑的独臂红发汉子，笑声大，好说话，爱热闹",
+  "carried": [],
   "quote": {
-   "zh": "一条胳膊而已，便宜得很……你没事就好。",
-   "orig": "安いもんだ　腕の一本くらい…　無事でよかった"
+   "zh": "一条胳膊而已，便宜得很……你没事就好。"
   },
   "dream": "看遍这片海，把新时代交给对的人",
   "lines": {
@@ -1771,10 +1701,8 @@ window.CHARACTERS = [
   "carried": [
    "无（身上只有一身便服）"
   ],
-  "othersSee": "高大安静的年轻人，脑后扎髻，面无表情，直直盯着人",
   "quote": {
-   "zh": "我要把它们驱逐干净！！从这个世界上……一只……不剩！！",
-   "orig": "駆逐してやる!!この世から…一匹…残らず!!"
+   "zh": "我要把它们驱逐干净！！从这个世界上……一只……不剩！！"
   },
   "dream": "自由：岛上的人自由地活下去",
   "lines": {
@@ -1840,10 +1768,8 @@ window.CHARACTERS = [
    "黑色旧围巾（围在脖子上）",
    "调查兵团的军装"
   ],
-  "othersSee": "高挑结实的年轻女人，黑短发，围着旧围巾，面无表情",
   "quote": {
-   "zh": "这个世界是残酷的……而且……很美。",
-   "orig": "この世界は残酷だ…そして…とても美しい。"
+   "zh": "这个世界是残酷的……而且……很美。"
   },
   "dream": "回家：和艾伦、阿尔敏平安过日子",
   "lines": {
@@ -1889,7 +1815,7 @@ window.CHARACTERS = [
   "epithet": "超大型巨人",
   "work": "《进击的巨人》",
   "gender": "男",
-  "age": "十五岁（身体按十八岁计）",
+  "age": "",
   "heightCm": 163,
   "heightNote": "",
   "era": "帕拉迪岛的墙内·850年（虚构世界）",
@@ -1906,10 +1832,8 @@ window.CHARACTERS = [
    "suspicion": "中"
   },
   "carried": [],
-  "othersSee": "瘦小秀气的金发少年，一身军装，礼貌，紧张会结巴",
   "quote": {
-   "zh": "如果有谁能改变什么，那个人一定是能够舍弃重要之物的人。",
-   "orig": "何かを変えることのできる人間がいるとすれば、その人は、きっと…大事なものを捨てることができる人だ"
+   "zh": "如果有谁能改变什么，那个人一定是能够舍弃重要之物的人。"
   },
   "dream": "到墙外去，亲眼看看这个世界",
   "lines": {
@@ -1972,14 +1896,10 @@ window.CHARACTERS = [
    "suspicion": "重"
   },
   "carried": [
-   "黑色铠甲（穿在身上）",
-   "黑斗篷（在伯爵城当过替身）",
    "伯爵的贝黑莉特（生着眼鼻嘴的蛋形怪石）"
   ],
-  "othersSee": "极高大的独眼独臂男人，黑甲黑斗篷，满身是疤",
   "quote": {
-   "zh": "逃出去的地方，没有什么乐园。到了那儿，等着你的还是战场。",
-   "orig": "逃げ出した先に楽園なんてありゃしねえのさ　辿り着いた先　そこにあるのはやっぱり戦場だけだ"
+   "zh": "别想那么多。现在，只要觉得自己还活着就行。"
   },
   "dream": "报仇：杀了格里菲斯",
   "lines": {
@@ -1995,7 +1915,7 @@ window.CHARACTERS = [
   "art": {
    "silhouetteKeys": [
     "short, stiff, spiky black hair sticking out in every direction",
-    "enormous broad shoulders under a heavy black cloak with a bulky high collar",
+    "enormous broad shoulders under a heavy black cloak",
     "left arm ending in a stump just below the elbow (no prosthetic)",
     "right eye shut with a scarred lid",
     "thick neck and heavy square jaw"
@@ -2006,7 +1926,7 @@ window.CHARACTERS = [
    "eyeColor": "#3a2e28",
    "skin": "#c79f7c",
    "face": "hard, angular, weathered face; square jaw; thick brows knotted together; a horizontal scar across the bridge of the nose; layered small old scars on cheeks and chin; on the right side of the neck toward the back, a branded mark shaped like a stretched 'Y' with a long hooked tail (now only a dark scar, not bleeding)",
-   "outfit": "Black Swordsman gear: blackened-steel armour, a chest plate over black padded leather, a heavy rounded pauldron on the left shoulder, black leather belts across the chest, all under a long tattered black cloak with a high bulky collar. No giant sword on his back and no iron prosthetic arm.",
+   "outfit": "Plain black clothes, no armour, all under a long tattered black cloak. No giant sword on his back and no iron prosthetic arm.",
    "outfitColors": [
     "#1a1a1c",
     "#3a3b3f",
@@ -2046,10 +1966,8 @@ window.CHARACTERS = [
    "鹰头铁面盔（罩在头上，自己摘不下）",
    "身上的绷带"
   ],
-  "othersSee": "缠满绷带、瘦成骨头的人，罩着鹰头铁面盔，说不出话",
   "quote": {
-   "zh": "我中意你。我想要你，格斯。",
-   "orig": "オレはおまえが気に入った　おまえが欲しいんだ　ガッツ"
+   "zh": "我中意你。我想要你，格斯。"
   },
   "dream": "一座自己的城，一个自己的国",
   "lines": {
@@ -2100,7 +2018,7 @@ window.CHARACTERS = [
   "heightNote": "卡上只写“身形极其高大”，没有数字；按原作里他明显高过诺兰等维特鲁姆人估算，属推断",
   "era": "维特鲁姆帝国·星际时代（与地球二〇〇〇年代同时）",
   "knowsModernDevices": false,
-  "unknownDevices": "地球人家里的日用器具（冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、钢琴、台球、扑克、麻将之类）；电和机器本身他不陌生，摆弄一下就明白用法。",
+  "unknownDevices": "地球人家里的日用器具（冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、钢琴、台球、扑克、麻将之类）；电和机器本身他不陌生，摆弄几下多半就明白用法。",
   "stats": {
    "physique": "受训",
    "physiqueNote": "顶尖",
@@ -2114,12 +2032,10 @@ window.CHARACTERS = [
   "carried": [
    "无（身上只有那身制服）"
   ],
-  "othersSee": "极高大、肌肉厚得出奇的男人，浓黑胡子，红色紧身制服",
   "quote": {
-   "zh": "你没有选择。可你还是得做一个。",
-   "orig": "You do not have a choice. And yet, you must still make one."
+   "zh": "维特鲁姆不是坟墓！它就是我们。"
   },
-  "dream": "让维特鲁姆重新站起来",
+  "dream": "维特鲁姆回来",
   "lines": {
    "wake": "……力气不在了。先弄清谁强。",
    "discover": "弱者先死。这是秩序。",
@@ -2181,10 +2097,8 @@ window.CHARACTERS = [
    "suspicion": "轻"
   },
   "carried": [],
-  "othersSee": "金发碧眼、一身深色西装，站得笔直，像个俊秀的少年护卫",
   "quote": {
-   "zh": "这双手没能护住的不列颠，我无论如何都要救。",
-   "orig": "この手で護りきれなかったブリテンを、私は何としても救済したい。"
+   "zh": "这双手没能护住的不列颠，我无论如何都要救。"
   },
   "dream": "救回不列颠",
   "lines": {
@@ -2226,7 +2140,7 @@ window.CHARACTERS = [
  {
   "id": "gilgamesh",
   "name": "吉尔伽美什",
-  "callName": "吉尔伽美什",
+  "callName": null,
   "epithet": "英雄王",
   "work": "《Fate/Zero》",
   "gender": "男",
@@ -2235,10 +2149,10 @@ window.CHARACTERS = [
   "heightNote": "",
   "era": "一九九四年的冬木；生前是公元前三千纪的乌鲁克",
   "knowsModernDevices": true,
-  "unknownDevices": "—（召唤出来这几天，他常在冬木的街上闲逛）",
+  "unknownDevices": "—（圣杯给了他这个时代的常识：电灯、汽车、酒店、便服，他都认得，用惯了，只是嫌丑）",
   "stats": {
    "physique": "受训",
-   "physiqueNote": "古代的战士之王；原作里打仗靠宝库，不靠手上的功夫",
+   "physiqueNote": "上古的战士之王",
    "disguise": "低",
    "readsPeople": "是",
    "medical": "无",
@@ -2247,10 +2161,8 @@ window.CHARACTERS = [
    "suspicion": "轻"
   },
   "carried": [],
-  "othersSee": "红眼金发的俊美青年，神情倦怠，看人像看路边的东西",
   "quote": {
-   "zh": "蠢货。真正称得上王的英雄，天上地下只有本王一个。其余的，不过是些乌合之众的杂种。",
-   "orig": "たわけ。真の王たる英雄は、天上天下に我ただ独り。あとは有象無象の雑種にすぎん"
+   "zh": "蠢货。天上地下，配称王的英雄只有本王一个；其余的，不过是一群杂种。"
   },
   "dream": "看这世界值不值得他宠爱",
   "lines": {
@@ -2277,7 +2189,7 @@ window.CHARACTERS = [
    "eyeColor": "#C3141F",
    "skin": "#F4E3D3",
    "face": "Strikingly handsome, fine-boned face with a sharp jaw and thin brows; one corner of the mouth permanently lifted in a sneer.",
-   "outfit": "Modern clothes for an evening stroll: a black leather jacket worn open, with plush white fur lining the collar and cuffs; fashionable snakeskin-pattern leather trousers (pale tan with dark scales) below the frame.",
+   "outfit": "Modern clothes for an evening stroll: a black leather jacket worn open, with plush white fur lining the collar and cuffs, over a white V-neck top; fashionable snakeskin-pattern trousers (pale tan with dark scales) below the frame.",
    "outfitColors": [
     "#121212",
     "#F3F0E8",
@@ -2313,14 +2225,12 @@ window.CHARACTERS = [
    "suspicion": "重"
   },
   "carried": [],
-  "othersSee": "邋遢疲惫的男人，乱发胡茬，一身烟味，看人像看一件东西",
   "quote": {
-   "zh": "靠正义救不了世界。",
-   "orig": "正義で世界は救えない"
+   "zh": "你是我真正的家人。"
   },
   "dream": "再也没有人流血的世界",
   "lines": {
-   "wake": "门三扇，没有窗。……烟呢。",
+   "wake": "门三扇，没有窗，顶上一只天眼。……烟呢。",
    "discover": "死了不到两小时。别碰门把手。",
    "statement": "凶手还会再动手。投错一个，多死一个。就这样。",
    "accuse": "{X}的说法里，少了二十分钟。",
@@ -2382,10 +2292,8 @@ window.CHARACTERS = [
    "身上那身衣服与镶金边的白色短披肩",
    "金耳饰一对，垂着水滴形红宝石"
   ],
-  "othersSee": "白发尖耳的矮小少女，眼皮半垂像没睡醒，说话直来直去",
   "quote": {
-   "zh": "……明明知道人类的寿命很短……为什么我没想过要多了解他一些呢。",
-   "orig": "……人間の寿命は短いってわかっていたのに……なんでもっと知ろうと思わなかったんだろう"
+   "zh": "……明明知道人类的寿命很短……为什么我没想过要多了解他一些呢。"
   },
   "dream": "再和辛美尔说一次话",
   "lines": {
@@ -2430,7 +2338,7 @@ window.CHARACTERS = [
   "name": "迪奥·布兰度",
   "callName": "迪奥·布兰度",
   "epithet": "吸血鬼",
-  "work": "《JOJO的奇妙冒险 星尘斗士》",
+  "work": "《JoJo的奇妙冒险 星尘斗士》",
   "gender": "男",
   "age": "",
   "heightCm": 195,
@@ -2440,7 +2348,7 @@ window.CHARACTERS = [
   "unknownDevices": "—",
   "stats": {
    "physique": "受训",
-   "physiqueNote": "贫民窟的徒手打架、少年时的拳击、青年时的橄榄球",
+   "physiqueNote": "贫民窟里的徒手打架，拳击，橄榄球",
    "disguise": "高",
    "readsPeople": "是",
    "medical": "无",
@@ -2452,10 +2360,8 @@ window.CHARACTERS = [
    "素色手帕一方",
    "皮面小开本笔记一册（写着“到天堂去的方法”）"
   ],
-  "othersSee": "高大苍白的金发男人，打扮扎眼，目光像能把人钉住",
   "quote": {
-   "zh": "你记得自己至今吃过多少片面包吗？",
-   "orig": "おまえは今まで食ったパンの枚数をおぼえているのか？"
+   "zh": "你记得自己至今吃过多少片面包吗？"
   },
   "dream": "到“天堂”去",
   "lines": {
@@ -2499,32 +2405,27 @@ window.CHARACTERS = [
   "name": "乔尼·乔斯达",
   "callName": "乔尼·乔斯达",
   "epithet": "漆黑的意志",
-  "work": "《JOJO的奇妙冒险 飙马野郎》",
+  "work": "《JoJo的奇妙冒险 飙马野郎》",
   "gender": "男",
   "age": "十九岁",
   "heightCm": 180,
   "heightNote": "卡上未写身高，按外貌估计",
-  "era": "一八九〇至九一年之交的美国费城",
+  "era": "一八九〇年十二月二十八日的美国费城",
   "knowsModernDevices": false,
   "unknownDevices": "电灯见得少；冰箱冷柜、洗衣机、烘干机、洗碗机、跑步机、泳池的水下灯、放映机与影片、播放器与扬声器、保龄球馆的自动设备与计分屏、电磁灶、塑料（另见\"时代\"一条）。",
   "stats": {
    "physique": "普通",
-   "physiqueNote": "上身有力，腰以下瘫痪",
+   "physiqueNote": "上身有力，腰以下瘫痪；够得着的只有一臂的距离",
    "disguise": "低",
    "readsPeople": "一般",
    "medical": "无",
    "observation": "一般",
-   "killThreshold": "低",
+   "killThreshold": "无",
    "suspicion": "重"
   },
-  "carried": [
-   "帽子上的小马蹄铁（取得下来）",
-   "靴跟上的马刺（取得下来）"
-  ],
-  "othersSee": "腿不能动、上身结实的年轻人，戴一顶开了两个洞的星星帽",
+  "carried": [],
   "quote": {
-   "zh": "我还是'负数'啊！我想往'零'那边走！",
-   "orig": "ぼくはまだ『マイナス』なんだッ！『ゼロ』に向かって行きたいッ！"
+   "zh": "我还是'负数'啊！我想往'零'那边走！"
   },
   "dream": "回到“零”，用自己的腿走路",
   "lines": {
@@ -2532,33 +2433,33 @@ window.CHARACTERS = [
    "discover": "下手的人，一点都没犹豫。",
    "statement": "谁对谁错我不管。挡我回去的，就是敌人。",
    "accuse": "{X}！你的眼神，是杀过人的眼神！",
-   "defend": "我？一个连楼梯都爬不上去的人？",
+   "defend": "我？一个下了地只能爬的人？",
    "vote": "{X}。我已经不再犹豫了。",
    "executed": "又被夺走了……我还是负数啊。",
    "wish": "我站起来了……杰洛，你看见了吗？"
   },
   "art": {
    "silhouetteKeys": [
-    "a snug knit beanie with two holes on top, hair poking out of them like two short horns",
-    "a small horseshoe charm on the front of the hat",
-    "shoulder-length hair flipping up and outward at the ends",
-    "broad, muscular shoulders and arms on a lean torso",
-    "a horizontally striped shirt"
+    "a fur-trimmed hood thrown back over a thick winter coverall",
+    "shoulder-length hair flipping up and outward at the ends, wind-tousled",
+    "broad, muscular shoulders and thick arms on a lean torso",
+    "small star patterns on his clothes",
+    "seated or propped on his arms, never standing"
    ],
-   "hair": "Pale blond, shoulder length and wavy, the ends flipping upward; two tufts stick out through holes in the top of his hat like short horns.",
+   "hair": "Pale blond, shoulder length and wavy, the ends flipping upward, curled by months of wind on the trail. No hat.",
    "hairColor": "#E8DCAE",
    "eyes": "Large, light-colored eyes with long lashes; when he stops hesitating, the pupils shrink to dark pinpoints.",
    "eyeColor": "#8DB8D8",
    "skin": "#F1DAC5",
    "face": "Young, soft, almost pretty 19-year-old face with full lips and a defined jaw.",
-   "outfit": "A knit beanie printed all over with small five-pointed stars, with holes on top and a small horseshoe on the front; a snug horizontally striped top; star-printed trousers and spurred boots below the frame. He is paralyzed from the waist down, so show him seated or leaning on his strong arms, never standing.",
+   "outfit": "Late-December clothes: a thick winter coverall with a fur-trimmed hood, a snug hooded top underneath, both with his favourite small star patterns; boots below the frame. He is paralyzed from the waist down, so show him seated or leaning on his strong arms, never standing.",
    "outfitColors": [
     "#B7A6D9",
     "#2F3D63",
     "#F1EDE4",
     "#9AA3AA"
    ],
-   "accessories": "The horseshoe on the hat; spurs on the boot heels (out of frame). Nothing in his hands.",
+   "accessories": "None. Nothing in his hands; no hat, no horseshoe, no spurs.",
    "expression": "Suddenly still and silent: eyes gone dark and fixed, pupils small, jaw tight. The 'pitch-black resolve' of someone who has just stopped hesitating.",
    "accent": "#8E7CC3"
   },
@@ -2569,7 +2470,7 @@ window.CHARACTERS = [
   "name": "法尼·瓦伦泰",
   "callName": "法尼·瓦伦泰",
   "epithet": "爱国者",
-  "work": "《JOJO的奇妙冒险 飙马野郎》",
+  "work": "《JoJo的奇妙冒险 飙马野郎》",
   "gender": "男",
   "age": "四十三岁",
   "heightCm": 188,
@@ -2588,12 +2489,11 @@ window.CHARACTERS = [
    "suspicion": "中"
   },
   "carried": [
-   "父亲的手帕一方（写着一八四七年九月二十日）"
+   "父亲的手帕一方（写着一八四七年九月二十日）",
+   "网纹手套一副（戴在手上）"
   ],
-  "othersSee": "挺拔体面的中年人，长发卷得整齐，说话像在记者面前发言",
   "quote": {
-   "zh": "做那个能第一个拿起餐巾的人。那张'圆桌'上，坐下的将是我'法尼·瓦伦泰'。",
-   "orig": "最初にナプキンを取る事のできる人間になる　その『円卓』に　この『ファニー・ヴァレンタイン』が座る事になるのだ"
+   "zh": "做那个能第一个拿起餐巾的人。那张'圆桌'上，坐下的将是我'法尼·瓦伦泰'。"
   },
   "dream": "让美国第一个拿起餐巾",
   "lines": {

@@ -1,9 +1,10 @@
 /* ==========================================================
    醒来 · prologue
-   穹顶正上方俯视的圆桌（Canvas），竖排标题，大号时钟，席位名牌，落下的钥匙
+   从天眼俯视的圆桌（Canvas），竖排标题，大号时钟，席位名牌，主持人的播报与十九条，落下的钥匙
    ========================================================== */
 
-.prologue { position: relative; height: 380vh; }
+/* 钉住段更长：开局的七条播报一句句走完（开局流程 §2） */
+.prologue { position: relative; height: 620vh; }
 /* 舞台的暗角画在画布最底下（原来是这里的 CSS 背景，单独占一个整屏合成层）；
    穹顶肋拱也画进同一张画布（半分辨率放大即景深，不再是第二张带 CSS 模糊的整屏画布） */
 .prologue-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
@@ -82,6 +83,39 @@
 }
 .prologue-tag-line.is-on { opacity: 1; }
 
+/* ---------- 主持人的播报：一次一句，听不出从哪里来（不画出处） ---------- */
+.prologue-voice {
+  position: absolute; left: 50%; bottom: calc(var(--gutter) * .7 + 64px); z-index: 2;
+  width: min(44em, calc(100vw - 2 * var(--gutter))); transform: translateX(-50%);
+  text-align: center; pointer-events: none; will-change: opacity;
+}
+/* 一道黄铜斜纹：和庭审里的广播横幅同一种记号 */
+.prologue-voice::before {
+  content: ''; display: block; width: 56px; height: 4px; margin: 0 auto 16px;
+  background: repeating-linear-gradient(-45deg, var(--brass-dim) 0 6px, transparent 6px 12px); opacity: .8;
+}
+.prologue-voice-line {
+  margin: 0; font-family: var(--f-mono); font-size: clamp(14px, 1.2vw, 18px); line-height: 1.9; letter-spacing: .08em;
+  color: var(--bone); text-shadow: 0 0 14px #000, 0 0 4px #000, 0 0 1px #000;
+}
+
+/* ---------- 第四条播报的十九条：像规则卡上的字，读到哪里流到哪里 ---------- */
+.prologue-rules {
+  position: absolute; left: 50%; bottom: calc(var(--gutter) * .7 + 40px); z-index: 2;
+  width: min(40em, calc(100vw - 2 * var(--gutter))); height: 8.4em; transform: translateX(-50%);
+  overflow: hidden; pointer-events: none; will-change: opacity;
+  font-family: var(--f-mono); font-size: clamp(14px, 1.15vw, 17px); line-height: 1.8; letter-spacing: .06em;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+}
+.prologue-rules-list { position: relative; margin: 0; padding: 0; list-style: none; text-align: center; will-change: transform; }
+.prologue-rules-list li {
+  padding: .25em 0; color: var(--bone-dim); opacity: .38; transition: opacity .35s var(--ease-out), color .35s var(--ease-out);
+  text-shadow: 0 0 12px #000, 0 0 3px #000;
+}
+.prologue-rules-list li.is-on { color: var(--bone); opacity: 1; }
+.prologue-rules-list b { font-weight: 400; color: var(--brass); margin-right: .2em; }
+
 /* ---------- 下滑提示（纯图形） ---------- */
 .prologue-cue {
   position: absolute; left: 50%; bottom: 26px; width: 1px; height: 64px; margin-left: -.5px;
@@ -111,7 +145,10 @@
 }
 
 @media (max-width: 760px) {
-  .prologue { height: 340vh; }
+  .prologue { height: 580vh; }
+  .prologue-voice { bottom: 92px; }
+  .prologue-voice-line { font-size: 14px; line-height: 1.85; letter-spacing: .04em; }
+  .prologue-rules { bottom: 76px; height: 10.8em; font-size: 13px; letter-spacing: .03em; }
   .prologue-head { right: 14px; top: calc(var(--hud-h) + 16px); gap: 10px; }
   .prologue-title { font-size: 58px; }
   .prologue-seal { right: 24px; top: calc(100% + 12px); width: 8px; height: 8px; }
